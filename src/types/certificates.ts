@@ -12,6 +12,8 @@ export interface BaseCertificate {
   date_of_birth: string;
   birthplace_ar: string;
   birthplace_fr: string | null;
+  faculty_ar: string;
+  faculty_fr: string | null;
   specialty_ar: string;
   specialty_fr: string | null;
   branch_ar: string;
@@ -126,6 +128,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'date_of_birth', name_ar: 'تاريخ الميلاد', name_fr: 'Né(e) le', required: true },
     { key: 'birthplace_ar', name_ar: 'مكان الميلاد', name_fr: 'lieu de naissance', required: true },
     { key: 'birthplace_fr', name_ar: 'مكان الميلاد (فرنسي)', name_fr: 'lieu de naissance', required: false },
+    { key: 'faculty_ar', name_ar: 'الكلية', name_fr: 'Faculté', required: true },
+    { key: 'faculty_fr', name_ar: 'الكلية (فرنسي)', name_fr: 'Faculté', required: false },
     { key: 'thesis_title_ar', name_ar: 'عنوان الأطروحة', name_fr: 'Titre de thèse', required: true },
     { key: 'field_ar', name_ar: 'الميدان', name_fr: 'domaine', required: true },
     { key: 'field_fr', name_ar: 'الميدان (فرنسي)', name_fr: 'domaine', required: false },
@@ -146,6 +150,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'date_of_birth', name_ar: 'تاريخ الميلاد', name_fr: 'Né(e) le', required: true },
     { key: 'birthplace_ar', name_ar: 'مكان الميلاد', name_fr: 'lieu de naissance', required: true },
     { key: 'birthplace_fr', name_ar: 'مكان الميلاد (فرنسي)', name_fr: 'lieu de naissance', required: false },
+    { key: 'faculty_ar', name_ar: 'الكلية', name_fr: 'Faculté', required: true },
+    { key: 'faculty_fr', name_ar: 'الكلية (فرنسي)', name_fr: 'Faculté', required: false },
     { key: 'thesis_title_ar', name_ar: 'عنوان الأطروحة', name_fr: 'Titre de thèse', required: true },
     { key: 'branch_ar', name_ar: 'الشعبة', name_fr: 'filière', required: true },
     { key: 'branch_fr', name_ar: 'الشعبة (فرنسي)', name_fr: 'filière', required: false },
@@ -164,6 +170,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'date_of_birth', name_ar: 'تاريخ الميلاد', name_fr: 'Né(e) le', required: true },
     { key: 'birthplace_ar', name_ar: 'مكان الميلاد', name_fr: 'lieu de naissance', required: true },
     { key: 'birthplace_fr', name_ar: 'مكان الميلاد (فرنسي)', name_fr: 'lieu de naissance', required: false },
+    { key: 'faculty_ar', name_ar: 'الكلية', name_fr: 'Faculté', required: true },
+    { key: 'faculty_fr', name_ar: 'الكلية (فرنسي)', name_fr: 'Faculté', required: false },
     { key: 'branch_ar', name_ar: 'الشعبة', name_fr: 'filière', required: true },
     { key: 'branch_fr', name_ar: 'الشعبة (فرنسي)', name_fr: 'filière', required: false },
     { key: 'specialty_ar', name_ar: 'التخصص', name_fr: 'spécialité', required: true },

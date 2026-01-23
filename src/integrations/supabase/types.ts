@@ -188,6 +188,8 @@ export type Database = {
           created_at: string | null
           date_of_birth: string
           defense_date: string
+          faculty_ar: string
+          faculty_fr: string | null
           full_name_ar: string
           full_name_fr: string | null
           id: string
@@ -206,6 +208,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth: string
           defense_date: string
+          faculty_ar?: string
+          faculty_fr?: string | null
           full_name_ar: string
           full_name_fr?: string | null
           id?: string
@@ -224,6 +228,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string
           defense_date?: string
+          faculty_ar?: string
+          faculty_fr?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
           id?: string
@@ -245,6 +251,8 @@ export type Database = {
           created_at: string | null
           date_of_birth: string
           defense_date: string
+          faculty_ar: string
+          faculty_fr: string | null
           field_ar: string
           field_fr: string | null
           full_name_ar: string
@@ -271,6 +279,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth: string
           defense_date: string
+          faculty_ar?: string
+          faculty_fr?: string | null
           field_ar: string
           field_fr?: string | null
           full_name_ar: string
@@ -297,6 +307,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string
           defense_date?: string
+          faculty_ar?: string
+          faculty_fr?: string | null
           field_ar?: string
           field_fr?: string | null
           full_name_ar?: string
@@ -326,6 +338,8 @@ export type Database = {
           created_at: string | null
           date_of_birth: string
           defense_date: string
+          faculty_ar: string
+          faculty_fr: string | null
           full_name_ar: string
           full_name_fr: string | null
           id: string
@@ -350,6 +364,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth: string
           defense_date: string
+          faculty_ar?: string
+          faculty_fr?: string | null
           full_name_ar: string
           full_name_fr?: string | null
           id?: string
@@ -374,6 +390,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string
           defense_date?: string
+          faculty_ar?: string
+          faculty_fr?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
           id?: string
