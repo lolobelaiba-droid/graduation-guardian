@@ -41,6 +41,8 @@ const baseSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  faculty_ar: z.string().min(1, "الكلية مطلوبة"),
+  faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -102,6 +104,8 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
       date_of_birth: '',
       birthplace_ar: '',
       birthplace_fr: '',
+      faculty_ar: '',
+      faculty_fr: '',
       branch_ar: '',
       branch_fr: '',
       specialty_ar: '',
@@ -304,6 +308,37 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
                     <FormLabel>lieu de naissance</FormLabel>
                     <FormControl>
                       <Input {...field} value={field.value || ''} dir="ltr" placeholder="Lieu de naissance" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Faculty */}
+            <SectionHeader title="الكلية / Faculté" />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="faculty_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الكلية (عربي) *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="الكلية" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="faculty_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Faculté</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Faculté" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

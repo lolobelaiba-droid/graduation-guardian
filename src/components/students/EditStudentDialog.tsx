@@ -44,6 +44,8 @@ const phdLmdSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  faculty_ar: z.string().min(1, "الكلية مطلوبة"),
+  faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -71,6 +73,8 @@ const phdScienceSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  faculty_ar: z.string().min(1, "الكلية مطلوبة"),
+  faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -96,6 +100,8 @@ const masterSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  faculty_ar: z.string().min(1, "الكلية مطلوبة"),
+  faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -147,6 +153,8 @@ export default function EditStudentDialog({
         date_of_birth: student.date_of_birth,
         birthplace_ar: student.birthplace_ar,
         birthplace_fr: student.birthplace_fr || "",
+        faculty_ar: student.faculty_ar || "",
+        faculty_fr: student.faculty_fr || "",
         branch_ar: student.branch_ar,
         branch_fr: student.branch_fr || "",
         specialty_ar: student.specialty_ar,
@@ -317,6 +325,32 @@ export default function EditStudentDialog({
             <div className="space-y-4">
               <h3 className="font-semibold text-primary">المعلومات الأكاديمية</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={"faculty_ar" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الكلية بالعربية *</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"faculty_fr" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الكلية بالفرنسية</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || ""} className="text-left" dir="ltr" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 {hasField && (
                   <>
                     <FormField
