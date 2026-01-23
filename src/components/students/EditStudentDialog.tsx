@@ -399,12 +399,19 @@ export default function EditStudentDialog({
                     </FormItem>
                   )}
                 />
+              </div>
+            </div>
+
+            {/* Mention Fields - Separated */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-primary">التقدير / Mention</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="mention"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>التقدير *</FormLabel>
+                      <FormLabel>التقدير (عربي) *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
@@ -415,6 +422,30 @@ export default function EditStudentDialog({
                           {(Object.keys(mentionLabels) as MentionType[]).map((key) => (
                             <SelectItem key={key} value={key}>
                               {mentionLabels[key].ar}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mention"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mention</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choisir la mention" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(Object.keys(mentionLabels) as MentionType[]).map((key) => (
+                            <SelectItem key={key} value={key}>
+                              {mentionLabels[key].fr}
                             </SelectItem>
                           ))}
                         </SelectContent>
