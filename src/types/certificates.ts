@@ -116,6 +116,8 @@ export const mentionLabels: Record<MentionType, { ar: string; fr: string; en: st
 };
 
 // Field definitions for each certificate type
+// Field definitions for each certificate type
+// Note: thesis_title, jury_president, jury_members are single fields that support both Arabic and French text
 export const certificateFields: Record<CertificateType, { key: string; name_ar: string; name_fr: string; required: boolean }[]> = {
   phd_lmd: [
     { key: 'student_number', name_ar: 'الرقم', name_fr: 'N°', required: true },
@@ -125,7 +127,6 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'birthplace_ar', name_ar: 'مكان الميلاد', name_fr: 'lieu de naissance', required: true },
     { key: 'birthplace_fr', name_ar: 'مكان الميلاد (فرنسي)', name_fr: 'lieu de naissance', required: false },
     { key: 'thesis_title_ar', name_ar: 'عنوان الأطروحة', name_fr: 'Titre de thèse', required: true },
-    { key: 'thesis_title_fr', name_ar: 'عنوان الأطروحة (فرنسي)', name_fr: 'Titre de thèse', required: false },
     { key: 'field_ar', name_ar: 'الميدان', name_fr: 'domaine', required: true },
     { key: 'field_fr', name_ar: 'الميدان (فرنسي)', name_fr: 'domaine', required: false },
     { key: 'branch_ar', name_ar: 'الشعبة', name_fr: 'filière', required: true },
@@ -135,9 +136,7 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'mention', name_ar: 'التقدير', name_fr: 'Mention', required: true },
     { key: 'defense_date', name_ar: 'تاريخ محضر المناقشة', name_fr: 'Date de soutenance', required: true },
     { key: 'jury_president_ar', name_ar: 'رئيس اللجنة', name_fr: 'Président du jury', required: true },
-    { key: 'jury_president_fr', name_ar: 'رئيس اللجنة (فرنسي)', name_fr: 'Président du jury', required: false },
     { key: 'jury_members_ar', name_ar: 'أعضاء اللجنة', name_fr: 'Membres du jury', required: true },
-    { key: 'jury_members_fr', name_ar: 'أعضاء اللجنة (فرنسي)', name_fr: 'Membres du jury', required: false },
     { key: 'certificate_date', name_ar: 'تاريخ اصدار الشهادة', name_fr: 'Date du certificat', required: true },
   ],
   phd_science: [
@@ -148,7 +147,6 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'birthplace_ar', name_ar: 'مكان الميلاد', name_fr: 'lieu de naissance', required: true },
     { key: 'birthplace_fr', name_ar: 'مكان الميلاد (فرنسي)', name_fr: 'lieu de naissance', required: false },
     { key: 'thesis_title_ar', name_ar: 'عنوان الأطروحة', name_fr: 'Titre de thèse', required: true },
-    { key: 'thesis_title_fr', name_ar: 'عنوان الأطروحة (فرنسي)', name_fr: 'Titre de thèse', required: false },
     { key: 'branch_ar', name_ar: 'الشعبة', name_fr: 'filière', required: true },
     { key: 'branch_fr', name_ar: 'الشعبة (فرنسي)', name_fr: 'filière', required: false },
     { key: 'specialty_ar', name_ar: 'التخصص', name_fr: 'spécialité', required: true },
@@ -156,9 +154,7 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'mention', name_ar: 'التقدير', name_fr: 'Mention', required: true },
     { key: 'defense_date', name_ar: 'تاريخ محضر المناقشة', name_fr: 'Date de soutenance', required: true },
     { key: 'jury_president_ar', name_ar: 'رئيس اللجنة', name_fr: 'Président du jury', required: true },
-    { key: 'jury_president_fr', name_ar: 'رئيس اللجنة (فرنسي)', name_fr: 'Président du jury', required: false },
     { key: 'jury_members_ar', name_ar: 'أعضاء اللجنة', name_fr: 'Membres du jury', required: true },
-    { key: 'jury_members_fr', name_ar: 'أعضاء اللجنة (فرنسي)', name_fr: 'Membres du jury', required: false },
     { key: 'certificate_date', name_ar: 'تاريخ اصدار الشهادة', name_fr: 'Date du certificat', required: true },
   ],
   master: [
