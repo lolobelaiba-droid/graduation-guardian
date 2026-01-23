@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf';
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from '@/types/certificates';
 import { mentionLabels } from '@/types/certificates';
-import { toArabicNumerals } from '@/lib/arabicNumbers';
 // A4 dimensions in mm
 const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
@@ -103,23 +102,16 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     return mentionLabels[value as MentionType]?.ar || String(value);
   }
 
-  // Handle date fields - convert to Arabic numerals
+  // Handle date fields
   if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
     try {
-      const dateStr = new Date(value as string).toLocaleDateString('ar-SA');
-      return toArabicNumerals(dateStr);
+      return new Date(value as string).toLocaleDateString('ar-SA');
     } catch {
-      return toArabicNumerals(String(value));
+      return String(value);
     }
   }
 
-  // Convert any numbers in the string to Arabic numerals
-  const strValue = String(value);
-  if (/[0-9]/.test(strValue)) {
-    return toArabicNumerals(strValue);
-  }
-
-  return strValue;
+  return String(value);
 }
 
 // Export function to generate PDF for a single student (for preview)
