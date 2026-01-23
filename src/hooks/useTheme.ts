@@ -88,11 +88,18 @@ export function useColorTheme() {
     // Remove all theme classes
     themes.forEach((t) => root.classList.remove(`theme-${t.id}`));
     
-    // Add new theme class
-    root.classList.add(`theme-${theme}`);
+    // Add new theme class only if not blue (blue is default/root)
+    if (theme !== "blue") {
+      root.classList.add(`theme-${theme}`);
+    }
     
     // Store preference
     localStorage.setItem(THEME_STORAGE_KEY, theme);
+    
+    // Force a repaint to ensure CSS variables are applied
+    root.style.display = 'none';
+    root.offsetHeight; // Trigger reflow
+    root.style.display = '';
   }, []);
 
   useEffect(() => {
