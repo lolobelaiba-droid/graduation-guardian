@@ -487,12 +487,7 @@ export type Database = {
         | "settings_updated"
         | "backup_created"
       certificate_type: "phd_lmd" | "phd_science" | "master"
-      mention_type:
-        | "excellent"
-        | "very_good"
-        | "good"
-        | "fairly_good"
-        | "passable"
+      mention_type: "honorable" | "very_honorable"
       template_language:
         | "ar"
         | "fr"
@@ -640,13 +635,7 @@ export const Constants = {
         "backup_created",
       ],
       certificate_type: ["phd_lmd", "phd_science", "master"],
-      mention_type: [
-        "excellent",
-        "very_good",
-        "good",
-        "fairly_good",
-        "passable",
-      ],
+      mention_type: ["honorable", "very_honorable"],
       template_language: [
         "ar",
         "fr",
