@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   useCertificateTemplates,
@@ -34,6 +35,7 @@ import { generatePDF } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
+import { getFontOptions } from "@/lib/arabicFonts";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -453,11 +455,104 @@ export default function PrintCertificates() {
                     </div>
                   </div>
 
-                  {/* Movement Controls */}
+                  {/* Field Properties */}
                   <div className="space-y-4">
-                    <h4 className="font-semibold">تحريك الحقل المحدد</h4>
-                    {selectedFieldId ? (
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Type className="h-4 w-4" />
+                      خصائص الحقل المحدد
+                    </h4>
+                    {selectedFieldId && selectedTemplateId ? (
                       <div className="space-y-4">
+                        {/* Font Selection */}
+                        <div>
+                          <Label>نوع الخط</Label>
+                          <Select
+                            value={templateFields.find(f => f.id === selectedFieldId)?.font_name || 'Cairo'}
+                            onValueChange={(v) => {
+                              updateField.mutate({
+                                id: selectedFieldId,
+                                template_id: selectedTemplateId,
+                                font_name: v,
+                              });
+                            }}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getFontOptions().map((font) => (
+                                <SelectItem 
+                                  key={font.value} 
+                                  value={font.value}
+                                  style={{ fontFamily: font.value }}
+                                >
+                                  {font.labelAr} ({font.label})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Font Size */}
+                        <div>
+                          <Label>حجم الخط</Label>
+                          <div className="flex gap-2 mt-1">
+                            <Input
+                              type="number"
+                              min={8}
+                              max={72}
+                              value={templateFields.find(f => f.id === selectedFieldId)?.font_size || 14}
+                              onChange={(e) => {
+                                const size = parseInt(e.target.value);
+                                if (size >= 8 && size <= 72) {
+                                  updateField.mutate({
+                                    id: selectedFieldId,
+                                    template_id: selectedTemplateId,
+                                    font_size: size,
+                                  });
+                                }
+                              }}
+                              className="w-24"
+                            />
+                            <span className="text-sm text-muted-foreground self-center">نقطة</span>
+                          </div>
+                        </div>
+
+                        {/* Font Color */}
+                        <div>
+                          <Label>لون الخط</Label>
+                          <div className="flex gap-2 mt-1">
+                            <Input
+                              type="color"
+                              value={templateFields.find(f => f.id === selectedFieldId)?.font_color || '#000000'}
+                              onChange={(e) => {
+                                updateField.mutate({
+                                  id: selectedFieldId,
+                                  template_id: selectedTemplateId,
+                                  font_color: e.target.value,
+                                });
+                              }}
+                              className="w-12 h-10 p-1 cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={templateFields.find(f => f.id === selectedFieldId)?.font_color || '#000000'}
+                              onChange={(e) => {
+                                if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+                                  updateField.mutate({
+                                    id: selectedFieldId,
+                                    template_id: selectedTemplateId,
+                                    font_color: e.target.value,
+                                  });
+                                }
+                              }}
+                              className="w-28 font-mono"
+                              placeholder="#000000"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Step Size for Movement */}
                         <div>
                           <Label>مقدار الحركة (مم)</Label>
                           <Select value={stepSize.toString()} onValueChange={(v) => setStepSize(parseFloat(v))}>
@@ -473,7 +568,8 @@ export default function PrintCertificates() {
                           </Select>
                         </div>
 
-                        <div className="flex flex-col items-center gap-2">
+                        {/* Movement Controls */}
+                        <div className="flex flex-col items-center gap-2 pt-2">
                           <Button
                             variant="outline"
                             size="icon"
@@ -514,7 +610,7 @@ export default function PrintCertificates() {
                         </div>
 
                         <p className="text-xs text-muted-foreground text-center">
-                          استخدم الأسهم لتحريك الحقل. التغييرات تُحفظ تلقائياً.
+                          استخدم الأسهم لتحريك الحقل أو اسحبه بالماوس في المعاينة
                         </p>
                       </div>
                     ) : (

@@ -1,12 +1,11 @@
 import jsPDF from 'jspdf';
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from '@/types/certificates';
 import { mentionLabels } from '@/types/certificates';
+import { arabicFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
+
 // A4 dimensions in mm
 const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
-
-// Points per mm
-const MM_TO_PT = 72 / 25.4;
 
 // Load image as base64
 async function loadImageAsBase64(url: string): Promise<string | null> {
@@ -25,6 +24,78 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
+// Cache for loaded fonts in jsPDF format
+const loadedFontsForPDF = new Set<string>();
+
+/**
+ * Load and register Arabic fonts in jsPDF document
+ */
+async function registerArabicFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
+  const uniqueFonts = [...new Set(fontsNeeded)];
+  
+  for (const fontFamily of uniqueFonts) {
+    // Find matching fonts (normal and bold variants)
+    const matchingFonts = arabicFonts.filter(f => 
+      f.family === fontFamily || f.name === fontFamily || f.displayName === fontFamily
+    );
+    
+    if (matchingFonts.length === 0) {
+      console.warn(`Font not found: ${fontFamily}, using default`);
+      continue;
+    }
+
+    for (const font of matchingFonts) {
+      const fontKey = `${font.family}-${font.style}`;
+      
+      // Skip if already loaded
+      if (loadedFontsForPDF.has(fontKey)) {
+        continue;
+      }
+
+      try {
+        const fontBuffer = await loadFontFile(font.url);
+        if (fontBuffer) {
+          const fontBase64 = arrayBufferToBase64(fontBuffer);
+          const fileName = `${font.name}.ttf`;
+          
+          // Add font file to virtual file system
+          doc.addFileToVFS(fileName, fontBase64);
+          
+          // Register the font
+          doc.addFont(fileName, font.family, font.style);
+          
+          loadedFontsForPDF.add(fontKey);
+          console.log(`Loaded font: ${font.family} (${font.style})`);
+        }
+      } catch (error) {
+        console.error(`Failed to load font ${font.family}:`, error);
+      }
+    }
+  }
+}
+
+/**
+ * Set font for a field in jsPDF
+ */
+function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number): void {
+  if (!fontName) {
+    doc.setFontSize(fontSize);
+    return;
+  }
+
+  const font = getFontByName(fontName);
+  if (font) {
+    try {
+      doc.setFont(font.family, font.style);
+    } catch {
+      // Font not loaded, use default
+      console.warn(`Font ${fontName} not available, using default`);
+    }
+  }
+  
+  doc.setFontSize(fontSize);
+}
+
 export async function generatePDF(
   students: Record<string, unknown>[],
   fields: TemplateField[],
@@ -41,6 +112,14 @@ export async function generatePDF(
     format: 'a4',
     putOnlyUsedFonts: true,
   });
+
+  // Collect all fonts needed from fields
+  const fontsNeeded = fields
+    .filter(f => f.is_visible && f.font_name)
+    .map(f => f.font_name);
+
+  // Register Arabic fonts
+  await registerArabicFonts(doc, fontsNeeded);
 
   // Load background image if exists
   let backgroundBase64: string | null = null;
@@ -65,23 +144,17 @@ export async function generatePDF(
       if (!value) return;
 
       // Set font properties
-      doc.setFontSize(field.font_size);
+      setFieldFont(doc, field.font_name, field.font_size);
       doc.setTextColor(field.font_color);
 
       // Calculate text position
-      let x = field.position_x;
+      const x = field.position_x;
       const y = field.position_y;
 
       // Handle text alignment
       let align: 'left' | 'center' | 'right' = 'center';
       if (field.text_align === 'left') align = 'left';
       else if (field.text_align === 'right') align = 'right';
-
-      // For RTL text, we need to handle alignment differently
-      if (field.is_rtl) {
-        // jsPDF handles RTL poorly, so we'll just position the text
-        // The user should adjust positions manually for RTL
-      }
 
       doc.text(value, x, y, { align });
     });
@@ -132,6 +205,14 @@ export async function generateSinglePDF(
     putOnlyUsedFonts: true,
   });
 
+  // Collect all fonts needed from fields
+  const fontsNeeded = fields
+    .filter(f => f.is_visible && f.font_name)
+    .map(f => f.font_name);
+
+  // Register Arabic fonts
+  await registerArabicFonts(doc, fontsNeeded);
+
   // Load background image if exists
   if (template.background_image_url) {
     const backgroundBase64 = await loadImageAsBase64(template.background_image_url);
@@ -145,7 +226,8 @@ export async function generateSinglePDF(
     const value = getFieldValue(student, field.field_key);
     if (!value) return;
 
-    doc.setFontSize(field.font_size);
+    // Set font properties
+    setFieldFont(doc, field.font_name, field.font_size);
     doc.setTextColor(field.font_color);
 
     let align: 'left' | 'center' | 'right' = 'center';
