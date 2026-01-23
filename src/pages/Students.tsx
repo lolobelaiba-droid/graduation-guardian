@@ -26,15 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import {
   usePhdLmdCertificates,
   usePhdScienceCertificates,
@@ -54,14 +46,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { CertificateType, MentionType } from "@/types/certificates";
+import type { CertificateType, MentionType, Certificate } from "@/types/certificates";
 import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
+import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
+import EditStudentDialog from "@/components/students/EditStudentDialog";
 
 export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCertType, setSelectedCertType] = useState<CertificateType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<{ id: string; type: CertificateType } | null>(null);
+  
+  // Details dialog state
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Certificate | null>(null);
+  
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [studentToEdit, setStudentToEdit] = useState<Certificate | null>(null);
 
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceCertificates();
@@ -71,7 +73,7 @@ export default function Students() {
   const deletePhdScience = useDeletePhdScienceCertificate();
   const deleteMaster = useDeleteMasterCertificate();
 
-  const getCurrentData = () => {
+  const getCurrentData = (): Certificate[] => {
     switch (selectedCertType) {
       case "phd_lmd": return phdLmdData;
       case "phd_science": return phdScienceData;
@@ -112,6 +114,16 @@ export default function Students() {
       setDeleteDialogOpen(false);
       setStudentToDelete(null);
     }
+  };
+
+  const handleViewDetails = (student: Certificate) => {
+    setSelectedStudent(student);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleEditStudent = (student: Certificate) => {
+    setStudentToEdit(student);
+    setEditDialogOpen(true);
   };
 
   return (
@@ -210,11 +222,17 @@ export default function Students() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="start">
-                                <DropdownMenuItem className="gap-2">
+                                <DropdownMenuItem 
+                                  className="gap-2"
+                                  onClick={() => handleViewDetails(student)}
+                                >
                                   <Eye className="h-4 w-4" />
                                   عرض التفاصيل
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="gap-2">
+                                <DropdownMenuItem 
+                                  className="gap-2"
+                                  onClick={() => handleEditStudent(student)}
+                                >
                                   <Edit className="h-4 w-4" />
                                   تعديل
                                 </DropdownMenuItem>
@@ -245,6 +263,22 @@ export default function Students() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Student Details Dialog */}
+      <StudentDetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        student={selectedStudent}
+        certificateType={selectedCertType}
+      />
+
+      {/* Edit Student Dialog */}
+      <EditStudentDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        student={studentToEdit}
+        certificateType={selectedCertType}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
