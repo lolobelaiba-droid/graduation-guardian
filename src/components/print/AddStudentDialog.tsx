@@ -316,29 +316,16 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
             </div>
 
             {/* Faculty */}
-            <SectionHeader title="الكلية / Faculté" />
-            <div className="grid grid-cols-2 gap-4">
+            <SectionHeader title="الكلية" />
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="faculty_ar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الكلية (عربي) *</FormLabel>
+                    <FormLabel>الكلية *</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="الكلية" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="faculty_fr"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Faculté</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Faculté" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

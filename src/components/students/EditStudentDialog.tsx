@@ -329,23 +329,10 @@ export default function EditStudentDialog({
                   control={form.control}
                   name={"faculty_ar" as keyof FormValues}
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الكلية بالعربية *</FormLabel>
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>الكلية *</FormLabel>
                       <FormControl>
                         <Input {...field} value={(field.value as string) || ""} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={"faculty_fr" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الكلية بالفرنسية</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={(field.value as string) || ""} className="text-left" dir="ltr" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
