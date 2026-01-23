@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2 } from "lucide-react";
+import { useRef, useState, useCallback } from "react";
+import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical } from "lucide-react";
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,7 @@ interface CertificatePreviewProps {
   selectedFieldId: string | null;
   onFieldClick: (fieldId: string) => void;
   onFieldMove?: (fieldId: string, direction: 'up' | 'down' | 'left' | 'right', stepSize: number) => void;
+  onFieldDrag?: (fieldId: string, newX: number, newY: number) => void;
   onToggleFieldVisibility?: (fieldId: string, visible: boolean) => void;
   onDeleteField?: (fieldId: string) => void;
   onAddField?: () => void;
@@ -52,6 +53,7 @@ export function CertificatePreview({
   selectedFieldId,
   onFieldClick,
   onFieldMove,
+  onFieldDrag,
   onToggleFieldVisibility,
   onDeleteField,
   onAddField,
@@ -61,6 +63,14 @@ export function CertificatePreview({
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
   const [fieldToDelete, setFieldToDelete] = useState<TemplateField | null>(null);
+  const [dragState, setDragState] = useState<{
+    fieldId: string;
+    startX: number;
+    startY: number;
+    fieldStartX: number;
+    fieldStartY: number;
+  } | null>(null);
+  const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
 
   const isLandscape = template.page_orientation === 'landscape';
   const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
@@ -90,6 +100,67 @@ export function CertificatePreview({
       onDeleteField(fieldToDelete.id);
       setFieldToDelete(null);
     }
+  };
+
+  // Drag handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent, field: TemplateField) => {
+    if (!onFieldDrag) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    onFieldClick(field.id);
+    
+    setDragState({
+      fieldId: field.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      fieldStartX: field.position_x,
+      fieldStartY: field.position_y,
+    });
+    setDragPreview({ x: field.position_x, y: field.position_y });
+  }, [onFieldDrag, onFieldClick]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragState || !canvasRef.current) return;
+
+    const deltaX = (e.clientX - dragState.startX) / SCALE;
+    const deltaY = (e.clientY - dragState.startY) / SCALE;
+
+    // Calculate new position (round to 0.5mm for precision)
+    let newX = Math.round((dragState.fieldStartX + deltaX) * 2) / 2;
+    let newY = Math.round((dragState.fieldStartY + deltaY) * 2) / 2;
+
+    // Clamp to canvas bounds
+    newX = Math.max(0, Math.min(width - 10, newX));
+    newY = Math.max(0, Math.min(height - 10, newY));
+
+    setDragPreview({ x: newX, y: newY });
+  }, [dragState, width, height]);
+
+  const handleMouseUp = useCallback(() => {
+    if (dragState && dragPreview && onFieldDrag) {
+      // Only update if position actually changed
+      if (dragPreview.x !== dragState.fieldStartX || dragPreview.y !== dragState.fieldStartY) {
+        onFieldDrag(dragState.fieldId, dragPreview.x, dragPreview.y);
+      }
+    }
+    setDragState(null);
+    setDragPreview(null);
+  }, [dragState, dragPreview, onFieldDrag]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (dragState) {
+      handleMouseUp();
+    }
+  }, [dragState, handleMouseUp]);
+
+  // Get field position (use drag preview if dragging)
+  const getFieldPosition = (field: TemplateField) => {
+    if (dragState?.fieldId === field.id && dragPreview) {
+      return dragPreview;
+    }
+    return { x: field.position_x, y: field.position_y };
   };
 
   return (
@@ -123,28 +194,41 @@ export function CertificatePreview({
           )}
         </div>
 
-        {selectedField && (
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
+          {dragState && dragPreview && (
+            <Badge variant="default" className="font-mono text-xs animate-pulse">
+              X: {dragPreview.x} | Y: {dragPreview.y} مم
+            </Badge>
+          )}
+          {!dragState && selectedField && (
             <Badge variant="outline" className="font-mono text-xs">
               X: {selectedField.position_x} | Y: {selectedField.position_y} مم
             </Badge>
+          )}
+          {selectedField && (
             <span className="text-sm text-muted-foreground">
               {selectedField.field_name_ar}
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Canvas */}
       <div className="overflow-auto bg-muted/30 rounded-lg p-4">
         <div
           ref={canvasRef}
-          className="relative bg-white mx-auto border border-border shadow-sm"
+          className={cn(
+            "relative bg-white mx-auto border border-border shadow-sm",
+            dragState && "cursor-grabbing"
+          )}
           style={{
             width: `${width * SCALE}px`,
             height: `${height * SCALE}px`,
             direction: isRtlLanguage ? 'rtl' : 'ltr',
           }}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
         >
           {/* Background image */}
           {template.background_image_url && (
@@ -173,26 +257,31 @@ export function CertificatePreview({
           {fields.map((field) => {
             const isSelected = selectedFieldId === field.id;
             const isVisible = field.is_visible;
+            const isDragging = dragState?.fieldId === field.id;
+            const position = getFieldPosition(field);
 
             return (
               <div
                 key={field.id}
                 className={cn(
                   "absolute transition-all group",
-                  isVisible ? "cursor-pointer" : "cursor-pointer opacity-40",
-                  isSelected && "z-10"
+                  isVisible ? "cursor-grab" : "cursor-pointer opacity-40",
+                  isSelected && "z-10",
+                  isDragging && "cursor-grabbing z-20 opacity-80"
                 )}
                 style={{
-                  left: `${field.position_x * SCALE}px`,
-                  top: `${field.position_y * SCALE}px`,
+                  left: `${position.x * SCALE}px`,
+                  top: `${position.y * SCALE}px`,
+                  transition: isDragging ? 'none' : 'all 0.15s ease-out',
                 }}
               >
                 {/* Field content */}
                 <div
                   className={cn(
-                    "border border-transparent transition-all",
+                    "border border-transparent transition-all select-none",
                     isVisible && "hover:border-primary/50",
-                    isSelected && "border-primary border-2 bg-primary/5 rounded"
+                    isSelected && "border-primary border-2 bg-primary/5 rounded",
+                    isDragging && "border-primary border-2 bg-primary/10 rounded shadow-lg"
                   )}
                   style={{
                     fontSize: `${field.font_size * SCALE * 0.35}px`,
@@ -204,83 +293,84 @@ export function CertificatePreview({
                     padding: '2px 4px',
                     textDecoration: !isVisible ? 'line-through' : 'none',
                   }}
-                  onClick={() => onFieldClick(field.id)}
-                  title={`${field.field_name_ar}: X=${field.position_x}مم, Y=${field.position_y}مم`}
+                  onMouseDown={(e) => isVisible && handleMouseDown(e, field)}
+                  onClick={() => !dragState && onFieldClick(field.id)}
+                  title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم - اسحب لتحريك الحقل`}
                 >
+                  {/* Drag handle indicator */}
+                  {isSelected && showControls && !isDragging && (
+                    <GripVertical className="inline-block h-3 w-3 ml-1 text-muted-foreground" />
+                  )}
                   {getFieldValue(field.field_key) || `[${field.field_name_ar}]`}
                 </div>
 
-                {/* Movement controls - show when field is selected and controls are enabled */}
-                {showControls && isSelected && onFieldMove && (
-                  <div 
-                    className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
-                    style={{ direction: 'ltr' }}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'up', stepSize); }}
-                      disabled={isMoving}
+                {/* Movement controls - show when field is selected, controls enabled, and not dragging */}
+                {showControls && isSelected && onFieldMove && !isDragging && (
+                  <>
+                    <div 
+                      className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
+                      style={{ direction: 'ltr' }}
                     >
-                      <ChevronUp className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'up', stepSize); }}
+                        disabled={isMoving}
+                      >
+                        <ChevronUp className="h-3 w-3" />
+                      </Button>
+                    </div>
 
-                {showControls && isSelected && onFieldMove && (
-                  <div 
-                    className="absolute top-1/2 -translate-y-1/2 -right-8 flex flex-col gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
-                    style={{ direction: 'ltr' }}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'left', stepSize); }}
-                      disabled={isMoving}
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 -right-8 flex flex-col gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
+                      style={{ direction: 'ltr' }}
                     >
-                      <ChevronRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'left', stepSize); }}
+                        disabled={isMoving}
+                      >
+                        <ChevronRight className="h-3 w-3" />
+                      </Button>
+                    </div>
 
-                {showControls && isSelected && onFieldMove && (
-                  <div 
-                    className="absolute top-1/2 -translate-y-1/2 -left-8 flex flex-col gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
-                    style={{ direction: 'ltr' }}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'right', stepSize); }}
-                      disabled={isMoving}
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 -left-8 flex flex-col gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
+                      style={{ direction: 'ltr' }}
                     >
-                      <ChevronLeft className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'right', stepSize); }}
+                        disabled={isMoving}
+                      >
+                        <ChevronLeft className="h-3 w-3" />
+                      </Button>
+                    </div>
 
-                {showControls && isSelected && onFieldMove && (
-                  <div 
-                    className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
-                    style={{ direction: 'ltr' }}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'down', stepSize); }}
-                      disabled={isMoving}
+                    <div 
+                      className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
+                      style={{ direction: 'ltr' }}
                     >
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => { e.stopPropagation(); onFieldMove(field.id, 'down', stepSize); }}
+                        disabled={isMoving}
+                      >
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </>
                 )}
 
                 {/* Visibility and Delete controls */}
-                {showControls && isSelected && (
+                {showControls && isSelected && !isDragging && (
                   <div 
                     className="absolute -top-8 -right-8 flex gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
                     style={{ direction: 'ltr' }}
@@ -335,10 +425,10 @@ export function CertificatePreview({
           })}
 
           {/* Corner markers */}
-          <div className="absolute top-2 left-2 text-[10px] text-muted-foreground">
+          <div className="absolute top-2 left-2 text-[10px] text-muted-foreground pointer-events-none">
             0,0
           </div>
-          <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground">
+          <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground pointer-events-none">
             {width},{height}mm
           </div>
         </div>
@@ -348,8 +438,9 @@ export function CertificatePreview({
           <span>
             {isLandscape ? 'أفقي' : 'عمودي'} • {width}×{height}mm • {template.page_size}
           </span>
-          <span>
-            {fields.length} حقل • مقياس {SCALE}:1
+          <span className="flex items-center gap-2">
+            <GripVertical className="h-3 w-3" />
+            اسحب الحقول لتحريكها • {fields.length} حقل
           </span>
         </div>
       </div>
