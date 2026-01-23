@@ -44,47 +44,348 @@ export type Database = {
         }
         Relationships: []
       }
-      certificates: {
+      certificate_template_fields: {
         Row: {
-          certificate_number: string | null
           created_at: string | null
-          file_path: string | null
+          field_key: string
+          field_name_ar: string
+          field_name_fr: string | null
+          field_order: number | null
+          font_color: string | null
+          font_name: string | null
+          font_size: number
           id: string
-          issued_date: string | null
-          student_id: string
+          is_rtl: boolean | null
+          is_visible: boolean | null
+          position_x: number
+          position_y: number
+          template_id: string
+          text_align: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_key: string
+          field_name_ar: string
+          field_name_fr?: string | null
+          field_order?: number | null
+          font_color?: string | null
+          font_name?: string | null
+          font_size?: number
+          id?: string
+          is_rtl?: boolean | null
+          is_visible?: boolean | null
+          position_x?: number
+          position_y?: number
+          template_id: string
+          text_align?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_key?: string
+          field_name_ar?: string
+          field_name_fr?: string | null
+          field_order?: number | null
+          font_color?: string | null
+          font_name?: string | null
+          font_size?: number
+          id?: string
+          is_rtl?: boolean | null
+          is_visible?: boolean | null
+          position_x?: number
+          position_y?: number
+          template_id?: string
+          text_align?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificate_templates: {
+        Row: {
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          language: Database["public"]["Enums"]["template_language"]
+          page_orientation: string | null
+          page_size: string | null
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: Database["public"]["Enums"]["template_language"]
+          page_orientation?: string | null
+          page_size?: string | null
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          certificate_type?: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: Database["public"]["Enums"]["template_language"]
+          page_orientation?: string | null
+          page_size?: string | null
+          template_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      master_certificates: {
+        Row: {
+          birthplace_ar: string
+          birthplace_fr: string | null
+          branch_ar: string
+          branch_fr: string | null
+          certificate_date: string
+          created_at: string | null
+          date_of_birth: string
+          defense_date: string
+          full_name_ar: string
+          full_name_fr: string | null
+          id: string
+          mention: Database["public"]["Enums"]["mention_type"]
+          specialty_ar: string
+          specialty_fr: string | null
+          student_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          birthplace_ar: string
+          birthplace_fr?: string | null
+          branch_ar: string
+          branch_fr?: string | null
+          certificate_date?: string
+          created_at?: string | null
+          date_of_birth: string
+          defense_date: string
+          full_name_ar: string
+          full_name_fr?: string | null
+          id?: string
+          mention?: Database["public"]["Enums"]["mention_type"]
+          specialty_ar: string
+          specialty_fr?: string | null
+          student_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          birthplace_ar?: string
+          birthplace_fr?: string | null
+          branch_ar?: string
+          branch_fr?: string | null
+          certificate_date?: string
+          created_at?: string | null
+          date_of_birth?: string
+          defense_date?: string
+          full_name_ar?: string
+          full_name_fr?: string | null
+          id?: string
+          mention?: Database["public"]["Enums"]["mention_type"]
+          specialty_ar?: string
+          specialty_fr?: string | null
+          student_number?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      phd_lmd_certificates: {
+        Row: {
+          birthplace_ar: string
+          birthplace_fr: string | null
+          branch_ar: string
+          branch_fr: string | null
+          certificate_date: string
+          created_at: string | null
+          date_of_birth: string
+          defense_date: string
+          field_ar: string
+          field_fr: string | null
+          full_name_ar: string
+          full_name_fr: string | null
+          id: string
+          jury_members_ar: string
+          jury_members_fr: string | null
+          jury_president_ar: string
+          jury_president_fr: string | null
+          mention: Database["public"]["Enums"]["mention_type"]
+          specialty_ar: string
+          specialty_fr: string | null
+          student_number: string
+          thesis_title_ar: string
+          thesis_title_fr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birthplace_ar: string
+          birthplace_fr?: string | null
+          branch_ar: string
+          branch_fr?: string | null
+          certificate_date?: string
+          created_at?: string | null
+          date_of_birth: string
+          defense_date: string
+          field_ar: string
+          field_fr?: string | null
+          full_name_ar: string
+          full_name_fr?: string | null
+          id?: string
+          jury_members_ar: string
+          jury_members_fr?: string | null
+          jury_president_ar: string
+          jury_president_fr?: string | null
+          mention?: Database["public"]["Enums"]["mention_type"]
+          specialty_ar: string
+          specialty_fr?: string | null
+          student_number: string
+          thesis_title_ar: string
+          thesis_title_fr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birthplace_ar?: string
+          birthplace_fr?: string | null
+          branch_ar?: string
+          branch_fr?: string | null
+          certificate_date?: string
+          created_at?: string | null
+          date_of_birth?: string
+          defense_date?: string
+          field_ar?: string
+          field_fr?: string | null
+          full_name_ar?: string
+          full_name_fr?: string | null
+          id?: string
+          jury_members_ar?: string
+          jury_members_fr?: string | null
+          jury_president_ar?: string
+          jury_president_fr?: string | null
+          mention?: Database["public"]["Enums"]["mention_type"]
+          specialty_ar?: string
+          specialty_fr?: string | null
+          student_number?: string
+          thesis_title_ar?: string
+          thesis_title_fr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      phd_science_certificates: {
+        Row: {
+          birthplace_ar: string
+          birthplace_fr: string | null
+          branch_ar: string
+          branch_fr: string | null
+          certificate_date: string
+          created_at: string | null
+          date_of_birth: string
+          defense_date: string
+          full_name_ar: string
+          full_name_fr: string | null
+          id: string
+          jury_members_ar: string
+          jury_members_fr: string | null
+          jury_president_ar: string
+          jury_president_fr: string | null
+          mention: Database["public"]["Enums"]["mention_type"]
+          specialty_ar: string
+          specialty_fr: string | null
+          student_number: string
+          thesis_title_ar: string
+          thesis_title_fr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birthplace_ar: string
+          birthplace_fr?: string | null
+          branch_ar: string
+          branch_fr?: string | null
+          certificate_date?: string
+          created_at?: string | null
+          date_of_birth: string
+          defense_date: string
+          full_name_ar: string
+          full_name_fr?: string | null
+          id?: string
+          jury_members_ar: string
+          jury_members_fr?: string | null
+          jury_president_ar: string
+          jury_president_fr?: string | null
+          mention?: Database["public"]["Enums"]["mention_type"]
+          specialty_ar: string
+          specialty_fr?: string | null
+          student_number: string
+          thesis_title_ar: string
+          thesis_title_fr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birthplace_ar?: string
+          birthplace_fr?: string | null
+          branch_ar?: string
+          branch_fr?: string | null
+          certificate_date?: string
+          created_at?: string | null
+          date_of_birth?: string
+          defense_date?: string
+          full_name_ar?: string
+          full_name_fr?: string | null
+          id?: string
+          jury_members_ar?: string
+          jury_members_fr?: string | null
+          jury_president_ar?: string
+          jury_president_fr?: string | null
+          mention?: Database["public"]["Enums"]["mention_type"]
+          specialty_ar?: string
+          specialty_fr?: string | null
+          student_number?: string
+          thesis_title_ar?: string
+          thesis_title_fr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      print_history: {
+        Row: {
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          id: string
+          printed_at: string | null
+          printed_by: string | null
+          student_ids: string[]
           template_id: string | null
         }
         Insert: {
-          certificate_number?: string | null
-          created_at?: string | null
-          file_path?: string | null
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
           id?: string
-          issued_date?: string | null
-          student_id: string
+          printed_at?: string | null
+          printed_by?: string | null
+          student_ids: string[]
           template_id?: string | null
         }
         Update: {
-          certificate_number?: string | null
-          created_at?: string | null
-          file_path?: string | null
+          certificate_type?: Database["public"]["Enums"]["certificate_type"]
           id?: string
-          issued_date?: string | null
-          student_id?: string
+          printed_at?: string | null
+          printed_by?: string | null
+          student_ids?: string[]
           template_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "certificates_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "certificates_template_id_fkey"
+            foreignKeyName: "print_history_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
-            referencedRelation: "templates"
+            referencedRelation: "certificate_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -110,127 +411,23 @@ export type Database = {
         }
         Relationships: []
       }
-      students: {
+      user_settings: {
         Row: {
-          created_at: string | null
-          email: string | null
-          first_name: string
-          gpa: number | null
           id: string
-          last_name: string
-          specialty: string | null
-          status: Database["public"]["Enums"]["student_status"] | null
-          student_id: string
+          setting_key: string
+          setting_value: Json | null
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          email?: string | null
-          first_name: string
-          gpa?: number | null
           id?: string
-          last_name: string
-          specialty?: string | null
-          status?: Database["public"]["Enums"]["student_status"] | null
-          student_id: string
+          setting_key: string
+          setting_value?: Json | null
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          email?: string | null
-          first_name?: string
-          gpa?: number | null
           id?: string
-          last_name?: string
-          specialty?: string | null
-          status?: Database["public"]["Enums"]["student_status"] | null
-          student_id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      template_fields: {
-        Row: {
-          created_at: string | null
-          field_key: string
-          field_name: string
-          field_type: string | null
-          font_color: string | null
-          font_name: string | null
-          font_size: number | null
-          id: string
-          position_x: number | null
-          position_y: number | null
-          template_id: string
-          text_align: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          field_key: string
-          field_name: string
-          field_type?: string | null
-          font_color?: string | null
-          font_name?: string | null
-          font_size?: number | null
-          id?: string
-          position_x?: number | null
-          position_y?: number | null
-          template_id: string
-          text_align?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          field_key?: string
-          field_name?: string
-          field_type?: string | null
-          font_color?: string | null
-          font_name?: string | null
-          font_size?: number | null
-          id?: string
-          position_x?: number | null
-          position_y?: number | null
-          template_id?: string
-          text_align?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "template_fields_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      templates: {
-        Row: {
-          background_image_url: string | null
-          certificate_type: Database["public"]["Enums"]["certificate_type"]
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          language: string | null
-          template_name: string
-          updated_at: string | null
-        }
-        Insert: {
-          background_image_url?: string | null
-          certificate_type: Database["public"]["Enums"]["certificate_type"]
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          language?: string | null
-          template_name: string
-          updated_at?: string | null
-        }
-        Update: {
-          background_image_url?: string | null
-          certificate_type?: Database["public"]["Enums"]["certificate_type"]
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          language?: string | null
-          template_name?: string
+          setting_key?: string
+          setting_value?: Json | null
           updated_at?: string | null
         }
         Relationships: []
@@ -253,16 +450,21 @@ export type Database = {
         | "certificate_printed"
         | "settings_updated"
         | "backup_created"
-      certificate_type:
-        | "bachelor"
-        | "master"
-        | "phd"
-        | "training"
-        | "excellence"
-        | "participation"
-        | "attendance"
-        | "achievement"
-      student_status: "active" | "graduated" | "suspended" | "transferred"
+      certificate_type: "phd_lmd" | "phd_science" | "master"
+      mention_type:
+        | "excellent"
+        | "very_good"
+        | "good"
+        | "fairly_good"
+        | "passable"
+      template_language:
+        | "ar"
+        | "fr"
+        | "en"
+        | "ar_fr"
+        | "ar_en"
+        | "fr_en"
+        | "ar_fr_en"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -401,17 +603,23 @@ export const Constants = {
         "settings_updated",
         "backup_created",
       ],
-      certificate_type: [
-        "bachelor",
-        "master",
-        "phd",
-        "training",
-        "excellence",
-        "participation",
-        "attendance",
-        "achievement",
+      certificate_type: ["phd_lmd", "phd_science", "master"],
+      mention_type: [
+        "excellent",
+        "very_good",
+        "good",
+        "fairly_good",
+        "passable",
       ],
-      student_status: ["active", "graduated", "suspended", "transferred"],
+      template_language: [
+        "ar",
+        "fr",
+        "en",
+        "ar_fr",
+        "ar_en",
+        "fr_en",
+        "ar_fr_en",
+      ],
     },
   },
 } as const

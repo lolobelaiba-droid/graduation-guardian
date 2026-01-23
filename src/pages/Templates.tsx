@@ -29,41 +29,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { 
-  useTemplatesWithFields, 
-  useToggleTemplateActive, 
+import {
+  useCertificateTemplates,
+  useUpdateTemplate,
   useDeleteTemplate,
+} from "@/hooks/useCertificates";
+import {
   certificateTypeLabels,
-  CertificateType 
-} from "@/hooks/useTemplates";
+  languageLabels,
+  type CertificateType,
+  type TemplateLanguage,
+} from "@/types/certificates";
 
 const typeColors: Record<CertificateType, string> = {
-  bachelor: "bg-primary/10 text-primary border-primary/20",
-  master: "bg-success/10 text-success border-success/20",
-  phd: "bg-warning/10 text-warning border-warning/20",
-  training: "bg-purple-100 text-purple-700 border-purple-200",
-  excellence: "bg-amber-100 text-amber-700 border-amber-200",
-  participation: "bg-cyan-100 text-cyan-700 border-cyan-200",
-  attendance: "bg-rose-100 text-rose-700 border-rose-200",
-  achievement: "bg-emerald-100 text-emerald-700 border-emerald-200",
-};
-
-const languageLabels: Record<string, string> = {
-  ar: "العربية",
-  en: "الإنجليزية",
-  both: "ثنائي اللغة",
+  phd_lmd: "bg-primary/10 text-primary border-primary/20",
+  phd_science: "bg-success/10 text-success border-success/20",
+  master: "bg-warning/10 text-warning border-warning/20",
 };
 
 export default function Templates() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
 
-  const { data: templates = [], isLoading, error } = useTemplatesWithFields();
-  const toggleActive = useToggleTemplateActive();
+  const { data: templates = [], isLoading, error } = useCertificateTemplates();
+  const updateTemplate = useUpdateTemplate();
   const deleteTemplate = useDeleteTemplate();
 
   const handleToggleActive = (id: string, currentStatus: boolean) => {
-    toggleActive.mutate({ id, is_active: !currentStatus });
+    updateTemplate.mutate({ id, is_active: !currentStatus });
   };
 
   const handleDeleteClick = (id: string) => {
@@ -107,6 +100,15 @@ export default function Templates() {
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : templates.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+          <FileText className="h-12 w-12 mb-4 opacity-50" />
+          <p>لا توجد قوالب حتى الآن</p>
+          <Button size="sm" className="mt-4 gap-2">
+            <Plus className="h-4 w-4" />
+            إنشاء قالب جديد
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -155,7 +157,7 @@ export default function Templates() {
                         </>
                       )}
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="gap-2 text-destructive"
                       onClick={() => handleDeleteClick(template.id)}
                     >
@@ -169,17 +171,17 @@ export default function Templates() {
               {/* Content */}
               <h3 className="text-lg font-semibold mb-2">{template.template_name}</h3>
               <div className="flex flex-wrap gap-2 mb-4">
-                <Badge variant="outline" className={typeColors[template.certificate_type]}>
-                  {certificateTypeLabels[template.certificate_type]}
+                <Badge variant="outline" className={typeColors[template.certificate_type as CertificateType]}>
+                  {certificateTypeLabels[template.certificate_type as CertificateType]?.ar || template.certificate_type}
                 </Badge>
                 <Badge variant="outline" className="bg-muted">
-                  {languageLabels[template.language] || template.language}
+                  {languageLabels[template.language as TemplateLanguage]?.ar || template.language}
                 </Badge>
               </div>
 
               {/* Meta */}
               <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border">
-                <span>{template.template_fields?.length || 0} حقل</span>
+                <span>{template.page_orientation === "portrait" ? "عمودي" : "أفقي"}</span>
                 <span>{new Date(template.created_at).toLocaleDateString("ar-SA")}</span>
               </div>
 
