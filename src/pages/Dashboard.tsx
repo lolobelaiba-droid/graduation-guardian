@@ -55,9 +55,9 @@ export default function Dashboard() {
           variant="orange"
         />
         <StatCard
-          title="متوسط المعدل"
-          value={isLoading ? "..." : stats?.averageGpa?.toFixed(2) || "0.00"}
-          subtitle="GPA"
+          title="القوالب النشطة"
+          value={isLoading ? "..." : 0}
+          subtitle="قالب"
           icon={TrendingUp}
           variant="purple"
         />

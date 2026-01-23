@@ -1,52 +1,39 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export interface DashboardStats {
-  totalStudents: number;
-  totalCertificates: number;
-  certificatesThisMonth: number;
-  averageGpa: number;
-}
-
 export function useDashboardStats() {
   return useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: async (): Promise<DashboardStats> => {
-      // Get total students
-      const { count: studentsCount } = await supabase
-        .from("students")
+    queryKey: ["dashboard_stats"],
+    queryFn: async () => {
+      // Get counts from all certificate tables
+      const [phdLmd, phdScience, master] = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
+        supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
+        supabase.from("master_certificates").select("*", { count: "exact", head: true }),
+      ]);
+
+      const totalStudents = (phdLmd.count || 0) + (phdScience.count || 0) + (master.count || 0);
+
+      // Get print history count
+      const { count: printCount } = await supabase
+        .from("print_history")
         .select("*", { count: "exact", head: true });
 
-      // Get total certificates
-      const { count: certificatesCount } = await supabase
-        .from("certificates")
-        .select("*", { count: "exact", head: true });
-
-      // Get certificates this month
+      // Get this month's prints
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
       const { count: monthlyCount } = await supabase
-        .from("certificates")
+        .from("print_history")
         .select("*", { count: "exact", head: true })
-        .gte("created_at", startOfMonth.toISOString());
-
-      // Get average GPA
-      const { data: gpaData } = await supabase
-        .from("students")
-        .select("gpa")
-        .not("gpa", "is", null);
-
-      const averageGpa = gpaData && gpaData.length > 0
-        ? gpaData.reduce((sum, s) => sum + (s.gpa || 0), 0) / gpaData.length
-        : 0;
+        .gte("printed_at", startOfMonth.toISOString());
 
       return {
-        totalStudents: studentsCount || 0,
-        totalCertificates: certificatesCount || 0,
+        totalStudents,
+        totalCertificates: printCount || 0,
         certificatesThisMonth: monthlyCount || 0,
-        averageGpa: Math.round(averageGpa * 100) / 100,
+        averageGpa: 0, // Not applicable in new schema
       };
     },
   });
@@ -54,25 +41,30 @@ export function useDashboardStats() {
 
 export function useSpecialtyDistribution() {
   return useQuery({
-    queryKey: ["specialty-distribution"],
+    queryKey: ["specialty_distribution"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("students")
-        .select("specialty");
+      // Get specialties from all certificate tables
+      const [phdLmd, phdScience, master] = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("specialty_ar"),
+        supabase.from("phd_science_certificates").select("specialty_ar"),
+        supabase.from("master_certificates").select("specialty_ar"),
+      ]);
 
-      if (error) throw error;
+      const allSpecialties = [
+        ...(phdLmd.data || []).map(s => s.specialty_ar),
+        ...(phdScience.data || []).map(s => s.specialty_ar),
+        ...(master.data || []).map(s => s.specialty_ar),
+      ];
 
-      // Count students per specialty
-      const distribution: Record<string, number> = {};
-      data?.forEach((student) => {
-        const specialty = student.specialty || "غير محدد";
-        distribution[specialty] = (distribution[specialty] || 0) + 1;
+      // Count by specialty
+      const counts: Record<string, number> = {};
+      allSpecialties.forEach(specialty => {
+        if (specialty) {
+          counts[specialty] = (counts[specialty] || 0) + 1;
+        }
       });
 
-      return Object.entries(distribution).map(([name, value]) => ({
-        name,
-        value,
-      }));
+      return Object.entries(counts).map(([name, value]) => ({ name, value }));
     },
   });
 }

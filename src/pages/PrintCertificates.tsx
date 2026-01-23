@@ -1,78 +1,175 @@
-import { useState } from "react";
-import {
-  Printer,
-  Download,
-  Eye,
-  Check,
-  FileText,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-
-interface Student {
-  id: string;
-  studentId: string;
-  name: string;
-  specialty: string;
-  gpa: number;
-}
-
-const students: Student[] = [
-  { id: "1", studentId: "STU001", name: "أحمد محمد", specialty: "هندسة الحاسوب", gpa: 3.85 },
-  { id: "2", studentId: "STU002", name: "فاطمة علي", specialty: "هندسة الحاسوب", gpa: 3.92 },
-  { id: "3", studentId: "STU003", name: "محمود حسن", specialty: "الهندسة المدنية", gpa: 3.45 },
-  { id: "4", studentId: "STU004", name: "عائشة خليل", specialty: "إدارة الأعمال", gpa: 3.78 },
-  { id: "5", studentId: "STU005", name: "خالد يوسف", specialty: "الهندسة الكهربائية", gpa: 3.65 },
-  { id: "6", studentId: "STU006", name: "نور محمود", specialty: "هندسة الحاسوب", gpa: 3.88 },
-  { id: "7", studentId: "STU007", name: "سارة أحمد", specialty: "الصيدلة", gpa: 3.72 },
-  { id: "8", studentId: "STU008", name: "علي إبراهيم", specialty: "القانون", gpa: 3.51 },
-  { id: "9", studentId: "STU009", name: "هند سعد", specialty: "الطب البشري", gpa: 3.95 },
-  { id: "10", studentId: "STU010", name: "إبراهيم فارس", specialty: "الهندسة المعمارية", gpa: 3.68 },
-];
-
-const templates = [
-  { id: "1", name: "شهادة التخرج الجامعية" },
-  { id: "2", name: "شهادة الدراسات العليا" },
-  { id: "3", name: "شهادة الدكتوراه" },
-  { id: "4", name: "شهادة الدورة التدريبية" },
-  { id: "5", name: "شهادة التميز" },
-];
+  useCertificateTemplates,
+  useTemplateFields,
+  useUpdateTemplateField,
+  usePhdLmdCertificates,
+  usePhdScienceCertificates,
+  useMasterCertificates,
+} from "@/hooks/useCertificates";
+import { useSaveSetting, useUserSettings } from "@/hooks/useUserSettings";
+import {
+  certificateTypeLabels,
+  languageLabels,
+  mentionLabels,
+  type CertificateType,
+  type TemplateLanguage,
+  type MentionType,
+} from "@/types/certificates";
+import { CertificatePreview } from "@/components/print/CertificatePreview";
+import { AddStudentDialog } from "@/components/print/AddStudentDialog";
+import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
+import { generatePDF } from "@/lib/pdfGenerator";
 
 export default function PrintCertificates() {
-  const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
+  const [selectedLanguage, setSelectedLanguage] = useState<TemplateLanguage>("ar");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [stepSize, setStepSize] = useState<number>(1);
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
+  const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
 
-  const toggleStudent = (id: string) => {
-    setSelectedStudents((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-  };
+  // Data hooks
+  const { data: templates = [], isLoading: loadingTemplates } = useCertificateTemplates();
+  const { data: templateFields = [], isLoading: loadingFields } = useTemplateFields(selectedTemplateId);
+  const { data: phdLmdData = [] } = usePhdLmdCertificates();
+  const { data: phdScienceData = [] } = usePhdScienceCertificates();
+  const { data: masterData = [] } = useMasterCertificates();
+  const { data: savedSettings } = useUserSettings();
+  
+  const updateField = useUpdateTemplateField();
+  const saveSetting = useSaveSetting();
 
-  const toggleAll = () => {
-    if (selectedStudents.length === students.length) {
-      setSelectedStudents([]);
-    } else {
-      setSelectedStudents(students.map((s) => s.id));
+  // Get current students based on type
+  const getCurrentStudents = () => {
+    switch (selectedType) {
+      case "phd_lmd": return phdLmdData;
+      case "phd_science": return phdScienceData;
+      case "master": return masterData;
     }
   };
 
-  const selectedStudent = students.find((s) => s.id === selectedStudents[0]);
+  const currentStudents = getCurrentStudents();
+
+  // Find matching template
+  useEffect(() => {
+    const matchingTemplate = templates.find(
+      t => t.certificate_type === selectedType && t.language === selectedLanguage && t.is_active
+    );
+    if (matchingTemplate) {
+      setSelectedTemplateId(matchingTemplate.id);
+    } else {
+      setSelectedTemplateId(null);
+    }
+  }, [selectedType, selectedLanguage, templates]);
+
+  // Load saved settings
+  useEffect(() => {
+    if (savedSettings) {
+      if (savedSettings.selectedCertificateType) {
+        setSelectedType(savedSettings.selectedCertificateType);
+      }
+      if (savedSettings.selectedLanguage) {
+        setSelectedLanguage(savedSettings.selectedLanguage);
+      }
+    }
+  }, [savedSettings]);
+
+  // Auto-save settings
+  useEffect(() => {
+    saveSetting.mutate({ key: 'selectedCertificateType', value: selectedType });
+  }, [selectedType]);
+
+  useEffect(() => {
+    saveSetting.mutate({ key: 'selectedLanguage', value: selectedLanguage });
+  }, [selectedLanguage]);
+
+  // Set preview student
+  useEffect(() => {
+    if (currentStudents.length > 0 && !previewStudentId) {
+      setPreviewStudentId(currentStudents[0].id);
+    }
+  }, [currentStudents, previewStudentId]);
+
+  const handleMoveField = (direction: 'up' | 'down' | 'left' | 'right') => {
+    if (!selectedFieldId || !selectedTemplateId) return;
+
+    const field = templateFields.find(f => f.id === selectedFieldId);
+    if (!field) return;
+
+    let newX = field.position_x;
+    let newY = field.position_y;
+
+    switch (direction) {
+      case 'up': newY -= stepSize; break;
+      case 'down': newY += stepSize; break;
+      case 'left': newX += stepSize; break; // RTL
+      case 'right': newX -= stepSize; break; // RTL
+    }
+
+    updateField.mutate({
+      id: selectedFieldId,
+      template_id: selectedTemplateId,
+      position_x: newX,
+      position_y: newY,
+    });
+  };
+
+  const handleSelectStudent = (studentId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedStudentIds(prev => [...prev, studentId]);
+    } else {
+      setSelectedStudentIds(prev => prev.filter(id => id !== studentId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudentIds(currentStudents.map(s => s.id));
+    } else {
+      setSelectedStudentIds([]);
+    }
+  };
+
+  const handlePrint = async () => {
+    if (selectedStudentIds.length === 0) {
+      toast.error("يرجى اختيار طالب واحد على الأقل");
+      return;
+    }
+    if (!selectedTemplateId) {
+      toast.error("يرجى إنشاء قالب أولاً");
+      return;
+    }
+
+    const selectedStudents = currentStudents.filter(s => selectedStudentIds.includes(s.id));
+    const template = templates.find(t => t.id === selectedTemplateId);
+
+    if (!template) {
+      toast.error("القالب غير موجود");
+      return;
+    }
+
+    try {
+      await generatePDF(selectedStudents as unknown as Record<string, unknown>[], templateFields, template, selectedType);
+      toast.success(`تم إنشاء PDF لـ ${selectedStudents.length} طالب`);
+    } catch (error) {
+      toast.error("فشل في إنشاء PDF: " + (error as Error).message);
+    }
+  };
+
+  const previewStudent = currentStudents.find(s => s.id === previewStudentId);
 
   return (
     <div className="space-y-6">
@@ -81,179 +178,304 @@ export default function PrintCertificates() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">طباعة الشهادات</h1>
           <p className="text-muted-foreground mt-1">
-            اختر القالب والطلاب لإنشاء الشهادات
+            معاينة وطباعة شهادات الطلاب
           </p>
         </div>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsCreateTemplateOpen(true)}>
+            <Plus className="h-4 w-4" />
+            إنشاء قالب
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsAddStudentOpen(true)}>
+            <Plus className="h-4 w-4" />
+            إضافة طالب
+          </Button>
+          <Button size="sm" className="gap-2" onClick={handlePrint} disabled={selectedStudentIds.length === 0}>
+            <Printer className="h-4 w-4" />
+            طباعة ({selectedStudentIds.length})
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Selection */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Template Selection */}
-          <div className="bg-card rounded-2xl shadow-card p-6">
-            <h3 className="text-lg font-semibold mb-4">اختيار القالب</h3>
-            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="اختر قالب الشهادة..." />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* Type and Language Selection */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>نوع الشهادة</Label>
+              <Select value={selectedType} onValueChange={(v) => setSelectedType(v as CertificateType)}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(certificateTypeLabels).map(([key, labels]) => (
+                    <SelectItem key={key} value={key}>
+                      {labels.ar}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>لغة القالب</Label>
+              <Select value={selectedLanguage} onValueChange={(v) => setSelectedLanguage(v as TemplateLanguage)}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(languageLabels).map(([key, labels]) => (
+                    <SelectItem key={key} value={key}>
+                      {labels.ar}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>القالب المستخدم</Label>
+              <div className="mt-1">
+                {selectedTemplateId ? (
+                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                    {templates.find(t => t.id === selectedTemplateId)?.template_name || "قالب نشط"}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                    لا يوجد قالب - أنشئ واحداً
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Students Selection */}
-          <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold">اختيار الطلاب</h3>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground">
-                  تم اختيار {selectedStudents.length} طالب
-                </span>
-                <Button variant="outline" size="sm" onClick={toggleAll}>
-                  {selectedStudents.length === students.length
-                    ? "إلغاء الكل"
-                    : "تحديد الكل"}
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Students List */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>قائمة الطلاب</span>
+              <Badge variant="secondary">{currentStudents.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {currentStudents.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <p>لا يوجد طلاب</p>
+                <Button size="sm" className="mt-4" onClick={() => setIsAddStudentOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  إضافة طالب
                 </Button>
               </div>
-            </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedStudents.length === students.length}
-                        onCheckedChange={toggleAll}
-                      />
-                    </TableHead>
-                    <TableHead className="text-right font-semibold">رقم الطالب</TableHead>
-                    <TableHead className="text-right font-semibold">الاسم</TableHead>
-                    <TableHead className="text-right font-semibold">التخصص</TableHead>
-                    <TableHead className="text-right font-semibold">المعدل</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student, index) => (
-                    <TableRow
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Checkbox
+                    checked={selectedStudentIds.length === currentStudents.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <span className="text-sm font-medium">تحديد الكل</span>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto space-y-2">
+                  {currentStudents.map((student) => (
+                    <div
                       key={student.id}
-                      className={cn(
-                        "cursor-pointer transition-colors animate-fade-in",
-                        selectedStudents.includes(student.id)
-                          ? "bg-primary/5"
-                          : "hover:bg-muted/30"
-                      )}
-                      style={{ animationDelay: `${index * 30}ms` }}
-                      onClick={() => toggleStudent(student.id)}
+                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                        previewStudentId === student.id ? 'bg-primary/10' : 'hover:bg-muted'
+                      }`}
+                      onClick={() => setPreviewStudentId(student.id)}
                     >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedStudents.includes(student.id)}
-                          onCheckedChange={() => toggleStudent(student.id)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {student.studentId}
-                      </TableCell>
-                      <TableCell className="font-medium">{student.name}</TableCell>
-                      <TableCell>{student.specialty}</TableCell>
-                      <TableCell className="font-semibold">{student.gpa.toFixed(2)}</TableCell>
-                    </TableRow>
+                      <Checkbox
+                        checked={selectedStudentIds.includes(student.id)}
+                        onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{student.full_name_ar}</p>
+                        <p className="text-xs text-muted-foreground">{student.student_number}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {mentionLabels[student.mention as MentionType]?.ar || student.mention}
+                      </Badge>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Right Column - Preview & Actions */}
-        <div className="space-y-6">
-          {/* Preview Card */}
-          <div className="bg-card rounded-2xl shadow-card p-6">
-            <h3 className="text-lg font-semibold mb-4">معاينة الشهادة</h3>
-            <div className="aspect-[3/4] bg-muted rounded-xl flex items-center justify-center border-2 border-dashed border-border">
-              {selectedTemplate && selectedStudent ? (
-                <div className="text-center p-6">
-                  <FileText className="h-16 w-16 text-primary mx-auto mb-4" />
-                  <p className="font-medium">{selectedStudent.name}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {templates.find((t) => t.id === selectedTemplate)?.name}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">اختر قالب وطالب للمعاينة</p>
-                </div>
+        {/* Preview */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                معاينة الشهادة
+              </span>
+              {previewStudent && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {previewStudent.full_name_ar}
+                </span>
               )}
-            </div>
-          </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">المعاينة</TabsTrigger>
+                <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
+              </TabsList>
 
-          {/* Actions */}
-          <div className="bg-card rounded-2xl shadow-card p-6 space-y-4">
-            <h3 className="text-lg font-semibold">الإجراءات</h3>
-            <Button
-              className="w-full gap-2"
-              disabled={!selectedTemplate || selectedStudents.length === 0}
-            >
-              <Eye className="h-4 w-4" />
-              معاينة PDF
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              disabled={!selectedTemplate || selectedStudents.length === 0}
-            >
-              <Download className="h-4 w-4" />
-              تنزيل PDF
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-full gap-2"
-              disabled={!selectedTemplate || selectedStudents.length === 0}
-            >
-              <Printer className="h-4 w-4" />
-              طباعة مباشرة
-            </Button>
-          </div>
+              <TabsContent value="preview">
+                {loadingTemplates || loadingFields ? (
+                  <div className="flex items-center justify-center h-[500px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : !selectedTemplateId ? (
+                  <div className="flex flex-col items-center justify-center h-[500px] text-muted-foreground">
+                    <Settings2 className="h-12 w-12 mb-4 opacity-50" />
+                    <p>لا يوجد قالب لهذا النوع واللغة</p>
+                    <Button size="sm" className="mt-4" onClick={() => setIsCreateTemplateOpen(true)}>
+                      إنشاء قالب
+                    </Button>
+                  </div>
+                ) : previewStudent ? (
+                  <CertificatePreview
+                    student={previewStudent as unknown as Record<string, unknown>}
+                    fields={templateFields}
+                    template={templates.find(t => t.id === selectedTemplateId)!}
+                    certificateType={selectedType}
+                    selectedFieldId={selectedFieldId}
+                    onFieldClick={setSelectedFieldId}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-[500px] text-muted-foreground">
+                    اختر طالباً للمعاينة
+                  </div>
+                )}
+              </TabsContent>
 
-          {/* Print Options */}
-          <div className="bg-card rounded-2xl shadow-card p-6">
-            <h3 className="text-lg font-semibold mb-4">خيارات الطباعة</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">حجم الورق</label>
-                <Select defaultValue="a4">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="a4">A4</SelectItem>
-                    <SelectItem value="a3">A3</SelectItem>
-                    <SelectItem value="letter">Letter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">الاتجاه</label>
-                <Select defaultValue="portrait">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="portrait">عمودي</SelectItem>
-                    <SelectItem value="landscape">أفقي</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        </div>
+              <TabsContent value="fields">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Field List */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">الحقول المتاحة</h4>
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {templateFields.map((field) => (
+                        <div
+                          key={field.id}
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedFieldId === field.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                          onClick={() => setSelectedFieldId(field.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{field.field_name_ar}</span>
+                            <Badge variant="outline" className="text-xs">
+                              X: {field.position_x} | Y: {field.position_y}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {field.field_key} • {field.font_size}px
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Movement Controls */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">تحريك الحقل المحدد</h4>
+                    {selectedFieldId ? (
+                      <div className="space-y-4">
+                        <div>
+                          <Label>مقدار الحركة (مم)</Label>
+                          <Select value={stepSize.toString()} onValueChange={(v) => setStepSize(parseFloat(v))}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0.5">0.5 مم</SelectItem>
+                              <SelectItem value="1">1 مم</SelectItem>
+                              <SelectItem value="2">2 مم</SelectItem>
+                              <SelectItem value="5">5 مم</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleMoveField('up')}
+                            disabled={updateField.isPending}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleMoveField('right')}
+                              disabled={updateField.isPending}
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                            <div className="w-10 h-10 rounded-md border flex items-center justify-center text-sm font-mono">
+                              {stepSize}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleMoveField('left')}
+                              disabled={updateField.isPending}
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleMoveField('down')}
+                            disabled={updateField.isPending}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground text-center">
+                          استخدم الأسهم لتحريك الحقل. التغييرات تُحفظ تلقائياً.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                        اختر حقلاً من القائمة
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Dialogs */}
+      <AddStudentDialog
+        open={isAddStudentOpen}
+        onOpenChange={setIsAddStudentOpen}
+        certificateType={selectedType}
+      />
+      <CreateTemplateDialog
+        open={isCreateTemplateOpen}
+        onOpenChange={setIsCreateTemplateOpen}
+        defaultType={selectedType}
+        defaultLanguage={selectedLanguage}
+      />
     </div>
   );
 }
