@@ -160,7 +160,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
             {/* Basic Info */}
             <SectionHeader title="المعلومات الأساسية" />
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="student_number"
@@ -174,23 +174,53 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Mention Fields - Separated */}
+            <SectionHeader title="التقدير / Mention" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="mention"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>التقدير (عربي) *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر التقدير" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(mentionLabels).map(([key, labels]) => (
+                          <SelectItem key={key} value={key}>
+                            {labels.ar}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
                 name="mention"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>التقدير / Mention *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Mention</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Choisir la mention" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {Object.entries(mentionLabels).map(([key, labels]) => (
                           <SelectItem key={key} value={key}>
-                            {labels.ar} - {labels.fr}
+                            {labels.fr}
                           </SelectItem>
                         ))}
                       </SelectContent>
