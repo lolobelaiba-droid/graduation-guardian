@@ -87,8 +87,7 @@ export default function StudentDetailsDialog({
           {/* Academic Information */}
           <SectionTitle>المعلومات الأكاديمية</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-            <DetailRow label="الكلية بالعربية" value={student.faculty_ar} />
-            <DetailRow label="الكلية بالفرنسية" value={student.faculty_fr} isRtl={false} />
+            <DetailRow label="الكلية" value={student.faculty_ar} />
             {hasField && 'field_ar' in student && (
               <>
                 <DetailRow label="الميدان بالعربية" value={student.field_ar} />
