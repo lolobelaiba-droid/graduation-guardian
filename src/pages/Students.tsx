@@ -50,6 +50,7 @@ import type { CertificateType, MentionType, Certificate } from "@/types/certific
 import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
 import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
 import EditStudentDialog from "@/components/students/EditStudentDialog";
+import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 
 export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,6 +65,9 @@ export default function Students() {
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Certificate | null>(null);
+
+  // Add student dialog state
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceCertificates();
@@ -145,7 +149,7 @@ export default function Students() {
             <Download className="h-4 w-4" />
             تصدير Excel
           </Button>
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2" onClick={() => setAddDialogOpen(true)}>
             <Plus className="h-4 w-4" />
             إضافة طالب
           </Button>
@@ -277,6 +281,13 @@ export default function Students() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         student={studentToEdit}
+        certificateType={selectedCertType}
+      />
+
+      {/* Add Student Dialog */}
+      <AddStudentDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
         certificateType={selectedCertType}
       />
 
