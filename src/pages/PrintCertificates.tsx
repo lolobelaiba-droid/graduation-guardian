@@ -31,6 +31,7 @@ import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
 import { generatePDF } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
+import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -41,6 +42,7 @@ export default function PrintCertificates() {
   const [stepSize, setStepSize] = useState<number>(1);
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
+  const [isImportExcelOpen, setIsImportExcelOpen] = useState(false);
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
 
   // Data hooks
@@ -192,6 +194,10 @@ export default function PrintCertificates() {
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsAddStudentOpen(true)}>
             <Plus className="h-4 w-4" />
             إضافة طالب
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsImportExcelOpen(true)}>
+            <Plus className="h-4 w-4" />
+            استيراد Excel
           </Button>
           <Button size="sm" className="gap-2" onClick={handlePrint} disabled={selectedStudentIds.length === 0}>
             <Printer className="h-4 w-4" />
@@ -501,6 +507,11 @@ export default function PrintCertificates() {
         onOpenChange={setIsCreateTemplateOpen}
         defaultType={selectedType}
         defaultLanguage={selectedLanguage}
+      />
+      <ImportExcelDialog
+        open={isImportExcelOpen}
+        onOpenChange={setIsImportExcelOpen}
+        certificateType={selectedType}
       />
     </div>
   );
