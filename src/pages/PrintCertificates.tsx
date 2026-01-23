@@ -12,6 +12,7 @@ import {
   useCertificateTemplates,
   useTemplateFields,
   useUpdateTemplateField,
+  useUpdateTemplate,
   usePhdLmdCertificates,
   usePhdScienceCertificates,
   useMasterCertificates,
@@ -29,6 +30,7 @@ import { CertificatePreview } from "@/components/print/CertificatePreview";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
 import { generatePDF } from "@/lib/pdfGenerator";
+import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -50,6 +52,7 @@ export default function PrintCertificates() {
   const { data: savedSettings } = useUserSettings();
   
   const updateField = useUpdateTemplateField();
+  const updateTemplate = useUpdateTemplate();
   const saveSetting = useSaveSetting();
 
   // Get current students based on type
@@ -324,6 +327,7 @@ export default function PrintCertificates() {
             <TabsList className="mb-4">
               <TabsTrigger value="preview">المعاينة</TabsTrigger>
               <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
+              <TabsTrigger value="background">صورة الخلفية</TabsTrigger>
             </TabsList>
 
             <TabsContent value="preview" className="min-h-[calc(100vh-400px)]">
@@ -456,6 +460,30 @@ export default function PrintCertificates() {
                     )}
                   </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="background">
+              {selectedTemplateId ? (
+                <div className="max-w-md">
+                  <BackgroundUpload
+                    templateId={selectedTemplateId}
+                    currentImageUrl={templates.find(t => t.id === selectedTemplateId)?.background_image_url || null}
+                    onUploadComplete={(url) => {
+                      updateTemplate.mutate({
+                        id: selectedTemplateId,
+                        background_image_url: url,
+                      });
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-4">
+                    ارفع صورة الشهادة الفارغة (بدون بيانات الطالب) لاستخدامها كخلفية عند الطباعة.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                  يرجى اختيار قالب أولاً
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>

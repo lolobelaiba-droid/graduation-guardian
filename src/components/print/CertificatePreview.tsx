@@ -62,17 +62,28 @@ export function CertificatePreview({
           direction: isRtlLanguage ? 'rtl' : 'ltr',
         }}
       >
-        {/* Grid overlay for positioning help */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-10"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
-              linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
-            `,
-            backgroundSize: `${10 * SCALE}px ${10 * SCALE}px`,
-          }}
-        />
+        {/* Background image */}
+        {template.background_image_url && (
+          <img
+            src={template.background_image_url}
+            alt="خلفية الشهادة"
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+          />
+        )}
+
+        {/* Grid overlay for positioning help (only when no background) */}
+        {!template.background_image_url && (
+          <div
+            className="absolute inset-0 pointer-events-none opacity-10"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+                linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
+              `,
+              backgroundSize: `${10 * SCALE}px ${10 * SCALE}px`,
+            }}
+          />
+        )}
 
         {/* Fields */}
         {fields.filter(f => f.is_visible).map((field) => (
