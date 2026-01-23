@@ -12,6 +12,7 @@ import {
   useCertificateTemplates,
   useTemplateFields,
   useUpdateTemplateField,
+  useDeleteTemplateField,
   useUpdateTemplate,
   usePhdLmdCertificates,
   usePhdScienceCertificates,
@@ -32,6 +33,7 @@ import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
 import { generatePDF } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
+import { AddFieldDialog } from "@/components/print/AddFieldDialog";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -43,6 +45,7 @@ export default function PrintCertificates() {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
   const [isImportExcelOpen, setIsImportExcelOpen] = useState(false);
+  const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
 
   // Data hooks
@@ -54,6 +57,7 @@ export default function PrintCertificates() {
   const { data: savedSettings } = useUserSettings();
   
   const updateField = useUpdateTemplateField();
+  const deleteField = useDeleteTemplateField();
   const updateTemplate = useUpdateTemplate();
   const saveSetting = useSaveSetting();
 
@@ -386,6 +390,20 @@ export default function PrintCertificates() {
                       is_visible: visible,
                     });
                   }}
+                  onDeleteField={(fieldId) => {
+                    if (!selectedTemplateId) return;
+                    deleteField.mutate(
+                      { id: fieldId, template_id: selectedTemplateId },
+                      {
+                        onSuccess: () => {
+                          if (selectedFieldId === fieldId) {
+                            setSelectedFieldId(null);
+                          }
+                        },
+                      }
+                    );
+                  }}
+                  onAddField={() => setIsAddFieldOpen(true)}
                   stepSize={stepSize}
                   isMoving={updateField.isPending}
                 />
@@ -544,6 +562,15 @@ export default function PrintCertificates() {
         onOpenChange={setIsImportExcelOpen}
         certificateType={selectedType}
       />
+      {selectedTemplateId && (
+        <AddFieldDialog
+          open={isAddFieldOpen}
+          onOpenChange={setIsAddFieldOpen}
+          templateId={selectedTemplateId}
+          certificateType={selectedType}
+          existingFieldKeys={templateFields.map(f => f.field_key)}
+        />
+      )}
     </div>
   );
 }
