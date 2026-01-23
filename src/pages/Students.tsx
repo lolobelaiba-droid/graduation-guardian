@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import {
   Search,
   Plus,
@@ -51,6 +52,8 @@ import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
 import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
 import EditStudentDialog from "@/components/students/EditStudentDialog";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
+import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
+import { toast } from "sonner";
 
 export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,6 +71,9 @@ export default function Students() {
 
   // Add student dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Import dialog state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceCertificates();
@@ -130,6 +136,45 @@ export default function Students() {
     setEditDialogOpen(true);
   };
 
+  const handleExportExcel = () => {
+    if (currentData.length === 0) {
+      toast.error("لا توجد بيانات للتصدير");
+      return;
+    }
+
+    const exportData = currentData.map((student) => ({
+      "رقم الطالب": student.student_number,
+      "الاسم بالعربية": student.full_name_ar,
+      "الاسم بالفرنسية": student.full_name_fr || "",
+      "تاريخ الميلاد": student.date_of_birth,
+      "مكان الميلاد بالعربية": student.birthplace_ar,
+      "مكان الميلاد بالفرنسية": student.birthplace_fr || "",
+      "الشعبة بالعربية": student.branch_ar,
+      "الشعبة بالفرنسية": student.branch_fr || "",
+      "التخصص بالعربية": student.specialty_ar,
+      "التخصص بالفرنسية": student.specialty_fr || "",
+      "تاريخ المناقشة": student.defense_date,
+      "التقدير": mentionLabels[student.mention as MentionType]?.ar || student.mention,
+      ...((selectedCertType === "phd_lmd" || selectedCertType === "phd_science") && {
+        "عنوان الأطروحة": (student as any).thesis_title_ar || "",
+        "رئيس اللجنة": (student as any).jury_president_ar || "",
+        "أعضاء اللجنة": (student as any).jury_members_ar || "",
+      }),
+      ...(selectedCertType === "phd_lmd" && {
+        "الميدان بالعربية": (student as any).field_ar || "",
+        "الميدان بالفرنسية": (student as any).field_fr || "",
+      }),
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "الطلاب");
+    
+    const fileName = `طلاب_${certificateTypeLabels[selectedCertType].ar}_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    toast.success(`تم تصدير ${currentData.length} طالب`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -141,11 +186,11 @@ export default function Students() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4" />
             استيراد Excel
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
             <Download className="h-4 w-4" />
             تصدير Excel
           </Button>
@@ -291,7 +336,12 @@ export default function Students() {
         certificateType={selectedCertType}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Import Excel Dialog */}
+      <ImportExcelDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        certificateType={selectedCertType}
+      />
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
