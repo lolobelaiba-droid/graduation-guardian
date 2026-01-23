@@ -62,6 +62,7 @@ export interface CertificateTemplate {
   page_orientation: string;
   page_size: string;
   is_active: boolean;
+  background_image_url: string | null;
   created_at: string;
   updated_at: string;
 }

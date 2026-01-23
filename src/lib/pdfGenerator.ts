@@ -9,6 +9,23 @@ const A4_HEIGHT = 297;
 // Points per mm
 const MM_TO_PT = 72 / 25.4;
 
+// Load image as base64
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Failed to load image:', error);
+    return null;
+  }
+}
+
 export async function generatePDF(
   students: Record<string, unknown>[],
   fields: TemplateField[],
@@ -26,10 +43,21 @@ export async function generatePDF(
     putOnlyUsedFonts: true,
   });
 
+  // Load background image if exists
+  let backgroundBase64: string | null = null;
+  if (template.background_image_url) {
+    backgroundBase64 = await loadImageAsBase64(template.background_image_url);
+  }
+
   // Process each student
   students.forEach((student, index) => {
     if (index > 0) {
       doc.addPage();
+    }
+
+    // Add background image
+    if (backgroundBase64) {
+      doc.addImage(backgroundBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
     }
 
     // Add visible fields
@@ -95,6 +123,8 @@ export async function generateSinglePDF(
   certificateType: CertificateType
 ): Promise<Blob> {
   const isLandscape = template.page_orientation === 'landscape';
+  const pageWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
+  const pageHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
 
   const doc = new jsPDF({
     orientation: isLandscape ? 'landscape' : 'portrait',
@@ -102,6 +132,14 @@ export async function generateSinglePDF(
     format: 'a4',
     putOnlyUsedFonts: true,
   });
+
+  // Load background image if exists
+  if (template.background_image_url) {
+    const backgroundBase64 = await loadImageAsBase64(template.background_image_url);
+    if (backgroundBase64) {
+      doc.addImage(backgroundBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
+    }
+  }
 
   // Add visible fields
   fields.filter(f => f.is_visible).forEach((field) => {
