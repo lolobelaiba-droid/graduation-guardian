@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff } from "lucide-react";
+import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2 } from "lucide-react";
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // A4 dimensions in mm
 const A4_WIDTH_MM = 210;
@@ -28,6 +38,8 @@ interface CertificatePreviewProps {
   onFieldClick: (fieldId: string) => void;
   onFieldMove?: (fieldId: string, direction: 'up' | 'down' | 'left' | 'right', stepSize: number) => void;
   onToggleFieldVisibility?: (fieldId: string, visible: boolean) => void;
+  onDeleteField?: (fieldId: string) => void;
+  onAddField?: () => void;
   stepSize?: number;
   isMoving?: boolean;
 }
@@ -41,11 +53,14 @@ export function CertificatePreview({
   onFieldClick,
   onFieldMove,
   onToggleFieldVisibility,
+  onDeleteField,
+  onAddField,
   stepSize = 1,
   isMoving = false,
 }: CertificatePreviewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
+  const [fieldToDelete, setFieldToDelete] = useState<TemplateField | null>(null);
 
   const isLandscape = template.page_orientation === 'landscape';
   const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
@@ -70,6 +85,13 @@ export function CertificatePreview({
   const isRtlLanguage = template.language.includes('ar');
   const selectedField = fields.find(f => f.id === selectedFieldId);
 
+  const handleDeleteConfirm = () => {
+    if (fieldToDelete && onDeleteField) {
+      onDeleteField(fieldToDelete.id);
+      setFieldToDelete(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -92,6 +114,13 @@ export function CertificatePreview({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {onAddField && (
+            <Button variant="outline" size="sm" onClick={onAddField}>
+              <Plus className="h-4 w-4 ml-1" />
+              إضافة حقل
+            </Button>
+          )}
         </div>
 
         {selectedField && (
@@ -250,32 +279,55 @@ export function CertificatePreview({
                   </div>
                 )}
 
-                {/* Visibility toggle */}
-                {showControls && isSelected && onToggleFieldVisibility && (
+                {/* Visibility and Delete controls */}
+                {showControls && isSelected && (
                   <div 
-                    className="absolute -top-8 -right-8 bg-background border rounded-lg shadow-lg p-1 z-20"
+                    className="absolute -top-8 -right-8 flex gap-1 bg-background border rounded-lg shadow-lg p-1 z-20"
                     style={{ direction: 'ltr' }}
                   >
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              onToggleFieldVisibility(field.id, !isVisible); 
-                            }}
-                          >
-                            {isVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {isVisible ? "إخفاء الحقل" : "إظهار الحقل"}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    {onToggleFieldVisibility && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                onToggleFieldVisibility(field.id, !isVisible); 
+                              }}
+                            >
+                              {isVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {isVisible ? "إخفاء الحقل" : "إظهار الحقل"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    
+                    {onDeleteField && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setFieldToDelete(field);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>حذف الحقل</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 )}
               </div>
@@ -305,9 +357,16 @@ export function CertificatePreview({
       {/* Field list panel */}
       {showControls && (
         <div className="bg-muted/30 rounded-lg p-4">
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            الحقول ({fields.length})
+          <h4 className="font-semibold mb-3 flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              الحقول ({fields.length})
+            </span>
+            {onAddField && (
+              <Button variant="ghost" size="sm" onClick={onAddField}>
+                <Plus className="h-4 w-4 ml-1" />
+                إضافة
+              </Button>
+            )}
           </h4>
           <div className="flex flex-wrap gap-2">
             {fields.map((field) => (
@@ -331,6 +390,24 @@ export function CertificatePreview({
           </div>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!fieldToDelete} onOpenChange={() => setFieldToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف الحقل</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف الحقل "{fieldToDelete?.field_name_ar}"؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
