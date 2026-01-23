@@ -5,8 +5,11 @@ import { SpecialtyChart } from "@/components/dashboard/SpecialtyChart";
 import { MonthlyChart } from "@/components/dashboard/MonthlyChart";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export default function Dashboard() {
+  const { data: stats, isLoading } = useDashboardStats();
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -29,7 +32,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="إجمالي الطلاب"
-          value={10}
+          value={isLoading ? "..." : stats?.totalStudents || 0}
           subtitle="طالب مسجل"
           icon={Users}
           trend={{ value: 12, isPositive: true }}
@@ -37,7 +40,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="الشهادات المطبوعة"
-          value={245}
+          value={isLoading ? "..." : stats?.totalCertificates || 0}
           subtitle="شهادة"
           icon={FileText}
           trend={{ value: 8, isPositive: true }}
@@ -45,7 +48,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="هذا الشهر"
-          value={38}
+          value={isLoading ? "..." : stats?.certificatesThisMonth || 0}
           subtitle="شهادة جديدة"
           icon={Printer}
           trend={{ value: 15, isPositive: true }}
@@ -53,7 +56,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="متوسط المعدل"
-          value="3.74"
+          value={isLoading ? "..." : stats?.averageGpa?.toFixed(2) || "0.00"}
           subtitle="GPA"
           icon={TrendingUp}
           variant="purple"

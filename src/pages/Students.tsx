@@ -8,7 +8,7 @@ import {
   Edit,
   Trash2,
   Eye,
-  Filter,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,66 +35,51 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useStudents, useDeleteStudent, StudentStatus } from "@/hooks/useStudents";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface Student {
-  id: string;
-  studentId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  specialty: string;
-  gpa: number;
-  status: "active" | "graduated" | "suspended";
-}
-
-const students: Student[] = [
-  { id: "1", studentId: "STU001", firstName: "أحمد", lastName: "محمد", email: "ahmed@university.edu", specialty: "هندسة الحاسوب", gpa: 3.85, status: "active" },
-  { id: "2", studentId: "STU002", firstName: "فاطمة", lastName: "علي", email: "fatima@university.edu", specialty: "هندسة الحاسوب", gpa: 3.92, status: "graduated" },
-  { id: "3", studentId: "STU003", firstName: "محمود", lastName: "حسن", email: "mahmoud@university.edu", specialty: "الهندسة المدنية", gpa: 3.45, status: "active" },
-  { id: "4", studentId: "STU004", firstName: "عائشة", lastName: "خليل", email: "aisha@university.edu", specialty: "إدارة الأعمال", gpa: 3.78, status: "active" },
-  { id: "5", studentId: "STU005", firstName: "خالد", lastName: "يوسف", email: "khaled@university.edu", specialty: "الهندسة الكهربائية", gpa: 3.65, status: "graduated" },
-  { id: "6", studentId: "STU006", firstName: "نور", lastName: "محمود", email: "noor@university.edu", specialty: "هندسة الحاسوب", gpa: 3.88, status: "active" },
-  { id: "7", studentId: "STU007", firstName: "سارة", lastName: "أحمد", email: "sara@university.edu", specialty: "الصيدلة", gpa: 3.72, status: "active" },
-  { id: "8", studentId: "STU008", firstName: "علي", lastName: "إبراهيم", email: "ali@university.edu", specialty: "القانون", gpa: 3.51, status: "suspended" },
-  { id: "9", studentId: "STU009", firstName: "هند", lastName: "سعد", email: "hend@university.edu", specialty: "الطب البشري", gpa: 3.95, status: "active" },
-  { id: "10", studentId: "STU010", firstName: "إبراهيم", lastName: "فارس", email: "ibrahim@university.edu", specialty: "الهندسة المعمارية", gpa: 3.68, status: "graduated" },
-];
-
-const statusStyles = {
+const statusStyles: Record<StudentStatus, string> = {
   active: "bg-success/10 text-success border-success/20",
   graduated: "bg-primary/10 text-primary border-primary/20",
   suspended: "bg-destructive/10 text-destructive border-destructive/20",
+  transferred: "bg-warning/10 text-warning border-warning/20",
 };
 
-const statusLabels = {
+const statusLabels: Record<StudentStatus, string> = {
   active: "نشط",
   graduated: "متخرج",
   suspended: "موقوف",
+  transferred: "منقول",
 };
-
-const specialties = [
-  "الكل",
-  "هندسة الحاسوب",
-  "الهندسة المدنية",
-  "إدارة الأعمال",
-  "الهندسة الكهربائية",
-  "الصيدلة",
-  "القانون",
-  "الطب البشري",
-  "الهندسة المعمارية",
-];
 
 export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("الكل");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+
+  const { data: students = [], isLoading, error } = useStudents();
+  const deleteStudent = useDeleteStudent();
+
+  // Get unique specialties from data
+  const specialties = ["الكل", ...new Set(students.map(s => s.specialty).filter(Boolean) as string[])];
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
-      student.firstName.includes(searchQuery) ||
-      student.lastName.includes(searchQuery) ||
-      student.studentId.includes(searchQuery) ||
-      student.email.includes(searchQuery);
+      student.first_name.includes(searchQuery) ||
+      student.last_name.includes(searchQuery) ||
+      student.student_id.includes(searchQuery) ||
+      (student.email?.includes(searchQuery) ?? false);
 
     const matchesSpecialty =
       selectedSpecialty === "الكل" || student.specialty === selectedSpecialty;
@@ -104,6 +89,27 @@ export default function Students() {
 
     return matchesSearch && matchesSpecialty && matchesStatus;
   });
+
+  const handleDeleteClick = (id: string) => {
+    setStudentToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (studentToDelete) {
+      deleteStudent.mutate(studentToDelete);
+      setDeleteDialogOpen(false);
+      setStudentToDelete(null);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">خطأ في تحميل البيانات: {error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -164,6 +170,7 @@ export default function Students() {
               <SelectItem value="active">نشط</SelectItem>
               <SelectItem value="graduated">متخرج</SelectItem>
               <SelectItem value="suspended">موقوف</SelectItem>
+              <SelectItem value="transferred">منقول</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -171,92 +178,124 @@ export default function Students() {
 
       {/* Table */}
       <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-right font-semibold">رقم الطالب</TableHead>
-                <TableHead className="text-right font-semibold">الاسم الكامل</TableHead>
-                <TableHead className="text-right font-semibold">البريد الإلكتروني</TableHead>
-                <TableHead className="text-right font-semibold">التخصص</TableHead>
-                <TableHead className="text-right font-semibold">المعدل</TableHead>
-                <TableHead className="text-right font-semibold">الحالة</TableHead>
-                <TableHead className="text-right font-semibold">الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStudents.map((student, index) => (
-                <TableRow
-                  key={student.id}
-                  className="hover:bg-muted/30 transition-colors animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <TableCell className="font-mono text-sm">{student.studentId}</TableCell>
-                  <TableCell className="font-medium">
-                    {student.firstName} {student.lastName}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {student.email}
-                  </TableCell>
-                  <TableCell>{student.specialty}</TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "font-semibold",
-                        student.gpa >= 3.7
-                          ? "text-success"
-                          : student.gpa >= 3.0
-                          ? "text-primary"
-                          : "text-warning"
-                      )}
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="text-right font-semibold">رقم الطالب</TableHead>
+                    <TableHead className="text-right font-semibold">الاسم الكامل</TableHead>
+                    <TableHead className="text-right font-semibold">البريد الإلكتروني</TableHead>
+                    <TableHead className="text-right font-semibold">التخصص</TableHead>
+                    <TableHead className="text-right font-semibold">المعدل</TableHead>
+                    <TableHead className="text-right font-semibold">الحالة</TableHead>
+                    <TableHead className="text-right font-semibold">الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.map((student, index) => (
+                    <TableRow
+                      key={student.id}
+                      className="hover:bg-muted/30 transition-colors animate-fade-in"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      {student.gpa.toFixed(2)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn("font-medium", statusStyles[student.status])}
-                    >
-                      {statusLabels[student.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem className="gap-2">
-                          <Eye className="h-4 w-4" />
-                          عرض التفاصيل
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2">
-                          <Edit className="h-4 w-4" />
-                          تعديل
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                          حذف
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                      <TableCell className="font-mono text-sm">{student.student_id}</TableCell>
+                      <TableCell className="font-medium">
+                        {student.first_name} {student.last_name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {student.email || "-"}
+                      </TableCell>
+                      <TableCell>{student.specialty || "-"}</TableCell>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            (student.gpa || 0) >= 3.7
+                              ? "text-success"
+                              : (student.gpa || 0) >= 3.0
+                              ? "text-primary"
+                              : "text-warning"
+                          )}
+                        >
+                          {student.gpa?.toFixed(2) || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={cn("font-medium", statusStyles[student.status])}
+                        >
+                          {statusLabels[student.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem className="gap-2">
+                              <Eye className="h-4 w-4" />
+                              عرض التفاصيل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2">
+                              <Edit className="h-4 w-4" />
+                              تعديل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="gap-2 text-destructive"
+                              onClick={() => handleDeleteClick(student.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-border flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            عرض {filteredStudents.length} من {students.length} طالب
-          </p>
-        </div>
+            {/* Footer */}
+            <div className="p-4 border-t border-border flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                عرض {filteredStudents.length} من {students.length} طالب
+              </p>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف هذا الطالب نهائياً ولا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
