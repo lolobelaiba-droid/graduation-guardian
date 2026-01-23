@@ -35,7 +35,6 @@ import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
 import { FieldPropertiesEditor } from "@/components/print/FieldPropertiesEditor";
-import { FontUploadManager } from "@/components/print/FontUploadManager";
 import type { TemplateField } from "@/types/certificates";
 
 export default function PrintCertificates() {
@@ -340,7 +339,6 @@ export default function PrintCertificates() {
             <TabsList className="mb-4">
               <TabsTrigger value="preview">المعاينة</TabsTrigger>
               <TabsTrigger value="properties">خصائص الخط</TabsTrigger>
-              <TabsTrigger value="fonts">الخطوط</TabsTrigger>
               <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
               <TabsTrigger value="background">صورة الخلفية</TabsTrigger>
             </TabsList>
@@ -492,16 +490,6 @@ export default function PrintCertificates() {
                     ))}
                   </div>
                 </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="fonts">
-              <div className="max-w-2xl">
-                <FontUploadManager />
-                <p className="text-xs text-muted-foreground mt-4">
-                  ارفع خطوط مخصصة (TTF, OTF, WOFF, WOFF2) لاستخدامها في الشهادات. 
-                  الخطوط المرفوعة ستظهر في قائمة الخطوط عند تعديل خصائص الحقول.
-                </p>
               </div>
             </TabsContent>
 
