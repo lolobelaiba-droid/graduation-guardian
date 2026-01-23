@@ -3,6 +3,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { SpecialtyChart } from "@/components/dashboard/SpecialtyChart";
 import { MonthlyChart } from "@/components/dashboard/MonthlyChart";
+import { ThemeSelector } from "@/components/dashboard/ThemeSelector";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -20,12 +21,15 @@ export default function Dashboard() {
             مرحباً بك في نظام إدارة الشهادات الجامعية
           </p>
         </div>
-        <Link to="/print">
-          <Button size="lg" className="gap-2 shadow-lg">
-            <Printer className="h-5 w-5" />
-            طباعة شهادة جديدة
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeSelector />
+          <Link to="/print">
+            <Button size="lg" className="gap-2 shadow-lg">
+              <Printer className="h-5 w-5" />
+              طباعة شهادة جديدة
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}

@@ -10,7 +10,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
 
 @layer base {
-  :root {
+  :root,
+  .theme-blue {
     /* University Certificate System - Professional Blue Theme */
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
@@ -71,6 +72,196 @@
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
+  /* Emerald Theme */
+  .theme-emerald {
+    --background: 160 20% 98%;
+    --foreground: 158 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 158 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 158 47% 11%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 158 64% 12%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 160 30% 96%;
+    --muted-foreground: 160 16% 40%;
+
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    --ring: 160 84% 39%;
+
+    --sidebar-background: 158 64% 12%;
+    --sidebar-foreground: 160 40% 98%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 158 50% 18%;
+    --sidebar-accent-foreground: 160 40% 98%;
+    --sidebar-border: 158 50% 18%;
+    --sidebar-ring: 160 84% 39%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(158 64% 12%) 100%);
+    --gradient-stat-blue: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(160 84% 30%) 100%);
+  }
+
+  /* Rose Theme */
+  .theme-rose {
+    --background: 346 20% 98%;
+    --foreground: 346 47% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 346 47% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 346 47% 15%;
+
+    --primary: 346 77% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 346 47% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 346 30% 96%;
+    --muted-foreground: 346 16% 40%;
+
+    --accent: 346 77% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --ring: 346 77% 50%;
+
+    --sidebar-background: 346 47% 15%;
+    --sidebar-foreground: 346 40% 98%;
+    --sidebar-primary: 346 77% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 346 40% 22%;
+    --sidebar-accent-foreground: 346 40% 98%;
+    --sidebar-border: 346 40% 22%;
+    --sidebar-ring: 346 77% 50%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(346 77% 50%) 0%, hsl(346 47% 15%) 100%);
+    --gradient-stat-blue: linear-gradient(135deg, hsl(346 77% 50%) 0%, hsl(346 77% 40%) 100%);
+  }
+
+  /* Amber Theme */
+  .theme-amber {
+    --background: 38 30% 98%;
+    --foreground: 28 47% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 28 47% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 28 47% 15%;
+
+    --primary: 38 92% 50%;
+    --primary-foreground: 28 47% 10%;
+
+    --secondary: 28 47% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 38 30% 96%;
+    --muted-foreground: 38 16% 40%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 28 47% 10%;
+
+    --ring: 38 92% 50%;
+
+    --sidebar-background: 28 47% 15%;
+    --sidebar-foreground: 38 40% 98%;
+    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary-foreground: 28 47% 10%;
+    --sidebar-accent: 28 40% 22%;
+    --sidebar-accent-foreground: 38 40% 98%;
+    --sidebar-border: 28 40% 22%;
+    --sidebar-ring: 38 92% 50%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(28 47% 15%) 100%);
+    --gradient-stat-blue: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(38 92% 40%) 100%);
+  }
+
+  /* Violet Theme */
+  .theme-violet {
+    --background: 262 20% 98%;
+    --foreground: 262 47% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 262 47% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 262 47% 12%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 262 47% 12%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 262 30% 96%;
+    --muted-foreground: 262 16% 45%;
+
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --ring: 262 83% 58%;
+
+    --sidebar-background: 262 47% 12%;
+    --sidebar-foreground: 262 40% 98%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 262 40% 20%;
+    --sidebar-accent-foreground: 262 40% 98%;
+    --sidebar-border: 262 40% 20%;
+    --sidebar-ring: 262 83% 58%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(262 47% 12%) 100%);
+    --gradient-stat-blue: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(262 83% 48%) 100%);
+  }
+
+  /* Slate Theme */
+  .theme-slate {
+    --background: 215 20% 98%;
+    --foreground: 215 28% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    --primary: 215 25% 27%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 215 20% 96%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 215 25% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --ring: 215 25% 27%;
+
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 215 20% 98%;
+    --sidebar-primary: 215 25% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 25%;
+    --sidebar-accent-foreground: 215 20% 98%;
+    --sidebar-border: 215 25% 25%;
+    --sidebar-ring: 215 25% 40%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(215 25% 40%) 0%, hsl(215 28% 17%) 100%);
+    --gradient-stat-blue: linear-gradient(135deg, hsl(215 25% 40%) 0%, hsl(215 25% 30%) 100%);
   }
 
   .dark {
