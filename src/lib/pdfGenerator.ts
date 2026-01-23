@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from '@/types/certificates';
 import { mentionLabels } from '@/types/certificates';
-import { arabicFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
+import { allFonts, loadFontFile, arrayBufferToBase64, getFontByName, type FontConfig } from './arabicFonts';
 
 // A4 dimensions in mm
 const A4_WIDTH = 210;
@@ -28,15 +28,18 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
 const loadedFontsForPDF = new Set<string>();
 
 /**
- * Load and register Arabic fonts in jsPDF document
+ * Load and register fonts in jsPDF document
  */
-async function registerArabicFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
+async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
   const uniqueFonts = [...new Set(fontsNeeded)];
   
   for (const fontFamily of uniqueFonts) {
     // Find matching fonts (normal and bold variants)
-    const matchingFonts = arabicFonts.filter(f => 
-      f.family === fontFamily || f.name === fontFamily || f.displayName === fontFamily
+    const matchingFonts = allFonts.filter(f => 
+      f.family === fontFamily || 
+      f.name === fontFamily || 
+      f.displayName === fontFamily ||
+      f.family.toLowerCase() === fontFamily.toLowerCase()
     );
     
     if (matchingFonts.length === 0) {
@@ -45,10 +48,20 @@ async function registerArabicFonts(doc: jsPDF, fontsNeeded: string[]): Promise<v
     }
 
     for (const font of matchingFonts) {
+      // Skip system fonts - they're built into jsPDF
+      if (font.isSystem) {
+        continue;
+      }
+
       const fontKey = `${font.family}-${font.style}`;
       
       // Skip if already loaded
       if (loadedFontsForPDF.has(fontKey)) {
+        continue;
+      }
+
+      // Skip if no URL (system font)
+      if (!font.url) {
         continue;
       }
 
@@ -118,8 +131,8 @@ export async function generatePDF(
     .filter(f => f.is_visible && f.font_name)
     .map(f => f.font_name);
 
-  // Register Arabic fonts
-  await registerArabicFonts(doc, fontsNeeded);
+  // Register fonts
+  await registerFonts(doc, fontsNeeded);
 
   // Load background image if exists
   let backgroundBase64: string | null = null;
@@ -210,8 +223,8 @@ export async function generateSinglePDF(
     .filter(f => f.is_visible && f.font_name)
     .map(f => f.font_name);
 
-  // Register Arabic fonts
-  await registerArabicFonts(doc, fontsNeeded);
+  // Register fonts
+  await registerFonts(doc, fontsNeeded);
 
   // Load background image if exists
   if (template.background_image_url) {
