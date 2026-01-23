@@ -382,6 +382,15 @@ export default function PrintCertificates() {
                       position_y: newY,
                     });
                   }}
+                  onFieldDrag={(fieldId, newX, newY) => {
+                    if (!selectedTemplateId) return;
+                    updateField.mutate({
+                      id: fieldId,
+                      template_id: selectedTemplateId,
+                      position_x: newX,
+                      position_y: newY,
+                    });
+                  }}
                   onToggleFieldVisibility={(fieldId, visible) => {
                     if (!selectedTemplateId) return;
                     updateField.mutate({
