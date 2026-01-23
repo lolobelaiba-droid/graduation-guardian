@@ -145,6 +145,39 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_fonts: {
+        Row: {
+          created_at: string
+          font_family: string
+          font_name: string
+          font_style: string | null
+          font_url: string
+          font_weight: string | null
+          id: string
+          is_arabic: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          font_family: string
+          font_name: string
+          font_style?: string | null
+          font_url: string
+          font_weight?: string | null
+          id?: string
+          is_arabic?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          font_family?: string
+          font_name?: string
+          font_style?: string | null
+          font_url?: string
+          font_weight?: string | null
+          id?: string
+          is_arabic?: boolean | null
+        }
+        Relationships: []
+      }
       master_certificates: {
         Row: {
           birthplace_ar: string

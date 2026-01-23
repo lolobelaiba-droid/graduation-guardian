@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Paintbrush, Type, AlignCenter, AlignLeft, AlignRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,17 +21,18 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { TemplateField } from "@/types/certificates";
+import { useCustomFonts, loadAllCustomFonts } from "@/hooks/useCustomFonts";
 
-// Common Arabic fonts
-const FONT_OPTIONS = [
-  { value: "Arial", label: "Arial" },
-  { value: "Times New Roman", label: "Times New Roman" },
-  { value: "Tahoma", label: "Tahoma" },
-  { value: "Simplified Arabic", label: "Simplified Arabic" },
-  { value: "Traditional Arabic", label: "Traditional Arabic" },
-  { value: "Arial Unicode MS", label: "Arial Unicode MS" },
-  { value: "Sakkal Majalla", label: "Sakkal Majalla" },
-  { value: "Microsoft Sans Serif", label: "Microsoft Sans Serif" },
+// Common system fonts
+const SYSTEM_FONTS = [
+  { value: "Arial", label: "Arial", isSystem: true },
+  { value: "Times New Roman", label: "Times New Roman", isSystem: true },
+  { value: "Tahoma", label: "Tahoma", isSystem: true },
+  { value: "Simplified Arabic", label: "Simplified Arabic", isSystem: true },
+  { value: "Traditional Arabic", label: "Traditional Arabic", isSystem: true },
+  { value: "Arial Unicode MS", label: "Arial Unicode MS", isSystem: true },
+  { value: "Sakkal Majalla", label: "Sakkal Majalla", isSystem: true },
+  { value: "Microsoft Sans Serif", label: "Microsoft Sans Serif", isSystem: true },
 ];
 
 // Common colors
@@ -68,8 +69,28 @@ export function FieldPropertiesEditor({
   const [localTextAlign, setLocalTextAlign] = useState<string>(selectedField?.text_align || "center");
   const [localIsRtl, setLocalIsRtl] = useState<boolean>(selectedField?.is_rtl ?? true);
 
+  // Load custom fonts
+  const { data: customFonts = [] } = useCustomFonts();
+
+  // Load custom fonts into document
+  useEffect(() => {
+    if (customFonts.length > 0) {
+      loadAllCustomFonts(customFonts);
+    }
+  }, [customFonts]);
+
+  // Combine system fonts with custom fonts
+  const allFonts = [
+    ...SYSTEM_FONTS,
+    ...customFonts.map(f => ({
+      value: f.font_family,
+      label: `${f.font_name} ✨`,
+      isSystem: false,
+    })),
+  ];
+
   // Sync local state when selected field changes
-  useState(() => {
+  useEffect(() => {
     if (selectedField) {
       setLocalFontSize(selectedField.font_size);
       setLocalFontName(selectedField.font_name);
@@ -77,7 +98,7 @@ export function FieldPropertiesEditor({
       setLocalTextAlign(selectedField.text_align);
       setLocalIsRtl(selectedField.is_rtl);
     }
-  });
+  }, [selectedField]);
 
   const handleApply = (property: keyof TemplateField, value: unknown) => {
     if (applyToAll) {
@@ -191,7 +212,7 @@ export function FieldPropertiesEditor({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {FONT_OPTIONS.map((font) => (
+              {allFonts.map((font) => (
                 <SelectItem 
                   key={font.value} 
                   value={font.value}
