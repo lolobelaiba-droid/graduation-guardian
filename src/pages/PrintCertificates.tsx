@@ -249,116 +249,114 @@ export default function PrintCertificates() {
         </CardContent>
       </Card>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Students List */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>قائمة الطلاب</span>
-              <Badge variant="secondary">{currentStudents.length}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {currentStudents.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <p>لا يوجد طلاب</p>
-                <Button size="sm" className="mt-4" onClick={() => setIsAddStudentOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  إضافة طالب
-                </Button>
+      {/* Students List - Horizontal at top */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <span>قائمة الطلاب</span>
+            <Badge variant="secondary">{currentStudents.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {currentStudents.length === 0 ? (
+            <div className="text-center text-muted-foreground py-4">
+              <p>لا يوجد طلاب</p>
+              <Button size="sm" className="mt-2" onClick={() => setIsAddStudentOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                إضافة طالب
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Checkbox
+                  checked={selectedStudentIds.length === currentStudents.length}
+                  onCheckedChange={handleSelectAll}
+                />
+                <span className="text-sm font-medium">تحديد الكل</span>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 pb-2 border-b">
-                  <Checkbox
-                    checked={selectedStudentIds.length === currentStudents.length}
-                    onCheckedChange={handleSelectAll}
-                  />
-                  <span className="text-sm font-medium">تحديد الكل</span>
-                </div>
-                <div className="max-h-[400px] overflow-y-auto space-y-2">
-                  {currentStudents.map((student) => (
-                    <div
-                      key={student.id}
-                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                        previewStudentId === student.id ? 'bg-primary/10' : 'hover:bg-muted'
-                      }`}
-                      onClick={() => setPreviewStudentId(student.id)}
-                    >
-                      <Checkbox
-                        checked={selectedStudentIds.includes(student.id)}
-                        onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{student.full_name_ar}</p>
-                        <p className="text-xs text-muted-foreground">{student.student_number}</p>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {mentionLabels[student.mention as MentionType]?.ar || student.mention}
-                      </Badge>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {currentStudents.map((student) => (
+                  <div
+                    key={student.id}
+                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors shrink-0 border ${
+                      previewStudentId === student.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted border-transparent'
+                    }`}
+                    onClick={() => setPreviewStudentId(student.id)}
+                  >
+                    <Checkbox
+                      checked={selectedStudentIds.includes(student.id)}
+                      onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium truncate max-w-[150px]">{student.full_name_ar}</p>
+                      <p className="text-xs text-muted-foreground">{student.student_number}</p>
                     </div>
-                  ))}
-                </div>
+                    <Badge variant="outline" className="text-xs">
+                      {mentionLabels[student.mention as MentionType]?.ar || student.mention}
+                    </Badge>
+                  </div>
+                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Preview */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                معاينة الشهادة
+      {/* Preview - Full height */}
+      <Card className="flex-1">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              معاينة الشهادة
+            </span>
+            {previewStudent && (
+              <span className="text-sm font-normal text-muted-foreground">
+                {previewStudent.full_name_ar}
               </span>
-              {previewStudent && (
-                <span className="text-sm font-normal text-muted-foreground">
-                  {previewStudent.full_name_ar}
-                </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="preview">
+            <TabsList className="mb-4">
+              <TabsTrigger value="preview">المعاينة</TabsTrigger>
+              <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="preview" className="min-h-[calc(100vh-400px)]">
+              {loadingTemplates || loadingFields ? (
+                <div className="flex items-center justify-center h-full min-h-[500px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : !selectedTemplateId ? (
+                <div className="flex flex-col items-center justify-center h-full min-h-[500px] text-muted-foreground">
+                  <Settings2 className="h-12 w-12 mb-4 opacity-50" />
+                  <p>لا يوجد قالب لهذا النوع واللغة</p>
+                  <Button size="sm" className="mt-4" onClick={() => setIsCreateTemplateOpen(true)}>
+                    إنشاء قالب
+                  </Button>
+                </div>
+              ) : previewStudent ? (
+                <CertificatePreview
+                  student={previewStudent as unknown as Record<string, unknown>}
+                  fields={templateFields}
+                  template={templates.find(t => t.id === selectedTemplateId)!}
+                  certificateType={selectedType}
+                  selectedFieldId={selectedFieldId}
+                  onFieldClick={setSelectedFieldId}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full min-h-[500px] text-muted-foreground">
+                  اختر طالباً للمعاينة
+                </div>
               )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="preview">
-              <TabsList className="mb-4">
-                <TabsTrigger value="preview">المعاينة</TabsTrigger>
-                <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
-              </TabsList>
+            </TabsContent>
 
-              <TabsContent value="preview">
-                {loadingTemplates || loadingFields ? (
-                  <div className="flex items-center justify-center h-[500px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : !selectedTemplateId ? (
-                  <div className="flex flex-col items-center justify-center h-[500px] text-muted-foreground">
-                    <Settings2 className="h-12 w-12 mb-4 opacity-50" />
-                    <p>لا يوجد قالب لهذا النوع واللغة</p>
-                    <Button size="sm" className="mt-4" onClick={() => setIsCreateTemplateOpen(true)}>
-                      إنشاء قالب
-                    </Button>
-                  </div>
-                ) : previewStudent ? (
-                  <CertificatePreview
-                    student={previewStudent as unknown as Record<string, unknown>}
-                    fields={templateFields}
-                    template={templates.find(t => t.id === selectedTemplateId)!}
-                    certificateType={selectedType}
-                    selectedFieldId={selectedFieldId}
-                    onFieldClick={setSelectedFieldId}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-[500px] text-muted-foreground">
-                    اختر طالباً للمعاينة
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="fields">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TabsContent value="fields">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Field List */}
                   <div className="space-y-4">
                     <h4 className="font-semibold">الحقول المتاحة</h4>
@@ -457,12 +455,12 @@ export default function PrintCertificates() {
                       </div>
                     )}
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
 
       {/* Dialogs */}
       <AddStudentDialog
