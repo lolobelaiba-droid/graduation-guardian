@@ -460,29 +460,22 @@ export default function EditStudentDialog({
             {/* Thesis Information */}
             {hasThesis && (
               <div className="space-y-4">
-                <h3 className="font-semibold text-primary">معلومات الأطروحة</h3>
+                <h3 className="font-semibold text-primary">عنوان الأطروحة</h3>
                 <div className="grid grid-cols-1 gap-4">
                   <FormField
                     control={form.control}
                     name={"thesis_title_ar" as keyof FormValues}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>عنوان الأطروحة بالعربية *</FormLabel>
+                        <FormLabel>عنوان الأطروحة *</FormLabel>
                         <FormControl>
-                          <Textarea {...field} value={(field.value as string) || ""} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={"thesis_title_fr" as keyof FormValues}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>عنوان الأطروحة بالفرنسية</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} value={(field.value as string) || ""} rows={2} className="text-left" dir="ltr" />
+                          <Textarea 
+                            {...field} 
+                            value={(field.value as string) || ""} 
+                            rows={2}
+                            dir="auto"
+                            placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -496,56 +489,39 @@ export default function EditStudentDialog({
             {hasJury && (
               <div className="space-y-4">
                 <h3 className="font-semibold text-primary">لجنة المناقشة</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <FormField
                     control={form.control}
                     name={"jury_president_ar" as keyof FormValues}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>رئيس اللجنة بالعربية *</FormLabel>
+                        <FormLabel>رئيس اللجنة *</FormLabel>
                         <FormControl>
-                          <Input {...field} value={(field.value as string) || ""} />
+                          <Input 
+                            {...field} 
+                            value={(field.value as string) || ""}
+                            dir="auto"
+                            placeholder="اسم رئيس اللجنة (يمكن الكتابة بالعربية أو الفرنسية)"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={"jury_president_fr" as keyof FormValues}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>رئيس اللجنة بالفرنسية</FormLabel>
-                        <FormControl>
-                          <Input {...field} value={(field.value as string) || ""} className="text-left" dir="ltr" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-4">
                   <FormField
                     control={form.control}
                     name={"jury_members_ar" as keyof FormValues}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>أعضاء اللجنة بالعربية *</FormLabel>
+                        <FormLabel>أعضاء اللجنة *</FormLabel>
                         <FormControl>
-                          <Textarea {...field} value={(field.value as string) || ""} rows={2} placeholder="ادخل اسم كل عضو في سطر منفصل" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={"jury_members_fr" as keyof FormValues}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>أعضاء اللجنة بالفرنسية</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} value={(field.value as string) || ""} rows={2} className="text-left" dir="ltr" />
+                          <Textarea 
+                            {...field} 
+                            value={(field.value as string) || ""} 
+                            rows={3}
+                            dir="auto"
+                            placeholder="اسم العضو 1، اسم العضو 2، ... (يمكن الكتابة بالعربية أو الفرنسية)"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

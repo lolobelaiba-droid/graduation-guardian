@@ -106,10 +106,9 @@ export default function StudentDetailsDialog({
           {/* Thesis Information */}
           {hasThesis && 'thesis_title_ar' in student && (
             <>
-              <SectionTitle>معلومات الأطروحة</SectionTitle>
+              <SectionTitle>عنوان الأطروحة</SectionTitle>
               <div className="space-y-2">
-                <DetailRow label="عنوان الأطروحة بالعربية" value={student.thesis_title_ar} />
-                <DetailRow label="عنوان الأطروحة بالفرنسية" value={student.thesis_title_fr} isRtl={false} />
+                <DetailRow label="عنوان الأطروحة" value={student.thesis_title_ar} />
               </div>
             </>
           )}
@@ -118,13 +117,9 @@ export default function StudentDetailsDialog({
           {hasJury && 'jury_president_ar' in student && (
             <>
               <SectionTitle>لجنة المناقشة</SectionTitle>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                <DetailRow label="رئيس اللجنة بالعربية" value={student.jury_president_ar} />
-                <DetailRow label="رئيس اللجنة بالفرنسية" value={student.jury_president_fr} isRtl={false} />
-              </div>
               <div className="space-y-2">
-                <DetailRow label="أعضاء اللجنة بالعربية" value={student.jury_members_ar} />
-                <DetailRow label="أعضاء اللجنة بالفرنسية" value={student.jury_members_fr} isRtl={false} />
+                <DetailRow label="رئيس اللجنة" value={student.jury_president_ar} />
+                <DetailRow label="أعضاء اللجنة" value={student.jury_members_ar} />
               </div>
             </>
           )}

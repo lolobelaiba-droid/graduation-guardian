@@ -412,29 +412,22 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
             {/* Thesis */}
             {showThesisFields && (
               <>
-                <SectionHeader title="الأطروحة / Thèse" />
+                <SectionHeader title="عنوان الأطروحة" />
                 <div className="space-y-4">
                   <FormField
                     control={form.control}
                     name="thesis_title_ar"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>عنوان الأطروحة (عربي) *</FormLabel>
+                        <FormLabel>عنوان الأطروحة *</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={2} placeholder="عنوان الأطروحة بالعربية" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="thesis_title_fr"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Titre de thèse</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} value={field.value || ''} rows={2} dir="ltr" placeholder="Titre de la thèse en français" />
+                          <Textarea 
+                            {...field} 
+                            rows={2} 
+                            placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
+                            dir="auto"
+                            className="text-right"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -480,61 +473,40 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
             {/* Jury */}
             {showJuryFields && (
               <>
-                <SectionHeader title="لجنة المناقشة / Jury" />
+                <SectionHeader title="لجنة المناقشة" />
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <FormField
                     control={form.control}
                     name="jury_president_ar"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>رئيس اللجنة (عربي) *</FormLabel>
+                        <FormLabel>رئيس اللجنة *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="اسم رئيس اللجنة" />
+                          <Input 
+                            {...field} 
+                            placeholder="اسم رئيس اللجنة (يمكن الكتابة بالعربية أو الفرنسية)"
+                            dir="auto"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="jury_president_fr"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Président du jury</FormLabel>
-                        <FormControl>
-                          <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom du président" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="jury_members_ar"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>أعضاء اللجنة (عربي) *</FormLabel>
+                        <FormLabel>أعضاء اللجنة *</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={2} placeholder="اسم العضو 1، اسم العضو 2، ..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="jury_members_fr"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Membres du jury</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} value={field.value || ''} rows={2} dir="ltr" placeholder="Membre 1, Membre 2, ..." />
+                          <Textarea 
+                            {...field} 
+                            rows={3} 
+                            placeholder="اسم العضو 1، اسم العضو 2، ... (يمكن الكتابة بالعربية أو الفرنسية)"
+                            dir="auto"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
