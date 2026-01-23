@@ -3,7 +3,6 @@ import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, Eye
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
-import { toArabicNumerals } from "@/lib/arabicNumbers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -61,22 +60,11 @@ export function CertificatePreview({
     
     if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
       if (value) {
-        const dateStr = new Date(value as string).toLocaleDateString('ar-SA');
-        return toArabicNumerals(dateStr);
+        return new Date(value as string).toLocaleDateString('ar-SA');
       }
-    }
-
-    // Convert numbers in the value to Arabic numerals
-    if (value) {
-      const strValue = String(value);
-      // Check if it contains any digits that need conversion
-      if (/[0-9]/.test(strValue)) {
-        return toArabicNumerals(strValue);
-      }
-      return strValue;
     }
     
-    return '';
+    return value ? String(value) : '';
   };
 
   const isRtlLanguage = template.language.includes('ar');
@@ -109,7 +97,7 @@ export function CertificatePreview({
         {selectedField && (
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="font-mono text-xs">
-              X: {toArabicNumerals(selectedField.position_x)} | Y: {toArabicNumerals(selectedField.position_y)} مم
+              X: {selectedField.position_x} | Y: {selectedField.position_y} مم
             </Badge>
             <span className="text-sm text-muted-foreground">
               {selectedField.field_name_ar}
@@ -188,7 +176,7 @@ export function CertificatePreview({
                     textDecoration: !isVisible ? 'line-through' : 'none',
                   }}
                   onClick={() => onFieldClick(field.id)}
-                  title={`${field.field_name_ar}: X=${toArabicNumerals(field.position_x)}مم, Y=${toArabicNumerals(field.position_y)}مم`}
+                  title={`${field.field_name_ar}: X=${field.position_x}مم, Y=${field.position_y}مم`}
                 >
                   {getFieldValue(field.field_key) || `[${field.field_name_ar}]`}
                 </div>
@@ -294,22 +282,22 @@ export function CertificatePreview({
             );
           })}
 
-          {/* Corner markers with Arabic numerals */}
+          {/* Corner markers */}
           <div className="absolute top-2 left-2 text-[10px] text-muted-foreground">
-            ٠,٠
+            0,0
           </div>
           <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground">
-            {toArabicNumerals(width)},{toArabicNumerals(height)}مم
+            {width},{height}mm
           </div>
         </div>
 
-        {/* Info bar with Arabic numerals */}
+        {/* Info bar */}
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {isLandscape ? 'أفقي' : 'عمودي'} • {toArabicNumerals(width)}×{toArabicNumerals(height)}مم • {template.page_size}
+            {isLandscape ? 'أفقي' : 'عمودي'} • {width}×{height}mm • {template.page_size}
           </span>
           <span>
-            {toArabicNumerals(fields.length)} حقل • مقياس {toArabicNumerals(SCALE)}:١
+            {fields.length} حقل • مقياس {SCALE}:1
           </span>
         </div>
       </div>
@@ -319,7 +307,7 @@ export function CertificatePreview({
         <div className="bg-muted/30 rounded-lg p-4">
           <h4 className="font-semibold mb-3 flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            الحقول ({toArabicNumerals(fields.length)})
+            الحقول ({fields.length})
           </h4>
           <div className="flex flex-wrap gap-2">
             {fields.map((field) => (
@@ -335,7 +323,7 @@ export function CertificatePreview({
                 {field.field_name_ar}
                 {selectedFieldId === field.id && (
                   <span className="mr-1 font-mono text-[10px]">
-                    ({toArabicNumerals(field.position_x)},{toArabicNumerals(field.position_y)})
+                    ({field.position_x},{field.position_y})
                   </span>
                 )}
               </Badge>
