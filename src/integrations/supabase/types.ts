@@ -14,7 +14,227 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_log: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          created_at: string | null
+          created_by: string | null
+          description: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      certificates: {
+        Row: {
+          certificate_number: string | null
+          created_at: string | null
+          file_path: string | null
+          id: string
+          issued_date: string | null
+          student_id: string
+          template_id: string | null
+        }
+        Insert: {
+          certificate_number?: string | null
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          issued_date?: string | null
+          student_id: string
+          template_id?: string | null
+        }
+        Update: {
+          certificate_number?: string | null
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          issued_date?: string | null
+          student_id?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          first_name: string
+          gpa: number | null
+          id: string
+          last_name: string
+          specialty: string | null
+          status: Database["public"]["Enums"]["student_status"] | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          first_name: string
+          gpa?: number | null
+          id?: string
+          last_name: string
+          specialty?: string | null
+          status?: Database["public"]["Enums"]["student_status"] | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string
+          gpa?: number | null
+          id?: string
+          last_name?: string
+          specialty?: string | null
+          status?: Database["public"]["Enums"]["student_status"] | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      template_fields: {
+        Row: {
+          created_at: string | null
+          field_key: string
+          field_name: string
+          field_type: string | null
+          font_color: string | null
+          font_name: string | null
+          font_size: number | null
+          id: string
+          position_x: number | null
+          position_y: number | null
+          template_id: string
+          text_align: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_key: string
+          field_name: string
+          field_type?: string | null
+          font_color?: string | null
+          font_name?: string | null
+          font_size?: number | null
+          id?: string
+          position_x?: number | null
+          position_y?: number | null
+          template_id: string
+          text_align?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_key?: string
+          field_name?: string
+          field_type?: string | null
+          font_color?: string | null
+          font_name?: string | null
+          font_size?: number | null
+          id?: string
+          position_x?: number | null
+          position_y?: number | null
+          template_id?: string
+          text_align?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          background_image_url: string | null
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          language: string | null
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          background_image_url?: string | null
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          background_image_url?: string | null
+          certificate_type?: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          template_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +243,26 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      activity_type:
+        | "student_added"
+        | "student_updated"
+        | "student_deleted"
+        | "template_added"
+        | "template_updated"
+        | "template_deleted"
+        | "certificate_printed"
+        | "settings_updated"
+        | "backup_created"
+      certificate_type:
+        | "bachelor"
+        | "master"
+        | "phd"
+        | "training"
+        | "excellence"
+        | "participation"
+        | "attendance"
+        | "achievement"
+      student_status: "active" | "graduated" | "suspended" | "transferred"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +389,29 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      activity_type: [
+        "student_added",
+        "student_updated",
+        "student_deleted",
+        "template_added",
+        "template_updated",
+        "template_deleted",
+        "certificate_printed",
+        "settings_updated",
+        "backup_created",
+      ],
+      certificate_type: [
+        "bachelor",
+        "master",
+        "phd",
+        "training",
+        "excellence",
+        "participation",
+        "attendance",
+        "achievement",
+      ],
+      student_status: ["active", "graduated", "suspended", "transferred"],
+    },
   },
 } as const
