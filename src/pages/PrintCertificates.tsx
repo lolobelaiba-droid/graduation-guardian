@@ -34,6 +34,8 @@ import { generatePDF } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
+import { FieldPropertiesEditor } from "@/components/print/FieldPropertiesEditor";
+import type { TemplateField } from "@/types/certificates";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -336,6 +338,7 @@ export default function PrintCertificates() {
           <Tabs defaultValue="preview">
             <TabsList className="mb-4">
               <TabsTrigger value="preview">المعاينة</TabsTrigger>
+              <TabsTrigger value="properties">خصائص الخط</TabsTrigger>
               <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
               <TabsTrigger value="background">صورة الخلفية</TabsTrigger>
             </TabsList>
@@ -421,6 +424,73 @@ export default function PrintCertificates() {
                   اختر طالباً للمعاينة
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="properties">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Properties Editor */}
+                <FieldPropertiesEditor
+                  selectedField={templateFields.find(f => f.id === selectedFieldId) || null}
+                  fields={templateFields}
+                  onUpdateField={(fieldId, updates) => {
+                    if (!selectedTemplateId) return;
+                    updateField.mutate({
+                      id: fieldId,
+                      template_id: selectedTemplateId,
+                      ...updates,
+                    });
+                  }}
+                  onUpdateAllFields={(updates) => {
+                    if (!selectedTemplateId) return;
+                    // Update all fields with the same properties
+                    templateFields.forEach((field) => {
+                      updateField.mutate({
+                        id: field.id,
+                        template_id: selectedTemplateId,
+                        ...updates,
+                      });
+                    });
+                  }}
+                  isUpdating={updateField.isPending}
+                />
+
+                {/* Field Selection List */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold">اختر حقلاً للتعديل</h4>
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {templateFields.map((field) => (
+                      <div
+                        key={field.id}
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedFieldId === field.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => setSelectedFieldId(field.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium" style={{ fontFamily: field.font_name }}>
+                            {field.field_name_ar}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-4 w-4 rounded border"
+                              style={{ backgroundColor: field.font_color }}
+                              title={field.font_color}
+                            />
+                            <Badge variant="outline" className="text-xs">
+                              {field.font_size}px
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {field.font_name} • {field.text_align === 'right' ? 'يمين' : field.text_align === 'left' ? 'يسار' : 'وسط'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="fields">
