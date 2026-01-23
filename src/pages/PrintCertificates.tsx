@@ -357,6 +357,37 @@ export default function PrintCertificates() {
                   certificateType={selectedType}
                   selectedFieldId={selectedFieldId}
                   onFieldClick={setSelectedFieldId}
+                  onFieldMove={(fieldId, direction, step) => {
+                    const field = templateFields.find(f => f.id === fieldId);
+                    if (!field || !selectedTemplateId) return;
+                    
+                    let newX = field.position_x;
+                    let newY = field.position_y;
+                    
+                    switch (direction) {
+                      case 'up': newY -= step; break;
+                      case 'down': newY += step; break;
+                      case 'left': newX += step; break; // RTL
+                      case 'right': newX -= step; break; // RTL
+                    }
+                    
+                    updateField.mutate({
+                      id: fieldId,
+                      template_id: selectedTemplateId,
+                      position_x: newX,
+                      position_y: newY,
+                    });
+                  }}
+                  onToggleFieldVisibility={(fieldId, visible) => {
+                    if (!selectedTemplateId) return;
+                    updateField.mutate({
+                      id: fieldId,
+                      template_id: selectedTemplateId,
+                      is_visible: visible,
+                    });
+                  }}
+                  stepSize={stepSize}
+                  isMoving={updateField.isPending}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full min-h-[500px] text-muted-foreground">
