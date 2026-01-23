@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   useCreatePhdLmdCertificate,
   useCreatePhdScienceCertificate,
@@ -36,14 +37,14 @@ import {
 const baseSchema = z.object({
   student_number: z.string().min(1, "الرقم مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
-  full_name_fr: z.string().optional(),
+  full_name_fr: z.string().optional().nullable(),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
-  birthplace_fr: z.string().optional(),
+  birthplace_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
-  branch_fr: z.string().optional(),
+  branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
-  specialty_fr: z.string().optional(),
+  specialty_fr: z.string().optional().nullable(),
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
@@ -51,22 +52,32 @@ const baseSchema = z.object({
 
 const phdSchema = baseSchema.extend({
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
-  thesis_title_fr: z.string().optional(),
+  thesis_title_fr: z.string().optional().nullable(),
   jury_president_ar: z.string().min(1, "رئيس اللجنة مطلوب"),
-  jury_president_fr: z.string().optional(),
+  jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
-  jury_members_fr: z.string().optional(),
+  jury_members_fr: z.string().optional().nullable(),
 });
 
 const phdLmdSchema = phdSchema.extend({
   field_ar: z.string().min(1, "الميدان مطلوب"),
-  field_fr: z.string().optional(),
+  field_fr: z.string().optional().nullable(),
 });
 
 interface AddStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   certificateType: CertificateType;
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-2 pt-4 pb-2">
+      <Separator className="flex-1" />
+      <span className="text-sm font-semibold text-primary whitespace-nowrap">{title}</span>
+      <Separator className="flex-1" />
+    </div>
+  );
 }
 
 export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStudentDialogProps) {
@@ -137,7 +148,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             إضافة طالب جديد - {certificateTypeLabels[certificateType].ar}
@@ -146,13 +157,16 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Basic Info */}
+            <SectionHeader title="المعلومات الأساسية" />
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="student_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الرقم</FormLabel>
+                    <FormLabel>الرقم *</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="رقم الطالب" />
                     </FormControl>
@@ -166,7 +180,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
                 name="mention"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>التقدير</FormLabel>
+                    <FormLabel>التقدير / Mention *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -176,7 +190,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
                       <SelectContent>
                         {Object.entries(mentionLabels).map(([key, labels]) => (
                           <SelectItem key={key} value={key}>
-                            {labels.ar}
+                            {labels.ar} - {labels.fr}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -187,15 +201,18 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
               />
             </div>
 
+            {/* Name Fields */}
+            <SectionHeader title="الاسم واللقب / Nom et Prénom" />
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="full_name_ar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الاسم بالعربية</FormLabel>
+                    <FormLabel>الاسم واللقب (عربي) *</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} placeholder="الاسم الكامل بالعربية" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -207,9 +224,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
                 name="full_name_fr"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الاسم بالفرنسية</FormLabel>
+                    <FormLabel>Nom et Prénom</FormLabel>
                     <FormControl>
-                      <Input {...field} dir="ltr" />
+                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom et Prénom en français" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -217,13 +234,16 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Birth Info */}
+            <SectionHeader title="معلومات الميلاد / Naissance" />
+            
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="date_of_birth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>تاريخ الميلاد</FormLabel>
+                    <FormLabel>تاريخ الميلاد / Né(e) le *</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -237,9 +257,23 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
                 name="birthplace_ar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>مكان الميلاد</FormLabel>
+                    <FormLabel>مكان الميلاد (عربي) *</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} placeholder="مكان الميلاد" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="birthplace_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>lieu de naissance</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Lieu de naissance" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -247,46 +281,53 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
               />
             </div>
 
+            {/* Field (PhD LMD only) */}
             {showFieldField && (
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="field_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الميدان</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="field_fr"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الميدان بالفرنسية</FormLabel>
-                      <FormControl>
-                        <Input {...field} dir="ltr" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <>
+                <SectionHeader title="الميدان / domaine" />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="field_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الميدان (عربي) *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="الميدان" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="field_fr"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>domaine</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ''} dir="ltr" placeholder="Domaine" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
             )}
 
+            {/* Branch & Specialty */}
+            <SectionHeader title="الشعبة والتخصص / filière et spécialité" />
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="branch_ar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الشعبة</FormLabel>
+                    <FormLabel>الشعبة (عربي) *</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} placeholder="الشعبة" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -295,12 +336,12 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
 
               <FormField
                 control={form.control}
-                name="specialty_ar"
+                name="branch_fr"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>التخصص</FormLabel>
+                    <FormLabel>filière</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Filière" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -308,29 +349,81 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
               />
             </div>
 
-            {showThesisFields && (
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="thesis_title_ar"
+                name="specialty_ar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>عنوان الأطروحة</FormLabel>
+                    <FormLabel>التخصص (عربي) *</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={2} />
+                      <Input {...field} placeholder="التخصص" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="specialty_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>spécialité</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Spécialité" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Thesis */}
+            {showThesisFields && (
+              <>
+                <SectionHeader title="الأطروحة / Thèse" />
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="thesis_title_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>عنوان الأطروحة (عربي) *</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} rows={2} placeholder="عنوان الأطروحة بالعربية" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="thesis_title_fr"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Titre de thèse</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} value={field.value || ''} rows={2} dir="ltr" placeholder="Titre de la thèse en français" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
             )}
 
+            {/* Dates */}
+            <SectionHeader title="التواريخ / Dates" />
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="defense_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>تاريخ المناقشة</FormLabel>
+                    <FormLabel>تاريخ محضر المناقشة *</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -344,7 +437,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
                 name="certificate_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>تاريخ الشهادة</FormLabel>
+                    <FormLabel>تاريخ اصدار الشهادة</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -354,35 +447,70 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
               />
             </div>
 
+            {/* Jury */}
             {showJuryFields && (
               <>
-                <FormField
-                  control={form.control}
-                  name="jury_president_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>رئيس اللجنة</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <SectionHeader title="لجنة المناقشة / Jury" />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="jury_president_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رئيس اللجنة (عربي) *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="اسم رئيس اللجنة" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="jury_members_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>أعضاء اللجنة</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} rows={2} placeholder="اسم العضو 1، اسم العضو 2، ..." />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="jury_president_fr"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Président du jury</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom du président" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="jury_members_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>أعضاء اللجنة (عربي) *</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} rows={2} placeholder="اسم العضو 1، اسم العضو 2، ..." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="jury_members_fr"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Membres du jury</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} value={field.value || ''} rows={2} dir="ltr" placeholder="Membre 1, Membre 2, ..." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </>
             )}
 
