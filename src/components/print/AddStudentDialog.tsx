@@ -44,7 +44,7 @@ const baseSchema = z.object({
   branch_fr: z.string().optional(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
   specialty_fr: z.string().optional(),
-  mention: z.enum(['excellent', 'very_good', 'good', 'fairly_good', 'passable']),
+  mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
 });
@@ -95,7 +95,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
       branch_fr: '',
       specialty_ar: '',
       specialty_fr: '',
-      mention: 'good' as MentionType,
+      mention: 'honorable' as MentionType,
       defense_date: '',
       certificate_date: new Date().toISOString().split('T')[0],
       thesis_title_ar: '',

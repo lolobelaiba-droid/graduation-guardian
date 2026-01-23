@@ -1,7 +1,7 @@
 // Certificate Types
 export type CertificateType = 'phd_lmd' | 'phd_science' | 'master';
 export type TemplateLanguage = 'ar' | 'fr' | 'en' | 'ar_fr' | 'ar_en' | 'fr_en' | 'ar_fr_en';
-export type MentionType = 'excellent' | 'very_good' | 'good' | 'fairly_good' | 'passable';
+export type MentionType = 'honorable' | 'very_honorable';
 
 // Base certificate fields that all types share
 export interface BaseCertificate {
@@ -111,11 +111,8 @@ export const languageLabels: Record<TemplateLanguage, { ar: string; fr: string; 
 
 // Mention labels
 export const mentionLabels: Record<MentionType, { ar: string; fr: string; en: string }> = {
-  excellent: { ar: 'ممتاز', fr: 'Excellent', en: 'Excellent' },
-  very_good: { ar: 'جيد جداً', fr: 'Très Bien', en: 'Very Good' },
-  good: { ar: 'جيد', fr: 'Bien', en: 'Good' },
-  fairly_good: { ar: 'مقبول جيد', fr: 'Assez Bien', en: 'Fairly Good' },
-  passable: { ar: 'مقبول', fr: 'Passable', en: 'Passable' },
+  honorable: { ar: 'مشرف', fr: 'Honorable', en: 'Honorable' },
+  very_honorable: { ar: 'مشرف جدا', fr: 'Très Honorable', en: 'Very Honorable' },
 };
 
 // Field definitions for each certificate type

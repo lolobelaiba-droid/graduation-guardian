@@ -226,23 +226,15 @@ export function ImportExcelDialog({
       // Handle mention field
       if (fieldKey === "mention") {
         const mentionMap: Record<string, string> = {
-          "ممتاز": "excellent",
-          "excellent": "excellent",
-          "جيد جداً": "very_good",
-          "جيد جدا": "very_good",
-          "very good": "very_good",
-          "très bien": "very_good",
-          "جيد": "good",
-          "good": "good",
-          "bien": "good",
-          "مقبول جيد": "fairly_good",
-          "fairly good": "fairly_good",
-          "assez bien": "fairly_good",
-          "مقبول": "passable",
-          "passable": "passable",
+          "مشرف جدا": "very_honorable",
+          "مشرف جداً": "very_honorable",
+          "very honorable": "very_honorable",
+          "très honorable": "very_honorable",
+          "مشرف": "honorable",
+          "honorable": "honorable",
         };
         const normalizedValue = String(value || "").toLowerCase().trim();
-        value = mentionMap[normalizedValue] || "good";
+        value = mentionMap[normalizedValue] || "honorable";
       }
 
       transformed[fieldKey] = value;
