@@ -479,8 +479,25 @@ export default function PrintCertificates() {
                             <SelectTrigger className="mt-1">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              {getFontOptions().map((font) => (
+                            <SelectContent className="max-h-[300px]">
+                              {/* Arabic Fonts */}
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                                خطوط عربية
+                              </div>
+                              {getFontOptions().filter(f => f.isArabic).map((font) => (
+                                <SelectItem 
+                                  key={font.value} 
+                                  value={font.value}
+                                  style={{ fontFamily: font.value }}
+                                >
+                                  {font.labelAr} ({font.label})
+                                </SelectItem>
+                              ))}
+                              {/* System/Latin Fonts */}
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 mt-1">
+                                خطوط لاتينية
+                              </div>
+                              {getFontOptions().filter(f => !f.isArabic).map((font) => (
                                 <SelectItem 
                                   key={font.value} 
                                   value={font.value}
