@@ -92,6 +92,12 @@ export default function PrintCertificates() {
     }
   }, [selectedType, selectedLanguage, templates]);
 
+  // Reset background offset when template changes
+  useEffect(() => {
+    setBackgroundOffsetX(0);
+    setBackgroundOffsetY(0);
+  }, [selectedTemplateId]);
+
   // Load saved settings
   useEffect(() => {
     if (savedSettings) {
