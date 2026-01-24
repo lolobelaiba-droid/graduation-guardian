@@ -152,17 +152,42 @@ export default function PrintCertificates() {
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
     if (checked) {
-      setSelectedStudentIds(prev => [...prev, studentId]);
-    } else {
-      setSelectedStudentIds(prev => prev.filter(id => id !== studentId));
+      // Selecting via checkbox should also update preview
+      setSelectedStudentIds((prev) => {
+        const next = prev.includes(studentId) ? prev : [...prev, studentId];
+        return next;
+      });
+      setPreviewStudentId(studentId);
+      return;
     }
+
+    // Unselecting should clear preview if it was showing this student
+    setSelectedStudentIds((prev) => {
+      const next = prev.filter((id) => id !== studentId);
+
+      // If no one is selected anymore, clear preview
+      if (next.length === 0) {
+        setPreviewStudentId(null);
+      } else if (previewStudentId === studentId) {
+        // If the previewed student was unchecked, clear preview so placeholders show
+        setPreviewStudentId(null);
+      }
+
+      return next;
+    });
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedStudentIds(currentStudents.map(s => s.id));
+      const allIds = currentStudents.map((s) => s.id);
+      setSelectedStudentIds(allIds);
+      // Keep current preview if exists, otherwise set to first
+      if (!previewStudentId && allIds.length > 0) {
+        setPreviewStudentId(allIds[0]);
+      }
     } else {
       setSelectedStudentIds([]);
+      setPreviewStudentId(null);
     }
   };
 
