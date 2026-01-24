@@ -43,17 +43,19 @@ export function formatDateWithWesternNumerals(
 }
 
 /**
- * Format a date for certificates (day/month/year) with Western numerals
+ * Format a date for certificates (dd/mm/yyyy) with Western numerals
+ * Always outputs in day/month/year format regardless of locale
  */
 export function formatCertificateDate(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
-  // Use Gregorian calendar with Arabic locale
-  const formatted = dateObj.toLocaleDateString('ar-EG-u-nu-latn', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  if (isNaN(dateObj.getTime())) {
+    return toWesternNumerals(String(date));
+  }
   
-  return toWesternNumerals(formatted);
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const year = String(dateObj.getFullYear());
+  
+  return `${day}/${month}/${year}`;
 }
