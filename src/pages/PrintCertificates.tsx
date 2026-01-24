@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen } from "lucide-react";
+import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -69,6 +69,9 @@ export default function PrintCertificates() {
     newY: number;
   }>>([]);
 
+  // Student search
+  const [studentSearch, setStudentSearch] = useState('');
+
   // Data hooks
   const { data: templates = [], isLoading: loadingTemplates } = useCertificateTemplates();
   const { data: templateFields = [], isLoading: loadingFields } = useTemplateFields(selectedTemplateId);
@@ -82,16 +85,38 @@ export default function PrintCertificates() {
   const updateTemplate = useUpdateTemplate();
   const saveSetting = useSaveSetting();
 
-  // Get current students based on type
+  // Get current students based on type and sort by created_at (newest first)
   const getCurrentStudents = () => {
+    let students: Array<{ id: string; full_name_ar: string; full_name_fr?: string | null; student_number: string; specialty_ar: string; mention: string; created_at?: string | null }> = [];
     switch (selectedType) {
-      case "phd_lmd": return phdLmdData;
-      case "phd_science": return phdScienceData;
-      case "master": return masterData;
+      case "phd_lmd": students = phdLmdData as typeof students; break;
+      case "phd_science": students = phdScienceData as typeof students; break;
+      case "master": students = masterData as typeof students; break;
     }
+    // Sort by created_at descending (newest first)
+    return [...students].sort((a, b) => {
+      const dateA = new Date(a.created_at || 0).getTime();
+      const dateB = new Date(b.created_at || 0).getTime();
+      return dateB - dateA;
+    });
   };
 
   const currentStudents = getCurrentStudents();
+
+  // Filter students by search
+  const filteredStudents = currentStudents.filter(student => {
+    if (!studentSearch.trim()) return true;
+    const search = studentSearch.toLowerCase();
+    return (
+      student.full_name_ar?.toLowerCase().includes(search) ||
+      student.full_name_fr?.toLowerCase().includes(search) ||
+      student.student_number?.toLowerCase().includes(search) ||
+      student.specialty_ar?.toLowerCase().includes(search)
+    );
+  });
+
+  // Get the 5 most recently added students (for highlighting)
+  const recentStudentIds = currentStudents.slice(0, 5).map(s => s.id);
 
   // Find matching template
   useEffect(() => {
@@ -209,7 +234,8 @@ export default function PrintCertificates() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allIds = currentStudents.map((s) => s.id);
+      // Select only filtered students when searching
+      const allIds = filteredStudents.map((s) => s.id);
       setSelectedStudentIds(allIds);
       // Keep current preview if exists, otherwise set to first
       if (!previewStudentId && allIds.length > 0) {
@@ -354,8 +380,16 @@ export default function PrintCertificates() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
-            <span>قائمة الطلاب</span>
-            <Badge variant="secondary">{toWesternNumerals(currentStudents.length)}</Badge>
+            <span className="flex items-center gap-2">
+              قائمة الطلاب
+              {recentStudentIds.length > 0 && (
+                <Badge variant="outline" className="text-xs gap-1">
+                  <Clock className="h-3 w-3" />
+                  آخر {toWesternNumerals(Math.min(5, currentStudents.length))} إضافة
+                </Badge>
+              )}
+            </span>
+            <Badge variant="secondary">{toWesternNumerals(filteredStudents.length)}/{toWesternNumerals(currentStudents.length)}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -368,50 +402,92 @@ export default function PrintCertificates() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {/* Search Box */}
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="بحث عن طالب بالاسم أو الرقم أو التخصص..."
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className="pr-9"
+                />
+              </div>
+
               <div className="flex items-center gap-2 pb-2 border-b">
                 <Checkbox
-                  checked={selectedStudentIds.length === currentStudents.length}
+                  checked={selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0}
                   onCheckedChange={handleSelectAll}
                 />
                 <span className="text-sm font-medium">تحديد الكل</span>
+                {studentSearch && (
+                  <span className="text-xs text-muted-foreground">
+                    ({toWesternNumerals(filteredStudents.length)} نتيجة)
+                  </span>
+                )}
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {currentStudents.map((student) => {
-                  const isPreviewSelected = previewStudentId === student.id;
-                  return (
-                    <div
-                      key={student.id}
-                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all shrink-0 border-2 ${
-                        isPreviewSelected 
-                          ? 'bg-primary/10 border-primary shadow-md ring-2 ring-primary/20' 
-                          : 'hover:bg-muted border-transparent hover:border-muted-foreground/20'
-                      }`}
-                      onClick={() => setPreviewStudentId(isPreviewSelected ? null : student.id)}
-                    >
-                      <Checkbox
-                        checked={selectedStudentIds.includes(student.id)}
-                        onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <div className="min-w-0">
-                        <p className={`font-medium truncate max-w-[150px] ${isPreviewSelected ? 'text-primary' : ''}`}>
-                          {student.full_name_ar}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{student.student_number}</p>
-                      </div>
-                      {isPreviewSelected && (
-                        <Badge variant="default" className="text-xs">
-                          معاينة
+
+              {filteredStudents.length === 0 ? (
+                <div className="text-center text-muted-foreground py-4">
+                  <p>لا توجد نتائج للبحث "{studentSearch}"</p>
+                  <Button variant="ghost" size="sm" onClick={() => setStudentSearch('')} className="mt-2">
+                    مسح البحث
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {filteredStudents.map((student) => {
+                    const isPreviewSelected = previewStudentId === student.id;
+                    const isRecent = recentStudentIds.includes(student.id);
+                    return (
+                      <div
+                        key={student.id}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all shrink-0 border-2 relative ${
+                          isPreviewSelected 
+                            ? 'bg-primary/10 border-primary shadow-md ring-2 ring-primary/20' 
+                            : isRecent
+                              ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 hover:border-green-400'
+                              : 'hover:bg-muted border-transparent hover:border-muted-foreground/20'
+                        }`}
+                        onClick={() => setPreviewStudentId(isPreviewSelected ? null : student.id)}
+                      >
+                        {isRecent && !isPreviewSelected && (
+                          <div className="absolute -top-1 -right-1">
+                            <span className="flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
+                          </div>
+                        )}
+                        <Checkbox
+                          checked={selectedStudentIds.includes(student.id)}
+                          onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="min-w-0">
+                          <p className={`font-medium truncate max-w-[150px] ${isPreviewSelected ? 'text-primary' : ''}`}>
+                            {student.full_name_ar}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{student.student_number}</p>
+                        </div>
+                        {isPreviewSelected && (
+                          <Badge variant="default" className="text-xs">
+                            معاينة
+                          </Badge>
+                        )}
+                        {isRecent && !isPreviewSelected && (
+                          <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                            جديد
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {mentionLabels[student.mention as MentionType]?.ar || student.mention}
                         </Badge>
-                      )}
-                      <Badge variant="outline" className="text-xs">
-                        {mentionLabels[student.mention as MentionType]?.ar || student.mention}
-                      </Badge>
-                    </div>
-                  );
-                })}
-              </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
