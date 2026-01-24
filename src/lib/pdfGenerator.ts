@@ -225,11 +225,48 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     return '';
   }
 
+  // Handle bilingual date fields - they all use the same source data
+  if (fieldKey === 'date_of_birth_ar' || fieldKey === 'date_of_birth_fr') {
+    const value = student['date_of_birth'];
+    if (value) {
+      try {
+        return formatCertificateDate(value as string);
+      } catch {
+        return toWesternNumerals(String(value));
+      }
+    }
+    return '';
+  }
+  
+  if (fieldKey === 'defense_date_ar' || fieldKey === 'defense_date_fr') {
+    const value = student['defense_date'];
+    if (value) {
+      try {
+        return formatCertificateDate(value as string);
+      } catch {
+        return toWesternNumerals(String(value));
+      }
+    }
+    return '';
+  }
+  
+  if (fieldKey === 'certificate_date_ar' || fieldKey === 'certificate_date_fr') {
+    const value = student['certificate_date'];
+    if (value) {
+      try {
+        return formatCertificateDate(value as string);
+      } catch {
+        return toWesternNumerals(String(value));
+      }
+    }
+    return '';
+  }
+
   const value = student[fieldKey];
   
   if (!value) return '';
 
-  // Handle date fields - use Western numerals (0123456789)
+  // Legacy date fields support
   if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
     try {
       return formatCertificateDate(value as string);
