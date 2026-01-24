@@ -17,10 +17,12 @@ export const systemFonts: FontConfig[] = [
   // Latin fonts (jsPDF built-in)
   { name: 'Helvetica', displayName: 'Helvetica', displayNameAr: 'هيلفيتيكا', family: 'helvetica', style: 'normal', isArabic: false, isSystem: true },
   { name: 'Helvetica-Bold', displayName: 'Helvetica Bold', displayNameAr: 'هيلفيتيكا عريض', family: 'helvetica', style: 'bold', isArabic: false, isSystem: true },
-  { name: 'Times', displayName: 'Times Roman', displayNameAr: 'تايمز رومان', family: 'times', style: 'normal', isArabic: false, isSystem: true },
-  { name: 'Times-Bold', displayName: 'Times Bold', displayNameAr: 'تايمز عريض', family: 'times', style: 'bold', isArabic: false, isSystem: true },
+  { name: 'Times', displayName: 'Times New Roman', displayNameAr: 'تايمز نيو رومان', family: 'times', style: 'normal', isArabic: false, isSystem: true },
+  { name: 'Times-Bold', displayName: 'Times New Roman Bold', displayNameAr: 'تايمز نيو رومان عريض', family: 'times', style: 'bold', isArabic: false, isSystem: true },
   { name: 'Courier', displayName: 'Courier', displayNameAr: 'كوريير', family: 'courier', style: 'normal', isArabic: false, isSystem: true },
   { name: 'Courier-Bold', displayName: 'Courier Bold', displayNameAr: 'كوريير عريض', family: 'courier', style: 'bold', isArabic: false, isSystem: true },
+  { name: 'Arial', displayName: 'Arial', displayNameAr: 'أريال', family: 'arial', style: 'normal', isArabic: false, isSystem: true },
+  { name: 'Georgia', displayName: 'Georgia', displayNameAr: 'جورجيا', family: 'georgia', style: 'normal', isArabic: false, isSystem: true },
 ];
 
 // Arabic fonts (loaded from local files in public/fonts/)
@@ -87,7 +89,23 @@ export const arabicFonts: FontConfig[] = [
   },
 ];
 
-// All fonts combined
+// Dynamically loaded custom fonts from database
+let customFontsCache: FontConfig[] = [];
+
+export function setCustomFonts(fonts: FontConfig[]) {
+  customFontsCache = fonts;
+}
+
+export function getCustomFonts(): FontConfig[] {
+  return customFontsCache;
+}
+
+// All fonts combined (including custom fonts from database)
+export function getAllFonts(): FontConfig[] {
+  return [...systemFonts, ...arabicFonts, ...customFontsCache];
+}
+
+// Static fonts for basic operations
 export const allFonts: FontConfig[] = [...systemFonts, ...arabicFonts];
 
 // Font cache to store loaded fonts
@@ -129,10 +147,11 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 /**
- * Get font by name
+ * Get font by name - searches all fonts including custom ones
  */
 export function getFontByName(fontName: string): FontConfig | undefined {
-  return allFonts.find(f => 
+  const allFontsList = getAllFonts();
+  return allFontsList.find(f => 
     f.name === fontName || 
     f.displayName === fontName || 
     f.family === fontName ||
@@ -147,9 +166,10 @@ export function getFontByName(fontName: string): FontConfig | undefined {
 export function getFontOptions(): { value: string; label: string; labelAr: string; isArabic: boolean; isSystem: boolean }[] {
   const options: { value: string; label: string; labelAr: string; isArabic: boolean; isSystem: boolean }[] = [];
   const seenFamilies = new Set<string>();
+  const allFontsList = getAllFonts();
   
   // Add all fonts, avoiding duplicates by family
-  allFonts.forEach(font => {
+  allFontsList.forEach(font => {
     const familyKey = font.family.toLowerCase();
     if (!seenFamilies.has(familyKey) && font.style === 'normal') {
       seenFamilies.add(familyKey);
