@@ -69,19 +69,24 @@ export function AddFieldDialog({
       ? null
       : certificateFields[certificateType].find((f) => f.key === selectedFieldKey);
 
+    // Determine RTL based on field key suffix
+    const fieldKey = isCustomField ? customFieldKey : selectedFieldKey;
+    const isRtlField = fieldKey.endsWith('_ar') || 
+                       (!fieldKey.endsWith('_fr') && !fieldKey.includes('_fr_'));
+
     createField.mutate(
       {
         template_id: templateId,
-        field_key: isCustomField ? customFieldKey : selectedFieldKey,
+        field_key: fieldKey,
         field_name_ar: isCustomField ? customFieldNameAr : fieldDef?.name_ar || "",
         field_name_fr: isCustomField ? customFieldNameFr || null : fieldDef?.name_fr || null,
         position_x: positionX,
         position_y: positionY,
         font_size: fontSize,
-        font_name: "Arial",
+        font_name: "Cairo",
         font_color: "#000000",
-        text_align: "center",
-        is_rtl: true,
+        text_align: isRtlField ? "right" : "left",
+        is_rtl: isRtlField,
         is_visible: true,
         field_order: existingFieldKeys.length + 1,
       },
