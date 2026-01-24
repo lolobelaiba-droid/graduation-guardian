@@ -8,6 +8,121 @@ import { toWesternNumerals, formatCertificateDate } from './numerals';
 const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
 
+/**
+ * Reshape Arabic text for proper rendering in PDF
+ * Arabic text needs to be reshaped because jsPDF doesn't handle Arabic ligatures
+ */
+function reshapeArabicText(text: string): string {
+  if (!text) return '';
+  
+  // Check if text contains Arabic characters
+  const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  if (!arabicRegex.test(text)) {
+    return text; // Return as-is if no Arabic
+  }
+
+  // Arabic character forms mapping (isolated, initial, medial, final)
+  const arabicForms: { [key: string]: [string, string, string, string] } = {
+    'ا': ['ﺍ', 'ﺍ', 'ﺎ', 'ﺎ'],
+    'أ': ['ﺃ', 'ﺃ', 'ﺄ', 'ﺄ'],
+    'إ': ['ﺇ', 'ﺇ', 'ﺈ', 'ﺈ'],
+    'آ': ['ﺁ', 'ﺁ', 'ﺂ', 'ﺂ'],
+    'ب': ['ﺏ', 'ﺑ', 'ﺒ', 'ﺐ'],
+    'ت': ['ﺕ', 'ﺗ', 'ﺘ', 'ﺖ'],
+    'ث': ['ﺙ', 'ﺛ', 'ﺜ', 'ﺚ'],
+    'ج': ['ﺝ', 'ﺟ', 'ﺠ', 'ﺞ'],
+    'ح': ['ﺡ', 'ﺣ', 'ﺤ', 'ﺢ'],
+    'خ': ['ﺥ', 'ﺧ', 'ﺨ', 'ﺦ'],
+    'د': ['ﺩ', 'ﺩ', 'ﺪ', 'ﺪ'],
+    'ذ': ['ﺫ', 'ﺫ', 'ﺬ', 'ﺬ'],
+    'ر': ['ﺭ', 'ﺭ', 'ﺮ', 'ﺮ'],
+    'ز': ['ﺯ', 'ﺯ', 'ﺰ', 'ﺰ'],
+    'س': ['ﺱ', 'ﺳ', 'ﺴ', 'ﺲ'],
+    'ش': ['ﺵ', 'ﺷ', 'ﺸ', 'ﺶ'],
+    'ص': ['ﺹ', 'ﺻ', 'ﺼ', 'ﺺ'],
+    'ض': ['ﺽ', 'ﺿ', 'ﻀ', 'ﺾ'],
+    'ط': ['ﻁ', 'ﻃ', 'ﻄ', 'ﻂ'],
+    'ظ': ['ﻅ', 'ﻇ', 'ﻈ', 'ﻆ'],
+    'ع': ['ﻉ', 'ﻋ', 'ﻌ', 'ﻊ'],
+    'غ': ['ﻍ', 'ﻏ', 'ﻐ', 'ﻎ'],
+    'ف': ['ﻑ', 'ﻓ', 'ﻔ', 'ﻒ'],
+    'ق': ['ﻕ', 'ﻗ', 'ﻘ', 'ﻖ'],
+    'ك': ['ﻙ', 'ﻛ', 'ﻜ', 'ﻚ'],
+    'ل': ['ﻝ', 'ﻟ', 'ﻠ', 'ﻞ'],
+    'م': ['ﻡ', 'ﻣ', 'ﻤ', 'ﻢ'],
+    'ن': ['ﻥ', 'ﻧ', 'ﻨ', 'ﻦ'],
+    'ه': ['ﻩ', 'ﻫ', 'ﻬ', 'ﻪ'],
+    'و': ['ﻭ', 'ﻭ', 'ﻮ', 'ﻮ'],
+    'ي': ['ﻱ', 'ﻳ', 'ﻴ', 'ﻲ'],
+    'ى': ['ﻯ', 'ﻯ', 'ﻰ', 'ﻰ'],
+    'ة': ['ﺓ', 'ﺓ', 'ﺔ', 'ﺔ'],
+    'ء': ['ء', 'ء', 'ء', 'ء'],
+    'ؤ': ['ﺅ', 'ﺅ', 'ﺆ', 'ﺆ'],
+    'ئ': ['ﺉ', 'ﺋ', 'ﺌ', 'ﺊ'],
+    'لا': ['ﻻ', 'ﻻ', 'ﻼ', 'ﻼ'],
+    'لأ': ['ﻷ', 'ﻷ', 'ﻸ', 'ﻸ'],
+    'لإ': ['ﻹ', 'ﻹ', 'ﻺ', 'ﻺ'],
+    'لآ': ['ﻵ', 'ﻵ', 'ﻶ', 'ﻶ'],
+  };
+
+  // Characters that don't connect to the next character
+  const nonConnecting = new Set(['ا', 'أ', 'إ', 'آ', 'د', 'ذ', 'ر', 'ز', 'و', 'ؤ', 'ة', 'ء', 'ى']);
+
+  // Process each word separately
+  const words = text.split(/(\s+)/);
+  const reshapedWords = words.map(word => {
+    if (/^\s+$/.test(word)) return word; // Keep whitespace as-is
+    
+    const chars = [...word];
+    let result = '';
+    
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i];
+      const prevChar = i > 0 ? chars[i - 1] : null;
+      const nextChar = i < chars.length - 1 ? chars[i + 1] : null;
+      
+      // Check for ligatures (لا، لأ، لإ، لآ)
+      if (char === 'ل' && nextChar && ['ا', 'أ', 'إ', 'آ'].includes(nextChar)) {
+        const ligature = char + nextChar;
+        const forms = arabicForms[ligature];
+        if (forms) {
+          const prevConnects = prevChar && arabicForms[prevChar] && !nonConnecting.has(prevChar);
+          result += prevConnects ? forms[3] : forms[0]; // final or isolated
+          i++; // Skip the next character
+          continue;
+        }
+      }
+      
+      const forms = arabicForms[char];
+      if (!forms) {
+        result += char; // Non-Arabic character
+        continue;
+      }
+      
+      const prevConnects = prevChar && arabicForms[prevChar] && !nonConnecting.has(prevChar);
+      const nextConnects = nextChar && arabicForms[nextChar];
+      
+      let formIndex: number;
+      if (prevConnects && nextConnects) {
+        formIndex = 2; // medial
+      } else if (prevConnects) {
+        formIndex = 3; // final
+      } else if (nextConnects) {
+        formIndex = 1; // initial
+      } else {
+        formIndex = 0; // isolated
+      }
+      
+      result += forms[formIndex];
+    }
+    
+    return result;
+  });
+
+  // Reverse for RTL display in PDF
+  return reshapedWords.join('').split('').reverse().join('');
+}
+
 // Load image as base64
 async function loadImageAsBase64(url: string): Promise<string | null> {
   try {
@@ -189,7 +304,9 @@ export async function generatePDF(
       if (field.text_align === 'left') align = 'left';
       else if (field.text_align === 'right') align = 'right';
 
-      doc.text(value, x, y, { align });
+      // Reshape Arabic text for proper rendering
+      const reshapedValue = reshapeArabicText(value);
+      doc.text(reshapedValue, x, y, { align });
     });
   });
 
@@ -359,7 +476,9 @@ export async function generateSinglePDF(
     if (field.text_align === 'left') align = 'left';
     else if (field.text_align === 'right') align = 'right';
 
-    doc.text(value, field.position_x, field.position_y, { align });
+    // Reshape Arabic text for proper rendering
+    const reshapedValue = reshapeArabicText(value);
+    doc.text(reshapedValue, field.position_x, field.position_y, { align });
   });
 
   return doc.output('blob');
