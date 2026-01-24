@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type } from "lucide-react";
+import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ import { generatePDF } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
+import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
 import { getFontOptions } from "@/lib/arabicFonts";
 import { toWesternNumerals } from "@/lib/numerals";
 
@@ -49,11 +50,13 @@ export default function PrintCertificates() {
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
   const [isImportExcelOpen, setIsImportExcelOpen] = useState(false);
   const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
+  const [isFullPreviewOpen, setIsFullPreviewOpen] = useState(false);
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
   
   // Background offset state for visual alignment
   const [backgroundOffsetX, setBackgroundOffsetX] = useState(0);
   const [backgroundOffsetY, setBackgroundOffsetY] = useState(0);
+  const [backgroundScale, setBackgroundScale] = useState(100);
   const [showBackgroundControls, setShowBackgroundControls] = useState(false);
 
   // Data hooks
@@ -92,11 +95,22 @@ export default function PrintCertificates() {
     }
   }, [selectedType, selectedLanguage, templates]);
 
-  // Reset background offset when template changes
+  // Load background settings from template when it changes
   useEffect(() => {
-    setBackgroundOffsetX(0);
-    setBackgroundOffsetY(0);
-  }, [selectedTemplateId]);
+    if (selectedTemplateId) {
+      const template = templates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        // Load saved offsets from database or use defaults
+        setBackgroundOffsetX((template as any).background_offset_x || 0);
+        setBackgroundOffsetY((template as any).background_offset_y || 0);
+        setBackgroundScale((template as any).background_scale || 100);
+      }
+    } else {
+      setBackgroundOffsetX(0);
+      setBackgroundOffsetY(0);
+      setBackgroundScale(100);
+    }
+  }, [selectedTemplateId, templates]);
 
   // Load saved settings
   useEffect(() => {
@@ -247,6 +261,16 @@ export default function PrintCertificates() {
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsImportExcelOpen(true)}>
             <Plus className="h-4 w-4" />
             استيراد Excel
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="gap-2" 
+            onClick={() => setIsFullPreviewOpen(true)}
+            disabled={!selectedTemplateId || !previewStudent}
+          >
+            <Fullscreen className="h-4 w-4" />
+            معاينة كاملة
           </Button>
           <Button size="sm" className="gap-2" onClick={handlePrint} disabled={selectedStudentIds.length === 0}>
             <Printer className="h-4 w-4" />
@@ -794,6 +818,30 @@ export default function PrintCertificates() {
           templateId={selectedTemplateId}
           certificateType={selectedType}
           existingFieldKeys={templateFields.map(f => f.field_key)}
+        />
+      )}
+      {selectedTemplateId && previewStudent && (
+        <FullPreviewDialog
+          open={isFullPreviewOpen}
+          onOpenChange={setIsFullPreviewOpen}
+          student={previewStudent as unknown as Record<string, unknown>}
+          fields={templateFields}
+          template={templates.find(t => t.id === selectedTemplateId)!}
+          initialOffsetX={backgroundOffsetX}
+          initialOffsetY={backgroundOffsetY}
+          initialScale={backgroundScale}
+          onSaveSettings={(settings) => {
+            updateTemplate.mutate({
+              id: selectedTemplateId,
+              background_offset_x: settings.background_offset_x,
+              background_offset_y: settings.background_offset_y,
+              background_scale: settings.background_scale,
+            } as any);
+            setBackgroundOffsetX(settings.background_offset_x);
+            setBackgroundOffsetY(settings.background_offset_y);
+            setBackgroundScale(settings.background_scale);
+          }}
+          onPrint={handlePrint}
         />
       )}
     </div>
