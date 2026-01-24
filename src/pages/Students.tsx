@@ -52,7 +52,7 @@ import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
 import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
 import EditStudentDialog from "@/components/students/EditStudentDialog";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
-import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
+import { ImportExcelDialog } from "@/components/print/import";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 

@@ -33,7 +33,7 @@ import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
 import { generatePDF } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
-import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
+import { ImportExcelDialog } from "@/components/print/import";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
 import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
 import { getFontOptions } from "@/lib/arabicFonts";
