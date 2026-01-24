@@ -286,14 +286,6 @@ export default function PrintCertificates() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsAddStudentOpen(true)}>
-            <Plus className="h-4 w-4" />
-            إضافة طالب
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsImportExcelOpen(true)}>
-            <Plus className="h-4 w-4" />
-            استيراد Excel
-          </Button>
           <Button 
             variant="secondary" 
             size="sm" 
