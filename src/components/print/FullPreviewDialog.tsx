@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical } from "lucide-react";
+import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -17,6 +17,15 @@ import { mentionLabels, type CertificateTemplate, type TemplateField, type Menti
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 const SCALE = 2.5;
+
+interface FieldChange {
+  fieldId: string;
+  fieldName: string;
+  oldX: number;
+  oldY: number;
+  newX: number;
+  newY: number;
+}
 
 interface FullPreviewDialogProps {
   open: boolean;
@@ -53,9 +62,13 @@ export function FullPreviewDialog({
   const [offsetX, setOffsetX] = useState(initialOffsetX);
   const [offsetY, setOffsetY] = useState(initialOffsetY);
   const [scale, setScale] = useState(initialScale);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [hasBackgroundChanges, setHasBackgroundChanges] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [showFieldControls, setShowFieldControls] = useState(true);
+  
+  // Track field changes for undo
+  const [fieldChanges, setFieldChanges] = useState<FieldChange[]>([]);
+  const [localFieldPositions, setLocalFieldPositions] = useState<Record<string, { x: number; y: number }>>({});
   
   // Drag state for fields
   const [dragState, setDragState] = useState<{
@@ -67,19 +80,30 @@ export function FullPreviewDialog({
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
 
+  // Initialize local positions from fields
   useEffect(() => {
     if (open) {
       setOffsetX(initialOffsetX);
       setOffsetY(initialOffsetY);
       setScale(initialScale);
-      setHasChanges(false);
+      setHasBackgroundChanges(false);
       setSelectedFieldId(null);
+      setFieldChanges([]);
+      // Initialize local positions
+      const positions: Record<string, { x: number; y: number }> = {};
+      fields.forEach(f => {
+        positions[f.id] = { x: f.position_x, y: f.position_y };
+      });
+      setLocalFieldPositions(positions);
     }
-  }, [open, initialOffsetX, initialOffsetY, initialScale]);
+  }, [open, initialOffsetX, initialOffsetY, initialScale, fields]);
 
   const isLandscape = template.page_orientation === 'landscape';
   const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
   const height = isLandscape ? A4_WIDTH_MM : A4_HEIGHT_MM;
+
+  const hasFieldChanges = fieldChanges.length > 0;
+  const hasAnyChanges = hasBackgroundChanges || hasFieldChanges;
 
   const getFieldValue = (fieldKey: string): string => {
     // Handle mention fields
@@ -133,7 +157,7 @@ export function FullPreviewDialog({
   };
 
   const handleBackgroundMove = (direction: 'up' | 'down' | 'left' | 'right') => {
-    setHasChanges(true);
+    setHasBackgroundChanges(true);
     switch (direction) {
       case 'up': setOffsetY(prev => prev - 1); break;
       case 'down': setOffsetY(prev => prev + 1); break;
@@ -144,29 +168,78 @@ export function FullPreviewDialog({
 
   const handleScaleChange = (value: number[]) => {
     setScale(value[0]);
-    setHasChanges(true);
+    setHasBackgroundChanges(true);
   };
 
-  const handleReset = () => {
-    setOffsetX(0);
-    setOffsetY(0);
-    setScale(100);
-    setHasChanges(true);
+  const handleResetBackground = () => {
+    setOffsetX(initialOffsetX);
+    setOffsetY(initialOffsetY);
+    setScale(initialScale);
+    setHasBackgroundChanges(false);
   };
 
-  const handleSave = () => {
+  const handleResetFields = () => {
+    // Reset all local positions to original
+    const positions: Record<string, { x: number; y: number }> = {};
+    fields.forEach(f => {
+      positions[f.id] = { x: f.position_x, y: f.position_y };
+    });
+    setLocalFieldPositions(positions);
+    setFieldChanges([]);
+    toast.success("تم التراجع عن جميع تغييرات الحقول");
+  };
+
+  const handleUndoLastFieldChange = () => {
+    if (fieldChanges.length === 0) return;
+    
+    const lastChange = fieldChanges[fieldChanges.length - 1];
+    
+    // Restore old position
+    setLocalFieldPositions(prev => ({
+      ...prev,
+      [lastChange.fieldId]: { x: lastChange.oldX, y: lastChange.oldY }
+    }));
+    
+    // Remove last change
+    setFieldChanges(prev => prev.slice(0, -1));
+    
+    toast.success(`تم التراجع عن تحريك "${lastChange.fieldName}"`);
+  };
+
+  const handleSaveBackground = () => {
     onSaveSettings({
       background_offset_x: offsetX,
       background_offset_y: offsetY,
       background_scale: scale,
     });
-    setHasChanges(false);
+    setHasBackgroundChanges(false);
     toast.success("تم حفظ إعدادات الخلفية");
   };
 
+  const handleSaveFields = () => {
+    if (!onFieldMove) return;
+    
+    // Save all field changes
+    fieldChanges.forEach(change => {
+      onFieldMove(change.fieldId, change.newX, change.newY);
+    });
+    
+    setFieldChanges([]);
+    toast.success(`تم حفظ تغييرات ${fieldChanges.length} حقل`);
+  };
+
+  const handleSaveAll = () => {
+    if (hasBackgroundChanges) {
+      handleSaveBackground();
+    }
+    if (hasFieldChanges && onFieldMove) {
+      handleSaveFields();
+    }
+  };
+
   const handlePrint = () => {
-    if (hasChanges) {
-      handleSave();
+    if (hasAnyChanges) {
+      handleSaveAll();
     }
     onPrint();
     onOpenChange(false);
@@ -181,15 +254,17 @@ export function FullPreviewDialog({
     
     setSelectedFieldId(field.id);
     
+    const currentPos = localFieldPositions[field.id] || { x: field.position_x, y: field.position_y };
+    
     setDragState({
       fieldId: field.id,
       startX: e.clientX,
       startY: e.clientY,
-      fieldStartX: field.position_x,
-      fieldStartY: field.position_y,
+      fieldStartX: currentPos.x,
+      fieldStartY: currentPos.y,
     });
-    setDragPreview({ x: field.position_x, y: field.position_y });
-  }, [onFieldMove]);
+    setDragPreview({ x: currentPos.x, y: currentPos.y });
+  }, [onFieldMove, localFieldPositions]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !canvasRef.current) return;
@@ -209,15 +284,34 @@ export function FullPreviewDialog({
   }, [dragState, width, height]);
 
   const handleMouseUp = useCallback(() => {
-    if (dragState && dragPreview && onFieldMove) {
+    if (dragState && dragPreview) {
       // Only update if position actually changed
       if (dragPreview.x !== dragState.fieldStartX || dragPreview.y !== dragState.fieldStartY) {
-        onFieldMove(dragState.fieldId, dragPreview.x, dragPreview.y);
+        const field = fields.find(f => f.id === dragState.fieldId);
+        
+        // Update local position
+        setLocalFieldPositions(prev => ({
+          ...prev,
+          [dragState.fieldId]: { x: dragPreview.x, y: dragPreview.y }
+        }));
+        
+        // Track change for undo
+        setFieldChanges(prev => [
+          ...prev,
+          {
+            fieldId: dragState.fieldId,
+            fieldName: field?.field_name_ar || '',
+            oldX: dragState.fieldStartX,
+            oldY: dragState.fieldStartY,
+            newX: dragPreview.x,
+            newY: dragPreview.y,
+          }
+        ]);
       }
     }
     setDragState(null);
     setDragPreview(null);
-  }, [dragState, dragPreview, onFieldMove]);
+  }, [dragState, dragPreview, fields]);
 
   const handleMouseLeave = useCallback(() => {
     if (dragState) {
@@ -225,12 +319,12 @@ export function FullPreviewDialog({
     }
   }, [dragState, handleMouseUp]);
 
-  // Get field position (use drag preview if dragging)
+  // Get field position (use drag preview if dragging, then local, then original)
   const getFieldPosition = (field: TemplateField) => {
     if (dragState?.fieldId === field.id && dragPreview) {
       return dragPreview;
     }
-    return { x: field.position_x, y: field.position_y };
+    return localFieldPositions[field.id] || { x: field.position_x, y: field.position_y };
   };
 
   const selectedField = fields.find(f => f.id === selectedFieldId);
@@ -247,18 +341,21 @@ export function FullPreviewDialog({
               )}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              {hasChanges && (
-                <Badge variant="secondary" className="animate-pulse">
+              {hasAnyChanges && (
+                <Badge variant="destructive" className="animate-pulse">
                   تغييرات غير محفوظة
+                  {hasFieldChanges && ` (${toWesternNumerals(fieldChanges.length)} حقل)`}
                 </Badge>
               )}
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 ml-1" />
-                إعادة تعيين
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleSave} disabled={!hasChanges}>
+              {hasFieldChanges && (
+                <Button variant="outline" size="sm" onClick={handleUndoLastFieldChange}>
+                  <Undo2 className="h-4 w-4 ml-1" />
+                  تراجع
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleSaveAll} disabled={!hasAnyChanges}>
                 <Save className="h-4 w-4 ml-1" />
-                حفظ الإعدادات
+                حفظ الكل
               </Button>
               <Button size="sm" onClick={handlePrint}>
                 <Printer className="h-4 w-4 ml-1" />
@@ -284,6 +381,31 @@ export function FullPreviewDialog({
               </Button>
             </div>
 
+            {/* Field Changes Info */}
+            {hasFieldChanges && (
+              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-destructive">
+                    {toWesternNumerals(fieldChanges.length)} تغيير غير محفوظ
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={handleUndoLastFieldChange}>
+                    <Undo2 className="h-3 w-3 ml-1" />
+                    تراجع
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={handleResetFields}>
+                    <RotateCcw className="h-3 w-3 ml-1" />
+                    إلغاء الكل
+                  </Button>
+                </div>
+                <Button size="sm" className="w-full" onClick={handleSaveFields}>
+                  <Save className="h-3 w-3 ml-1" />
+                  حفظ الحقول
+                </Button>
+              </div>
+            )}
+
             {/* Selected Field Info */}
             {selectedField && (
               <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
@@ -300,7 +422,15 @@ export function FullPreviewDialog({
             )}
 
             <div className="space-y-3">
-              <h4 className="font-semibold text-sm">تحريك الخلفية</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm">تحريك الخلفية</h4>
+                {hasBackgroundChanges && (
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={handleResetBackground}>
+                    <RotateCcw className="h-3 w-3 ml-1" />
+                    تراجع
+                  </Button>
+                )}
+              </div>
               <div className="flex flex-col items-center gap-2">
                 <Button variant="outline" size="icon" onClick={() => handleBackgroundMove('up')}>
                   <ChevronUp className="h-4 w-4" />
@@ -320,6 +450,12 @@ export function FullPreviewDialog({
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </div>
+              {hasBackgroundChanges && (
+                <Button size="sm" className="w-full" onClick={handleSaveBackground}>
+                  <Save className="h-3 w-3 ml-1" />
+                  حفظ الخلفية
+                </Button>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -346,21 +482,29 @@ export function FullPreviewDialog({
             <div className="space-y-3">
               <h4 className="font-semibold text-sm">الحقول المعروضة</h4>
               <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
-                {fields.filter(f => f.is_visible).map((field) => (
-                  <div 
-                    key={field.id} 
-                    className={cn(
-                      "flex justify-between items-center p-2 rounded cursor-pointer transition-colors",
-                      selectedFieldId === field.id ? "bg-primary/20 border border-primary/30" : "bg-background hover:bg-muted"
-                    )}
-                    onClick={() => setSelectedFieldId(field.id)}
-                  >
-                    <span>{field.field_name_ar}</span>
-                    <Badge variant="outline" className="font-mono text-[10px]">
-                      {toWesternNumerals(field.position_x)},{toWesternNumerals(field.position_y)}
-                    </Badge>
-                  </div>
-                ))}
+                {fields.filter(f => f.is_visible).map((field) => {
+                  const pos = getFieldPosition(field);
+                  const hasChange = fieldChanges.some(c => c.fieldId === field.id);
+                  return (
+                    <div 
+                      key={field.id} 
+                      className={cn(
+                        "flex justify-between items-center p-2 rounded cursor-pointer transition-colors",
+                        selectedFieldId === field.id ? "bg-primary/20 border border-primary/30" : "bg-background hover:bg-muted",
+                        hasChange && "ring-1 ring-destructive/50"
+                      )}
+                      onClick={() => setSelectedFieldId(field.id)}
+                    >
+                      <span className="flex items-center gap-1">
+                        {hasChange && <span className="w-2 h-2 rounded-full bg-destructive" />}
+                        {field.field_name_ar}
+                      </span>
+                      <Badge variant="outline" className="font-mono text-[10px]">
+                        {toWesternNumerals(pos.x)},{toWesternNumerals(pos.y)}
+                      </Badge>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -404,6 +548,7 @@ export function FullPreviewDialog({
                 const position = getFieldPosition(field);
                 const isSelected = selectedFieldId === field.id;
                 const isDragging = dragState?.fieldId === field.id;
+                const hasChange = fieldChanges.some(c => c.fieldId === field.id);
                 const value = getFieldValue(field.field_key);
                 
                 return (
@@ -427,7 +572,8 @@ export function FullPreviewDialog({
                         "border border-transparent transition-all select-none px-1",
                         showFieldControls && "hover:border-primary/50 hover:bg-primary/5",
                         isSelected && "border-primary border-2 bg-primary/10 rounded",
-                        isDragging && "border-primary border-2 bg-primary/20 rounded shadow-lg"
+                        isDragging && "border-primary border-2 bg-primary/20 rounded shadow-lg",
+                        hasChange && !isSelected && "border-destructive/50 border bg-destructive/5"
                       )}
                       style={{
                         fontSize: `${field.font_size * SCALE * 0.35}px`,
