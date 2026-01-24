@@ -1,5 +1,5 @@
 // Fonts configuration for jsPDF
-// Using Google Fonts CDN for reliable font loading
+// Using locally hosted fonts for reliable loading
 
 export interface FontConfig {
   name: string;
@@ -23,14 +23,14 @@ export const systemFonts: FontConfig[] = [
   { name: 'Courier-Bold', displayName: 'Courier Bold', displayNameAr: 'كوريير عريض', family: 'courier', style: 'bold', isArabic: false, isSystem: true },
 ];
 
-// Arabic fonts (loaded from Google Fonts)
+// Arabic fonts (loaded from local files in public/fonts/)
 export const arabicFonts: FontConfig[] = [
   {
     name: 'Amiri',
     displayName: 'Amiri',
     displayNameAr: 'أميري',
     family: 'Amiri',
-    url: 'https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHqUpvrIw74NL.ttf',
+    url: '/fonts/Amiri-Regular.ttf',
     style: 'normal',
     isArabic: true,
     isSystem: false,
@@ -40,7 +40,7 @@ export const arabicFonts: FontConfig[] = [
     displayName: 'Amiri Bold',
     displayNameAr: 'أميري عريض',
     family: 'Amiri',
-    url: 'https://fonts.gstatic.com/s/amiri/v27/J7acnpd8CGxBHp2VkZY4xJ9CGyAa.ttf',
+    url: '/fonts/Amiri-Bold.ttf',
     style: 'bold',
     isArabic: true,
     isSystem: false,
@@ -50,18 +50,8 @@ export const arabicFonts: FontConfig[] = [
     displayName: 'Cairo',
     displayNameAr: 'القاهرة',
     family: 'Cairo',
-    url: 'https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hOA-W1ToLQ-HmkA.ttf',
+    url: '/fonts/Cairo-Regular.ttf',
     style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'Cairo-Bold',
-    displayName: 'Cairo Bold',
-    displayNameAr: 'القاهرة عريض',
-    family: 'Cairo',
-    url: 'https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hD4-W1ToLQ-HmkA.ttf',
-    style: 'bold',
     isArabic: true,
     isSystem: false,
   },
@@ -70,7 +60,7 @@ export const arabicFonts: FontConfig[] = [
     displayName: 'Tajawal',
     displayNameAr: 'تجوال',
     family: 'Tajawal',
-    url: 'https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1rzaLCr5IlLA.ttf',
+    url: '/fonts/Tajawal-Regular.ttf',
     style: 'normal',
     isArabic: true,
     isSystem: false,
@@ -80,7 +70,7 @@ export const arabicFonts: FontConfig[] = [
     displayName: 'Tajawal Bold',
     displayNameAr: 'تجوال عريض',
     family: 'Tajawal',
-    url: 'https://fonts.gstatic.com/s/tajawal/v9/Iurf6YBj_oCad4k1l_6gLrZjiLlJ-G0.ttf',
+    url: '/fonts/Tajawal-Bold.ttf',
     style: 'bold',
     isArabic: true,
     isSystem: false,
@@ -89,78 +79,8 @@ export const arabicFonts: FontConfig[] = [
     name: 'Noto-Sans-Arabic',
     displayName: 'Noto Sans Arabic',
     displayNameAr: 'نوتو سانس عربي',
-    family: 'Noto Sans Arabic',
-    url: 'https://fonts.gstatic.com/s/notosansarabic/v18/nwpxtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyGyvu3CBFQLaig.ttf',
-    style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'IBM-Plex-Sans-Arabic',
-    displayName: 'IBM Plex Sans Arabic',
-    displayNameAr: 'IBM بلكس سانس عربي',
-    family: 'IBM Plex Sans Arabic',
-    url: 'https://fonts.gstatic.com/s/ibmplexsansarabic/v12/Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6Ys43PWrfvBK.ttf',
-    style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'Scheherazade',
-    displayName: 'Scheherazade New',
-    displayNameAr: 'شهرزاد',
-    family: 'Scheherazade New',
-    url: 'https://fonts.gstatic.com/s/scheherazadenew/v15/4UaZrFhTvxVnHDvUkUiHg8jprP4DCwNsOl4p5Is.ttf',
-    style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'Lateef',
-    displayName: 'Lateef',
-    displayNameAr: 'لطيف',
-    family: 'Lateef',
-    url: 'https://fonts.gstatic.com/s/lateef/v30/hESw6XVnNCxEvkb8pCBl9GZ9.ttf',
-    style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'Almarai',
-    displayName: 'Almarai',
-    displayNameAr: 'المراعي',
-    family: 'Almarai',
-    url: 'https://fonts.gstatic.com/s/almarai/v12/tssoApxBaigK_hnnS-anhnicoq72sXg.ttf',
-    style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'El-Messiri',
-    displayName: 'El Messiri',
-    displayNameAr: 'المسيري',
-    family: 'El Messiri',
-    url: 'https://fonts.gstatic.com/s/elmessiri/v22/K2F0fZBRmr9vQ1pHEey6GIGo8_pv3myYjuXwe55djw.ttf',
-    style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'Rakkas',
-    displayName: 'Rakkas',
-    displayNameAr: 'رقاص',
-    family: 'Rakkas',
-    url: 'https://fonts.gstatic.com/s/rakkas/v19/Qw3cZQlNHiblL3j_lttPOeMc.ttf',
-    style: 'normal',
-    isArabic: true,
-    isSystem: false,
-  },
-  {
-    name: 'Reem-Kufi',
-    displayName: 'Reem Kufi',
-    displayNameAr: 'ريم كوفي',
-    family: 'Reem Kufi',
-    url: 'https://fonts.gstatic.com/s/reemkufi/v21/2sBcZGJLip7W2J7v7wJZT0MiFb5F.ttf',
+    family: 'NotoSansArabic',
+    url: '/fonts/NotoSansArabic-Regular.ttf',
     style: 'normal',
     isArabic: true,
     isSystem: false,
@@ -216,7 +136,8 @@ export function getFontByName(fontName: string): FontConfig | undefined {
     f.name === fontName || 
     f.displayName === fontName || 
     f.family === fontName ||
-    f.family.toLowerCase() === fontName.toLowerCase()
+    f.family.toLowerCase() === fontName.toLowerCase() ||
+    f.name.toLowerCase() === fontName.toLowerCase()
   );
 }
 

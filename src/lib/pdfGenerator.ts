@@ -140,17 +140,20 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
-// Cache for loaded fonts in jsPDF format
-const loadedFontsForPDF = new Set<string>();
+// Cache for loaded font data (ArrayBuffer) - shared across documents
+const fontDataCache = new Map<string, string>(); // url -> base64
 
 // Default Arabic font to use as fallback
-const DEFAULT_ARABIC_FONT = 'Cairo';
+const DEFAULT_ARABIC_FONT = 'Amiri';
 
 /**
  * Load and register fonts in jsPDF document
  * Always loads a default Arabic font first to ensure Arabic text renders correctly
+ * NOTE: Each jsPDF document needs fonts registered separately
  */
-async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
+async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<string>> {
+  const registeredFonts = new Set<string>();
+  
   // Always ensure we have at least one Arabic font loaded as fallback
   const uniqueFonts = [...new Set([DEFAULT_ARABIC_FONT, ...fontsNeeded])];
   
@@ -175,45 +178,52 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
         continue;
       }
 
-      const fontKey = `${font.family}-${font.style}`;
-      
-      // Skip if already loaded
-      if (loadedFontsForPDF.has(fontKey)) {
-        continue;
-      }
-
       // Skip if no URL (system font)
       if (!font.url) {
         continue;
       }
 
       try {
-        const fontBuffer = await loadFontFile(font.url);
-        if (fontBuffer) {
-          const fontBase64 = arrayBufferToBase64(fontBuffer);
-          const fileName = `${font.name}.ttf`;
-          
-          // Add font file to virtual file system
-          doc.addFileToVFS(fileName, fontBase64);
-          
-          // Register the font
-          doc.addFont(fileName, font.family, font.style);
-          
-          loadedFontsForPDF.add(fontKey);
-          console.log(`Loaded font: ${font.family} (${font.style})`);
+        let fontBase64: string;
+        
+        // Check if we have cached the base64 data
+        if (fontDataCache.has(font.url)) {
+          fontBase64 = fontDataCache.get(font.url)!;
+        } else {
+          // Load and convert to base64
+          const fontBuffer = await loadFontFile(font.url);
+          if (!fontBuffer) {
+            console.error(`Failed to load font buffer: ${font.url}`);
+            continue;
+          }
+          fontBase64 = arrayBufferToBase64(fontBuffer);
+          fontDataCache.set(font.url, fontBase64);
         }
+        
+        const fileName = `${font.name}.ttf`;
+        
+        // Add font file to virtual file system for THIS document
+        doc.addFileToVFS(fileName, fontBase64);
+        
+        // Register the font for THIS document
+        doc.addFont(fileName, font.family, font.style);
+        
+        registeredFonts.add(font.family);
+        console.log(`Registered font: ${font.family} (${font.style})`);
       } catch (error) {
         console.error(`Failed to load font ${font.family}:`, error);
       }
     }
   }
+  
+  return registeredFonts;
 }
 
 /**
  * Set font for a field in jsPDF
- * Falls back to Cairo (Arabic font) if the requested font is not available
+ * Falls back to Amiri (Arabic font) if the requested font is not available
  */
-function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number): void {
+function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number, registeredFonts: Set<string>): void {
   if (!fontName) {
     // Use default Arabic font
     try {
@@ -226,20 +236,20 @@ function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number
   }
 
   const font = getFontByName(fontName);
-  if (font) {
+  if (font && registeredFonts.has(font.family)) {
     try {
       doc.setFont(font.family, font.style);
     } catch {
-      // Font not loaded, try fallback to Cairo
-      console.warn(`Font ${fontName} not available, using Cairo fallback`);
+      // Font not loaded, try fallback
+      console.warn(`Font ${fontName} not available, using fallback`);
       try {
         doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
       } catch {
-        console.warn('Cairo fallback also failed');
+        console.warn('Fallback also failed');
       }
     }
   } else {
-    // Unknown font, use default Arabic
+    // Unknown font or not registered, use default Arabic
     try {
       doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
     } catch {
@@ -273,7 +283,7 @@ export async function generatePDF(
     .map(f => f.font_name);
 
   // Register fonts
-  await registerFonts(doc, fontsNeeded);
+  const registeredFonts = await registerFonts(doc, fontsNeeded);
 
   // NOTE: Background is NOT included in PDF - it's only for visual positioning in preview
   // The PDF is designed to print on pre-printed certificate paper
@@ -292,7 +302,7 @@ export async function generatePDF(
       if (!value) return;
 
       // Set font properties
-      setFieldFont(doc, field.font_name, field.font_size);
+      setFieldFont(doc, field.font_name, field.font_size, registeredFonts);
       doc.setTextColor(field.font_color);
 
       // Calculate text position
@@ -458,7 +468,7 @@ export async function generateSinglePDF(
     .map(f => f.font_name);
 
   // Register fonts
-  await registerFonts(doc, fontsNeeded);
+  const registeredFonts = await registerFonts(doc, fontsNeeded);
 
   // NOTE: Background is NOT included in PDF - it's only for visual positioning in preview
   // The PDF is designed to print on pre-printed certificate paper
@@ -469,7 +479,7 @@ export async function generateSinglePDF(
     if (!value) return;
 
     // Set font properties
-    setFieldFont(doc, field.font_name, field.font_size);
+    setFieldFont(doc, field.font_name, field.font_size, registeredFonts);
     doc.setTextColor(field.font_color);
 
     let align: 'left' | 'center' | 'right' = 'center';
