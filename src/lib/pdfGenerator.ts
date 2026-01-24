@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from '@/types/certificates';
 import { mentionLabels } from '@/types/certificates';
 import { allFonts, loadFontFile, arrayBufferToBase64, getFontByName, type FontConfig } from './arabicFonts';
+import { toWesternNumerals, formatCertificateDate } from './numerals';
 
 // A4 dimensions in mm
 const A4_WIDTH = 210;
@@ -27,11 +28,16 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
 // Cache for loaded fonts in jsPDF format
 const loadedFontsForPDF = new Set<string>();
 
+// Default Arabic font to use as fallback
+const DEFAULT_ARABIC_FONT = 'Cairo';
+
 /**
  * Load and register fonts in jsPDF document
+ * Always loads a default Arabic font first to ensure Arabic text renders correctly
  */
 async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
-  const uniqueFonts = [...new Set(fontsNeeded)];
+  // Always ensure we have at least one Arabic font loaded as fallback
+  const uniqueFonts = [...new Set([DEFAULT_ARABIC_FONT, ...fontsNeeded])];
   
   for (const fontFamily of uniqueFonts) {
     // Find matching fonts (normal and bold variants)
@@ -39,16 +45,17 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
       f.family === fontFamily || 
       f.name === fontFamily || 
       f.displayName === fontFamily ||
-      f.family.toLowerCase() === fontFamily.toLowerCase()
+      f.family.toLowerCase() === fontFamily.toLowerCase() ||
+      f.name.toLowerCase() === fontFamily.toLowerCase()
     );
     
     if (matchingFonts.length === 0) {
-      console.warn(`Font not found: ${fontFamily}, using default`);
+      console.warn(`Font not found: ${fontFamily}, will use fallback`);
       continue;
     }
 
     for (const font of matchingFonts) {
-      // Skip system fonts - they're built into jsPDF
+      // Skip system fonts - they're built into jsPDF but don't support Arabic
       if (font.isSystem) {
         continue;
       }
@@ -89,9 +96,16 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<void> {
 
 /**
  * Set font for a field in jsPDF
+ * Falls back to Cairo (Arabic font) if the requested font is not available
  */
 function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number): void {
   if (!fontName) {
+    // Use default Arabic font
+    try {
+      doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
+    } catch {
+      console.warn('Default Arabic font not available');
+    }
     doc.setFontSize(fontSize);
     return;
   }
@@ -101,8 +115,20 @@ function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number
     try {
       doc.setFont(font.family, font.style);
     } catch {
-      // Font not loaded, use default
-      console.warn(`Font ${fontName} not available, using default`);
+      // Font not loaded, try fallback to Cairo
+      console.warn(`Font ${fontName} not available, using Cairo fallback`);
+      try {
+        doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
+      } catch {
+        console.warn('Cairo fallback also failed');
+      }
+    }
+  } else {
+    // Unknown font, use default Arabic
+    try {
+      doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
+    } catch {
+      console.warn('Default Arabic font not available');
     }
   }
   
@@ -134,11 +160,8 @@ export async function generatePDF(
   // Register fonts
   await registerFonts(doc, fontsNeeded);
 
-  // Load background image if exists
-  let backgroundBase64: string | null = null;
-  if (template.background_image_url) {
-    backgroundBase64 = await loadImageAsBase64(template.background_image_url);
-  }
+  // NOTE: Background is NOT included in PDF - it's only for visual positioning in preview
+  // The PDF is designed to print on pre-printed certificate paper
 
   // Process each student
   students.forEach((student, index) => {
@@ -146,10 +169,7 @@ export async function generatePDF(
       doc.addPage();
     }
 
-    // Add background image
-    if (backgroundBase64) {
-      doc.addImage(backgroundBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
-    }
+    // NO background image in PDF - printing on pre-printed paper
 
     // Add visible fields
     fields.filter(f => f.is_visible).forEach((field) => {
@@ -188,16 +208,17 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     return mentionLabels[value as MentionType]?.ar || String(value);
   }
 
-  // Handle date fields
+  // Handle date fields - use Western numerals (0123456789)
   if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
     try {
-      return new Date(value as string).toLocaleDateString('ar-SA');
+      return formatCertificateDate(value as string);
     } catch {
-      return String(value);
+      return toWesternNumerals(String(value));
     }
   }
 
-  return String(value);
+  // Convert any Hindi numerals to Western Arabic for all values
+  return toWesternNumerals(String(value));
 }
 
 // Export function to generate PDF for a single student (for preview)
@@ -226,13 +247,8 @@ export async function generateSinglePDF(
   // Register fonts
   await registerFonts(doc, fontsNeeded);
 
-  // Load background image if exists
-  if (template.background_image_url) {
-    const backgroundBase64 = await loadImageAsBase64(template.background_image_url);
-    if (backgroundBase64) {
-      doc.addImage(backgroundBase64, 'JPEG', 0, 0, pageWidth, pageHeight);
-    }
-  }
+  // NOTE: Background is NOT included in PDF - it's only for visual positioning in preview
+  // The PDF is designed to print on pre-printed certificate paper
 
   // Add visible fields
   fields.filter(f => f.is_visible).forEach((field) => {

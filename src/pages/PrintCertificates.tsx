@@ -49,6 +49,11 @@ export default function PrintCertificates() {
   const [isImportExcelOpen, setIsImportExcelOpen] = useState(false);
   const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
+  
+  // Background offset state for visual alignment
+  const [backgroundOffsetX, setBackgroundOffsetX] = useState(0);
+  const [backgroundOffsetY, setBackgroundOffsetY] = useState(0);
+  const [showBackgroundControls, setShowBackgroundControls] = useState(false);
 
   // Data hooks
   const { data: templates = [], isLoading: loadingTemplates } = useCertificateTemplates();
@@ -417,6 +422,13 @@ export default function PrintCertificates() {
                   onAddField={() => setIsAddFieldOpen(true)}
                   stepSize={stepSize}
                   isMoving={updateField.isPending}
+                  backgroundOffsetX={backgroundOffsetX}
+                  backgroundOffsetY={backgroundOffsetY}
+                  onBackgroundOffsetChange={(x, y) => {
+                    setBackgroundOffsetX(x);
+                    setBackgroundOffsetY(y);
+                  }}
+                  showBackgroundControls={showBackgroundControls}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full min-h-[500px] text-muted-foreground">
@@ -641,20 +653,95 @@ export default function PrintCertificates() {
 
             <TabsContent value="background">
               {selectedTemplateId ? (
-                <div className="max-w-md">
-                  <BackgroundUpload
-                    templateId={selectedTemplateId}
-                    currentImageUrl={templates.find(t => t.id === selectedTemplateId)?.background_image_url || null}
-                    onUploadComplete={(url) => {
-                      updateTemplate.mutate({
-                        id: selectedTemplateId,
-                        background_image_url: url,
-                      });
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground mt-4">
-                    ارفع صورة الشهادة الفارغة (بدون بيانات الطالب) لاستخدامها كخلفية عند الطباعة.
-                  </p>
+                <div className="space-y-6">
+                  <div className="max-w-md">
+                    <BackgroundUpload
+                      templateId={selectedTemplateId}
+                      currentImageUrl={templates.find(t => t.id === selectedTemplateId)?.background_image_url || null}
+                      onUploadComplete={(url) => {
+                        updateTemplate.mutate({
+                          id: selectedTemplateId,
+                          background_image_url: url,
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-4">
+                      ارفع صورة الشهادة الفارغة (بدون بيانات الطالب) لاستخدامها كخلفية للمعاينة فقط.
+                      <br />
+                      <strong>ملاحظة:</strong> الخلفية لا تُطبع - تُستخدم فقط لضبط مواقع الحقول على الورقة المحضرة مسبقاً.
+                    </p>
+                  </div>
+
+                  {/* Background positioning controls */}
+                  {templates.find(t => t.id === selectedTemplateId)?.background_image_url && (
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="font-semibold">ضبط موضع الخلفية</h4>
+                          <p className="text-xs text-muted-foreground">
+                            قم بتفعيل هذا الخيار لتحريك صورة الخلفية وضبط محاذاتها مع الحقول
+                          </p>
+                        </div>
+                        <Button
+                          variant={showBackgroundControls ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setShowBackgroundControls(!showBackgroundControls)}
+                        >
+                          {showBackgroundControls ? "إيقاف ضبط الخلفية" : "تفعيل ضبط الخلفية"}
+                        </Button>
+                      </div>
+                      
+                      {showBackgroundControls && (
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setBackgroundOffsetY(backgroundOffsetY - 1)}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setBackgroundOffsetX(backgroundOffsetX - 1)}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                              <div className="w-16 h-10 rounded-md border flex items-center justify-center text-sm font-mono">
+                                {backgroundOffsetX},{backgroundOffsetY}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setBackgroundOffsetX(backgroundOffsetX + 1)}
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setBackgroundOffsetY(backgroundOffsetY + 1)}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setBackgroundOffsetX(0);
+                              setBackgroundOffsetY(0);
+                            }}
+                          >
+                            إعادة تعيين
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-[200px] text-muted-foreground">
