@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock } from "lucide-react";
+import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock, FileType } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -36,8 +36,11 @@ import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/import";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
 import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
-import { getFontOptions } from "@/lib/arabicFonts";
+import { FontManagement } from "@/components/print/FontManagement";
+import { getFontOptions, setCustomFonts, type FontConfig } from "@/lib/arabicFonts";
 import { toWesternNumerals } from "@/lib/numerals";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -79,6 +82,36 @@ export default function PrintCertificates() {
   const { data: phdScienceData = [] } = usePhdScienceCertificates();
   const { data: masterData = [] } = useMasterCertificates();
   const { data: savedSettings } = useUserSettings();
+
+  // Load custom fonts from database
+  const { data: customFontsData = [] } = useQuery({
+    queryKey: ["custom_fonts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_fonts")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Update custom fonts in the arabicFonts module when they change
+  useEffect(() => {
+    if (customFontsData.length > 0) {
+      const fontConfigs: FontConfig[] = customFontsData.map(f => ({
+        name: f.font_name,
+        displayName: f.font_name,
+        displayNameAr: f.font_name,
+        family: f.font_family,
+        url: f.font_url,
+        style: (f.font_style || 'normal') as 'normal' | 'bold' | 'italic',
+        isArabic: f.is_arabic || false,
+        isSystem: false,
+      }));
+      setCustomFonts(fontConfigs);
+    }
+  }, [customFontsData]);
   
   const updateField = useUpdateTemplateField();
   const deleteField = useDeleteTemplateField();
@@ -506,6 +539,10 @@ export default function PrintCertificates() {
               <TabsTrigger value="preview">المعاينة</TabsTrigger>
               <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
               <TabsTrigger value="background">صورة الخلفية</TabsTrigger>
+              <TabsTrigger value="fonts" className="gap-1">
+                <FileType className="h-3 w-3" />
+                إدارة الخطوط
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="preview" className="min-h-[calc(100vh-400px)]">
@@ -902,6 +939,10 @@ export default function PrintCertificates() {
                   يرجى اختيار قالب أولاً
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="fonts">
+              <FontManagement />
             </TabsContent>
           </Tabs>
         </CardContent>
