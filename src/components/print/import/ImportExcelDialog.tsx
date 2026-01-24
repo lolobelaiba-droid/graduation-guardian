@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { FileSpreadsheet } from "lucide-react";
 import {
@@ -18,12 +18,14 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import { UploadStep } from "./UploadStep";
+import { ModeStep } from "./ModeStep";
 import { MappingStep } from "./MappingStep";
 import { PreviewStep } from "./PreviewStep";
 import { ImportingStep } from "./ImportingStep";
 import { CompleteStep } from "./CompleteStep";
 import {
   ImportStep,
+  ImportMode,
   ColumnMapping,
   ImportProgress,
   ImportResults,
@@ -51,9 +53,36 @@ export function ImportExcelDialog({
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
   const [importProgress, setImportProgress] = useState<ImportProgress>({ current: 0, total: 0 });
   const [importResults, setImportResults] = useState<ImportResults>({ success: 0, failed: 0, errors: [] });
+  const [importMode, setImportMode] = useState<ImportMode>("append");
+  const [existingCount, setExistingCount] = useState<number>(0);
   const queryClient = useQueryClient();
 
   const requiredFields = certificateFields[certificateType];
+
+  // Fetch existing count when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchExistingCount();
+    }
+  }, [open, certificateType]);
+
+  const fetchExistingCount = async () => {
+    const tableName = getCertificateTable(certificateType);
+    let count = 0;
+    
+    if (tableName === 'phd_lmd_certificates') {
+      const { count: c } = await supabase.from('phd_lmd_certificates').select('*', { count: 'exact', head: true });
+      count = c || 0;
+    } else if (tableName === 'phd_science_certificates') {
+      const { count: c } = await supabase.from('phd_science_certificates').select('*', { count: 'exact', head: true });
+      count = c || 0;
+    } else {
+      const { count: c } = await supabase.from('master_certificates').select('*', { count: 'exact', head: true });
+      count = c || 0;
+    }
+    
+    setExistingCount(count);
+  };
 
   const resetDialog = useCallback(() => {
     setStep("upload");
@@ -63,6 +92,7 @@ export function ImportExcelDialog({
     setColumnMapping({});
     setImportProgress({ current: 0, total: 0 });
     setImportResults({ success: 0, failed: 0, errors: [] });
+    setImportMode("append");
   }, []);
 
   const handleClose = () => {
@@ -135,7 +165,12 @@ export function ImportExcelDialog({
       });
       setColumnMapping(autoMapping);
 
-      setStep("mapping");
+      // If there are existing records, show mode selection step
+      if (existingCount > 0) {
+        setStep("mode");
+      } else {
+        setStep("mapping");
+      }
       toast.success(`تم تحميل ${jsonData.length} سجل من الملف`);
     } catch (error) {
       console.error("Error reading Excel:", error);
@@ -214,12 +249,30 @@ export function ImportExcelDialog({
 
   const handleImport = async () => {
     setStep("importing");
-    setImportProgress({ current: 0, total: excelData.length });
-
     const tableName = getCertificateTable(certificateType);
     let successCount = 0;
     let failedCount = 0;
     const errors: string[] = [];
+
+    // If replace mode, delete all existing records first
+    if (importMode === "replace") {
+      setImportProgress({ current: 0, total: excelData.length + 1 });
+      try {
+        if (tableName === 'phd_lmd_certificates') {
+          await supabase.from('phd_lmd_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        } else if (tableName === 'phd_science_certificates') {
+          await supabase.from('phd_science_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        } else {
+          await supabase.from('master_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        }
+        toast.success(`تم حذف ${existingCount} سجل سابق`);
+      } catch (error) {
+        console.error("Delete error:", error);
+        errors.push("فشل في حذف البيانات السابقة");
+      }
+    } else {
+      setImportProgress({ current: 0, total: excelData.length });
+    }
 
     for (let i = 0; i < excelData.length; i++) {
       const row = excelData[i];
@@ -257,9 +310,13 @@ export function ImportExcelDialog({
     setImportResults({ success: successCount, failed: failedCount, errors });
 
     // Log activity
+    const activityDescription = importMode === "replace" 
+      ? `تم استبدال قاعدة البيانات بـ ${successCount} طالب من ملف Excel`
+      : `تم استيراد ${successCount} طالب من ملف Excel`;
+    
     await supabase.from("activity_log").insert({
       activity_type: "student_added",
-      description: `تم استيراد ${successCount} طالب من ملف Excel`,
+      description: activityDescription,
       entity_type: "certificate",
     });
 
@@ -271,15 +328,30 @@ export function ImportExcelDialog({
     setStep("complete");
   };
 
+  const handleModeSelect = (mode: ImportMode) => {
+    setImportMode(mode);
+    setStep("mapping");
+  };
+
   const getStepDescription = () => {
     switch (step) {
       case "upload": return "اختر ملف Excel يحتوي على بيانات الطلاب";
+      case "mode": return "اختر طريقة استيراد البيانات";
       case "mapping": return "قم بربط أعمدة Excel مع حقول قاعدة البيانات";
       case "preview": return "راجع البيانات وتأكد من صحتها قبل الاستيراد";
       case "importing": return "جاري استيراد البيانات...";
       case "complete": return "اكتمل الاستيراد";
     }
   };
+
+  const getStepIndicatorSteps = () => {
+    if (existingCount > 0) {
+      return ["upload", "mode", "mapping", "preview"];
+    }
+    return ["upload", "mapping", "preview"];
+  };
+
+  const stepIndicatorSteps = getStepIndicatorSteps();
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -297,20 +369,20 @@ export function ImportExcelDialog({
         {/* Step Indicator */}
         {step !== "complete" && step !== "importing" && (
           <div className="flex items-center justify-center gap-2 py-2">
-            {["upload", "mapping", "preview"].map((s, idx) => (
+            {stepIndicatorSteps.map((s, idx) => (
               <div key={s} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   step === s 
                     ? "bg-primary text-primary-foreground" 
-                    : (["upload", "mapping", "preview"].indexOf(step) > idx)
+                    : (stepIndicatorSteps.indexOf(step) > idx)
                       ? "bg-green-600 text-white"
                       : "bg-muted text-muted-foreground"
                 }`}>
                   {idx + 1}
                 </div>
-                {idx < 2 && (
+                {idx < stepIndicatorSteps.length - 1 && (
                   <div className={`w-12 h-0.5 mx-1 ${
-                    ["upload", "mapping", "preview"].indexOf(step) > idx
+                    stepIndicatorSteps.indexOf(step) > idx
                       ? "bg-green-600"
                       : "bg-muted"
                   }`} />
@@ -328,6 +400,15 @@ export function ImportExcelDialog({
             />
           )}
 
+          {step === "mode" && (
+            <ModeStep
+              existingCount={existingCount}
+              newCount={excelData.length}
+              onModeSelect={handleModeSelect}
+              onBack={resetDialog}
+            />
+          )}
+
           {step === "mapping" && (
             <MappingStep
               excelColumns={excelColumns}
@@ -335,7 +416,7 @@ export function ImportExcelDialog({
               columnMapping={columnMapping}
               requiredFields={requiredFields}
               onMappingChange={handleMappingChange}
-              onBack={resetDialog}
+              onBack={existingCount > 0 ? () => setStep("mode") : resetDialog}
               onNext={() => setStep("preview")}
             />
           )}
