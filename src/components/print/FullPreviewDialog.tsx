@@ -1,0 +1,309 @@
+import { useState, useEffect } from "react";
+import { X, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
+import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
+
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+const SCALE = 2.5;
+
+interface FullPreviewDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  student: Record<string, unknown>;
+  fields: TemplateField[];
+  template: CertificateTemplate;
+  onSaveSettings: (settings: {
+    background_offset_x: number;
+    background_offset_y: number;
+    background_scale: number;
+  }) => void;
+  onPrint: () => void;
+  initialOffsetX?: number;
+  initialOffsetY?: number;
+  initialScale?: number;
+}
+
+export function FullPreviewDialog({
+  open,
+  onOpenChange,
+  student,
+  fields,
+  template,
+  onSaveSettings,
+  onPrint,
+  initialOffsetX = 0,
+  initialOffsetY = 0,
+  initialScale = 100,
+}: FullPreviewDialogProps) {
+  const [offsetX, setOffsetX] = useState(initialOffsetX);
+  const [offsetY, setOffsetY] = useState(initialOffsetY);
+  const [scale, setScale] = useState(initialScale);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setOffsetX(initialOffsetX);
+      setOffsetY(initialOffsetY);
+      setScale(initialScale);
+      setHasChanges(false);
+    }
+  }, [open, initialOffsetX, initialOffsetY, initialScale]);
+
+  const isLandscape = template.page_orientation === 'landscape';
+  const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
+  const height = isLandscape ? A4_WIDTH_MM : A4_HEIGHT_MM;
+
+  const getFieldValue = (fieldKey: string): string => {
+    // Handle mention fields
+    if (fieldKey === 'mention_ar') {
+      const mentionValue = student['mention'] as MentionType;
+      return mentionValue ? mentionLabels[mentionValue]?.ar || String(mentionValue) : '';
+    }
+    if (fieldKey === 'mention_fr') {
+      const mentionValue = student['mention'] as MentionType;
+      return mentionValue ? mentionLabels[mentionValue]?.fr || String(mentionValue) : '';
+    }
+    if (fieldKey === 'mention') {
+      const mentionValue = student['mention'] as MentionType;
+      return mentionValue ? mentionLabels[mentionValue]?.ar || String(mentionValue) : '';
+    }
+
+    // Handle bilingual date fields
+    if (fieldKey === 'date_of_birth_ar') {
+      const value = student['date_of_birth'];
+      return value ? formatCertificateDate(value as string, true) : '';
+    }
+    if (fieldKey === 'date_of_birth_fr') {
+      const value = student['date_of_birth'];
+      return value ? formatCertificateDate(value as string, false) : '';
+    }
+    if (fieldKey === 'defense_date_ar') {
+      const value = student['defense_date'];
+      return value ? formatCertificateDate(value as string, true) : '';
+    }
+    if (fieldKey === 'defense_date_fr') {
+      const value = student['defense_date'];
+      return value ? formatCertificateDate(value as string, false) : '';
+    }
+    if (fieldKey === 'certificate_date_ar') {
+      const value = student['certificate_date'];
+      return value ? formatCertificateDate(value as string, true) : '';
+    }
+    if (fieldKey === 'certificate_date_fr') {
+      const value = student['certificate_date'];
+      return value ? formatCertificateDate(value as string, false) : '';
+    }
+
+    const value = student[fieldKey];
+    
+    // Legacy date fields
+    if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
+      return value ? formatCertificateDate(value as string, false) : '';
+    }
+
+    return value ? toWesternNumerals(String(value)) : '';
+  };
+
+  const handleMove = (direction: 'up' | 'down' | 'left' | 'right') => {
+    setHasChanges(true);
+    switch (direction) {
+      case 'up': setOffsetY(prev => prev - 1); break;
+      case 'down': setOffsetY(prev => prev + 1); break;
+      case 'left': setOffsetX(prev => prev - 1); break;
+      case 'right': setOffsetX(prev => prev + 1); break;
+    }
+  };
+
+  const handleScaleChange = (value: number[]) => {
+    setScale(value[0]);
+    setHasChanges(true);
+  };
+
+  const handleReset = () => {
+    setOffsetX(0);
+    setOffsetY(0);
+    setScale(100);
+    setHasChanges(true);
+  };
+
+  const handleSave = () => {
+    onSaveSettings({
+      background_offset_x: offsetX,
+      background_offset_y: offsetY,
+      background_scale: scale,
+    });
+    setHasChanges(false);
+    toast.success("تم حفظ إعدادات الخلفية");
+  };
+
+  const handlePrint = () => {
+    if (hasChanges) {
+      handleSave();
+    }
+    onPrint();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 overflow-hidden">
+        <DialogHeader className="p-4 border-b bg-background">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              معاينة الشهادة قبل الطباعة
+              {student.full_name_ar && (
+                <Badge variant="outline">{String(student.full_name_ar)}</Badge>
+              )}
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              {hasChanges && (
+                <Badge variant="secondary" className="animate-pulse">
+                  تغييرات غير محفوظة
+                </Badge>
+              )}
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4 ml-1" />
+                إعادة تعيين
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={!hasChanges}>
+                <Save className="h-4 w-4 ml-1" />
+                حفظ الإعدادات
+              </Button>
+              <Button size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 ml-1" />
+                طباعة
+              </Button>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Controls Sidebar */}
+          <div className="w-64 border-l bg-muted/20 p-4 space-y-6 overflow-y-auto">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm">تحريك الخلفية</h4>
+              <div className="flex flex-col items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => handleMove('up')}>
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon" onClick={() => handleMove('right')}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Badge variant="secondary" className="font-mono px-3 py-2">
+                    {toWesternNumerals(offsetX)},{toWesternNumerals(offsetY)}
+                  </Badge>
+                  <Button variant="outline" size="icon" onClick={() => handleMove('left')}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button variant="outline" size="icon" onClick={() => handleMove('down')}>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm">تكبير/تصغير الخلفية</h4>
+              <div className="flex items-center gap-2">
+                <ZoomOut className="h-4 w-4 text-muted-foreground" />
+                <Slider
+                  value={[scale]}
+                  onValueChange={handleScaleChange}
+                  min={50}
+                  max={150}
+                  step={1}
+                  className="flex-1"
+                />
+                <ZoomIn className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="text-center">
+                <Badge variant="outline" className="font-mono">
+                  {toWesternNumerals(scale)}%
+                </Badge>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm">الحقول المعروضة</h4>
+              <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
+                {fields.filter(f => f.is_visible).map((field) => (
+                  <div key={field.id} className="flex justify-between items-center p-1 rounded bg-background">
+                    <span>{field.field_name_ar}</span>
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {toWesternNumerals(field.position_x)},{toWesternNumerals(field.position_y)}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Preview Canvas */}
+          <div className="flex-1 overflow-auto bg-muted/30 p-4 flex items-center justify-center">
+            <div
+              className="relative bg-white shadow-xl border"
+              style={{
+                width: `${width * SCALE}px`,
+                height: `${height * SCALE}px`,
+                direction: template.language.includes('ar') ? 'rtl' : 'ltr',
+              }}
+            >
+              {/* Background image with offset and scale */}
+              {template.background_image_url && (
+                <img
+                  src={template.background_image_url}
+                  alt="خلفية الشهادة"
+                  className="absolute pointer-events-none"
+                  style={{
+                    width: `${scale}%`,
+                    height: `${scale}%`,
+                    objectFit: 'contain',
+                    transform: `translate(${offsetX * SCALE}px, ${offsetY * SCALE}px)`,
+                    left: `${(100 - scale) / 2}%`,
+                    top: `${(100 - scale) / 2}%`,
+                  }}
+                />
+              )}
+
+              {/* Fields */}
+              {fields.filter(f => f.is_visible).map((field) => {
+                const value = getFieldValue(field.field_key);
+                return (
+                  <div
+                    key={field.id}
+                    className="absolute"
+                    style={{
+                      left: `${field.position_x * SCALE}px`,
+                      top: `${field.position_y * SCALE}px`,
+                      fontSize: `${field.font_size * SCALE * 0.35}px`,
+                      fontFamily: field.font_name,
+                      color: field.font_color,
+                      textAlign: field.text_align as 'left' | 'right' | 'center',
+                      direction: field.is_rtl ? 'rtl' : 'ltr',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {value || `[${field.field_name_ar}]`}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

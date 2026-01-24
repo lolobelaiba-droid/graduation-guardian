@@ -109,6 +109,9 @@ export type Database = {
       certificate_templates: {
         Row: {
           background_image_url: string | null
+          background_offset_x: number | null
+          background_offset_y: number | null
+          background_scale: number | null
           certificate_type: Database["public"]["Enums"]["certificate_type"]
           created_at: string | null
           id: string
@@ -121,6 +124,9 @@ export type Database = {
         }
         Insert: {
           background_image_url?: string | null
+          background_offset_x?: number | null
+          background_offset_y?: number | null
+          background_scale?: number | null
           certificate_type: Database["public"]["Enums"]["certificate_type"]
           created_at?: string | null
           id?: string
@@ -133,6 +139,9 @@ export type Database = {
         }
         Update: {
           background_image_url?: string | null
+          background_offset_x?: number | null
+          background_offset_y?: number | null
+          background_scale?: number | null
           certificate_type?: Database["public"]["Enums"]["certificate_type"]
           created_at?: string | null
           id?: string
