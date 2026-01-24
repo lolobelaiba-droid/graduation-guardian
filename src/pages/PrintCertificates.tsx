@@ -254,17 +254,30 @@ export default function PrintCertificates() {
             </div>
             <div>
               <Label>القالب المستخدم</Label>
-              <div className="mt-1">
-                {selectedTemplateId ? (
-                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                    {templates.find(t => t.id === selectedTemplateId)?.template_name || "قالب نشط"}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                    لا يوجد قالب - أنشئ واحداً
-                  </Badge>
-                )}
-              </div>
+              <Select 
+                value={selectedTemplateId || ""} 
+                onValueChange={(v) => {
+                  if (v) {
+                    const template = templates.find(t => t.id === v);
+                    if (template) {
+                      setSelectedTemplateId(v);
+                      setSelectedType(template.certificate_type);
+                      setSelectedLanguage(template.language);
+                    }
+                  }
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="اختر قالباً..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.filter(t => t.is_active).map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.template_name} ({certificateTypeLabels[template.certificate_type]?.ar} - {languageLabels[template.language]?.ar})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -356,10 +369,37 @@ export default function PrintCertificates() {
               ) : !selectedTemplateId ? (
                 <div className="flex flex-col items-center justify-center h-full min-h-[500px] text-muted-foreground">
                   <Settings2 className="h-12 w-12 mb-4 opacity-50" />
-                  <p>لا يوجد قالب لهذا النوع واللغة</p>
-                  <Button size="sm" className="mt-4" onClick={() => setIsCreateTemplateOpen(true)}>
-                    إنشاء قالب
-                  </Button>
+                  <p>لا يوجد قالب محدد</p>
+                  <p className="text-sm mt-2">اختر قالباً من القائمة أعلاه أو أنشئ قالباً جديداً</p>
+                  <Select 
+                    value="" 
+                    onValueChange={(v) => {
+                      if (v) {
+                        const template = templates.find(t => t.id === v);
+                        if (template) {
+                          setSelectedTemplateId(v);
+                          setSelectedType(template.certificate_type);
+                          setSelectedLanguage(template.language);
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-64 mt-4">
+                      <SelectValue placeholder="اختر قالباً..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.filter(t => t.is_active).map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.template_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {templates.length === 0 && (
+                    <Button size="sm" className="mt-4" onClick={() => setIsCreateTemplateOpen(true)}>
+                      إنشاء قالب جديد
+                    </Button>
+                  )}
                 </div>
               ) : previewStudent ? (
                 <CertificatePreview
