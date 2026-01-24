@@ -89,11 +89,33 @@ export function CertificatePreview({
   const height = isLandscape ? A4_WIDTH_MM : A4_HEIGHT_MM;
 
   const getFieldValue = (fieldKey: string): string => {
-    const value = student[fieldKey];
-    
-    if (fieldKey === 'mention' && value) {
-      return mentionLabels[value as MentionType]?.ar || String(value);
+    // Handle mention fields - convert enum to display text
+    if (fieldKey === 'mention_ar') {
+      const mentionValue = student['mention'] as MentionType;
+      if (mentionValue) {
+        return mentionLabels[mentionValue]?.ar || String(mentionValue);
+      }
+      return '';
     }
+    
+    if (fieldKey === 'mention_fr') {
+      const mentionValue = student['mention'] as MentionType;
+      if (mentionValue) {
+        return mentionLabels[mentionValue]?.fr || String(mentionValue);
+      }
+      return '';
+    }
+    
+    // Legacy support for old 'mention' field key
+    if (fieldKey === 'mention') {
+      const mentionValue = student['mention'] as MentionType;
+      if (mentionValue) {
+        return mentionLabels[mentionValue]?.ar || String(mentionValue);
+      }
+      return '';
+    }
+    
+    const value = student[fieldKey];
     
     if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
       if (value) {
