@@ -119,11 +119,9 @@ export default function PrintCertificates() {
     setSelectedStudentIds([]);
   }, [selectedType]);
 
-  // Set preview student to first available if none selected
+  // Don't auto-select a student - let user choose or show placeholders
   useEffect(() => {
-    if (currentStudents.length > 0 && !previewStudentId) {
-      setPreviewStudentId(currentStudents[0].id);
-    } else if (currentStudents.length === 0) {
+    if (currentStudents.length === 0) {
       setPreviewStudentId(null);
     }
   }, [currentStudents]);
@@ -328,7 +326,7 @@ export default function PrintCertificates() {
                           ? 'bg-primary/10 border-primary shadow-md ring-2 ring-primary/20' 
                           : 'hover:bg-muted border-transparent hover:border-muted-foreground/20'
                       }`}
-                      onClick={() => setPreviewStudentId(student.id)}
+                      onClick={() => setPreviewStudentId(isPreviewSelected ? null : student.id)}
                     >
                       <Checkbox
                         checked={selectedStudentIds.includes(student.id)}
@@ -421,9 +419,9 @@ export default function PrintCertificates() {
                     </Button>
                   )}
                 </div>
-              ) : previewStudent ? (
+              ) : (
                 <CertificatePreview
-                  student={previewStudent as unknown as Record<string, unknown>}
+                  student={(previewStudent || {}) as unknown as Record<string, unknown>}
                   fields={templateFields}
                   template={templates.find(t => t.id === selectedTemplateId)!}
                   certificateType={selectedType}
@@ -492,10 +490,6 @@ export default function PrintCertificates() {
                   showBackgroundControls={showBackgroundControls}
                   onToggleBackgroundControls={() => setShowBackgroundControls(!showBackgroundControls)}
                 />
-              ) : (
-                <div className="flex items-center justify-center h-full min-h-[500px] text-muted-foreground">
-                  اختر طالباً للمعاينة
-                </div>
               )}
             </TabsContent>
 
