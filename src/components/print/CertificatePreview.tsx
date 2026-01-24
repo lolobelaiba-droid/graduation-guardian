@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from "react";
-import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical } from "lucide-react";
+import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical, Undo2 } from "lucide-react";
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,10 @@ interface CertificatePreviewProps {
   onBackgroundOffsetChange?: (offsetX: number, offsetY: number) => void;
   showBackgroundControls?: boolean;
   onToggleBackgroundControls?: () => void;
+  // Undo support
+  canUndo?: boolean;
+  onUndo?: () => void;
+  hasUnsavedChanges?: boolean;
 }
 
 export function CertificatePreview({
@@ -71,6 +75,9 @@ export function CertificatePreview({
   onBackgroundOffsetChange,
   showBackgroundControls = false,
   onToggleBackgroundControls,
+  canUndo = false,
+  onUndo,
+  hasUnsavedChanges = false,
 }: CertificatePreviewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
@@ -351,6 +358,17 @@ export function CertificatePreview({
         </div>
 
         <div className="flex items-center gap-3">
+          {hasUnsavedChanges && (
+            <Badge variant="destructive" className="animate-pulse text-xs">
+              تغييرات غير محفوظة
+            </Badge>
+          )}
+          {canUndo && onUndo && (
+            <Button variant="outline" size="sm" onClick={onUndo}>
+              <Undo2 className="h-4 w-4 ml-1" />
+              تراجع
+            </Button>
+          )}
           {dragState && dragPreview && (
             <Badge variant="default" className="font-mono text-xs animate-pulse">
               X: {toWesternNumerals(dragPreview.x)} | Y: {toWesternNumerals(dragPreview.y)} مم

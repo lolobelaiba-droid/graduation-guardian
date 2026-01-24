@@ -59,6 +59,16 @@ export default function PrintCertificates() {
   const [backgroundScale, setBackgroundScale] = useState(100);
   const [showBackgroundControls, setShowBackgroundControls] = useState(false);
 
+  // Undo stack for field changes
+  const [fieldChangeHistory, setFieldChangeHistory] = useState<Array<{
+    fieldId: string;
+    fieldName: string;
+    oldX: number;
+    oldY: number;
+    newX: number;
+    newY: number;
+  }>>([]);
+
   // Data hooks
   const { data: templates = [], isLoading: loadingTemplates } = useCertificateTemplates();
   const { data: templateFields = [], isLoading: loadingFields } = useTemplateFields(selectedTemplateId);
@@ -492,6 +502,16 @@ export default function PrintCertificates() {
                       case 'right': newX -= step; break; // RTL
                     }
                     
+                    // Track change for undo
+                    setFieldChangeHistory(prev => [...prev, {
+                      fieldId,
+                      fieldName: field.field_name_ar,
+                      oldX: field.position_x,
+                      oldY: field.position_y,
+                      newX,
+                      newY,
+                    }]);
+                    
                     updateField.mutate({
                       id: fieldId,
                       template_id: selectedTemplateId,
@@ -501,6 +521,19 @@ export default function PrintCertificates() {
                   }}
                   onFieldDrag={(fieldId, newX, newY) => {
                     if (!selectedTemplateId) return;
+                    const field = templateFields.find(f => f.id === fieldId);
+                    if (!field) return;
+                    
+                    // Track change for undo
+                    setFieldChangeHistory(prev => [...prev, {
+                      fieldId,
+                      fieldName: field.field_name_ar,
+                      oldX: field.position_x,
+                      oldY: field.position_y,
+                      newX,
+                      newY,
+                    }]);
+                    
                     updateField.mutate({
                       id: fieldId,
                       template_id: selectedTemplateId,
@@ -540,6 +573,23 @@ export default function PrintCertificates() {
                   }}
                   showBackgroundControls={showBackgroundControls}
                   onToggleBackgroundControls={() => setShowBackgroundControls(!showBackgroundControls)}
+                  canUndo={fieldChangeHistory.length > 0}
+                  hasUnsavedChanges={fieldChangeHistory.length > 0}
+                  onUndo={() => {
+                    if (fieldChangeHistory.length === 0 || !selectedTemplateId) return;
+                    const lastChange = fieldChangeHistory[fieldChangeHistory.length - 1];
+                    
+                    // Restore old position
+                    updateField.mutate({
+                      id: lastChange.fieldId,
+                      template_id: selectedTemplateId,
+                      position_x: lastChange.oldX,
+                      position_y: lastChange.oldY,
+                    });
+                    
+                    // Remove from history
+                    setFieldChangeHistory(prev => prev.slice(0, -1));
+                  }}
                 />
               )}
             </TabsContent>
