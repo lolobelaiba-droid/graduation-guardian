@@ -8,6 +8,8 @@ import {
   Printer,
   MoreHorizontal,
   Calendar,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,30 +34,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-interface Activity {
-  id: string;
-  type: "create" | "edit" | "delete" | "print";
-  description: string;
-  studentId?: string;
-  createdAt: string;
-  createdBy: string;
-}
-
-const activities: Activity[] = [
-  { id: "1", type: "print", description: "تم طباعة شهادة تخرج للطالب أحمد محمد", studentId: "STU001", createdAt: "2024-01-20T10:30:00", createdBy: "المدير" },
-  { id: "2", type: "create", description: "تم إضافة طالب جديد: فاطمة علي", studentId: "STU002", createdAt: "2024-01-20T09:15:00", createdBy: "المدير" },
-  { id: "3", type: "edit", description: "تم تعديل بيانات الطالب محمود حسن", studentId: "STU003", createdAt: "2024-01-19T16:45:00", createdBy: "المدير" },
-  { id: "4", type: "print", description: "تم طباعة 5 شهادات دفعة واحدة", createdAt: "2024-01-19T14:20:00", createdBy: "المدير" },
-  { id: "5", type: "create", description: "تم إنشاء قالب شهادة جديد: شهادة التميز", createdAt: "2024-01-19T11:00:00", createdBy: "المدير" },
-  { id: "6", type: "delete", description: "تم حذف الطالب محمد أحمد", createdAt: "2024-01-18T15:30:00", createdBy: "المدير" },
-  { id: "7", type: "edit", description: "تم تعديل قالب شهادة التخرج", createdAt: "2024-01-18T10:15:00", createdBy: "المدير" },
-  { id: "8", type: "print", description: "تم طباعة شهادة ماجستير للطالب خالد يوسف", studentId: "STU005", createdAt: "2024-01-17T09:00:00", createdBy: "المدير" },
-  { id: "9", type: "create", description: "تم إضافة 10 طلاب من ملف Excel", createdAt: "2024-01-16T14:30:00", createdBy: "المدير" },
-  { id: "10", type: "edit", description: "تم تحديث إعدادات النظام", createdAt: "2024-01-15T11:45:00", createdBy: "المدير" },
-];
+import { useActivityLog, useDeleteOldActivities, activityTypeLabels, activityTypeIcons, type ActivityType } from "@/hooks/useActivityLog";
+import { toWesternNumerals } from "@/lib/numerals";
 
 const typeIcons = {
   create: UserPlus,
@@ -71,31 +63,50 @@ const typeColors = {
   print: "bg-warning/10 text-warning border-warning/20",
 };
 
-const typeLabels = {
-  create: "إضافة",
-  edit: "تعديل",
-  delete: "حذف",
-  print: "طباعة",
+// Map activity types to icon types
+const activityTypeToIcon: Record<ActivityType, keyof typeof typeIcons> = {
+  student_added: "create",
+  student_updated: "edit",
+  student_deleted: "delete",
+  template_added: "create",
+  template_updated: "edit",
+  template_deleted: "delete",
+  certificate_printed: "print",
+  settings_updated: "edit",
+  backup_created: "create",
 };
 
 export default function ActivityLog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const { data: activities = [], isLoading, refetch } = useActivityLog();
+  const deleteOldActivities = useDeleteOldActivities();
 
   const filteredActivities = activities.filter((activity) => {
     const matchesSearch = activity.description.includes(searchQuery);
-    const matchesType = selectedType === "all" || activity.type === selectedType;
+    const matchesType = selectedType === "all" || activity.activity_type === selectedType;
     return matchesSearch && matchesType;
   });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("ar-SA", {
+    const formatted = date.toLocaleDateString("ar-EG-u-nu-latn", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+    });
+    return toWesternNumerals(formatted);
+  };
+
+  const handleDeleteOld = () => {
+    deleteOldActivities.mutate(30, {
+      onSuccess: () => {
+        setShowDeleteDialog(false);
+      },
     });
   };
 
@@ -109,10 +120,26 @@ export default function ActivityLog() {
             متابعة جميع العمليات والتغييرات في النظام
           </p>
         </div>
-        <Button variant="destructive" size="sm" className="gap-2">
-          <Trash2 className="h-4 w-4" />
-          حذف السجلات القديمة
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            onClick={() => refetch()}
+          >
+            <RefreshCw className="h-4 w-4" />
+            تحديث
+          </Button>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            className="gap-2"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            حذف السجلات القديمة
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -128,99 +155,129 @@ export default function ActivityLog() {
             />
           </div>
           <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="w-full md:w-40">
+            <SelectTrigger className="w-full md:w-48">
               <SelectValue placeholder="النوع" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="create">إضافة</SelectItem>
-              <SelectItem value="edit">تعديل</SelectItem>
-              <SelectItem value="delete">حذف</SelectItem>
-              <SelectItem value="print">طباعة</SelectItem>
+              {Object.entries(activityTypeLabels).map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            تصفية بالتاريخ
-          </Button>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-right font-semibold w-24">النوع</TableHead>
-                <TableHead className="text-right font-semibold">الوصف</TableHead>
-                <TableHead className="text-right font-semibold">رقم الطالب</TableHead>
-                <TableHead className="text-right font-semibold">التاريخ</TableHead>
-                <TableHead className="text-right font-semibold">المستخدم</TableHead>
-                <TableHead className="text-right font-semibold w-20">الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredActivities.map((activity, index) => {
-                const Icon = typeIcons[activity.type];
-                return (
-                  <TableRow
-                    key={activity.id}
-                    className="hover:bg-muted/30 transition-colors animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={cn("gap-1", typeColors[activity.type])}
-                      >
-                        <Icon className="h-3 w-3" />
-                        {typeLabels[activity.type]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-md">
-                      <p className="line-clamp-2">{activity.description}</p>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      {activity.studentId || "-"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {formatDate(activity.createdAt)}
-                    </TableCell>
-                    <TableCell>{activity.createdBy}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem className="gap-2">
-                            <Eye className="h-4 w-4" />
-                            عرض التفاصيل
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2 text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                            حذف
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="text-right font-semibold w-32">النوع</TableHead>
+                  <TableHead className="text-right font-semibold">الوصف</TableHead>
+                  <TableHead className="text-right font-semibold">المعرّف</TableHead>
+                  <TableHead className="text-right font-semibold">التاريخ</TableHead>
+                  <TableHead className="text-right font-semibold">المستخدم</TableHead>
+                  <TableHead className="text-right font-semibold w-20">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredActivities.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      لا توجد أنشطة مسجلة
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  filteredActivities.map((activity, index) => {
+                    const iconType = activityTypeToIcon[activity.activity_type];
+                    const Icon = typeIcons[iconType];
+                    return (
+                      <TableRow
+                        key={activity.id}
+                        className="hover:bg-muted/30 transition-colors animate-fade-in"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={cn("gap-1", typeColors[iconType])}
+                          >
+                            <Icon className="h-3 w-3" />
+                            {activityTypeLabels[activity.activity_type]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-md">
+                          <p className="line-clamp-2">{activity.description}</p>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">
+                          {activity.entity_id ? toWesternNumerals(activity.entity_id.slice(0, 8)) : "-"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {activity.created_at ? formatDate(activity.created_at) : "-"}
+                        </TableCell>
+                        <TableCell>{activity.created_by || "-"}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem className="gap-2">
+                                <Eye className="h-4 w-4" />
+                                عرض التفاصيل
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-4 border-t border-border flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            عرض {filteredActivities.length} من {activities.length} سجل
+            عرض {toWesternNumerals(filteredActivities.length)} من {toWesternNumerals(activities.length)} سجل
           </p>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف السجلات القديمة</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف جميع السجلات الأقدم من 30 يوماً. هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteOld}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteOldActivities.isPending}
+            >
+              {deleteOldActivities.isPending ? "جاري الحذف..." : "حذف السجلات"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

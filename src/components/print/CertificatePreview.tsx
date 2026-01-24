@@ -3,6 +3,7 @@ import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, Eye
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
+import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -43,6 +44,11 @@ interface CertificatePreviewProps {
   onAddField?: () => void;
   stepSize?: number;
   isMoving?: boolean;
+  // Background offset controls
+  backgroundOffsetX?: number;
+  backgroundOffsetY?: number;
+  onBackgroundOffsetChange?: (offsetX: number, offsetY: number) => void;
+  showBackgroundControls?: boolean;
 }
 
 export function CertificatePreview({
@@ -59,6 +65,10 @@ export function CertificatePreview({
   onAddField,
   stepSize = 1,
   isMoving = false,
+  backgroundOffsetX = 0,
+  backgroundOffsetY = 0,
+  onBackgroundOffsetChange,
+  showBackgroundControls = false,
 }: CertificatePreviewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
@@ -85,11 +95,12 @@ export function CertificatePreview({
     
     if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
       if (value) {
-        return new Date(value as string).toLocaleDateString('ar-SA');
+        return formatCertificateDate(value as string);
       }
     }
     
-    return value ? String(value) : '';
+    // Convert any Hindi numerals to Western Arabic for all values
+    return value ? toWesternNumerals(String(value)) : '';
   };
 
   const isRtlLanguage = template.language.includes('ar');
@@ -192,6 +203,63 @@ export function CertificatePreview({
               إضافة حقل
             </Button>
           )}
+
+          {/* Background offset controls */}
+          {showBackgroundControls && template.background_image_url && onBackgroundOffsetChange && (
+            <div className="flex items-center gap-2 border-r pr-2 mr-2">
+              <span className="text-xs text-muted-foreground">ضبط الخلفية:</span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX, backgroundOffsetY - 1)}
+                  title="تحريك الخلفية للأعلى"
+                >
+                  <ChevronUp className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX, backgroundOffsetY + 1)}
+                  title="تحريك الخلفية للأسفل"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX - 1, backgroundOffsetY)}
+                  title="تحريك الخلفية لليمين"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX + 1, backgroundOffsetY)}
+                  title="تحريك الخلفية لليسار"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {toWesternNumerals(backgroundOffsetX)},{toWesternNumerals(backgroundOffsetY)}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => onBackgroundOffsetChange(0, 0)}
+                  title="إعادة تعيين موضع الخلفية"
+                >
+                  إعادة
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -230,12 +298,15 @@ export function CertificatePreview({
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Background image */}
+          {/* Background image with offset */}
           {template.background_image_url && (
             <img
               src={template.background_image_url}
               alt="خلفية الشهادة"
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              className="absolute w-full h-full object-contain pointer-events-none"
+              style={{
+                transform: `translate(${backgroundOffsetX * SCALE}px, ${backgroundOffsetY * SCALE}px)`,
+              }}
             />
           )}
 
