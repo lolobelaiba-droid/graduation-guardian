@@ -49,6 +49,7 @@ interface CertificatePreviewProps {
   backgroundOffsetY?: number;
   onBackgroundOffsetChange?: (offsetX: number, offsetY: number) => void;
   showBackgroundControls?: boolean;
+  onToggleBackgroundControls?: () => void;
 }
 
 export function CertificatePreview({
@@ -69,6 +70,7 @@ export function CertificatePreview({
   backgroundOffsetY = 0,
   onBackgroundOffsetChange,
   showBackgroundControls = false,
+  onToggleBackgroundControls,
 }: CertificatePreviewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
@@ -204,73 +206,85 @@ export function CertificatePreview({
             </Button>
           )}
 
-          {/* Background offset controls */}
-          {showBackgroundControls && template.background_image_url && onBackgroundOffsetChange && (
-            <div className="flex items-center gap-2 border-r pr-2 mr-2">
-              <span className="text-xs text-muted-foreground">ضبط الخلفية:</span>
-              <div className="flex items-center gap-1">
+          {/* Background offset toggle and controls */}
+          {template.background_image_url && onBackgroundOffsetChange && onToggleBackgroundControls && (
+            <>
+              <div className="border-r pr-2 mr-2">
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX, backgroundOffsetY - 1)}
-                  title="تحريك الخلفية للأعلى"
-                >
-                  <ChevronUp className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX, backgroundOffsetY + 1)}
-                  title="تحريك الخلفية للأسفل"
-                >
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX - 1, backgroundOffsetY)}
-                  title="تحريك الخلفية لليمين"
-                >
-                  <ChevronRight className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => onBackgroundOffsetChange(backgroundOffsetX + 1, backgroundOffsetY)}
-                  title="تحريك الخلفية لليسار"
-                >
-                  <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {toWesternNumerals(backgroundOffsetX)},{toWesternNumerals(backgroundOffsetY)}
-                </Badge>
-                <Button
-                  variant="ghost"
+                  variant={showBackgroundControls ? "secondary" : "outline"}
                   size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => onBackgroundOffsetChange(0, 0)}
-                  title="إعادة تعيين موضع الخلفية"
+                  onClick={onToggleBackgroundControls}
                 >
-                  إعادة
+                  {showBackgroundControls ? "ضبط الخلفية مفعّل" : "ضبط الخلفية"}
                 </Button>
               </div>
-            </div>
+              
+              {showBackgroundControls && (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">تحريك:</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => onBackgroundOffsetChange(backgroundOffsetX, backgroundOffsetY - 1)}
+                    title="تحريك الخلفية للأعلى"
+                  >
+                    <ChevronUp className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => onBackgroundOffsetChange(backgroundOffsetX, backgroundOffsetY + 1)}
+                    title="تحريك الخلفية للأسفل"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => onBackgroundOffsetChange(backgroundOffsetX - 1, backgroundOffsetY)}
+                    title="تحريك الخلفية لليمين"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => onBackgroundOffsetChange(backgroundOffsetX + 1, backgroundOffsetY)}
+                    title="تحريك الخلفية لليسار"
+                  >
+                    <ChevronLeft className="h-3 w-3" />
+                  </Button>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {backgroundOffsetX},{backgroundOffsetY}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => onBackgroundOffsetChange(0, 0)}
+                    title="إعادة تعيين موضع الخلفية"
+                  >
+                    إعادة
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         <div className="flex items-center gap-3">
           {dragState && dragPreview && (
             <Badge variant="default" className="font-mono text-xs animate-pulse">
-              X: {dragPreview.x} | Y: {dragPreview.y} مم
+              X: {toWesternNumerals(dragPreview.x)} | Y: {toWesternNumerals(dragPreview.y)} مم
             </Badge>
           )}
           {!dragState && selectedField && (
             <Badge variant="outline" className="font-mono text-xs">
-              X: {selectedField.position_x} | Y: {selectedField.position_y} مم
+              X: {toWesternNumerals(selectedField.position_x)} | Y: {toWesternNumerals(selectedField.position_y)} مم
             </Badge>
           )}
           {selectedField && (
@@ -500,18 +514,18 @@ export function CertificatePreview({
             0,0
           </div>
           <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground pointer-events-none">
-            {width},{height}mm
+            {toWesternNumerals(width)},{toWesternNumerals(height)}mm
           </div>
         </div>
 
         {/* Info bar */}
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {isLandscape ? 'أفقي' : 'عمودي'} • {width}×{height}mm • {template.page_size}
+            {isLandscape ? 'أفقي' : 'عمودي'} • {toWesternNumerals(width)}×{toWesternNumerals(height)}mm • {template.page_size}
           </span>
           <span className="flex items-center gap-2">
             <GripVertical className="h-3 w-3" />
-            اسحب الحقول لتحريكها • {fields.length} حقل
+            اسحب الحقول لتحريكها • {toWesternNumerals(fields.length)} حقل
           </span>
         </div>
       </div>
@@ -521,7 +535,7 @@ export function CertificatePreview({
         <div className="bg-muted/30 rounded-lg p-4">
           <h4 className="font-semibold mb-3 flex items-center justify-between">
             <span className="flex items-center gap-2">
-              الحقول ({fields.length})
+              الحقول ({toWesternNumerals(fields.length)})
             </span>
             {onAddField && (
               <Button variant="ghost" size="sm" onClick={onAddField}>

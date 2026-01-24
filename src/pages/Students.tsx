@@ -54,6 +54,7 @@ import EditStudentDialog from "@/components/students/EditStudentDialog";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
 import { toast } from "sonner";
+import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 
 export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -172,7 +173,7 @@ export default function Students() {
     
     const fileName = `طلاب_${certificateTypeLabels[selectedCertType].ar}_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    toast.success(`تم تصدير ${currentData.length} طالب`);
+    toast.success(`تم تصدير ${toWesternNumerals(currentData.length)} طالب`);
   };
 
   return (
@@ -262,7 +263,7 @@ export default function Students() {
                               {mentionLabels[student.mention as MentionType]?.ar || student.mention}
                             </Badge>
                           </TableCell>
-                          <TableCell>{new Date(student.defense_date).toLocaleDateString("ar-SA")}</TableCell>
+                          <TableCell>{formatCertificateDate(student.defense_date)}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -304,7 +305,7 @@ export default function Students() {
                 {/* Footer */}
                 <div className="p-4 border-t border-border flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    عرض {filteredStudents.length} من {currentData.length} طالب
+                    عرض {toWesternNumerals(filteredStudents.length)} من {toWesternNumerals(currentData.length)} طالب
                   </p>
                 </div>
               </>

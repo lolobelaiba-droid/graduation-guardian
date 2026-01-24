@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import { toWesternNumerals } from "@/lib/numerals";
 
 interface StatCardProps {
   title: string;
@@ -51,7 +52,7 @@ export function StatCard({
         <div className="flex items-start justify-between">
           <div>
             <p className="text-sm font-medium opacity-90">{title}</p>
-            <p className="text-4xl font-bold mt-2">{value}</p>
+            <p className="text-4xl font-bold mt-2">{typeof value === 'number' ? toWesternNumerals(value) : value}</p>
             {subtitle && (
               <p className="text-sm opacity-75 mt-1">{subtitle}</p>
             )}
@@ -69,7 +70,7 @@ export function StatCard({
                 trend.isPositive ? "bg-white/20" : "bg-white/10"
               )}
             >
-              {trend.isPositive ? "+" : ""}{trend.value}%
+              {trend.isPositive ? "+" : ""}{toWesternNumerals(trend.value)}%
             </span>
             <span className="text-sm opacity-75">من الشهر الماضي</span>
           </div>
