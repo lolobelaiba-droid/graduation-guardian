@@ -116,36 +116,62 @@ export function CertificatePreview({
     }
     
     // Handle bilingual date fields - they all use the same source data
-    if (fieldKey === 'date_of_birth_ar' || fieldKey === 'date_of_birth_fr') {
+    // Arabic dates: yyyy/mm/dd (reads day/month/year RTL)
+    // French dates: dd/mm/yyyy (reads day/month/year LTR)
+    if (fieldKey === 'date_of_birth_ar') {
       const value = student['date_of_birth'];
       if (value) {
-        return formatCertificateDate(value as string);
+        return formatCertificateDate(value as string, true); // Arabic format
       }
       return '';
     }
     
-    if (fieldKey === 'defense_date_ar' || fieldKey === 'defense_date_fr') {
+    if (fieldKey === 'date_of_birth_fr') {
+      const value = student['date_of_birth'];
+      if (value) {
+        return formatCertificateDate(value as string, false); // French format
+      }
+      return '';
+    }
+    
+    if (fieldKey === 'defense_date_ar') {
       const value = student['defense_date'];
       if (value) {
-        return formatCertificateDate(value as string);
+        return formatCertificateDate(value as string, true); // Arabic format
       }
       return '';
     }
     
-    if (fieldKey === 'certificate_date_ar' || fieldKey === 'certificate_date_fr') {
+    if (fieldKey === 'defense_date_fr') {
+      const value = student['defense_date'];
+      if (value) {
+        return formatCertificateDate(value as string, false); // French format
+      }
+      return '';
+    }
+    
+    if (fieldKey === 'certificate_date_ar') {
       const value = student['certificate_date'];
       if (value) {
-        return formatCertificateDate(value as string);
+        return formatCertificateDate(value as string, true); // Arabic format
+      }
+      return '';
+    }
+    
+    if (fieldKey === 'certificate_date_fr') {
+      const value = student['certificate_date'];
+      if (value) {
+        return formatCertificateDate(value as string, false); // French format
       }
       return '';
     }
     
     const value = student[fieldKey];
     
-    // Legacy date fields support
+    // Legacy date fields support (default to French format)
     if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
       if (value) {
-        return formatCertificateDate(value as string);
+        return formatCertificateDate(value as string, false);
       }
     }
     
