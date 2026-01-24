@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
   useCreatePhdLmdCertificate,
   useCreatePhdScienceCertificate,
@@ -82,13 +83,20 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStudentDialogProps) {
+export function AddStudentDialog({ open, onOpenChange, certificateType: initialCertificateType }: AddStudentDialogProps) {
+  const [selectedType, setSelectedType] = useState<CertificateType>(initialCertificateType);
+  
   const createPhdLmd = useCreatePhdLmdCertificate();
   const createPhdScience = useCreatePhdScienceCertificate();
   const createMaster = useCreateMasterCertificate();
 
+  // Update selected type when prop changes
+  useEffect(() => {
+    setSelectedType(initialCertificateType);
+  }, [initialCertificateType]);
+
   const getSchema = () => {
-    switch (certificateType) {
+    switch (selectedType) {
       case 'phd_lmd': return phdLmdSchema;
       case 'phd_science': return phdSchema;
       case 'master': return baseSchema;
@@ -124,11 +132,16 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
     },
   });
 
+  // Reset form when certificate type changes
+  useEffect(() => {
+    form.clearErrors();
+  }, [selectedType, form]);
+
   const isLoading = createPhdLmd.isPending || createPhdScience.isPending || createMaster.isPending;
 
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
     try {
-      switch (certificateType) {
+      switch (selectedType) {
         case 'phd_lmd':
           await createPhdLmd.mutateAsync(data as Parameters<typeof createPhdLmd.mutateAsync>[0]);
           break;
@@ -146,21 +159,49 @@ export function AddStudentDialog({ open, onOpenChange, certificateType }: AddStu
     }
   };
 
-  const showThesisFields = certificateType === 'phd_lmd' || certificateType === 'phd_science';
-  const showFieldField = certificateType === 'phd_lmd';
-  const showJuryFields = certificateType === 'phd_lmd' || certificateType === 'phd_science';
+  const showThesisFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
+  const showFieldField = selectedType === 'phd_lmd';
+  const showJuryFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            إضافة طالب جديد - {certificateTypeLabels[certificateType].ar}
+          <DialogTitle className="flex items-center gap-2">
+            إضافة طالب جديد
+            <Badge variant="secondary">{certificateTypeLabels[selectedType].ar}</Badge>
           </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Certificate Type Selection */}
+            <div className="p-4 bg-muted/50 rounded-lg border">
+              <FormItem>
+                <FormLabel className="text-base font-semibold">نوع الشهادة *</FormLabel>
+                <Select value={selectedType} onValueChange={(v) => setSelectedType(v as CertificateType)}>
+                  <FormControl>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.entries(certificateTypeLabels).map(([key, labels]) => (
+                      <SelectItem key={key} value={key}>
+                        <span className="flex items-center gap-2">
+                          {labels.ar}
+                          <span className="text-muted-foreground text-sm">({labels.fr})</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  اختر نوع الشهادة المناسب للطالب - سيتم حفظ الطالب في الجدول المخصص لهذا النوع
+                </p>
+              </FormItem>
+            </div>
+
             {/* Basic Info */}
             <SectionHeader title="المعلومات الأساسية" />
             
