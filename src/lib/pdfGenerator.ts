@@ -1,126 +1,37 @@
 import jsPDF from 'jspdf';
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from '@/types/certificates';
 import { mentionLabels } from '@/types/certificates';
-import { allFonts, loadFontFile, arrayBufferToBase64, getFontByName, type FontConfig } from './arabicFonts';
+import ArabicReshaper from 'arabic-reshaper';
+import { getAllFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
 import { toWesternNumerals, formatCertificateDate } from './numerals';
 
 // A4 dimensions in mm
 const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
 
+const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+function isArabicText(text: string): boolean {
+  return !!text && ARABIC_REGEX.test(text);
+}
+
 /**
- * Reshape Arabic text for proper rendering in PDF
- * Arabic text needs to be reshaped because jsPDF doesn't handle Arabic ligatures
+ * Robust Arabic shaping (ligatures + contextual forms) using arabic-reshaper.
+ * This produces Arabic Presentation Forms that jsPDF can draw when the font is embedded with Identity-H.
  */
-function reshapeArabicText(text: string): string {
+function shapeArabicText(text: string): string {
   if (!text) return '';
-  
-  // Check if text contains Arabic characters
-  const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-  if (!arabicRegex.test(text)) {
-    return text; // Return as-is if no Arabic
+  if (!isArabicText(text)) return text;
+  try {
+    // arabic-reshaper is CommonJS; depending on bundler it may appear as default or direct export.
+    const reshaper =
+      (ArabicReshaper as any)?.convertArabic ? (ArabicReshaper as any) : (ArabicReshaper as any)?.default;
+    // arabic-reshaper returns a string of presentation forms.
+    return reshaper?.convertArabic?.(text) ?? text;
+  } catch (e) {
+    console.warn('Arabic shaping failed, falling back to raw text', e);
+    return text;
   }
-
-  // Arabic character forms mapping (isolated, initial, medial, final)
-  const arabicForms: { [key: string]: [string, string, string, string] } = {
-    'ا': ['ﺍ', 'ﺍ', 'ﺎ', 'ﺎ'],
-    'أ': ['ﺃ', 'ﺃ', 'ﺄ', 'ﺄ'],
-    'إ': ['ﺇ', 'ﺇ', 'ﺈ', 'ﺈ'],
-    'آ': ['ﺁ', 'ﺁ', 'ﺂ', 'ﺂ'],
-    'ب': ['ﺏ', 'ﺑ', 'ﺒ', 'ﺐ'],
-    'ت': ['ﺕ', 'ﺗ', 'ﺘ', 'ﺖ'],
-    'ث': ['ﺙ', 'ﺛ', 'ﺜ', 'ﺚ'],
-    'ج': ['ﺝ', 'ﺟ', 'ﺠ', 'ﺞ'],
-    'ح': ['ﺡ', 'ﺣ', 'ﺤ', 'ﺢ'],
-    'خ': ['ﺥ', 'ﺧ', 'ﺨ', 'ﺦ'],
-    'د': ['ﺩ', 'ﺩ', 'ﺪ', 'ﺪ'],
-    'ذ': ['ﺫ', 'ﺫ', 'ﺬ', 'ﺬ'],
-    'ر': ['ﺭ', 'ﺭ', 'ﺮ', 'ﺮ'],
-    'ز': ['ﺯ', 'ﺯ', 'ﺰ', 'ﺰ'],
-    'س': ['ﺱ', 'ﺳ', 'ﺴ', 'ﺲ'],
-    'ش': ['ﺵ', 'ﺷ', 'ﺸ', 'ﺶ'],
-    'ص': ['ﺹ', 'ﺻ', 'ﺼ', 'ﺺ'],
-    'ض': ['ﺽ', 'ﺿ', 'ﻀ', 'ﺾ'],
-    'ط': ['ﻁ', 'ﻃ', 'ﻄ', 'ﻂ'],
-    'ظ': ['ﻅ', 'ﻇ', 'ﻈ', 'ﻆ'],
-    'ع': ['ﻉ', 'ﻋ', 'ﻌ', 'ﻊ'],
-    'غ': ['ﻍ', 'ﻏ', 'ﻐ', 'ﻎ'],
-    'ف': ['ﻑ', 'ﻓ', 'ﻔ', 'ﻒ'],
-    'ق': ['ﻕ', 'ﻗ', 'ﻘ', 'ﻖ'],
-    'ك': ['ﻙ', 'ﻛ', 'ﻜ', 'ﻚ'],
-    'ل': ['ﻝ', 'ﻟ', 'ﻠ', 'ﻞ'],
-    'م': ['ﻡ', 'ﻣ', 'ﻤ', 'ﻢ'],
-    'ن': ['ﻥ', 'ﻧ', 'ﻨ', 'ﻦ'],
-    'ه': ['ﻩ', 'ﻫ', 'ﻬ', 'ﻪ'],
-    'و': ['ﻭ', 'ﻭ', 'ﻮ', 'ﻮ'],
-    'ي': ['ﻱ', 'ﻳ', 'ﻴ', 'ﻲ'],
-    'ى': ['ﻯ', 'ﻯ', 'ﻰ', 'ﻰ'],
-    'ة': ['ﺓ', 'ﺓ', 'ﺔ', 'ﺔ'],
-    'ء': ['ء', 'ء', 'ء', 'ء'],
-    'ؤ': ['ﺅ', 'ﺅ', 'ﺆ', 'ﺆ'],
-    'ئ': ['ﺉ', 'ﺋ', 'ﺌ', 'ﺊ'],
-    'لا': ['ﻻ', 'ﻻ', 'ﻼ', 'ﻼ'],
-    'لأ': ['ﻷ', 'ﻷ', 'ﻸ', 'ﻸ'],
-    'لإ': ['ﻹ', 'ﻹ', 'ﻺ', 'ﻺ'],
-    'لآ': ['ﻵ', 'ﻵ', 'ﻶ', 'ﻶ'],
-  };
-
-  // Characters that don't connect to the next character
-  const nonConnecting = new Set(['ا', 'أ', 'إ', 'آ', 'د', 'ذ', 'ر', 'ز', 'و', 'ؤ', 'ة', 'ء', 'ى']);
-
-  // Process each word separately
-  const words = text.split(/(\s+)/);
-  const reshapedWords = words.map(word => {
-    if (/^\s+$/.test(word)) return word; // Keep whitespace as-is
-    
-    const chars = [...word];
-    let result = '';
-    
-    for (let i = 0; i < chars.length; i++) {
-      const char = chars[i];
-      const prevChar = i > 0 ? chars[i - 1] : null;
-      const nextChar = i < chars.length - 1 ? chars[i + 1] : null;
-      
-      // Check for ligatures (لا، لأ، لإ، لآ)
-      if (char === 'ل' && nextChar && ['ا', 'أ', 'إ', 'آ'].includes(nextChar)) {
-        const ligature = char + nextChar;
-        const forms = arabicForms[ligature];
-        if (forms) {
-          const prevConnects = prevChar && arabicForms[prevChar] && !nonConnecting.has(prevChar);
-          result += prevConnects ? forms[3] : forms[0]; // final or isolated
-          i++; // Skip the next character
-          continue;
-        }
-      }
-      
-      const forms = arabicForms[char];
-      if (!forms) {
-        result += char; // Non-Arabic character
-        continue;
-      }
-      
-      const prevConnects = prevChar && arabicForms[prevChar] && !nonConnecting.has(prevChar);
-      const nextConnects = nextChar && arabicForms[nextChar];
-      
-      let formIndex: number;
-      if (prevConnects && nextConnects) {
-        formIndex = 2; // medial
-      } else if (prevConnects) {
-        formIndex = 3; // final
-      } else if (nextConnects) {
-        formIndex = 1; // initial
-      } else {
-        formIndex = 0; // isolated
-      }
-      
-      result += forms[formIndex];
-    }
-    
-    return result;
-  });
-
-  // Reverse for RTL display in PDF
-  return reshapedWords.join('').split('').reverse().join('');
 }
 
 // Load image as base64
@@ -152,7 +63,8 @@ const DEFAULT_ARABIC_FONT = 'Amiri';
  * NOTE: Each jsPDF document needs fonts registered separately
  */
 async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<string>> {
-  const registeredFonts = new Set<string>();
+  const registeredFonts = new Set<string>(); // key: "family:style"
+  const allFonts = getAllFonts();
   
   // Always ensure we have at least one Arabic font loaded as fallback
   const uniqueFonts = [...new Set([DEFAULT_ARABIC_FONT, ...fontsNeeded])];
@@ -200,15 +112,23 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
           fontDataCache.set(font.url, fontBase64);
         }
         
-        const fileName = `${font.name}.ttf`;
+        const rawExt = font.url.split('?')[0].split('.').pop()?.toLowerCase();
+        const ext = rawExt || 'ttf';
+        if (ext !== 'ttf' && ext !== 'otf') {
+          console.warn(`Unsupported font format for PDF: .${ext} (${font.family}). Use TTF/OTF for PDF embedding.`);
+          continue;
+        }
+
+        const fileName = `${font.name}.${ext}`;
         
         // Add font file to virtual file system for THIS document
         doc.addFileToVFS(fileName, fontBase64);
         
         // Register the font for THIS document
-        doc.addFont(fileName, font.family, font.style);
+        // Use Identity-H so Unicode glyphs (Arabic) map correctly.
+        (doc as any).addFont(fileName, font.family, font.style, 'Identity-H');
         
-        registeredFonts.add(font.family);
+        registeredFonts.add(`${font.family}:${font.style}`);
         console.log(`Registered font: ${font.family} (${font.style})`);
       } catch (error) {
         console.error(`Failed to load font ${font.family}:`, error);
@@ -224,40 +144,86 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
  * Falls back to Amiri (Arabic font) if the requested font is not available
  */
 function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number, registeredFonts: Set<string>): void {
-  if (!fontName) {
-    // Use default Arabic font
+  const safeSetFont = (family: string, style: string) => {
     try {
-      doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
+      doc.setFont(family, style as any);
+      return true;
     } catch {
-      console.warn('Default Arabic font not available');
+      return false;
     }
+  };
+
+  const fallbackArabic = () => safeSetFont(DEFAULT_ARABIC_FONT, 'normal');
+  const fallbackLatin = () => safeSetFont('times', 'normal');
+
+  // If no font specified, default to Arabic fallback (safe for mixed templates)
+  if (!fontName) {
+    if (!fallbackArabic()) fallbackLatin();
     doc.setFontSize(fontSize);
     return;
   }
 
   const font = getFontByName(fontName);
-  if (font && registeredFonts.has(font.family)) {
-    try {
-      doc.setFont(font.family, font.style);
-    } catch {
-      // Font not loaded, try fallback
-      console.warn(`Font ${fontName} not available, using fallback`);
-      try {
-        doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
-      } catch {
-        console.warn('Fallback also failed');
-      }
+  const textLooksArabic = font?.isArabic ?? false;
+
+  // System fonts: available without embedding, but NOT reliable for Arabic glyphs.
+  if (font?.isSystem) {
+    // If a system font was chosen but we need Arabic, force Arabic fallback.
+    if (textLooksArabic) {
+      if (!fallbackArabic()) fallbackLatin();
+    } else {
+      if (!safeSetFont(font.family, font.style)) fallbackLatin();
+    }
+    doc.setFontSize(fontSize);
+    return;
+  }
+
+  // Embedded fonts: must be registered per document.
+  if (font && registeredFonts.has(`${font.family}:${font.style}`)) {
+    if (!safeSetFont(font.family, font.style)) {
+      // Fallback if something went wrong
+      if (!fallbackArabic()) fallbackLatin();
     }
   } else {
-    // Unknown font or not registered, use default Arabic
-    try {
-      doc.setFont(DEFAULT_ARABIC_FONT, 'normal');
-    } catch {
-      console.warn('Default Arabic font not available');
-    }
+    // Unknown/unregistered font
+    if (!fallbackArabic()) fallbackLatin();
   }
-  
+
   doc.setFontSize(fontSize);
+}
+
+function setFieldFontForText(
+  doc: jsPDF,
+  fontName: string | undefined,
+  fontSize: number,
+  registeredFonts: Set<string>,
+  opts: { isArabic: boolean }
+): void {
+  // If the text is Arabic, enforce an Arabic-capable font even if user selected a Latin/system font.
+  if (opts.isArabic) {
+    const desired = fontName ? getFontByName(fontName) : undefined;
+    const canUseDesired =
+      !!desired &&
+      (desired.isArabic || desired.family.toLowerCase() === DEFAULT_ARABIC_FONT.toLowerCase()) &&
+      (desired.isSystem ? false : registeredFonts.has(`${desired.family}:${desired.style}`));
+
+    if (canUseDesired) {
+      try {
+        doc.setFont(desired!.family, desired!.style as any);
+      } catch {
+        // ignore
+      }
+      doc.setFontSize(fontSize);
+      return;
+    }
+
+    // Force Arabic fallback
+    setFieldFont(doc, DEFAULT_ARABIC_FONT, fontSize, registeredFonts);
+    return;
+  }
+
+  // Non-Arabic text: honor the chosen font (system or embedded)
+  setFieldFont(doc, fontName, fontSize, registeredFonts);
 }
 
 export async function generatePDF(
@@ -302,8 +268,9 @@ export async function generatePDF(
       if (!value) return;
 
       // Set font properties
-      setFieldFont(doc, field.font_name, field.font_size, registeredFonts);
-      doc.setTextColor(field.font_color);
+      const valueIsArabic = !!field.is_rtl || isArabicText(value);
+      setFieldFontForText(doc, field.font_name, field.font_size, registeredFonts, { isArabic: valueIsArabic });
+      doc.setTextColor(field.font_color || '#000000');
 
       // Calculate text position
       const x = field.position_x;
@@ -314,9 +281,12 @@ export async function generatePDF(
       if (field.text_align === 'left') align = 'left';
       else if (field.text_align === 'right') align = 'right';
 
-      // Reshape Arabic text for proper rendering
-      const reshapedValue = reshapeArabicText(value);
-      doc.text(reshapedValue, x, y, { align });
+      if (valueIsArabic) {
+        const shaped = shapeArabicText(value);
+        doc.text(shaped, x, y, { align, isInputRtl: true } as any);
+      } else {
+        doc.text(value, x, y, { align });
+      }
     });
   });
 
@@ -479,16 +449,20 @@ export async function generateSinglePDF(
     if (!value) return;
 
     // Set font properties
-    setFieldFont(doc, field.font_name, field.font_size, registeredFonts);
-    doc.setTextColor(field.font_color);
+    const valueIsArabic = !!field.is_rtl || isArabicText(value);
+    setFieldFontForText(doc, field.font_name, field.font_size, registeredFonts, { isArabic: valueIsArabic });
+    doc.setTextColor(field.font_color || '#000000');
 
     let align: 'left' | 'center' | 'right' = 'center';
     if (field.text_align === 'left') align = 'left';
     else if (field.text_align === 'right') align = 'right';
 
-    // Reshape Arabic text for proper rendering
-    const reshapedValue = reshapeArabicText(value);
-    doc.text(reshapedValue, field.position_x, field.position_y, { align });
+    if (valueIsArabic) {
+      const shaped = shapeArabicText(value);
+      doc.text(shaped, field.position_x, field.position_y, { align, isInputRtl: true } as any);
+    } else {
+      doc.text(value, field.position_x, field.position_y, { align });
+    }
   });
 
   return doc.output('blob');

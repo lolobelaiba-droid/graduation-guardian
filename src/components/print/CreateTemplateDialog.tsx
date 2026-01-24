@@ -88,7 +88,8 @@ export function CreateTemplateDialog({
         position_x: 105, // Center of A4
         position_y: 50 + (index * 15), // Spaced vertically
         font_size: 14,
-        font_name: 'IBM Plex Sans Arabic',
+        // Use a known embedded Arabic font to ensure PDF output is correct on any device.
+        font_name: 'Amiri',
         font_color: '#000000',
         text_align: 'center',
         is_rtl: data.language.includes('ar'),
