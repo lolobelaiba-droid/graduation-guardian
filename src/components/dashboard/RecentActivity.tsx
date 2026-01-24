@@ -4,6 +4,7 @@ import { useActivityLog, activityTypeIcons, ActivityType } from "@/hooks/useActi
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Link } from "react-router-dom";
+import { toWesternNumerals } from "@/lib/numerals";
 
 const typeIcons = {
   create: UserPlus,
@@ -23,7 +24,8 @@ export function RecentActivity() {
   const { data: activities = [], isLoading } = useActivityLog(5);
 
   const formatTimestamp = (date: string) => {
-    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: ar });
+    const formatted = formatDistanceToNow(new Date(date), { addSuffix: true, locale: ar });
+    return toWesternNumerals(formatted);
   };
 
   return (

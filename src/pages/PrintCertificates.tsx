@@ -36,6 +36,7 @@ import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/ImportExcelDialog";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
 import { getFontOptions } from "@/lib/arabicFonts";
+import { toWesternNumerals } from "@/lib/numerals";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -212,7 +213,7 @@ export default function PrintCertificates() {
           </Button>
           <Button size="sm" className="gap-2" onClick={handlePrint} disabled={selectedStudentIds.length === 0}>
             <Printer className="h-4 w-4" />
-            طباعة ({selectedStudentIds.length})
+            طباعة ({toWesternNumerals(selectedStudentIds.length)})
           </Button>
         </div>
       </div>
@@ -274,7 +275,7 @@ export default function PrintCertificates() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <span>قائمة الطلاب</span>
-            <Badge variant="secondary">{currentStudents.length}</Badge>
+            <Badge variant="secondary">{toWesternNumerals(currentStudents.length)}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -429,6 +430,7 @@ export default function PrintCertificates() {
                     setBackgroundOffsetY(y);
                   }}
                   showBackgroundControls={showBackgroundControls}
+                  onToggleBackgroundControls={() => setShowBackgroundControls(!showBackgroundControls)}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full min-h-[500px] text-muted-foreground">
@@ -456,11 +458,11 @@ export default function PrintCertificates() {
                           <div className="flex items-center justify-between">
                             <span className="font-medium">{field.field_name_ar}</span>
                             <Badge variant="outline" className="text-xs">
-                              X: {field.position_x} | Y: {field.position_y}
+                              X: {toWesternNumerals(field.position_x)} | Y: {toWesternNumerals(field.position_y)}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {field.field_key} • {field.font_size}px
+                            {field.field_key} • {toWesternNumerals(field.font_size)}px
                           </p>
                         </div>
                       ))}
@@ -671,77 +673,6 @@ export default function PrintCertificates() {
                       <strong>ملاحظة:</strong> الخلفية لا تُطبع - تُستخدم فقط لضبط مواقع الحقول على الورقة المحضرة مسبقاً.
                     </p>
                   </div>
-
-                  {/* Background positioning controls */}
-                  {templates.find(t => t.id === selectedTemplateId)?.background_image_url && (
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h4 className="font-semibold">ضبط موضع الخلفية</h4>
-                          <p className="text-xs text-muted-foreground">
-                            قم بتفعيل هذا الخيار لتحريك صورة الخلفية وضبط محاذاتها مع الحقول
-                          </p>
-                        </div>
-                        <Button
-                          variant={showBackgroundControls ? "secondary" : "outline"}
-                          size="sm"
-                          onClick={() => setShowBackgroundControls(!showBackgroundControls)}
-                        >
-                          {showBackgroundControls ? "إيقاف ضبط الخلفية" : "تفعيل ضبط الخلفية"}
-                        </Button>
-                      </div>
-                      
-                      {showBackgroundControls && (
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setBackgroundOffsetY(backgroundOffsetY - 1)}
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </Button>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setBackgroundOffsetX(backgroundOffsetX - 1)}
-                              >
-                                <ChevronRight className="h-4 w-4" />
-                              </Button>
-                              <div className="w-16 h-10 rounded-md border flex items-center justify-center text-sm font-mono">
-                                {backgroundOffsetX},{backgroundOffsetY}
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setBackgroundOffsetX(backgroundOffsetX + 1)}
-                              >
-                                <ChevronLeft className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setBackgroundOffsetY(backgroundOffsetY + 1)}
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setBackgroundOffsetX(0);
-                              setBackgroundOffsetY(0);
-                            }}
-                          >
-                            إعادة تعيين
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-[200px] text-muted-foreground">
