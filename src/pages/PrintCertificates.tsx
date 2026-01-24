@@ -113,12 +113,20 @@ export default function PrintCertificates() {
     saveSetting.mutate({ key: 'selectedLanguage', value: selectedLanguage });
   }, [selectedLanguage]);
 
-  // Set preview student
+  // Reset preview student when certificate type changes
+  useEffect(() => {
+    setPreviewStudentId(null);
+    setSelectedStudentIds([]);
+  }, [selectedType]);
+
+  // Set preview student to first available if none selected
   useEffect(() => {
     if (currentStudents.length > 0 && !previewStudentId) {
       setPreviewStudentId(currentStudents[0].id);
+    } else if (currentStudents.length === 0) {
+      setPreviewStudentId(null);
     }
-  }, [currentStudents, previewStudentId]);
+  }, [currentStudents]);
 
   const handleMoveField = (direction: 'up' | 'down' | 'left' | 'right') => {
     if (!selectedFieldId || !selectedTemplateId) return;
@@ -310,28 +318,40 @@ export default function PrintCertificates() {
                 <span className="text-sm font-medium">تحديد الكل</span>
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {currentStudents.map((student) => (
-                  <div
-                    key={student.id}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors shrink-0 border ${
-                      previewStudentId === student.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted border-transparent'
-                    }`}
-                    onClick={() => setPreviewStudentId(student.id)}
-                  >
-                    <Checkbox
-                      checked={selectedStudentIds.includes(student.id)}
-                      onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-medium truncate max-w-[150px]">{student.full_name_ar}</p>
-                      <p className="text-xs text-muted-foreground">{student.student_number}</p>
+                {currentStudents.map((student) => {
+                  const isPreviewSelected = previewStudentId === student.id;
+                  return (
+                    <div
+                      key={student.id}
+                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all shrink-0 border-2 ${
+                        isPreviewSelected 
+                          ? 'bg-primary/10 border-primary shadow-md ring-2 ring-primary/20' 
+                          : 'hover:bg-muted border-transparent hover:border-muted-foreground/20'
+                      }`}
+                      onClick={() => setPreviewStudentId(student.id)}
+                    >
+                      <Checkbox
+                        checked={selectedStudentIds.includes(student.id)}
+                        onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="min-w-0">
+                        <p className={`font-medium truncate max-w-[150px] ${isPreviewSelected ? 'text-primary' : ''}`}>
+                          {student.full_name_ar}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{student.student_number}</p>
+                      </div>
+                      {isPreviewSelected && (
+                        <Badge variant="default" className="text-xs">
+                          معاينة
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-xs">
+                        {mentionLabels[student.mention as MentionType]?.ar || student.mention}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      {mentionLabels[student.mention as MentionType]?.ar || student.mention}
-                    </Badge>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
