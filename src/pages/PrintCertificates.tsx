@@ -537,12 +537,12 @@ export default function PrintCertificates() {
           <Tabs defaultValue="preview">
             <TabsList className="mb-4">
               <TabsTrigger value="preview">المعاينة</TabsTrigger>
-              <TabsTrigger value="fields">تحريك الحقول</TabsTrigger>
-              <TabsTrigger value="background">صورة الخلفية</TabsTrigger>
-              <TabsTrigger value="fonts" className="gap-1">
-                <FileType className="h-3 w-3" />
-                إدارة الخطوط
+              <TabsTrigger value="fields">خصائص الحقول</TabsTrigger>
+              <TabsTrigger value="font-properties" className="gap-1">
+                <Type className="h-3 w-3" />
+                خصائص الخطوط
               </TabsTrigger>
+              <TabsTrigger value="background">صورة الخلفية</TabsTrigger>
             </TabsList>
 
             <TabsContent value="preview" className="min-h-[calc(100vh-400px)]">
@@ -941,8 +941,157 @@ export default function PrintCertificates() {
               )}
             </TabsContent>
 
-            <TabsContent value="fonts">
-              <FontManagement />
+            <TabsContent value="font-properties">
+              <div className="space-y-6">
+                {/* Global Font Settings */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Type className="h-4 w-4" />
+                    تطبيق خصائص الخط على جميع الحقول
+                  </h4>
+                  
+                  {selectedTemplateId ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Font Family */}
+                      <div className="space-y-2">
+                        <Label>نوع الخط</Label>
+                        <Select
+                          onValueChange={(v) => {
+                            if (!selectedTemplateId) return;
+                            templateFields.forEach(field => {
+                              updateField.mutate({
+                                id: field.id,
+                                template_id: selectedTemplateId,
+                                font_name: v,
+                              });
+                            });
+                            toast.success("تم تطبيق الخط على جميع الحقول");
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر الخط..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                              خطوط عربية
+                            </div>
+                            {getFontOptions().filter(f => f.isArabic).map((font) => (
+                              <SelectItem 
+                                key={font.value} 
+                                value={font.value}
+                                style={{ fontFamily: font.value }}
+                              >
+                                {font.labelAr} ({font.label})
+                              </SelectItem>
+                            ))}
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 mt-1">
+                              خطوط لاتينية
+                            </div>
+                            {getFontOptions().filter(f => !f.isArabic).map((font) => (
+                              <SelectItem 
+                                key={font.value} 
+                                value={font.value}
+                                style={{ fontFamily: font.value }}
+                              >
+                                {font.labelAr} ({font.label})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Font Size */}
+                      <div className="space-y-2">
+                        <Label>حجم الخط</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={8}
+                            max={72}
+                            placeholder="14"
+                            className="w-20"
+                            onBlur={(e) => {
+                              const size = parseInt(e.target.value);
+                              if (size >= 8 && size <= 72 && selectedTemplateId) {
+                                templateFields.forEach(field => {
+                                  updateField.mutate({
+                                    id: field.id,
+                                    template_id: selectedTemplateId,
+                                    font_size: size,
+                                  });
+                                });
+                                toast.success("تم تطبيق الحجم على جميع الحقول");
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
+                          <span className="text-sm text-muted-foreground self-center">نقطة</span>
+                        </div>
+                      </div>
+                      
+                      {/* Font Color */}
+                      <div className="space-y-2">
+                        <Label>لون الخط</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            defaultValue="#000000"
+                            className="w-12 h-10 p-1 cursor-pointer"
+                            onChange={(e) => {
+                              if (!selectedTemplateId) return;
+                              templateFields.forEach(field => {
+                                updateField.mutate({
+                                  id: field.id,
+                                  template_id: selectedTemplateId,
+                                  font_color: e.target.value,
+                                });
+                              });
+                              toast.success("تم تطبيق اللون على جميع الحقول");
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Font Style */}
+                      <div className="space-y-2">
+                        <Label>نمط الخط</Label>
+                        <Select
+                          onValueChange={(v) => {
+                            if (!selectedTemplateId) return;
+                            // Note: font_style is not in the current schema, 
+                            // but we can simulate with font_name variations
+                            toast.info("سيتم دعم أنماط الخط قريباً");
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="عادي" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="normal">عادي</SelectItem>
+                            <SelectItem value="bold">غامق</SelectItem>
+                            <SelectItem value="italic">مائل</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      يرجى اختيار قالب أولاً
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    استخدم هذه الإعدادات لتطبيق خصائص الخط على جميع حقول الشهادة دفعة واحدة
+                  </p>
+                </div>
+                
+                {/* Font Management Section */}
+                <FontManagement />
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
