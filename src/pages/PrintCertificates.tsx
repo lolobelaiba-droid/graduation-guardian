@@ -250,10 +250,6 @@ export default function PrintCertificates() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsCreateTemplateOpen(true)}>
-            <Plus className="h-4 w-4" />
-            إنشاء قالب
-          </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsAddStudentOpen(true)}>
             <Plus className="h-4 w-4" />
             إضافة طالب
@@ -840,6 +836,14 @@ export default function PrintCertificates() {
             setBackgroundOffsetX(settings.background_offset_x);
             setBackgroundOffsetY(settings.background_offset_y);
             setBackgroundScale(settings.background_scale);
+          }}
+          onFieldMove={(fieldId, newX, newY) => {
+            updateField.mutate({
+              id: fieldId,
+              template_id: selectedTemplateId,
+              position_x: newX,
+              position_y: newY,
+            });
           }}
           onPrint={handlePrint}
         />

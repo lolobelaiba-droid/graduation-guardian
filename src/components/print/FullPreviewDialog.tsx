@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -29,6 +29,7 @@ interface FullPreviewDialogProps {
     background_offset_y: number;
     background_scale: number;
   }) => void;
+  onFieldMove?: (fieldId: string, newX: number, newY: number) => void;
   onPrint: () => void;
   initialOffsetX?: number;
   initialOffsetY?: number;
@@ -42,15 +43,29 @@ export function FullPreviewDialog({
   fields,
   template,
   onSaveSettings,
+  onFieldMove,
   onPrint,
   initialOffsetX = 0,
   initialOffsetY = 0,
   initialScale = 100,
 }: FullPreviewDialogProps) {
+  const canvasRef = useRef<HTMLDivElement>(null);
   const [offsetX, setOffsetX] = useState(initialOffsetX);
   const [offsetY, setOffsetY] = useState(initialOffsetY);
   const [scale, setScale] = useState(initialScale);
   const [hasChanges, setHasChanges] = useState(false);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [showFieldControls, setShowFieldControls] = useState(true);
+  
+  // Drag state for fields
+  const [dragState, setDragState] = useState<{
+    fieldId: string;
+    startX: number;
+    startY: number;
+    fieldStartX: number;
+    fieldStartY: number;
+  } | null>(null);
+  const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -58,6 +73,7 @@ export function FullPreviewDialog({
       setOffsetY(initialOffsetY);
       setScale(initialScale);
       setHasChanges(false);
+      setSelectedFieldId(null);
     }
   }, [open, initialOffsetX, initialOffsetY, initialScale]);
 
@@ -116,7 +132,7 @@ export function FullPreviewDialog({
     return value ? toWesternNumerals(String(value)) : '';
   };
 
-  const handleMove = (direction: 'up' | 'down' | 'left' | 'right') => {
+  const handleBackgroundMove = (direction: 'up' | 'down' | 'left' | 'right') => {
     setHasChanges(true);
     switch (direction) {
       case 'up': setOffsetY(prev => prev - 1); break;
@@ -156,6 +172,69 @@ export function FullPreviewDialog({
     onOpenChange(false);
   };
 
+  // Field drag handlers
+  const handleFieldMouseDown = useCallback((e: React.MouseEvent, field: TemplateField) => {
+    if (!onFieldMove) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setSelectedFieldId(field.id);
+    
+    setDragState({
+      fieldId: field.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      fieldStartX: field.position_x,
+      fieldStartY: field.position_y,
+    });
+    setDragPreview({ x: field.position_x, y: field.position_y });
+  }, [onFieldMove]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragState || !canvasRef.current) return;
+
+    const deltaX = (e.clientX - dragState.startX) / SCALE;
+    const deltaY = (e.clientY - dragState.startY) / SCALE;
+
+    // Calculate new position (round to 0.5mm for precision)
+    let newX = Math.round((dragState.fieldStartX + deltaX) * 2) / 2;
+    let newY = Math.round((dragState.fieldStartY + deltaY) * 2) / 2;
+
+    // Clamp to canvas bounds
+    newX = Math.max(0, Math.min(width - 10, newX));
+    newY = Math.max(0, Math.min(height - 10, newY));
+
+    setDragPreview({ x: newX, y: newY });
+  }, [dragState, width, height]);
+
+  const handleMouseUp = useCallback(() => {
+    if (dragState && dragPreview && onFieldMove) {
+      // Only update if position actually changed
+      if (dragPreview.x !== dragState.fieldStartX || dragPreview.y !== dragState.fieldStartY) {
+        onFieldMove(dragState.fieldId, dragPreview.x, dragPreview.y);
+      }
+    }
+    setDragState(null);
+    setDragPreview(null);
+  }, [dragState, dragPreview, onFieldMove]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (dragState) {
+      handleMouseUp();
+    }
+  }, [dragState, handleMouseUp]);
+
+  // Get field position (use drag preview if dragging)
+  const getFieldPosition = (field: TemplateField) => {
+    if (dragState?.fieldId === field.id && dragPreview) {
+      return dragPreview;
+    }
+    return { x: field.position_x, y: field.position_y };
+  };
+
+  const selectedField = fields.find(f => f.id === selectedFieldId);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 overflow-hidden">
@@ -191,25 +270,53 @@ export function FullPreviewDialog({
 
         <div className="flex flex-1 overflow-hidden">
           {/* Controls Sidebar */}
-          <div className="w-64 border-l bg-muted/20 p-4 space-y-6 overflow-y-auto">
+          <div className="w-72 border-l bg-muted/20 p-4 space-y-6 overflow-y-auto">
+            {/* Field Controls Toggle */}
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-sm">تحريك الحقول</h4>
+              <Button
+                variant={showFieldControls ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setShowFieldControls(!showFieldControls)}
+              >
+                <Move className="h-4 w-4 ml-1" />
+                {showFieldControls ? "مفعّل" : "معطّل"}
+              </Button>
+            </div>
+
+            {/* Selected Field Info */}
+            {selectedField && (
+              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-sm font-medium">{selectedField.field_name_ar}</p>
+                <div className="flex gap-2 mt-1">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    X: {toWesternNumerals(getFieldPosition(selectedField).x)} مم
+                  </Badge>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    Y: {toWesternNumerals(getFieldPosition(selectedField).y)} مم
+                  </Badge>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               <h4 className="font-semibold text-sm">تحريك الخلفية</h4>
               <div className="flex flex-col items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => handleMove('up')}>
+                <Button variant="outline" size="icon" onClick={() => handleBackgroundMove('up')}>
                   <ChevronUp className="h-4 w-4" />
                 </Button>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={() => handleMove('right')}>
+                  <Button variant="outline" size="icon" onClick={() => handleBackgroundMove('right')}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                   <Badge variant="secondary" className="font-mono px-3 py-2">
                     {toWesternNumerals(offsetX)},{toWesternNumerals(offsetY)}
                   </Badge>
-                  <Button variant="outline" size="icon" onClick={() => handleMove('left')}>
+                  <Button variant="outline" size="icon" onClick={() => handleBackgroundMove('left')}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                 </div>
-                <Button variant="outline" size="icon" onClick={() => handleMove('down')}>
+                <Button variant="outline" size="icon" onClick={() => handleBackgroundMove('down')}>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </div>
@@ -240,7 +347,14 @@ export function FullPreviewDialog({
               <h4 className="font-semibold text-sm">الحقول المعروضة</h4>
               <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
                 {fields.filter(f => f.is_visible).map((field) => (
-                  <div key={field.id} className="flex justify-between items-center p-1 rounded bg-background">
+                  <div 
+                    key={field.id} 
+                    className={cn(
+                      "flex justify-between items-center p-2 rounded cursor-pointer transition-colors",
+                      selectedFieldId === field.id ? "bg-primary/20 border border-primary/30" : "bg-background hover:bg-muted"
+                    )}
+                    onClick={() => setSelectedFieldId(field.id)}
+                  >
                     <span>{field.field_name_ar}</span>
                     <Badge variant="outline" className="font-mono text-[10px]">
                       {toWesternNumerals(field.position_x)},{toWesternNumerals(field.position_y)}
@@ -254,12 +368,19 @@ export function FullPreviewDialog({
           {/* Preview Canvas */}
           <div className="flex-1 overflow-auto bg-muted/30 p-4 flex items-center justify-center">
             <div
-              className="relative bg-white shadow-xl border"
+              ref={canvasRef}
+              className={cn(
+                "relative bg-white shadow-xl border",
+                dragState && "cursor-grabbing"
+              )}
               style={{
                 width: `${width * SCALE}px`,
                 height: `${height * SCALE}px`,
                 direction: template.language.includes('ar') ? 'rtl' : 'ltr',
               }}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
             >
               {/* Background image with offset and scale */}
               {template.background_image_url && (
@@ -280,23 +401,50 @@ export function FullPreviewDialog({
 
               {/* Fields */}
               {fields.filter(f => f.is_visible).map((field) => {
+                const position = getFieldPosition(field);
+                const isSelected = selectedFieldId === field.id;
+                const isDragging = dragState?.fieldId === field.id;
                 const value = getFieldValue(field.field_key);
+                
                 return (
                   <div
                     key={field.id}
-                    className="absolute"
+                    className={cn(
+                      "absolute transition-all group",
+                      showFieldControls && onFieldMove ? "cursor-grab" : "cursor-default",
+                      isSelected && "z-10",
+                      isDragging && "cursor-grabbing z-20"
+                    )}
                     style={{
-                      left: `${field.position_x * SCALE}px`,
-                      top: `${field.position_y * SCALE}px`,
-                      fontSize: `${field.font_size * SCALE * 0.35}px`,
-                      fontFamily: field.font_name,
-                      color: field.font_color,
-                      textAlign: field.text_align as 'left' | 'right' | 'center',
-                      direction: field.is_rtl ? 'rtl' : 'ltr',
-                      whiteSpace: 'nowrap',
+                      left: `${position.x * SCALE}px`,
+                      top: `${position.y * SCALE}px`,
+                      transition: isDragging ? 'none' : 'all 0.15s ease-out',
                     }}
+                    onClick={() => setSelectedFieldId(field.id)}
                   >
-                    {value || `[${field.field_name_ar}]`}
+                    <div
+                      className={cn(
+                        "border border-transparent transition-all select-none px-1",
+                        showFieldControls && "hover:border-primary/50 hover:bg-primary/5",
+                        isSelected && "border-primary border-2 bg-primary/10 rounded",
+                        isDragging && "border-primary border-2 bg-primary/20 rounded shadow-lg"
+                      )}
+                      style={{
+                        fontSize: `${field.font_size * SCALE * 0.35}px`,
+                        fontFamily: field.font_name,
+                        color: field.font_color,
+                        textAlign: field.text_align as 'left' | 'right' | 'center',
+                        direction: field.is_rtl ? 'rtl' : 'ltr',
+                        whiteSpace: 'nowrap',
+                      }}
+                      onMouseDown={(e) => showFieldControls && handleFieldMouseDown(e, field)}
+                      title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم - اسحب لتحريك الحقل`}
+                    >
+                      {isSelected && showFieldControls && !isDragging && (
+                        <GripVertical className="inline-block h-3 w-3 ml-1 text-primary" />
+                      )}
+                      {value || `[${field.field_name_ar}]`}
+                    </div>
                   </div>
                 );
               })}
