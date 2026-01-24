@@ -1,6 +1,8 @@
 import { CertificateType } from "@/types/certificates";
 
-export type ImportStep = "upload" | "mapping" | "preview" | "importing" | "complete";
+export type ImportStep = "upload" | "mode" | "mapping" | "preview" | "importing" | "complete";
+
+export type ImportMode = "append" | "replace";
 
 export interface ColumnMapping {
   [excelColumn: string]: string; // maps Excel column to field key

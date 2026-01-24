@@ -1,2 +1,3 @@
 export { ImportExcelDialog } from "./ImportExcelDialog";
-export type { ImportStep, ColumnMapping, ImportProgress, ImportResults } from "./types";
+export { ModeStep } from "./ModeStep";
+export type { ImportStep, ImportMode, ColumnMapping, ImportProgress, ImportResults } from "./types";
