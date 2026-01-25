@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Building2,
   Database,
@@ -9,6 +9,7 @@ import {
   Save,
   RefreshCw,
   Loader2,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,8 +46,24 @@ const PAPER_SIZES = [
 ];
 
 export default function Settings() {
+  // University Info State
+  const [universityName, setUniversityName] = useState("");
+  const [universityNameEn, setUniversityNameEn] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
+  const [isSavingUniversity, setIsSavingUniversity] = useState(false);
+
+  // Backup State
   const [autoBackup, setAutoBackup] = useState(true);
   const [backupFrequency, setBackupFrequency] = useState("daily");
+  const [backupCount, setBackupCount] = useState("10");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Print Settings State
   const [paperSize, setPaperSize] = useState("a4");
   const [customWidth, setCustomWidth] = useState("210");
   const [customHeight, setCustomHeight] = useState("297");
@@ -57,26 +74,46 @@ export default function Settings() {
   const [marginLeft, setMarginLeft] = useState("15");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load print settings from database
+  // Load all settings from database
   useEffect(() => {
-    const loadPrintSettings = async () => {
+    const loadSettings = async () => {
       const { data, error } = await supabase
         .from("settings")
-        .select("*")
-        .in("key", [
-          "print_paper_size",
-          "print_custom_width",
-          "print_custom_height",
-          "print_orientation",
-          "print_margin_top",
-          "print_margin_bottom",
-          "print_margin_right",
-          "print_margin_left",
-        ]);
+        .select("*");
 
       if (!error && data) {
         data.forEach((setting) => {
           switch (setting.key) {
+            // University settings
+            case "university_name":
+              if (setting.value) setUniversityName(setting.value);
+              break;
+            case "university_name_en":
+              if (setting.value) setUniversityNameEn(setting.value);
+              break;
+            case "university_address":
+              if (setting.value) setAddress(setting.value);
+              break;
+            case "university_phone":
+              if (setting.value) setPhone(setting.value);
+              break;
+            case "university_email":
+              if (setting.value) setEmail(setting.value);
+              break;
+            case "university_website":
+              if (setting.value) setWebsite(setting.value);
+              break;
+            // Backup settings
+            case "auto_backup":
+              setAutoBackup(setting.value === "true");
+              break;
+            case "backup_frequency":
+              if (setting.value) setBackupFrequency(setting.value);
+              break;
+            case "backup_count":
+              if (setting.value) setBackupCount(setting.value);
+              break;
+            // Print settings
             case "print_paper_size":
               if (setting.value) setPaperSize(setting.value);
               break;
@@ -106,8 +143,212 @@ export default function Settings() {
       }
     };
 
-    loadPrintSettings();
+    loadSettings();
   }, []);
+
+  const saveSetting = async (key: string, value: string) => {
+    const { data: existing } = await supabase
+      .from("settings")
+      .select("id")
+      .eq("key", key)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from("settings")
+        .update({ value })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("settings").insert([{ key, value }]);
+    }
+  };
+
+  const saveUniversitySettings = async () => {
+    setIsSavingUniversity(true);
+    try {
+      await Promise.all([
+        saveSetting("university_name", universityName),
+        saveSetting("university_name_en", universityNameEn),
+        saveSetting("university_address", address),
+        saveSetting("university_phone", phone),
+        saveSetting("university_email", email),
+        saveSetting("university_website", website),
+      ]);
+      toast.success("تم حفظ معلومات الجامعة بنجاح");
+    } catch (error) {
+      console.error("Error saving university settings:", error);
+      toast.error("حدث خطأ أثناء حفظ الإعدادات");
+    } finally {
+      setIsSavingUniversity(false);
+    }
+  };
+
+  const saveBackupSettings = async () => {
+    try {
+      await Promise.all([
+        saveSetting("auto_backup", autoBackup.toString()),
+        saveSetting("backup_frequency", backupFrequency),
+        saveSetting("backup_count", backupCount),
+      ]);
+    } catch (error) {
+      console.error("Error saving backup settings:", error);
+    }
+  };
+
+  // Save backup settings when they change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveBackupSettings();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [autoBackup, backupFrequency, backupCount]);
+
+  const downloadBackup = async () => {
+    setIsDownloading(true);
+    try {
+      // Fetch all data from tables
+      const [
+        phdLmd,
+        phdScience,
+        master,
+        templates,
+        templateFields,
+        settings,
+        dropdownOptions,
+        customFonts,
+        activityLog,
+      ] = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("*"),
+        supabase.from("phd_science_certificates").select("*"),
+        supabase.from("master_certificates").select("*"),
+        supabase.from("certificate_templates").select("*"),
+        supabase.from("certificate_template_fields").select("*"),
+        supabase.from("settings").select("*"),
+        supabase.from("dropdown_options").select("*"),
+        supabase.from("custom_fonts").select("*"),
+        supabase.from("activity_log").select("*"),
+      ]);
+
+      const backupData = {
+        version: "1.0",
+        created_at: new Date().toISOString(),
+        data: {
+          phd_lmd_certificates: phdLmd.data || [],
+          phd_science_certificates: phdScience.data || [],
+          master_certificates: master.data || [],
+          certificate_templates: templates.data || [],
+          certificate_template_fields: templateFields.data || [],
+          settings: settings.data || [],
+          dropdown_options: dropdownOptions.data || [],
+          custom_fonts: customFonts.data || [],
+          activity_log: activityLog.data || [],
+        },
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup_${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("تم تنزيل النسخة الاحتياطية بنجاح");
+    } catch (error) {
+      console.error("Error downloading backup:", error);
+      toast.error("حدث خطأ أثناء تنزيل النسخة الاحتياطية");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleRestoreClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const restoreBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsRestoring(true);
+    try {
+      const text = await file.text();
+      const backupData = JSON.parse(text);
+
+      if (!backupData.version || !backupData.data) {
+        throw new Error("ملف النسخة الاحتياطية غير صالح");
+      }
+
+      const { data: tableData } = backupData;
+
+      // Clear existing data and restore from backup
+      // Note: Order matters due to foreign key constraints
+
+      // First, delete dependent tables
+      if (tableData.certificate_template_fields?.length > 0) {
+        await supabase.from("certificate_template_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      }
+      
+      // Then delete parent tables
+      if (tableData.certificate_templates?.length > 0) {
+        await supabase.from("certificate_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      }
+
+      // Restore in order
+      if (tableData.phd_lmd_certificates?.length > 0) {
+        await supabase.from("phd_lmd_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        await supabase.from("phd_lmd_certificates").insert(tableData.phd_lmd_certificates);
+      }
+
+      if (tableData.phd_science_certificates?.length > 0) {
+        await supabase.from("phd_science_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        await supabase.from("phd_science_certificates").insert(tableData.phd_science_certificates);
+      }
+
+      if (tableData.master_certificates?.length > 0) {
+        await supabase.from("master_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        await supabase.from("master_certificates").insert(tableData.master_certificates);
+      }
+
+      if (tableData.certificate_templates?.length > 0) {
+        await supabase.from("certificate_templates").insert(tableData.certificate_templates);
+      }
+
+      if (tableData.certificate_template_fields?.length > 0) {
+        await supabase.from("certificate_template_fields").insert(tableData.certificate_template_fields);
+      }
+
+      if (tableData.dropdown_options?.length > 0) {
+        await supabase.from("dropdown_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        await supabase.from("dropdown_options").insert(tableData.dropdown_options);
+      }
+
+      if (tableData.custom_fonts?.length > 0) {
+        await supabase.from("custom_fonts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        await supabase.from("custom_fonts").insert(tableData.custom_fonts);
+      }
+
+      toast.success("تم استعادة النسخة الاحتياطية بنجاح");
+      
+      // Reload page to reflect changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Error restoring backup:", error);
+      toast.error("حدث خطأ أثناء استعادة النسخة الاحتياطية");
+    } finally {
+      setIsRestoring(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   const savePrintSettings = async () => {
     setIsSaving(true);
@@ -124,20 +365,7 @@ export default function Settings() {
       ];
 
       for (const setting of settings) {
-        const { data: existing } = await supabase
-          .from("settings")
-          .select("id")
-          .eq("key", setting.key)
-          .single();
-
-        if (existing) {
-          await supabase
-            .from("settings")
-            .update({ value: setting.value })
-            .eq("id", existing.id);
-        } else {
-          await supabase.from("settings").insert([setting]);
-        }
+        await saveSetting(setting.key, setting.value);
       }
 
       toast.success("تم حفظ إعدادات الطباعة بنجاح");
@@ -151,6 +379,15 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden file input for restore */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={restoreBackup}
+        accept=".json"
+        className="hidden"
+      />
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">الإعدادات</h1>
@@ -195,31 +432,55 @@ export default function Settings() {
                 <Label htmlFor="universityName">اسم الجامعة</Label>
                 <Input
                   id="universityName"
-                  defaultValue="جامعة التقنية والعلوم التطبيقية"
+                  value={universityName}
+                  onChange={(e) => setUniversityName(e.target.value)}
+                  placeholder="أدخل اسم الجامعة"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="universityNameEn">اسم الجامعة (إنجليزي)</Label>
                 <Input
                   id="universityNameEn"
-                  defaultValue="University of Technology and Applied Sciences"
+                  value={universityNameEn}
+                  onChange={(e) => setUniversityNameEn(e.target.value)}
+                  placeholder="Enter university name"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address">العنوان</Label>
-                <Input id="address" defaultValue="عمان - سلطنة عمان" />
+                <Input
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="أدخل العنوان"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">رقم الهاتف</Label>
-                <Input id="phone" defaultValue="+968 1234 5678" />
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="أدخل رقم الهاتف"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input id="email" defaultValue="info@utas.edu.om" />
+                <Input
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="أدخل البريد الإلكتروني"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="website">الموقع الإلكتروني</Label>
-                <Input id="website" defaultValue="https://www.utas.edu.om" />
+                <Input
+                  id="website"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="أدخل الموقع الإلكتروني"
+                />
               </div>
             </div>
 
@@ -239,8 +500,16 @@ export default function Settings() {
             </div>
 
             <div className="flex justify-end">
-              <Button className="gap-2">
-                <Save className="h-4 w-4" />
+              <Button
+                className="gap-2"
+                onClick={saveUniversitySettings}
+                disabled={isSavingUniversity}
+              >
+                {isSavingUniversity ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 حفظ التغييرات
               </Button>
             </div>
@@ -279,7 +548,7 @@ export default function Settings() {
                   </div>
                   <div className="space-y-2">
                     <Label>عدد النسخ المحفوظة</Label>
-                    <Select defaultValue="10">
+                    <Select value={backupCount} onValueChange={setBackupCount}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -293,51 +562,49 @@ export default function Settings() {
                   </div>
                 </div>
               )}
+
+              {autoBackup && (
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-muted-foreground">
+                    تم تفعيل النسخ الاحتياطي التلقائي - يتم الحفظ {backupFrequency === "hourly" ? "كل ساعة" : backupFrequency === "daily" ? "يومياً" : backupFrequency === "weekly" ? "أسبوعياً" : "شهرياً"}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="bg-card rounded-2xl shadow-card p-6">
               <h3 className="text-lg font-semibold mb-4">النسخ الاحتياطي اليدوي</h3>
               <div className="flex flex-wrap gap-4">
-                <Button className="gap-2">
-                  <Download className="h-4 w-4" />
+                <Button
+                  className="gap-2"
+                  onClick={downloadBackup}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
                   تنزيل نسخة احتياطية
                 </Button>
-                <Button variant="outline" className="gap-2">
-                  <Upload className="h-4 w-4" />
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleRestoreClick}
+                  disabled={isRestoring}
+                >
+                  {isRestoring ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
                   استعادة من نسخة
                 </Button>
               </div>
-            </div>
-
-            <div className="bg-card rounded-2xl shadow-card p-6">
-              <h3 className="text-lg font-semibold mb-4">آخر النسخ الاحتياطية</h3>
-              <div className="space-y-3">
-                {[
-                  { date: "2024-01-20 10:30", size: "2.5 MB" },
-                  { date: "2024-01-19 10:30", size: "2.4 MB" },
-                  { date: "2024-01-18 10:30", size: "2.3 MB" },
-                ].map((backup, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 bg-muted/50 rounded-xl"
-                  >
-                    <div>
-                      <p className="font-medium">{backup.date}</p>
-                      <p className="text-sm text-muted-foreground">{backup.size}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        <Download className="h-4 w-4" />
-                        تنزيل
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        <RefreshCw className="h-4 w-4" />
-                        استعادة
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-muted-foreground mt-4">
+                سيتم تنزيل ملف JSON يحتوي على جميع بيانات النظام بما في ذلك الطلاب والقوالب والإعدادات
+              </p>
             </div>
           </div>
         </TabsContent>
@@ -370,9 +637,9 @@ export default function Settings() {
                 <>
                   <div className="space-y-2">
                     <Label>العرض المخصص (مم)</Label>
-                    <Input 
-                      type="number" 
-                      value={customWidth} 
+                    <Input
+                      type="number"
+                      value={customWidth}
                       onChange={(e) => setCustomWidth(e.target.value)}
                       min="50"
                       max="2000"
@@ -380,9 +647,9 @@ export default function Settings() {
                   </div>
                   <div className="space-y-2">
                     <Label>الارتفاع المخصص (مم)</Label>
-                    <Input 
-                      type="number" 
-                      value={customHeight} 
+                    <Input
+                      type="number"
+                      value={customHeight}
                       onChange={(e) => setCustomHeight(e.target.value)}
                       min="50"
                       max="2000"
@@ -405,33 +672,33 @@ export default function Settings() {
               </div>
               <div className="space-y-2">
                 <Label>الهامش العلوي (مم)</Label>
-                <Input 
-                  type="number" 
-                  value={marginTop} 
+                <Input
+                  type="number"
+                  value={marginTop}
                   onChange={(e) => setMarginTop(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label>الهامش السفلي (مم)</Label>
-                <Input 
-                  type="number" 
-                  value={marginBottom} 
+                <Input
+                  type="number"
+                  value={marginBottom}
                   onChange={(e) => setMarginBottom(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label>الهامش الأيمن (مم)</Label>
-                <Input 
-                  type="number" 
-                  value={marginRight} 
+                <Input
+                  type="number"
+                  value={marginRight}
                   onChange={(e) => setMarginRight(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label>الهامش الأيسر (مم)</Label>
-                <Input 
-                  type="number" 
-                  value={marginLeft} 
+                <Input
+                  type="number"
+                  value={marginLeft}
                   onChange={(e) => setMarginLeft(e.target.value)}
                 />
               </div>
