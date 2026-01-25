@@ -150,14 +150,56 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
  * Get font by name - searches all fonts including custom ones
  */
 export function getFontByName(fontName: string): FontConfig | undefined {
+  const q = (fontName || '').trim();
+  if (!q) return undefined;
+
+  const qLower = q.toLowerCase();
   const allFontsList = getAllFonts();
-  return allFontsList.find(f => 
-    f.name === fontName || 
-    f.displayName === fontName || 
-    f.family === fontName ||
-    f.family.toLowerCase() === fontName.toLowerCase() ||
-    f.name.toLowerCase() === fontName.toLowerCase()
-  );
+
+  const matches = (f: FontConfig): boolean => {
+    const name = f.name?.toLowerCase?.() ?? '';
+    const displayName = f.displayName?.toLowerCase?.() ?? '';
+    const family = f.family?.toLowerCase?.() ?? '';
+    return (
+      name === qLower ||
+      displayName === qLower ||
+      family === qLower
+    );
+  };
+
+  const score = (f: FontConfig): number => {
+    // Prefer real (embedded) fonts over system fonts when names collide.
+    // This is crucial for cases like "Times" where the UI preview can use an OS font,
+    // but the PDF must embed a file-backed font to match exactly.
+    const name = f.name?.toLowerCase?.() ?? '';
+    const displayName = f.displayName?.toLowerCase?.() ?? '';
+    const family = f.family?.toLowerCase?.() ?? '';
+
+    let s = 0;
+    if (name === qLower) s += 1000;
+    if (displayName === qLower) s += 900;
+    if (family === qLower) s += 800;
+
+    // Strong preference for file-backed fonts (custom/arabic fonts)
+    if (!f.isSystem) s += 500;
+    if (f.url) s += 300;
+
+    return s;
+  };
+
+  const candidates = allFontsList.filter(matches);
+  if (candidates.length === 0) return undefined;
+
+  let best = candidates[0];
+  let bestScore = score(best);
+  for (let i = 1; i < candidates.length; i++) {
+    const s = score(candidates[i]);
+    if (s > bestScore) {
+      best = candidates[i];
+      bestScore = s;
+    }
+  }
+  return best;
 }
 
 /**
