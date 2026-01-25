@@ -1,5 +1,8 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const { pathToFileURL } = require('url');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) {
@@ -20,6 +23,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
     // RTL-friendly title bar
     titleBarStyle: 'default',
@@ -90,6 +94,99 @@ function createWindow() {
     mainWindow = null;
   });
 }
+
+// =====================
+// Printer / Print IPC
+// =====================
+
+ipcMain.handle('printers:list', async () => {
+  const win = BrowserWindow.getFocusedWindow() || mainWindow;
+  if (!win) return [];
+  try {
+    const printers = await win.webContents.getPrintersAsync();
+    return printers;
+  } catch (e) {
+    console.error('Failed to list printers:', e);
+    return [];
+  }
+});
+
+ipcMain.handle('printers:open-settings', async () => {
+  try {
+    if (process.platform === 'win32') {
+      await shell.openExternal('ms-settings:printers');
+      return true;
+    }
+    if (process.platform === 'darwin') {
+      await shell.openExternal('x-apple.systempreferences:com.apple.preference.printers');
+      return true;
+    }
+    // Linux: no universal URI. Return false so the UI can inform the user.
+    return false;
+  } catch (e) {
+    console.error('Failed to open printer settings:', e);
+    return false;
+  }
+});
+
+ipcMain.handle('printers:print-pdf', async (_event, payload) => {
+  try {
+    const { pdf, options } = payload || {};
+    if (!pdf) return { success: false, error: 'Missing PDF data' };
+
+    const deviceName = options?.deviceName;
+
+    // Write to a temporary file so Chromium PDF viewer can load it reliably.
+    const tmpPath = path.join(os.tmpdir(), `certificates_${Date.now()}.pdf`);
+    const buffer = Buffer.from(new Uint8Array(pdf));
+    fs.writeFileSync(tmpPath, buffer);
+
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true,
+      },
+    });
+
+    await printWindow.loadURL(pathToFileURL(tmpPath).toString());
+
+    // Wait a tick for the PDF plugin/viewer to initialize.
+    await new Promise((r) => setTimeout(r, 300));
+
+    const success = await new Promise((resolve) => {
+      printWindow.webContents.print(
+        {
+          silent: false, // show native dialog (tools/properties)
+          printBackground: true,
+          deviceName: deviceName || undefined,
+        },
+        (ok, failureReason) => {
+          if (!ok) console.error('Print failed:', failureReason);
+          resolve(ok);
+        }
+      );
+    });
+
+    try {
+      printWindow.close();
+    } catch {
+      // ignore
+    }
+
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      // ignore
+    }
+
+    return success ? { success: true } : { success: false, error: 'Print cancelled or failed' };
+  } catch (e) {
+    console.error('Failed to print PDF:', e);
+    return { success: false, error: String(e?.message || e) };
+  }
+});
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {

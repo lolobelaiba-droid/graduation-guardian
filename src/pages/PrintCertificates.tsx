@@ -31,7 +31,7 @@ import {
 import { CertificatePreview } from "@/components/print/CertificatePreview";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
-import { generatePDF } from "@/lib/pdfGenerator";
+import { generatePDF, generatePDFBlob } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/import";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
@@ -75,6 +75,14 @@ export default function PrintCertificates() {
   // Student search
   const [studentSearch, setStudentSearch] = useState('');
 
+  // Desktop printing (Electron) state
+  const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.getPrinters;
+  const [printers, setPrinters] = useState<Array<{ name: string; displayName?: string; isDefault?: boolean }>>([]);
+  const [selectedPrinterName, setSelectedPrinterName] = useState<string>('');
+  const [loadingPrinters, setLoadingPrinters] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isApplyingToAll, setIsApplyingToAll] = useState(false);
+
   // Data hooks
   const { data: templates = [], isLoading: loadingTemplates } = useCertificateTemplates();
   const { data: templateFields = [], isLoading: loadingFields } = useTemplateFields(selectedTemplateId);
@@ -112,6 +120,55 @@ export default function PrintCertificates() {
       setCustomFonts(fontConfigs);
     }
   }, [customFontsData]);
+
+  // Load printers (desktop app only)
+  useEffect(() => {
+    if (!isDesktop) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingPrinters(true);
+        const list = (await window.electronAPI!.getPrinters!()) as Array<{
+          name: string;
+          displayName?: string;
+          isDefault?: boolean;
+        }>;
+        if (cancelled) return;
+        setPrinters(list || []);
+        const defaultPrinter = list?.find((p) => p.isDefault)?.name || list?.[0]?.name || '';
+        setSelectedPrinterName((prev) => prev || defaultPrinter);
+      } catch {
+        if (!cancelled) setPrinters([]);
+      } finally {
+        if (!cancelled) setLoadingPrinters(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDesktop]);
+
+  const applyToAllFields = async (patch: { font_name?: string; font_size?: number; font_color?: string }, successMsg: string) => {
+    if (!selectedTemplateId) return;
+    if (templateFields.length === 0) return;
+    try {
+      setIsApplyingToAll(true);
+      await Promise.all(
+        templateFields.map((field) =>
+          updateField.mutateAsync({
+            id: field.id,
+            template_id: selectedTemplateId,
+            ...patch,
+          })
+        )
+      );
+      toast.success(successMsg);
+    } catch (e) {
+      toast.error('فشل في تطبيق التغييرات على جميع الحقول');
+    } finally {
+      setIsApplyingToAll(false);
+    }
+  };
   
   const updateField = useUpdateTemplateField();
   const deleteField = useDeleteTemplateField();
@@ -281,6 +338,10 @@ export default function PrintCertificates() {
   };
 
   const handlePrint = async () => {
+    if (updateField.isPending || isApplyingToAll) {
+      toast.error("يرجى الانتظار حتى يتم حفظ تغييرات الحقول/الخطوط قبل الطباعة");
+      return;
+    }
     if (selectedStudentIds.length === 0) {
       toast.error("يرجى اختيار طالب واحد على الأقل");
       return;
@@ -299,11 +360,41 @@ export default function PrintCertificates() {
     }
 
     try {
+      setIsPrinting(true);
+      // Desktop app: print directly with native print dialog + printer selection.
+      if (isDesktop && window.electronAPI?.printPdf) {
+        const blob = await generatePDFBlob(
+          selectedStudents as unknown as Record<string, unknown>[],
+          templateFields,
+          template,
+          selectedType
+        );
+        const buf = await blob.arrayBuffer();
+        const result = await window.electronAPI.printPdf(buf, {
+          deviceName: selectedPrinterName || undefined,
+        });
+        if (result?.success) {
+          toast.success(`تم إرسال ${selectedStudents.length} شهادة إلى الطباعة`);
+        } else {
+          toast.error(result?.error || 'فشل في الطباعة');
+        }
+        return;
+      }
+
+      // Web: download PDF (user can print via system dialog from the PDF viewer)
       await generatePDF(selectedStudents as unknown as Record<string, unknown>[], templateFields, template, selectedType);
       toast.success(`تم إنشاء PDF لـ ${selectedStudents.length} طالب`);
     } catch (error) {
       toast.error("فشل في إنشاء PDF: " + (error as Error).message);
+    } finally {
+      setIsPrinting(false);
     }
+  };
+
+  const handleOpenPrinterSettings = async () => {
+    if (!isDesktop) return;
+    const ok = await window.electronAPI?.openPrintersSettings?.();
+    if (!ok) toast.info('خصائص الطابعات غير مدعومة تلقائياً على هذا النظام');
   };
 
   const previewStudent = currentStudents.find(s => s.id === previewStudentId);
@@ -319,6 +410,32 @@ export default function PrintCertificates() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          {isDesktop && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={selectedPrinterName} onValueChange={setSelectedPrinterName}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder={loadingPrinters ? "تحميل الطابعات..." : "اختر طابعة"} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {printers.length === 0 ? (
+                    <div className="px-2 py-2 text-sm text-muted-foreground">لا توجد طابعات</div>
+                  ) : (
+                    printers.map((p) => (
+                      <SelectItem key={p.name} value={p.name}>
+                        {p.displayName || p.name}
+                        {p.isDefault ? ' (افتراضية)' : ''}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleOpenPrinterSettings}>
+                <Settings2 className="h-4 w-4" />
+                خصائص الطابعة
+              </Button>
+            </div>
+          )}
           <Button 
             variant="secondary" 
             size="sm" 
@@ -329,7 +446,12 @@ export default function PrintCertificates() {
             <Fullscreen className="h-4 w-4" />
             معاينة كاملة
           </Button>
-          <Button size="sm" className="gap-2" onClick={handlePrint} disabled={selectedStudentIds.length === 0}>
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={handlePrint}
+            disabled={selectedStudentIds.length === 0 || updateField.isPending || isApplyingToAll || isPrinting}
+          >
             <Printer className="h-4 w-4" />
             طباعة ({toWesternNumerals(selectedStudentIds.length)})
           </Button>
@@ -957,15 +1079,7 @@ export default function PrintCertificates() {
                         <Label>نوع الخط</Label>
                         <Select
                           onValueChange={(v) => {
-                            if (!selectedTemplateId) return;
-                            templateFields.forEach(field => {
-                              updateField.mutate({
-                                id: field.id,
-                                template_id: selectedTemplateId,
-                                font_name: v,
-                              });
-                            });
-                            toast.success("تم تطبيق الخط على جميع الحقول");
+                            void applyToAllFields({ font_name: v }, "تم تطبيق الخط على جميع الحقول");
                           }}
                         >
                           <SelectTrigger>
@@ -1013,14 +1127,7 @@ export default function PrintCertificates() {
                             onBlur={(e) => {
                               const size = parseInt(e.target.value);
                               if (size >= 8 && size <= 72 && selectedTemplateId) {
-                                templateFields.forEach(field => {
-                                  updateField.mutate({
-                                    id: field.id,
-                                    template_id: selectedTemplateId,
-                                    font_size: size,
-                                  });
-                                });
-                                toast.success("تم تطبيق الحجم على جميع الحقول");
+                                void applyToAllFields({ font_size: size }, "تم تطبيق الحجم على جميع الحقول");
                               }
                             }}
                             onKeyDown={(e) => {
@@ -1042,15 +1149,7 @@ export default function PrintCertificates() {
                             defaultValue="#000000"
                             className="w-12 h-10 p-1 cursor-pointer"
                             onChange={(e) => {
-                              if (!selectedTemplateId) return;
-                              templateFields.forEach(field => {
-                                updateField.mutate({
-                                  id: field.id,
-                                  template_id: selectedTemplateId,
-                                  font_color: e.target.value,
-                                });
-                              });
-                              toast.success("تم تطبيق اللون على جميع الحقول");
+                              void applyToAllFields({ font_color: e.target.value }, "تم تطبيق اللون على جميع الحقول");
                             }}
                           />
                         </div>
