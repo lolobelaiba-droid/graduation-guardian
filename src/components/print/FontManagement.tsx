@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
-import { Upload, Plus, Trash2, FileType, Loader2 } from "lucide-react";
+import { Upload, Plus, Trash2, FileType, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +18,161 @@ interface CustomFont {
   font_style: string;
 }
 
+interface ParsedFontInfo {
+  fontName: string;
+  fontFamily: string;
+  isArabic: boolean;
+}
+
+/**
+ * Parse font metadata from TTF/OTF file
+ * Reads the 'name' table to extract font name and family
+ */
+async function parseFontFile(file: File): Promise<ParsedFontInfo> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const buffer = e.target?.result as ArrayBuffer;
+        const data = new DataView(buffer);
+        
+        // Read offset table
+        const numTables = data.getUint16(4);
+        
+        let nameTableOffset = 0;
+        let nameTableLength = 0;
+        
+        // Find 'name' table
+        for (let i = 0; i < numTables; i++) {
+          const tableOffset = 12 + i * 16;
+          const tag = String.fromCharCode(
+            data.getUint8(tableOffset),
+            data.getUint8(tableOffset + 1),
+            data.getUint8(tableOffset + 2),
+            data.getUint8(tableOffset + 3)
+          );
+          
+          if (tag === 'name') {
+            nameTableOffset = data.getUint32(tableOffset + 8);
+            nameTableLength = data.getUint32(tableOffset + 12);
+            break;
+          }
+        }
+        
+        if (nameTableOffset === 0) {
+          // Fallback to filename
+          const baseName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
+          resolve({
+            fontName: baseName,
+            fontFamily: baseName.replace(/[-_\s]+/g, ''),
+            isArabic: false
+          });
+          return;
+        }
+        
+        // Parse name table
+        const format = data.getUint16(nameTableOffset);
+        const count = data.getUint16(nameTableOffset + 2);
+        const stringOffset = data.getUint16(nameTableOffset + 4);
+        
+        let fontFamily = '';
+        let fontName = '';
+        let hasArabicGlyphs = false;
+        
+        for (let i = 0; i < count; i++) {
+          const recordOffset = nameTableOffset + 6 + i * 12;
+          const platformID = data.getUint16(recordOffset);
+          const encodingID = data.getUint16(recordOffset + 2);
+          const languageID = data.getUint16(recordOffset + 4);
+          const nameID = data.getUint16(recordOffset + 6);
+          const length = data.getUint16(recordOffset + 8);
+          const offset = data.getUint16(recordOffset + 10);
+          
+          // nameID 1 = Font Family, nameID 4 = Full Font Name
+          if (nameID === 1 || nameID === 4) {
+            const stringStart = nameTableOffset + stringOffset + offset;
+            let str = '';
+            
+            // Platform 3 (Windows) uses UTF-16BE
+            if (platformID === 3 && encodingID === 1) {
+              for (let j = 0; j < length; j += 2) {
+                const charCode = data.getUint16(stringStart + j);
+                if (charCode > 0) str += String.fromCharCode(charCode);
+                
+                // Check for Arabic Unicode range
+                if (charCode >= 0x0600 && charCode <= 0x06FF) {
+                  hasArabicGlyphs = true;
+                }
+              }
+            }
+            // Platform 1 (Macintosh) uses single-byte encoding
+            else if (platformID === 1) {
+              for (let j = 0; j < length; j++) {
+                const charCode = data.getUint8(stringStart + j);
+                if (charCode > 0) str += String.fromCharCode(charCode);
+              }
+            }
+            
+            if (str && nameID === 1 && !fontFamily) {
+              fontFamily = str;
+            }
+            if (str && nameID === 4 && !fontName) {
+              fontName = str;
+            }
+          }
+        }
+        
+        // Fallback to filename if parsing failed
+        if (!fontFamily && !fontName) {
+          const baseName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
+          fontFamily = baseName.replace(/[-_\s]+/g, '');
+          fontName = baseName;
+        }
+        
+        // Use fontFamily as fontName if fontName is empty
+        if (!fontName) fontName = fontFamily;
+        if (!fontFamily) fontFamily = fontName.replace(/[-_\s]+/g, '');
+        
+        // Detect Arabic fonts by common naming patterns
+        const arabicPatterns = /arabic|عربي|naskh|kufi|majalla|amiri|cairo|tajawal|noto.*arab|scheherazade|lateef|harmattan/i;
+        const isArabicByName = arabicPatterns.test(fontName) || arabicPatterns.test(fontFamily);
+        
+        resolve({
+          fontName,
+          fontFamily: fontFamily.replace(/\s+/g, ''),
+          isArabic: hasArabicGlyphs || isArabicByName
+        });
+        
+      } catch (error) {
+        // Fallback to filename
+        const baseName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
+        resolve({
+          fontName: baseName,
+          fontFamily: baseName.replace(/[-_\s]+/g, ''),
+          isArabic: false
+        });
+      }
+    };
+    
+    reader.onerror = () => {
+      const baseName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
+      resolve({
+        fontName: baseName,
+        fontFamily: baseName.replace(/[-_\s]+/g, ''),
+        isArabic: false
+      });
+    };
+    
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 export function FontManagement() {
   const [isUploading, setIsUploading] = useState(false);
-  const [newFontName, setNewFontName] = useState("");
-  const [newFontFamily, setNewFontFamily] = useState("");
-  const [isArabic, setIsArabic] = useState(true);
+  const [parsedFont, setParsedFont] = useState<ParsedFontInfo | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isArabicOverride, setIsArabicOverride] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -85,24 +234,33 @@ export function FontManagement() {
       return;
     }
 
-    if (!newFontName.trim() || !newFontFamily.trim()) {
-      toast.error("يرجى إدخال اسم الخط واسم العائلة");
-      return;
-    }
+    // Parse font metadata
+    toast.info("جاري قراءة معلومات الخط...");
+    const fontInfo = await parseFontFile(file);
+    
+    setParsedFont(fontInfo);
+    setSelectedFile(file);
+    setIsArabicOverride(null); // Reset override
+    
+    toast.success(`تم التعرف على الخط: ${fontInfo.fontName}`);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !parsedFont) return;
 
     setIsUploading(true);
 
     try {
       // Generate unique filename
       const timestamp = Date.now();
-      const ext = file.name.split(".").pop();
-      const fileName = `${newFontFamily.replace(/\s+/g, "-")}_${timestamp}.${ext}`;
+      const ext = selectedFile.name.split(".").pop();
+      const fileName = `${parsedFont.fontFamily}_${timestamp}.${ext}`;
       const filePath = `fonts/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("custom-fonts")
-        .upload(filePath, file);
+        .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
 
@@ -111,12 +269,15 @@ export function FontManagement() {
         .from("custom-fonts")
         .getPublicUrl(filePath);
 
+      // Use override if set, otherwise use parsed value
+      const isArabic = isArabicOverride !== null ? isArabicOverride : parsedFont.isArabic;
+
       // Save to database
       const { error: dbError } = await supabase
         .from("custom_fonts")
         .insert({
-          font_name: newFontName.trim(),
-          font_family: newFontFamily.trim(),
+          font_name: parsedFont.fontName,
+          font_family: parsedFont.fontFamily,
           font_url: urlData.publicUrl,
           is_arabic: isArabic,
           font_weight: "normal",
@@ -126,9 +287,9 @@ export function FontManagement() {
       if (dbError) throw dbError;
 
       // Reset form
-      setNewFontName("");
-      setNewFontFamily("");
-      setIsArabic(true);
+      setParsedFont(null);
+      setSelectedFile(null);
+      setIsArabicOverride(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       queryClient.invalidateQueries({ queryKey: ["custom_fonts"] });
@@ -140,6 +301,15 @@ export function FontManagement() {
     }
   };
 
+  const handleCancel = () => {
+    setParsedFont(null);
+    setSelectedFile(null);
+    setIsArabicOverride(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const effectiveIsArabic = isArabicOverride !== null ? isArabicOverride : parsedFont?.isArabic ?? true;
+
   return (
     <div className="space-y-6">
       {/* Upload New Font */}
@@ -149,57 +319,93 @@ export function FontManagement() {
           إضافة خط جديد
         </h4>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>اسم الخط (للعرض)</Label>
-            <Input
-              placeholder="مثال: خط المجلة"
-              value={newFontName}
-              onChange={(e) => setNewFontName(e.target.value)}
-            />
+        {!parsedFont ? (
+          // Step 1: Select file
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              اختر ملف الخط وسيتم قراءة المعلومات تلقائياً
+            </p>
+            
+            <div className="flex items-center gap-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".ttf,.otf,.woff,.woff2"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                اختر ملف الخط
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                TTF, OTF, WOFF, WOFF2 (حتى 5 ميجابايت)
+              </span>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>اسم العائلة (Font Family)</Label>
-            <Input
-              placeholder="مثال: SakkalMajalla"
-              value={newFontFamily}
-              onChange={(e) => setNewFontFamily(e.target.value)}
-            />
+        ) : (
+          // Step 2: Confirm parsed info
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">تم قراءة معلومات الخط</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">اسم الخط:</span>
+                  <p className="font-medium">{parsedFont.fontName}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">اسم العائلة:</span>
+                  <p className="font-medium font-mono">{parsedFont.fontFamily}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 pt-2 border-t">
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={effectiveIsArabic} 
+                    onCheckedChange={(checked) => setIsArabicOverride(checked)} 
+                  />
+                  <Label>خط عربي</Label>
+                </div>
+                {parsedFont.isArabic && isArabicOverride === null && (
+                  <Badge variant="outline" className="text-xs">
+                    تم الكشف تلقائياً
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleUpload}
+                disabled={isUploading}
+                className="gap-2"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                {isUploading ? "جاري الرفع..." : "رفع الخط"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isUploading}
+              >
+                إلغاء
+              </Button>
+            </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Switch checked={isArabic} onCheckedChange={setIsArabic} />
-            <Label>خط عربي</Label>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".ttf,.otf,.woff,.woff2"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading || !newFontName.trim() || !newFontFamily.trim()}
-            className="gap-2"
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
-            {isUploading ? "جاري الرفع..." : "رفع ملف الخط"}
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            TTF, OTF, WOFF, WOFF2 (حتى 5 ميجابايت)
-          </span>
-        </div>
+        )}
       </div>
 
       {/* Font List */}
