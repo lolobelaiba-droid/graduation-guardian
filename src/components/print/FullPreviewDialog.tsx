@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
+import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
@@ -97,6 +98,10 @@ export function FullPreviewDialog({
       setLocalFieldPositions(positions);
     }
   }, [open, initialOffsetX, initialOffsetY, initialScale, fields]);
+
+  // Load fonts dynamically for preview
+  const fontNames = useMemo(() => fields.map(f => f.font_name), [fields]);
+  useFontLoader(fontNames);
 
   const isLandscape = template.page_orientation === 'landscape';
   const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
@@ -577,7 +582,7 @@ export function FullPreviewDialog({
                       )}
                       style={{
                         fontSize: `${field.font_size * SCALE * 0.35}px`,
-                        fontFamily: field.font_name,
+                        fontFamily: getFontFamilyCSS(field.font_name),
                         color: field.font_color,
                         textAlign: field.text_align as 'left' | 'right' | 'center',
                         direction: field.is_rtl ? 'rtl' : 'ltr',

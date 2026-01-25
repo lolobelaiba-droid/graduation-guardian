@@ -1,0 +1,132 @@
+import { useEffect, useState, useRef } from 'react';
+import { getFontByName, getAllFonts, type FontConfig } from '@/lib/arabicFonts';
+
+// Track loaded fonts globally to avoid duplicate loading
+const loadedFonts = new Set<string>();
+
+/**
+ * Dynamically load a font into the browser using FontFace API
+ */
+async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
+  if (!font.url || font.isSystem) return true; // System fonts don't need loading
+  
+  const fontKey = `${font.family}:${font.style}`;
+  if (loadedFonts.has(fontKey)) return true; // Already loaded
+  
+  try {
+    // Check if font already exists in document
+    const existingFont = document.fonts.check(`16px "${font.family}"`);
+    if (existingFont) {
+      loadedFonts.add(fontKey);
+      return true;
+    }
+    
+    // Create FontFace and load it
+    const fontFace = new FontFace(
+      font.family,
+      `url(${font.url})`,
+      {
+        style: font.style === 'italic' ? 'italic' : 'normal',
+        weight: font.style === 'bold' ? 'bold' : 'normal',
+      }
+    );
+    
+    const loadedFont = await fontFace.load();
+    document.fonts.add(loadedFont);
+    loadedFonts.add(fontKey);
+    
+    console.log(`[FontLoader] Loaded font: ${font.family} (${font.style})`);
+    return true;
+  } catch (error) {
+    console.error(`[FontLoader] Failed to load font ${font.family}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Hook to load fonts dynamically for preview components
+ * @param fontNames - Array of font names to load (from field.font_name)
+ * @returns Object with loading state and loaded fonts info
+ */
+export function useFontLoader(fontNames: (string | undefined | null)[]) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const prevFontNamesRef = useRef<string>('');
+  
+  useEffect(() => {
+    // Filter and dedupe font names
+    const uniqueFontNames = [...new Set(fontNames.filter(Boolean) as string[])];
+    const fontNamesKey = uniqueFontNames.sort().join(',');
+    
+    // Skip if same fonts as before
+    if (fontNamesKey === prevFontNamesRef.current) {
+      return;
+    }
+    prevFontNamesRef.current = fontNamesKey;
+    
+    if (uniqueFontNames.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+    
+    let cancelled = false;
+    
+    async function loadFonts() {
+      setIsLoading(true);
+      let loaded = 0;
+      
+      for (const fontName of uniqueFontNames) {
+        if (cancelled) break;
+        
+        const font = getFontByName(fontName);
+        if (font) {
+          const success = await loadFontIntoBrowser(font);
+          if (success) loaded++;
+          
+          // Also load bold variant if exists
+          const boldFont = getAllFonts().find(
+            f => f.family === font.family && f.style === 'bold'
+          );
+          if (boldFont) {
+            await loadFontIntoBrowser(boldFont);
+          }
+        }
+      }
+      
+      if (!cancelled) {
+        setLoadedCount(loaded);
+        setIsLoading(false);
+      }
+    }
+    
+    loadFonts();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [fontNames.join(',')]); // Join to create stable dependency
+  
+  return { isLoading, loadedCount };
+}
+
+/**
+ * Get CSS font-family value for a field
+ * Returns the font family with fallbacks
+ */
+export function getFontFamilyCSS(fontName: string | undefined | null): string {
+  if (!fontName) {
+    return "'IBM Plex Sans Arabic', system-ui, sans-serif";
+  }
+  
+  const font = getFontByName(fontName);
+  if (!font) {
+    return `"${fontName}", 'IBM Plex Sans Arabic', system-ui, sans-serif`;
+  }
+  
+  // Use the actual family name from config
+  if (font.isArabic) {
+    return `"${font.family}", 'Amiri', 'IBM Plex Sans Arabic', sans-serif`;
+  }
+  
+  return `"${font.family}", 'Times New Roman', serif`;
+}

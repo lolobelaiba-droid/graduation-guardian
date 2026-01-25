@@ -1,9 +1,10 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical, Undo2 } from "lucide-react";
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
+import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -90,6 +91,10 @@ export function CertificatePreview({
     fieldStartY: number;
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
+
+  // Load fonts dynamically for preview
+  const fontNames = useMemo(() => fields.map(f => f.font_name), [fields]);
+  useFontLoader(fontNames);
 
   const isLandscape = template.page_orientation === 'landscape';
   const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
@@ -462,7 +467,7 @@ export function CertificatePreview({
                   )}
                   style={{
                     fontSize: `${field.font_size * SCALE * 0.35}px`,
-                    fontFamily: field.font_name,
+                    fontFamily: getFontFamilyCSS(field.font_name),
                     color: isVisible ? field.font_color : '#999',
                     textAlign: field.text_align as 'left' | 'right' | 'center',
                     direction: field.is_rtl ? 'rtl' : 'ltr',
