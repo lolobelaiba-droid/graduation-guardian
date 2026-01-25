@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { getFontByName, getAllFonts, type FontConfig } from '@/lib/arabicFonts';
 
 // Track loaded fonts globally to avoid duplicate loading
@@ -14,13 +14,6 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
   if (loadedFonts.has(fontKey)) return true; // Already loaded
   
   try {
-    // Check if font already exists in document
-    const existingFont = document.fonts.check(`16px "${font.family}"`);
-    if (existingFont) {
-      loadedFonts.add(fontKey);
-      return true;
-    }
-    
     // Create FontFace and load it
     const fontFace = new FontFace(
       font.family,
@@ -51,7 +44,11 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
 export function useFontLoader(fontNames: (string | undefined | null)[]) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadedCount, setLoadedCount] = useState(0);
+  const [version, setVersion] = useState(0);
   const prevFontNamesRef = useRef<string>('');
+  
+  // Force re-render when fonts change
+  const forceUpdate = useCallback(() => setVersion(v => v + 1), []);
   
   useEffect(() => {
     // Filter and dedupe font names
@@ -96,6 +93,7 @@ export function useFontLoader(fontNames: (string | undefined | null)[]) {
       if (!cancelled) {
         setLoadedCount(loaded);
         setIsLoading(false);
+        forceUpdate(); // Force re-render to apply new fonts
       }
     }
     
@@ -104,9 +102,9 @@ export function useFontLoader(fontNames: (string | undefined | null)[]) {
     return () => {
       cancelled = true;
     };
-  }, [fontNames.join(',')]); // Join to create stable dependency
+  }, [fontNames.join(','), forceUpdate]); // Join to create stable dependency
   
-  return { isLoading, loadedCount };
+  return { isLoading, loadedCount, version };
 }
 
 /**
@@ -120,6 +118,8 @@ export function getFontFamilyCSS(fontName: string | undefined | null): string {
   
   const font = getFontByName(fontName);
   if (!font) {
+    // If font not found in config, try using the font name directly
+    // This handles cases where custom fonts are loaded but not yet in the cache
     return `"${fontName}", 'IBM Plex Sans Arabic', system-ui, sans-serif`;
   }
   

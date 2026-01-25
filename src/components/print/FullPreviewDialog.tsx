@@ -99,9 +99,17 @@ export function FullPreviewDialog({
     }
   }, [open, initialOffsetX, initialOffsetY, initialScale, fields]);
 
-  // Load fonts dynamically for preview
+  // Load fonts dynamically for preview - version forces re-render when fonts change
   const fontNames = useMemo(() => fields.map(f => f.font_name), [fields]);
-  useFontLoader(fontNames);
+  const { version: fontVersion } = useFontLoader(fontNames);
+  
+  // Memoize font styles with fontVersion dependency to force re-render when fonts change
+  const fieldFontStyles = useMemo(() => {
+    return fields.reduce((acc, field) => {
+      acc[field.id] = getFontFamilyCSS(field.font_name);
+      return acc;
+    }, {} as Record<string, string>);
+  }, [fields, fontVersion]);
 
   const isLandscape = template.page_orientation === 'landscape';
   const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
@@ -582,7 +590,7 @@ export function FullPreviewDialog({
                       )}
                       style={{
                         fontSize: `${field.font_size * SCALE * 0.35}px`,
-                        fontFamily: getFontFamilyCSS(field.font_name),
+                        fontFamily: fieldFontStyles[field.id] || getFontFamilyCSS(field.font_name),
                         color: field.font_color,
                         textAlign: field.text_align as 'left' | 'right' | 'center',
                         direction: field.is_rtl ? 'rtl' : 'ltr',
