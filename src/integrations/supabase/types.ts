@@ -225,6 +225,7 @@ export type Database = {
           faculty_fr: string | null
           full_name_ar: string
           full_name_fr: string | null
+          gender: string | null
           id: string
           mention: Database["public"]["Enums"]["mention_type"]
           specialty_ar: string
@@ -247,6 +248,7 @@ export type Database = {
           faculty_fr?: string | null
           full_name_ar: string
           full_name_fr?: string | null
+          gender?: string | null
           id?: string
           mention?: Database["public"]["Enums"]["mention_type"]
           specialty_ar: string
@@ -269,6 +271,7 @@ export type Database = {
           faculty_fr?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
+          gender?: string | null
           id?: string
           mention?: Database["public"]["Enums"]["mention_type"]
           specialty_ar?: string
@@ -296,6 +299,7 @@ export type Database = {
           field_fr: string | null
           full_name_ar: string
           full_name_fr: string | null
+          gender: string | null
           id: string
           jury_members_ar: string
           jury_members_fr: string | null
@@ -326,6 +330,7 @@ export type Database = {
           field_fr?: string | null
           full_name_ar: string
           full_name_fr?: string | null
+          gender?: string | null
           id?: string
           jury_members_ar: string
           jury_members_fr?: string | null
@@ -356,6 +361,7 @@ export type Database = {
           field_fr?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
+          gender?: string | null
           id?: string
           jury_members_ar?: string
           jury_members_fr?: string | null
@@ -387,6 +393,7 @@ export type Database = {
           faculty_fr: string | null
           full_name_ar: string
           full_name_fr: string | null
+          gender: string | null
           id: string
           jury_members_ar: string
           jury_members_fr: string | null
@@ -415,6 +422,7 @@ export type Database = {
           faculty_fr?: string | null
           full_name_ar: string
           full_name_fr?: string | null
+          gender?: string | null
           id?: string
           jury_members_ar: string
           jury_members_fr?: string | null
@@ -443,6 +451,7 @@ export type Database = {
           faculty_fr?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
+          gender?: string | null
           id?: string
           jury_members_ar?: string
           jury_members_fr?: string | null

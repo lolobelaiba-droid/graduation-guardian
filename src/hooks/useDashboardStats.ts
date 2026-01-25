@@ -78,6 +78,53 @@ export function useFacultyDistribution() {
   });
 }
 
+export function useGenderDistribution() {
+  return useQuery({
+    queryKey: ["gender_distribution"],
+    queryFn: async () => {
+      // Get gender from all certificate tables
+      const [phdLmd, phdScience, master] = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("gender"),
+        supabase.from("phd_science_certificates").select("gender"),
+        supabase.from("master_certificates").select("gender"),
+      ]);
+
+      const allGenders = [
+        ...(phdLmd.data || []).map(s => s.gender),
+        ...(phdScience.data || []).map(s => s.gender),
+        ...(master.data || []).map(s => s.gender),
+      ];
+
+      const maleCount = allGenders.filter(g => g === 'male').length;
+      const femaleCount = allGenders.filter(g => g === 'female').length;
+
+      return [
+        { name: 'ذكور', value: maleCount },
+        { name: 'إناث', value: femaleCount },
+      ];
+    },
+  });
+}
+
+export function useCertificateTypeDistribution() {
+  return useQuery({
+    queryKey: ["certificate_type_distribution"],
+    queryFn: async () => {
+      const [phdLmd, phdScience, master] = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
+        supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
+        supabase.from("master_certificates").select("*", { count: "exact", head: true }),
+      ]);
+
+      return [
+        { name: 'دكتوراه ل م د', value: phdLmd.count || 0 },
+        { name: 'دكتوراه علوم', value: phdScience.count || 0 },
+        { name: 'ماستر', value: master.count || 0 },
+      ];
+    },
+  });
+}
+
 export function useMonthlyPrintStats() {
   return useQuery({
     queryKey: ["monthly_print_stats"],
