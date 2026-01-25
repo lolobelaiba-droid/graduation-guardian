@@ -44,6 +44,8 @@ const phdLmdSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  university_ar: z.string().optional().nullable(),
+  university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
@@ -73,6 +75,8 @@ const phdScienceSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  university_ar: z.string().optional().nullable(),
+  university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
@@ -100,6 +104,8 @@ const masterSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  university_ar: z.string().optional().nullable(),
+  university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
@@ -153,6 +159,8 @@ export default function EditStudentDialog({
         date_of_birth: student.date_of_birth,
         birthplace_ar: student.birthplace_ar,
         birthplace_fr: student.birthplace_fr || "",
+        university_ar: student.university_ar || "جامعة محمد خيضر بسكرة",
+        university_fr: student.university_fr || "Université Mohamed Khider Biskra",
         faculty_ar: student.faculty_ar || "",
         faculty_fr: student.faculty_fr || "",
         branch_ar: student.branch_ar,
@@ -325,6 +333,32 @@ export default function EditStudentDialog({
             <div className="space-y-4">
               <h3 className="font-semibold text-primary">المعلومات الأكاديمية</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={"university_ar" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الجامعة (عربي)</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || ""} placeholder="اسم الجامعة بالعربية" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"university_fr" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Université</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || ""} className="text-left" dir="ltr" placeholder="Nom de l'université" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name={"faculty_ar" as keyof FormValues}
