@@ -61,6 +61,10 @@ export default function PrintCertificates() {
   const [backgroundOffsetY, setBackgroundOffsetY] = useState(0);
   const [backgroundScale, setBackgroundScale] = useState(100);
   const [showBackgroundControls, setShowBackgroundControls] = useState(false);
+  
+  // Track original background values for detecting unsaved changes
+  const [originalBackgroundOffsetX, setOriginalBackgroundOffsetX] = useState(0);
+  const [originalBackgroundOffsetY, setOriginalBackgroundOffsetY] = useState(0);
 
   // Undo stack for field changes
   const [fieldChangeHistory, setFieldChangeHistory] = useState<Array<{
@@ -226,14 +230,21 @@ export default function PrintCertificates() {
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
         // Load saved offsets from database or use defaults
-        setBackgroundOffsetX((template as any).background_offset_x || 0);
-        setBackgroundOffsetY((template as any).background_offset_y || 0);
+        const offsetX = (template as any).background_offset_x || 0;
+        const offsetY = (template as any).background_offset_y || 0;
+        setBackgroundOffsetX(offsetX);
+        setBackgroundOffsetY(offsetY);
         setBackgroundScale((template as any).background_scale || 100);
+        // Track original values
+        setOriginalBackgroundOffsetX(offsetX);
+        setOriginalBackgroundOffsetY(offsetY);
       }
     } else {
       setBackgroundOffsetX(0);
       setBackgroundOffsetY(0);
       setBackgroundScale(100);
+      setOriginalBackgroundOffsetX(0);
+      setOriginalBackgroundOffsetY(0);
     }
   }, [selectedTemplateId, templates]);
 
@@ -293,6 +304,31 @@ export default function PrintCertificates() {
       position_x: newX,
       position_y: newY,
     });
+  };
+
+  // Check if there are unsaved background changes
+  const hasUnsavedBackgroundChanges = 
+    backgroundOffsetX !== originalBackgroundOffsetX || 
+    backgroundOffsetY !== originalBackgroundOffsetY;
+
+  // Save all changes (background offset)
+  const handleSaveAll = () => {
+    if (!selectedTemplateId) return;
+    
+    if (hasUnsavedBackgroundChanges) {
+      updateTemplate.mutate({
+        id: selectedTemplateId,
+        background_offset_x: backgroundOffsetX,
+        background_offset_y: backgroundOffsetY,
+        background_scale: backgroundScale,
+      } as any);
+      
+      // Update original values after save
+      setOriginalBackgroundOffsetX(backgroundOffsetX);
+      setOriginalBackgroundOffsetY(backgroundOffsetY);
+      
+      toast.success("تم حفظ جميع التغييرات");
+    }
   };
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
@@ -801,7 +837,7 @@ export default function PrintCertificates() {
                   showBackgroundControls={showBackgroundControls}
                   onToggleBackgroundControls={() => setShowBackgroundControls(!showBackgroundControls)}
                   canUndo={fieldChangeHistory.length > 0}
-                  hasUnsavedChanges={fieldChangeHistory.length > 0}
+                  hasUnsavedChanges={hasUnsavedBackgroundChanges}
                   onUndo={() => {
                     if (fieldChangeHistory.length === 0 || !selectedTemplateId) return;
                     const lastChange = fieldChangeHistory[fieldChangeHistory.length - 1];
@@ -817,6 +853,7 @@ export default function PrintCertificates() {
                     // Remove from history
                     setFieldChangeHistory(prev => prev.slice(0, -1));
                   }}
+                  onSaveAll={handleSaveAll}
                 />
               )}
             </TabsContent>

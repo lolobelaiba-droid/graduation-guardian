@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useMemo } from "react";
-import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical, Undo2 } from "lucide-react";
+import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical, Undo2, Save } from "lucide-react";
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
@@ -55,6 +55,8 @@ interface CertificatePreviewProps {
   canUndo?: boolean;
   onUndo?: () => void;
   hasUnsavedChanges?: boolean;
+  // Save all support
+  onSaveAll?: () => void;
 }
 
 export function CertificatePreview({
@@ -79,6 +81,7 @@ export function CertificatePreview({
   canUndo = false,
   onUndo,
   hasUnsavedChanges = false,
+  onSaveAll,
 }: CertificatePreviewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
@@ -371,7 +374,13 @@ export function CertificatePreview({
         </div>
 
         <div className="flex items-center gap-3">
-          {hasUnsavedChanges && (
+          {hasUnsavedChanges && onSaveAll && (
+            <Button variant="default" size="sm" onClick={onSaveAll}>
+              <Save className="h-4 w-4 ml-1" />
+              حفظ الكل
+            </Button>
+          )}
+          {hasUnsavedChanges && !onSaveAll && (
             <Badge variant="destructive" className="animate-pulse text-xs">
               تغييرات غير محفوظة
             </Badge>
