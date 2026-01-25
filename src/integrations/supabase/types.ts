@@ -187,6 +187,30 @@ export type Database = {
         }
         Relationships: []
       }
+      dropdown_options: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          option_type: string
+          option_value: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          option_type: string
+          option_value: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          option_type?: string
+          option_value?: string
+        }
+        Relationships: []
+      }
       master_certificates: {
         Row: {
           birthplace_ar: string
