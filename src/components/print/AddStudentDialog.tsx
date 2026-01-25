@@ -34,6 +34,7 @@ import {
   type CertificateType,
   type MentionType,
 } from "@/types/certificates";
+import { DropdownWithAdd } from "./DropdownWithAdd";
 
 const baseSchema = z.object({
   student_number: z.string().min(1, "الرقم مطلوب"),
@@ -401,7 +402,12 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>الكلية *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="الكلية" />
+                      <DropdownWithAdd
+                        value={field.value}
+                        onChange={field.onChange}
+                        optionType="faculty"
+                        placeholder="اختر أو أدخل الكلية"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -421,7 +427,12 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                       <FormItem>
                         <FormLabel>الميدان (عربي) *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="الميدان" />
+                          <DropdownWithAdd
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            optionType="field_ar"
+                            placeholder="اختر أو أدخل الميدان"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -434,7 +445,13 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                       <FormItem>
                         <FormLabel>domaine</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value || ''} dir="ltr" placeholder="Domaine" />
+                          <DropdownWithAdd
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            optionType="field_fr"
+                            placeholder="Choisir ou saisir le domaine"
+                            dir="ltr"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
