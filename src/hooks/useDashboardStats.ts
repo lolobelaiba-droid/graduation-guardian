@@ -29,42 +29,84 @@ export function useDashboardStats() {
         .select("*", { count: "exact", head: true })
         .gte("printed_at", startOfMonth.toISOString());
 
+      // Get today's prints
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const { count: dailyCount } = await supabase
+        .from("print_history")
+        .select("*", { count: "exact", head: true })
+        .gte("printed_at", startOfDay.toISOString());
+
       return {
         totalStudents,
         totalCertificates: printCount || 0,
         certificatesThisMonth: monthlyCount || 0,
-        averageGpa: 0, // Not applicable in new schema
+        certificatesToday: dailyCount || 0,
       };
     },
   });
 }
 
-export function useSpecialtyDistribution() {
+export function useFacultyDistribution() {
   return useQuery({
-    queryKey: ["specialty_distribution"],
+    queryKey: ["faculty_distribution"],
     queryFn: async () => {
-      // Get specialties from all certificate tables
+      // Get faculties from all certificate tables
       const [phdLmd, phdScience, master] = await Promise.all([
-        supabase.from("phd_lmd_certificates").select("specialty_ar"),
-        supabase.from("phd_science_certificates").select("specialty_ar"),
-        supabase.from("master_certificates").select("specialty_ar"),
+        supabase.from("phd_lmd_certificates").select("faculty_ar"),
+        supabase.from("phd_science_certificates").select("faculty_ar"),
+        supabase.from("master_certificates").select("faculty_ar"),
       ]);
 
-      const allSpecialties = [
-        ...(phdLmd.data || []).map(s => s.specialty_ar),
-        ...(phdScience.data || []).map(s => s.specialty_ar),
-        ...(master.data || []).map(s => s.specialty_ar),
+      const allFaculties = [
+        ...(phdLmd.data || []).map(s => s.faculty_ar),
+        ...(phdScience.data || []).map(s => s.faculty_ar),
+        ...(master.data || []).map(s => s.faculty_ar),
       ];
 
-      // Count by specialty
+      // Count by faculty
       const counts: Record<string, number> = {};
-      allSpecialties.forEach(specialty => {
-        if (specialty) {
-          counts[specialty] = (counts[specialty] || 0) + 1;
+      allFaculties.forEach(faculty => {
+        if (faculty) {
+          counts[faculty] = (counts[faculty] || 0) + 1;
         }
       });
 
       return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    },
+  });
+}
+
+export function useMonthlyPrintStats() {
+  return useQuery({
+    queryKey: ["monthly_print_stats"],
+    queryFn: async () => {
+      const months = [
+        "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+        "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+      ];
+
+      const currentYear = new Date().getFullYear();
+      const monthlyData = [];
+
+      for (let month = 0; month < 12; month++) {
+        const startOfMonth = new Date(currentYear, month, 1);
+        const endOfMonth = new Date(currentYear, month + 1, 0, 23, 59, 59, 999);
+
+        const { count } = await supabase
+          .from("print_history")
+          .select("*", { count: "exact", head: true })
+          .gte("printed_at", startOfMonth.toISOString())
+          .lte("printed_at", endOfMonth.toISOString());
+
+        monthlyData.push({
+          month: months[month],
+          certificates: count || 0,
+        });
+      }
+
+      return monthlyData;
     },
   });
 }

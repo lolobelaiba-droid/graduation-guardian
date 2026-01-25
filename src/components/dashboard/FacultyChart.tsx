@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Loader2 } from "lucide-react";
-import { useSpecialtyDistribution } from "@/hooks/useDashboardStats";
+import { useFacultyDistribution } from "@/hooks/useDashboardStats";
 
 const COLORS = [
   "hsl(217, 91%, 60%)",
@@ -13,12 +13,12 @@ const COLORS = [
   "hsl(45, 93%, 47%)",
 ];
 
-export function SpecialtyChart() {
-  const { data: distribution = [], isLoading } = useSpecialtyDistribution();
+export function FacultyChart() {
+  const { data: distribution = [], isLoading } = useFacultyDistribution();
 
   return (
     <div className="bg-card rounded-2xl shadow-card p-6">
-      <h3 className="text-lg font-semibold mb-6">توزيع الطلاب حسب التخصص</h3>
+      <h3 className="text-lg font-semibold mb-6">توزيع الطلاب حسب الكلية</h3>
       
       {isLoading ? (
         <div className="flex items-center justify-center h-[300px]">

@@ -1,7 +1,6 @@
-import { Users, FileText, Printer, TrendingUp } from "lucide-react";
+import { Users, FileText, Printer, CalendarDays } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { SpecialtyChart } from "@/components/dashboard/SpecialtyChart";
+import { FacultyChart } from "@/components/dashboard/FacultyChart";
 import { MonthlyChart } from "@/components/dashboard/MonthlyChart";
 import { ThemeSelector } from "@/components/dashboard/ThemeSelector";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,6 @@ export default function Dashboard() {
           value={isLoading ? "..." : stats?.totalStudents || 0}
           subtitle="طالب مسجل"
           icon={Users}
-          trend={{ value: 12, isPositive: true }}
           variant="blue"
         />
         <StatCard
@@ -47,34 +45,29 @@ export default function Dashboard() {
           value={isLoading ? "..." : stats?.totalCertificates || 0}
           subtitle="شهادة"
           icon={FileText}
-          trend={{ value: 8, isPositive: true }}
           variant="green"
         />
         <StatCard
           title="هذا الشهر"
           value={isLoading ? "..." : stats?.certificatesThisMonth || 0}
-          subtitle="شهادة جديدة"
+          subtitle="شهادة"
           icon={Printer}
-          trend={{ value: 15, isPositive: true }}
           variant="orange"
         />
         <StatCard
-          title="القوالب النشطة"
-          value={isLoading ? "..." : 0}
-          subtitle="قالب"
-          icon={TrendingUp}
+          title="اليوم"
+          value={isLoading ? "..." : stats?.certificatesToday || 0}
+          subtitle="شهادة"
+          icon={CalendarDays}
           variant="purple"
         />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SpecialtyChart />
+        <FacultyChart />
         <MonthlyChart />
       </div>
-
-      {/* Recent Activity */}
-      <RecentActivity />
     </div>
   );
 }
