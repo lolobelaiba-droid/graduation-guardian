@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   FileText,
@@ -40,6 +41,8 @@ import {
   type CertificateType,
   type TemplateLanguage,
 } from "@/types/certificates";
+import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
+import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
 
 const typeColors: Record<CertificateType, string> = {
   phd_lmd: "bg-primary/10 text-primary border-primary/20",
@@ -48,8 +51,11 @@ const typeColors: Record<CertificateType, string> = {
 };
 
 export default function Templates() {
+  const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
 
   const { data: templates = [], isLoading, error } = useCertificateTemplates();
   const updateTemplate = useUpdateTemplate();
@@ -90,7 +96,7 @@ export default function Templates() {
             إنشاء وتعديل قوالب الشهادات الجامعية
           </p>
         </div>
-        <Button size="sm" className="gap-2">
+        <Button size="sm" className="gap-2" onClick={() => setIsCreateOpen(true)}>
           <Plus className="h-4 w-4" />
           إنشاء قالب جديد
         </Button>
@@ -105,7 +111,7 @@ export default function Templates() {
         <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
           <FileText className="h-12 w-12 mb-4 opacity-50" />
           <p>لا توجد قوالب حتى الآن</p>
-          <Button size="sm" className="mt-4 gap-2">
+          <Button size="sm" className="mt-4 gap-2" onClick={() => setIsCreateOpen(true)}>
             <Plus className="h-4 w-4" />
             إنشاء قالب جديد
           </Button>
@@ -133,11 +139,17 @@ export default function Templates() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem className="gap-2">
+                    <DropdownMenuItem 
+                      className="gap-2"
+                      onClick={() => setPreviewTemplateId(template.id)}
+                    >
                       <Eye className="h-4 w-4" />
                       معاينة
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="gap-2">
+                    <DropdownMenuItem 
+                      className="gap-2"
+                      onClick={() => navigate(`/print?template=${template.id}`)}
+                    >
                       <Edit className="h-4 w-4" />
                       تحرير
                     </DropdownMenuItem>
@@ -222,6 +234,12 @@ export default function Templates() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Template Dialog */}
+      <CreateTemplateDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+      />
     </div>
   );
 }
