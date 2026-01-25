@@ -5,8 +5,9 @@ import ArabicReshaper from 'arabic-reshaper';
 import bidiFactory from 'bidi-js';
 import { getAllFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from './numerals';
+import { fetchPrintSettings, getPaperDimensions, type PrintSettings, DEFAULT_PRINT_SETTINGS } from '@/hooks/usePrintSettings';
 
-// A4 dimensions in mm
+// Default A4 dimensions in mm (fallback)
 const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
 
@@ -304,16 +305,29 @@ export async function generatePDF(
   students: Record<string, unknown>[],
   fields: TemplateField[],
   template: CertificateTemplate,
-  certificateType: CertificateType
+  certificateType: CertificateType,
+  printSettings?: PrintSettings
 ): Promise<void> {
-  const isLandscape = template.page_orientation === 'landscape';
-  const pageWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
-  const pageHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
+  // Fetch print settings if not provided
+  const settings = printSettings || await fetchPrintSettings();
+  
+  // Use template orientation or fall back to settings
+  const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
+  
+  // Get paper dimensions from settings
+  const paperDimensions = getPaperDimensions(settings);
+  const pageWidth = isLandscape ? paperDimensions.height : paperDimensions.width;
+  const pageHeight = isLandscape ? paperDimensions.width : paperDimensions.height;
+
+  // Determine the format for jsPDF
+  const format = settings.paperSize === 'custom' 
+    ? [paperDimensions.width, paperDimensions.height] 
+    : settings.paperSize;
 
   const doc = new jsPDF({
     orientation: isLandscape ? 'landscape' : 'portrait',
     unit: 'mm',
-    format: 'a4',
+    format: format,
     putOnlyUsedFonts: true,
   });
 
@@ -493,16 +507,29 @@ export async function generateSinglePDF(
   student: Record<string, unknown>,
   fields: TemplateField[],
   template: CertificateTemplate,
-  certificateType: CertificateType
+  certificateType: CertificateType,
+  printSettings?: PrintSettings
 ): Promise<Blob> {
-  const isLandscape = template.page_orientation === 'landscape';
-  const pageWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
-  const pageHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
+  // Fetch print settings if not provided
+  const settings = printSettings || await fetchPrintSettings();
+  
+  // Use template orientation or fall back to settings
+  const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
+  
+  // Get paper dimensions from settings
+  const paperDimensions = getPaperDimensions(settings);
+  const pageWidth = isLandscape ? paperDimensions.height : paperDimensions.width;
+  const pageHeight = isLandscape ? paperDimensions.width : paperDimensions.height;
+
+  // Determine the format for jsPDF
+  const format = settings.paperSize === 'custom' 
+    ? [paperDimensions.width, paperDimensions.height] 
+    : settings.paperSize;
 
   const doc = new jsPDF({
     orientation: isLandscape ? 'landscape' : 'portrait',
     unit: 'mm',
-    format: 'a4',
+    format: format,
     putOnlyUsedFonts: true,
   });
 
@@ -547,13 +574,27 @@ export async function generatePDFBlob(
   students: Record<string, unknown>[],
   fields: TemplateField[],
   template: CertificateTemplate,
-  certificateType: CertificateType
+  certificateType: CertificateType,
+  printSettings?: PrintSettings
 ): Promise<Blob> {
-  const isLandscape = template.page_orientation === 'landscape';
+  // Fetch print settings if not provided
+  const settings = printSettings || await fetchPrintSettings();
+  
+  // Use template orientation or fall back to settings
+  const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
+  
+  // Get paper dimensions from settings
+  const paperDimensions = getPaperDimensions(settings);
+
+  // Determine the format for jsPDF
+  const format = settings.paperSize === 'custom' 
+    ? [paperDimensions.width, paperDimensions.height] 
+    : settings.paperSize;
+
   const doc = new jsPDF({
     orientation: isLandscape ? 'landscape' : 'portrait',
     unit: 'mm',
-    format: 'a4',
+    format: format,
     putOnlyUsedFonts: true,
   });
 

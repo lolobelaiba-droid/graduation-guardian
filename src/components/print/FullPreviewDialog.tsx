@@ -14,7 +14,9 @@ import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from "@/lib/numerals";
 import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
+import { usePrintSettings, getPaperDimensions, DEFAULT_PRINT_SETTINGS } from "@/hooks/usePrintSettings";
 
+// Default A4 dimensions in mm (fallback)
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 const SCALE = 2.5;
@@ -103,6 +105,10 @@ export function FullPreviewDialog({
   const fontNames = useMemo(() => fields.map(f => f.font_name), [fields]);
   const { version: fontVersion } = useFontLoader(fontNames);
   
+  // Load print settings from database
+  const { data: printSettings } = usePrintSettings();
+  const settings = printSettings || DEFAULT_PRINT_SETTINGS;
+  
   // Memoize font styles with fontVersion dependency to force re-render when fonts change
   const fieldFontStyles = useMemo(() => {
     return fields.reduce((acc, field) => {
@@ -111,9 +117,14 @@ export function FullPreviewDialog({
     }, {} as Record<string, string>);
   }, [fields, fontVersion]);
 
-  const isLandscape = template.page_orientation === 'landscape';
-  const width = isLandscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
-  const height = isLandscape ? A4_WIDTH_MM : A4_HEIGHT_MM;
+  // Use template orientation, fall back to settings if template doesn't specify
+  const isLandscape = template.page_orientation === 'landscape' || 
+    (!template.page_orientation && settings.orientation === 'landscape');
+  
+  // Get paper dimensions from settings
+  const paperDimensions = getPaperDimensions(settings);
+  const width = isLandscape ? paperDimensions.height : paperDimensions.width;
+  const height = isLandscape ? paperDimensions.width : paperDimensions.height;
 
   const hasFieldChanges = fieldChanges.length > 0;
   const hasAnyChanges = hasBackgroundChanges || hasFieldChanges;
