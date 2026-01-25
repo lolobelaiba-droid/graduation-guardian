@@ -1,17 +1,24 @@
-import { Users, FileText, Printer, CalendarDays } from "lucide-react";
+import { Users, GraduationCap, BookOpen } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { FacultyChart } from "@/components/dashboard/FacultyChart";
-import { MonthlyChart } from "@/components/dashboard/MonthlyChart";
 import { CertificateTypeChart } from "@/components/dashboard/CertificateTypeChart";
 import { GenderChart } from "@/components/dashboard/GenderChart";
 import { ThemeSelector } from "@/components/dashboard/ThemeSelector";
 import { ExportStatsDialog } from "@/components/dashboard/ExportStatsDialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useDashboardStats, useCertificateTypeDistribution } from "@/hooks/useDashboardStats";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useDashboardStats();
+  const { data: typeData } = useCertificateTypeDistribution();
+
+  // Calculate PhD and Master counts from type distribution
+  const phdCount = typeData 
+    ? (typeData.find(t => t.name === 'دكتوراه ل م د')?.value || 0) + 
+      (typeData.find(t => t.name === 'دكتوراه علوم')?.value || 0)
+    : 0;
+  const masterCount = typeData?.find(t => t.name === 'ماستر')?.value || 0;
 
   return (
     <div className="space-y-8">
@@ -28,7 +35,6 @@ export default function Dashboard() {
           <ExportStatsDialog />
           <Link to="/print">
             <Button size="lg" className="gap-2 shadow-lg">
-              <Printer className="h-5 w-5" />
               طباعة شهادة جديدة
             </Button>
           </Link>
@@ -36,34 +42,27 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <StatCard
           title="إجمالي الطلاب"
           value={isLoading ? "..." : stats?.totalStudents || 0}
-          subtitle="طالب مسجل"
+          subtitle="طالب مسجل في قاعدة البيانات"
           icon={Users}
           variant="blue"
         />
         <StatCard
-          title="الشهادات المطبوعة"
-          value={isLoading ? "..." : stats?.totalCertificates || 0}
-          subtitle="شهادة"
-          icon={FileText}
+          title="طلاب الدكتوراه"
+          value={isLoading ? "..." : phdCount}
+          subtitle="دكتوراه ل م د + دكتوراه علوم"
+          icon={GraduationCap}
           variant="green"
         />
         <StatCard
-          title="هذا الشهر"
-          value={isLoading ? "..." : stats?.certificatesThisMonth || 0}
-          subtitle="شهادة"
-          icon={Printer}
+          title="طلاب الماستر"
+          value={isLoading ? "..." : masterCount}
+          subtitle="طالب ماستر"
+          icon={BookOpen}
           variant="orange"
-        />
-        <StatCard
-          title="اليوم"
-          value={isLoading ? "..." : stats?.certificatesToday || 0}
-          subtitle="شهادة"
-          icon={CalendarDays}
-          variant="purple"
         />
       </div>
 
@@ -74,9 +73,8 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <FacultyChart />
-        <MonthlyChart />
       </div>
     </div>
   );
