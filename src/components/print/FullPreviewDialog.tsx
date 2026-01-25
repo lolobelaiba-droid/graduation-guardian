@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from "@/lib/numerals";
 import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 
@@ -144,11 +144,11 @@ export function FullPreviewDialog({
     }
     if (fieldKey === 'defense_date_ar') {
       const value = student['defense_date'];
-      return value ? formatCertificateDate(value as string, true) : '';
+      return value ? formatDefenseDate(value as string, true) : '';
     }
     if (fieldKey === 'defense_date_fr') {
       const value = student['defense_date'];
-      return value ? formatCertificateDate(value as string, false) : '';
+      return value ? formatDefenseDate(value as string, false) : '';
     }
     if (fieldKey === 'certificate_date_ar') {
       const value = student['certificate_date'];

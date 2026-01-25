@@ -4,7 +4,7 @@ import { mentionLabels } from '@/types/certificates';
 import ArabicReshaper from 'arabic-reshaper';
 import bidiFactory from 'bidi-js';
 import { getAllFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
-import { toWesternNumerals, formatCertificateDate } from './numerals';
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from './numerals';
 
 // A4 dimensions in mm
 const A4_WIDTH = 210;
@@ -427,7 +427,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     const value = student['defense_date'];
     if (value) {
       try {
-        return formatCertificateDate(value as string, true); // Arabic format
+        return formatDefenseDate(value as string, true); // Arabic format with month name
       } catch {
         return toWesternNumerals(String(value));
       }
@@ -439,7 +439,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     const value = student['defense_date'];
     if (value) {
       try {
-        return formatCertificateDate(value as string, false); // French format
+        return formatDefenseDate(value as string, false); // French format with month name
       } catch {
         return toWesternNumerals(String(value));
       }

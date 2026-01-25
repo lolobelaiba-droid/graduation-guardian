@@ -3,7 +3,7 @@ import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, Eye
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
-import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from "@/lib/numerals";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -157,7 +157,7 @@ export function CertificatePreview({
     if (fieldKey === 'defense_date_ar') {
       const value = student['defense_date'];
       if (value) {
-        return formatCertificateDate(value as string, true); // Arabic format
+        return formatDefenseDate(value as string, true); // Arabic format with month name
       }
       return '';
     }
@@ -165,7 +165,7 @@ export function CertificatePreview({
     if (fieldKey === 'defense_date_fr') {
       const value = student['defense_date'];
       if (value) {
-        return formatCertificateDate(value as string, false); // French format
+        return formatDefenseDate(value as string, false); // French format with month name
       }
       return '';
     }
