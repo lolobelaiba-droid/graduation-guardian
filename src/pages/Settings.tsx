@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Loader2,
   Check,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +25,26 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface BackupSummary {
+  phdLmdCount: number;
+  phdScienceCount: number;
+  masterCount: number;
+  templatesCount: number;
+  createdAt?: string;
+}
 
 // Paper sizes with dimensions in mm
 const PAPER_SIZES = [
@@ -64,6 +83,12 @@ export default function Settings() {
   const [isUndoing, setIsUndoing] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [previousBackup, setPreviousBackup] = useState<string | null>(null);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [pendingBackupData, setPendingBackupData] = useState<{
+    data: Record<string, unknown[]>;
+    summary: BackupSummary;
+  } | null>(null);
+  const [currentDataSummary, setCurrentDataSummary] = useState<BackupSummary | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Print Settings State
@@ -324,39 +349,82 @@ export default function Settings() {
     }
   };
 
-  const restoreBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsRestoring(true);
     try {
       const text = await file.text();
       const backupData = JSON.parse(text);
 
       if (!backupData.version || !backupData.data) {
-        throw new Error("ملف النسخة الاحتياطية غير صالح");
+        toast.error("ملف النسخة الاحتياطية غير صالح");
+        return;
       }
 
+      const { data: tableData } = backupData;
+
+      // Get backup summary
+      const backupSummary: BackupSummary = {
+        phdLmdCount: tableData.phd_lmd_certificates?.length || 0,
+        phdScienceCount: tableData.phd_science_certificates?.length || 0,
+        masterCount: tableData.master_certificates?.length || 0,
+        templatesCount: tableData.certificate_templates?.length || 0,
+        createdAt: backupData.created_at,
+      };
+
+      // Get current data summary
+      const currentBackup = await getCurrentBackupData();
+      const currentSummary: BackupSummary = {
+        phdLmdCount: currentBackup.data.phd_lmd_certificates?.length || 0,
+        phdScienceCount: currentBackup.data.phd_science_certificates?.length || 0,
+        masterCount: currentBackup.data.master_certificates?.length || 0,
+        templatesCount: currentBackup.data.certificate_templates?.length || 0,
+      };
+
+      setPendingBackupData({ data: tableData, summary: backupSummary });
+      setCurrentDataSummary(currentSummary);
+      setShowRestoreConfirm(true);
+    } catch (error) {
+      console.error("Error reading backup file:", error);
+      toast.error("حدث خطأ أثناء قراءة ملف النسخة الاحتياطية");
+    } finally {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const confirmRestore = async () => {
+    if (!pendingBackupData) return;
+
+    setShowRestoreConfirm(false);
+    setIsRestoring(true);
+
+    try {
       // Save current state before restoring
       const currentBackup = await getCurrentBackupData();
       setPreviousBackup(JSON.stringify(currentBackup));
 
-      const { data: tableData } = backupData;
-
-      await performRestore(tableData);
+      await performRestore(pendingBackupData.data as Record<string, unknown[]>);
 
       setCanUndo(true);
+      setPendingBackupData(null);
+      setCurrentDataSummary(null);
       toast.success("تم استعادة النسخة الاحتياطية بنجاح - يمكنك التراجع خلال هذه الجلسة");
     } catch (error) {
       console.error("Error restoring backup:", error);
       toast.error("حدث خطأ أثناء استعادة النسخة الاحتياطية");
     } finally {
       setIsRestoring(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
+  };
+
+  const cancelRestore = () => {
+    setShowRestoreConfirm(false);
+    setPendingBackupData(null);
+    setCurrentDataSummary(null);
   };
 
   const undoRestore = async () => {
@@ -381,6 +449,17 @@ export default function Settings() {
     } finally {
       setIsUndoing(false);
     }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "غير معروف";
+    return new Date(dateString).toLocaleString("ar-SA", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const savePrintSettings = async () => {
@@ -412,11 +491,63 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
+        <AlertDialogContent className="max-w-lg" dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-right">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              تأكيد الاستعادة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right space-y-4">
+              <p>سيتم استبدال جميع البيانات الحالية بالبيانات من النسخة الاحتياطية.</p>
+              
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                  <h4 className="font-semibold text-red-600 dark:text-red-400 mb-2">البيانات الحالية (ستُحذف)</h4>
+                  <ul className="text-sm space-y-1 text-foreground">
+                    <li>• دكتوراه ل م د: {currentDataSummary?.phdLmdCount || 0} طالب</li>
+                    <li>• دكتوراه علوم: {currentDataSummary?.phdScienceCount || 0} طالب</li>
+                    <li>• ماستر: {currentDataSummary?.masterCount || 0} طالب</li>
+                    <li>• القوالب: {currentDataSummary?.templatesCount || 0} قالب</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                  <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2">النسخة الاحتياطية (ستُستعاد)</h4>
+                  <ul className="text-sm space-y-1 text-foreground">
+                    <li>• دكتوراه ل م د: {pendingBackupData?.summary.phdLmdCount || 0} طالب</li>
+                    <li>• دكتوراه علوم: {pendingBackupData?.summary.phdScienceCount || 0} طالب</li>
+                    <li>• ماستر: {pendingBackupData?.summary.masterCount || 0} طالب</li>
+                    <li>• القوالب: {pendingBackupData?.summary.templatesCount || 0} قالب</li>
+                  </ul>
+                  {pendingBackupData?.summary.createdAt && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      تاريخ النسخة: {formatDate(pendingBackupData.summary.createdAt)}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <p className="text-yellow-600 dark:text-yellow-400 text-sm">
+                ⚠️ يمكنك التراجع عن هذا الإجراء خلال نفس الجلسة فقط
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel onClick={cancelRestore}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestore} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              تأكيد الاستعادة
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Hidden file input for restore */}
       <input
         type="file"
         ref={fileInputRef}
-        onChange={restoreBackup}
+        onChange={handleFileSelect}
         accept=".json"
         className="hidden"
       />
