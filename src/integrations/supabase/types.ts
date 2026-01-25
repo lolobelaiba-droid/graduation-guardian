@@ -206,6 +206,8 @@ export type Database = {
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
+          university_ar: string | null
+          university_fr: string | null
           updated_at: string | null
         }
         Insert: {
@@ -226,6 +228,8 @@ export type Database = {
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
+          university_ar?: string | null
+          university_fr?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -246,6 +250,8 @@ export type Database = {
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
+          university_ar?: string | null
+          university_fr?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -277,6 +283,8 @@ export type Database = {
           student_number: string
           thesis_title_ar: string
           thesis_title_fr: string | null
+          university_ar: string | null
+          university_fr: string | null
           updated_at: string | null
         }
         Insert: {
@@ -305,6 +313,8 @@ export type Database = {
           student_number: string
           thesis_title_ar: string
           thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -333,6 +343,8 @@ export type Database = {
           student_number?: string
           thesis_title_ar?: string
           thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -362,6 +374,8 @@ export type Database = {
           student_number: string
           thesis_title_ar: string
           thesis_title_fr: string | null
+          university_ar: string | null
+          university_fr: string | null
           updated_at: string | null
         }
         Insert: {
@@ -388,6 +402,8 @@ export type Database = {
           student_number: string
           thesis_title_ar: string
           thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -414,6 +430,8 @@ export type Database = {
           student_number?: string
           thesis_title_ar?: string
           thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
           updated_at?: string | null
         }
         Relationships: []

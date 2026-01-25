@@ -42,6 +42,8 @@ const baseSchema = z.object({
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
+  university_ar: z.string().optional().nullable(),
+  university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
@@ -112,6 +114,8 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       date_of_birth: '',
       birthplace_ar: '',
       birthplace_fr: '',
+      university_ar: 'جامعة محمد خيضر بسكرة',
+      university_fr: 'Université Mohamed Khider Biskra',
       faculty_ar: '',
       faculty_fr: '',
       branch_ar: '',
@@ -349,6 +353,37 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                     <FormLabel>lieu de naissance</FormLabel>
                     <FormControl>
                       <Input {...field} value={field.value || ''} dir="ltr" placeholder="Lieu de naissance" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* University */}
+            <SectionHeader title="الجامعة / Université" />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="university_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الجامعة (عربي)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder="اسم الجامعة بالعربية" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="university_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Université</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom de l'université en français" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
