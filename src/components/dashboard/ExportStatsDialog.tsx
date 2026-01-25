@@ -1,0 +1,423 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Download, CalendarIcon, FileSpreadsheet } from "lucide-react";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import { toWesternNumerals } from "@/lib/numerals";
+
+type ExportType = "students" | "printed" | "faculty" | "gender" | "certificate_type";
+
+const exportTypeLabels: Record<ExportType, string> = {
+  students: "قائمة الطلاب",
+  printed: "الشهادات المطبوعة",
+  faculty: "توزيع حسب الكليات",
+  gender: "توزيع حسب الجنس",
+  certificate_type: "توزيع حسب نوع الشهادة",
+};
+
+const certificateTypeLabels = {
+  all: "الكل",
+  phd_lmd: "دكتوراه ل م د",
+  phd_science: "دكتوراه علوم",
+  master: "ماستر",
+};
+
+const genderLabels = {
+  all: "الكل",
+  male: "ذكور",
+  female: "إناث",
+};
+
+export function ExportStatsDialog() {
+  const [open, setOpen] = useState(false);
+  const [exportType, setExportType] = useState<ExportType>("students");
+  const [certificateType, setCertificateType] = useState<string>("all");
+  const [gender, setGender] = useState<string>("all");
+  const [faculty, setFaculty] = useState<string>("all");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [useDateFilter, setUseDateFilter] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [faculties, setFaculties] = useState<string[]>([]);
+
+  // Load faculties when dialog opens
+  const loadFaculties = async () => {
+    const [phdLmd, phdScience, master] = await Promise.all([
+      supabase.from("phd_lmd_certificates").select("faculty_ar"),
+      supabase.from("phd_science_certificates").select("faculty_ar"),
+      supabase.from("master_certificates").select("faculty_ar"),
+    ]);
+
+    const allFaculties = new Set<string>();
+    [...(phdLmd.data || []), ...(phdScience.data || []), ...(master.data || [])].forEach((s) => {
+      if (s.faculty_ar) allFaculties.add(s.faculty_ar);
+    });
+    setFaculties(Array.from(allFaculties));
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen) {
+      loadFaculties();
+    }
+  };
+
+  const fetchStudentData = async () => {
+    const tables = certificateType === "all" 
+      ? ["phd_lmd_certificates", "phd_science_certificates", "master_certificates"] as const
+      : [certificateType === "phd_lmd" ? "phd_lmd_certificates" : certificateType === "phd_science" ? "phd_science_certificates" : "master_certificates"] as const;
+
+    const results: any[] = [];
+
+    for (const table of tables) {
+      let query = supabase.from(table).select("*");
+
+      if (gender !== "all") {
+        query = query.eq("gender", gender);
+      }
+
+      if (faculty !== "all") {
+        query = query.eq("faculty_ar", faculty);
+      }
+
+      if (useDateFilter && startDate) {
+        query = query.gte("created_at", startDate.toISOString());
+      }
+
+      if (useDateFilter && endDate) {
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query = query.lte("created_at", endOfDay.toISOString());
+      }
+
+      const { data } = await query;
+      if (data) {
+        results.push(...data.map((d) => ({
+          ...d,
+          certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماستر",
+        })));
+      }
+    }
+
+    return results;
+  };
+
+  const fetchPrintedData = async () => {
+    let query = supabase.from("print_history").select("*");
+
+    if (certificateType !== "all") {
+      query = query.eq("certificate_type", certificateType as "phd_lmd" | "phd_science" | "master");
+    }
+
+    if (useDateFilter && startDate) {
+      query = query.gte("printed_at", startDate.toISOString());
+    }
+
+    if (useDateFilter && endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query = query.lte("printed_at", endOfDay.toISOString());
+    }
+
+    const { data } = await query;
+    return data || [];
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      let exportData: any[] = [];
+      let fileName = "";
+
+      switch (exportType) {
+        case "students": {
+          const students = await fetchStudentData();
+          exportData = students.map((s) => ({
+            "نوع الشهادة": s.certificate_type,
+            "رقم الطالب": s.student_number,
+            "الاسم بالعربية": s.full_name_ar,
+            "الاسم بالفرنسية": s.full_name_fr || "",
+            "الجنس": s.gender === "male" ? "ذكر" : "أنثى",
+            "الكلية": s.faculty_ar || "",
+            "التخصص": s.specialty_ar,
+            "الشعبة": s.branch_ar,
+            "تاريخ الميلاد": s.date_of_birth,
+            "تاريخ المناقشة": s.defense_date,
+            "التقدير": s.mention === "very_honorable" ? "مشرف جدا" : "مشرف",
+          }));
+          fileName = `الطلاب_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          break;
+        }
+
+        case "printed": {
+          const printed = await fetchPrintedData();
+          exportData = printed.map((p) => ({
+            "نوع الشهادة": p.certificate_type === "phd_lmd" ? "دكتوراه ل م د" : p.certificate_type === "phd_science" ? "دكتوراه علوم" : "ماستر",
+            "عدد الشهادات": p.student_ids?.length || 0,
+            "تاريخ الطباعة": p.printed_at ? new Date(p.printed_at).toLocaleDateString("ar-SA") : "",
+            "المستخدم": p.printed_by || "",
+          }));
+          fileName = `الشهادات_المطبوعة_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          break;
+        }
+
+        case "faculty": {
+          const students = await fetchStudentData();
+          const facultyCounts: Record<string, number> = {};
+          students.forEach((s) => {
+            const fac = s.faculty_ar || "غير محدد";
+            facultyCounts[fac] = (facultyCounts[fac] || 0) + 1;
+          });
+          exportData = Object.entries(facultyCounts).map(([name, count]) => ({
+            "الكلية": name,
+            "عدد الطلاب": count,
+          }));
+          fileName = `توزيع_الكليات_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          break;
+        }
+
+        case "gender": {
+          const students = await fetchStudentData();
+          const maleCount = students.filter((s) => s.gender === "male").length;
+          const femaleCount = students.filter((s) => s.gender === "female").length;
+          exportData = [
+            { "الجنس": "ذكور", "العدد": maleCount },
+            { "الجنس": "إناث", "العدد": femaleCount },
+          ];
+          fileName = `توزيع_الجنس_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          break;
+        }
+
+        case "certificate_type": {
+          const [phdLmd, phdScience, master] = await Promise.all([
+            supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
+            supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
+            supabase.from("master_certificates").select("*", { count: "exact", head: true }),
+          ]);
+          exportData = [
+            { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
+            { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
+            { "نوع الشهادة": "ماستر", "العدد": master.count || 0 },
+          ];
+          fileName = `توزيع_أنواع_الشهادات_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          break;
+        }
+      }
+
+      if (exportData.length === 0) {
+        toast.error("لا توجد بيانات للتصدير");
+        return;
+      }
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "البيانات");
+      XLSX.writeFile(wb, fileName);
+
+      toast.success(`تم تصدير ${toWesternNumerals(exportData.length)} سجل بنجاح`);
+      setOpen(false);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("حدث خطأ أثناء التصدير");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="lg" className="gap-2 shadow-lg">
+          <Download className="h-5 w-5" />
+          تصدير الإحصائيات
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" />
+            تصدير الإحصائيات
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          {/* Export Type */}
+          <div className="space-y-2">
+            <Label>نوع التصدير</Label>
+            <Select value={exportType} onValueChange={(v) => setExportType(v as ExportType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(exportTypeLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Certificate Type Filter */}
+          {(exportType === "students" || exportType === "printed") && (
+            <div className="space-y-2">
+              <Label>نوع الشهادة</Label>
+              <Select value={certificateType} onValueChange={setCertificateType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(certificateTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Gender Filter */}
+          {exportType === "students" && (
+            <div className="space-y-2">
+              <Label>الجنس</Label>
+              <Select value={gender} onValueChange={setGender}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(genderLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Faculty Filter */}
+          {exportType === "students" && faculties.length > 0 && (
+            <div className="space-y-2">
+              <Label>الكلية</Label>
+              <Select value={faculty} onValueChange={setFaculty}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  {faculties.map((f) => (
+                    <SelectItem key={f} value={f}>
+                      {f}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Date Range Filter */}
+          {(exportType === "students" || exportType === "printed") && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="useDateFilter"
+                  checked={useDateFilter}
+                  onCheckedChange={(checked) => setUseDateFilter(checked as boolean)}
+                />
+                <Label htmlFor="useDateFilter" className="cursor-pointer">
+                  تصفية حسب الفترة الزمنية
+                </Label>
+              </div>
+
+              {useDateFilter && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>من تاريخ</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-right",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="ml-2 h-4 w-4" />
+                          {startDate ? format(startDate, "PPP", { locale: ar }) : "اختر التاريخ"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>إلى تاريخ</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-right",
+                            !endDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="ml-2 h-4 w-4" />
+                          {endDate ? format(endDate, "PPP", { locale: ar }) : "اختر التاريخ"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={endDate}
+                          onSelect={setEndDate}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Export Button */}
+          <Button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="w-full gap-2"
+            size="lg"
+          >
+            {isExporting ? (
+              <>جاري التصدير...</>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                تصدير إلى Excel
+              </>
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
