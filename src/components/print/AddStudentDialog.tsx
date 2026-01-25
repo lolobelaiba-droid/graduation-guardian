@@ -40,6 +40,7 @@ const baseSchema = z.object({
   student_number: z.string().min(1, "الرقم مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
+  gender: z.enum(['male', 'female']),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
@@ -112,6 +113,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       student_number: '',
       full_name_ar: '',
       full_name_fr: '',
+      gender: 'male' as 'male' | 'female',
       date_of_birth: '',
       birthplace_ar: '',
       birthplace_fr: '',
@@ -284,7 +286,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
             {/* Name Fields */}
             <SectionHeader title="الاسم واللقب / Nom et Prénom" />
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="full_name_ar"
@@ -308,6 +310,28 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                     <FormControl>
                       <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom et Prénom en français" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الجنس *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر الجنس" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">ذكر</SelectItem>
+                        <SelectItem value="female">أنثى</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

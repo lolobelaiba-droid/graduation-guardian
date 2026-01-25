@@ -2,6 +2,8 @@ import { Users, FileText, Printer, CalendarDays } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { FacultyChart } from "@/components/dashboard/FacultyChart";
 import { MonthlyChart } from "@/components/dashboard/MonthlyChart";
+import { CertificateTypeChart } from "@/components/dashboard/CertificateTypeChart";
+import { GenderChart } from "@/components/dashboard/GenderChart";
 import { ThemeSelector } from "@/components/dashboard/ThemeSelector";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -63,7 +65,13 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CertificateTypeChart />
+        <GenderChart />
+      </div>
+
+      {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FacultyChart />
         <MonthlyChart />
