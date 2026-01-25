@@ -179,26 +179,45 @@ export default function PrintCertificates() {
   const updateTemplate = useUpdateTemplate();
   const saveSetting = useSaveSetting();
 
-  // Get current students based on type and sort by created_at (newest first)
-  const getCurrentStudents = () => {
-    let students: Array<{ id: string; full_name_ar: string; full_name_fr?: string | null; student_number: string; specialty_ar: string; mention: string; created_at?: string | null }> = [];
-    switch (selectedType) {
-      case "phd_lmd": students = phdLmdData as typeof students; break;
-      case "phd_science": students = phdScienceData as typeof students; break;
-      case "master": students = masterData as typeof students; break;
-    }
-    // Sort by created_at descending (newest first)
-    return [...students].sort((a, b) => {
+  // Extended student type with certificate type info
+  type StudentWithType = {
+    id: string;
+    full_name_ar: string;
+    full_name_fr?: string | null;
+    student_number: string;
+    specialty_ar: string;
+    mention: string;
+    created_at?: string | null;
+    certificateType: CertificateType;
+  };
+
+  // Get ALL students from all certificate types, each tagged with their type
+  const getAllStudents = (): StudentWithType[] => {
+    const phdLmdStudents: StudentWithType[] = phdLmdData.map(s => ({
+      ...s,
+      certificateType: 'phd_lmd' as CertificateType,
+    }));
+    const phdScienceStudents: StudentWithType[] = phdScienceData.map(s => ({
+      ...s,
+      certificateType: 'phd_science' as CertificateType,
+    }));
+    const masterStudents: StudentWithType[] = masterData.map(s => ({
+      ...s,
+      certificateType: 'master' as CertificateType,
+    }));
+
+    // Combine all students and sort by created_at descending (newest first)
+    return [...phdLmdStudents, ...phdScienceStudents, ...masterStudents].sort((a, b) => {
       const dateA = new Date(a.created_at || 0).getTime();
       const dateB = new Date(b.created_at || 0).getTime();
       return dateB - dateA;
     });
   };
 
-  const currentStudents = getCurrentStudents();
+  const allStudents = getAllStudents();
 
   // Filter students by search
-  const filteredStudents = currentStudents.filter(student => {
+  const filteredStudents = allStudents.filter(student => {
     if (!studentSearch.trim()) return true;
     const search = studentSearch.toLowerCase();
     return (
@@ -210,7 +229,12 @@ export default function PrintCertificates() {
   });
 
   // Get the 5 most recently added students (for highlighting)
-  const recentStudentIds = currentStudents.slice(0, 5).map(s => s.id);
+  const recentStudentIds = allStudents.slice(0, 5).map(s => s.id);
+
+  // Helper to find student and their type by ID
+  const findStudentById = (id: string): StudentWithType | undefined => {
+    return allStudents.find(s => s.id === id);
+  };
 
   // Find matching template
   useEffect(() => {
@@ -269,18 +293,12 @@ export default function PrintCertificates() {
     saveSetting.mutate({ key: 'selectedLanguage', value: selectedLanguage });
   }, [selectedLanguage]);
 
-  // Reset preview student when certificate type changes
-  useEffect(() => {
-    setPreviewStudentId(null);
-    setSelectedStudentIds([]);
-  }, [selectedType]);
-
   // Don't auto-select a student - let user choose or show placeholders
   useEffect(() => {
-    if (currentStudents.length === 0) {
+    if (allStudents.length === 0) {
       setPreviewStudentId(null);
     }
-  }, [currentStudents]);
+  }, [allStudents]);
 
   const handleMoveField = (direction: 'up' | 'down' | 'left' | 'right') => {
     if (!selectedFieldId || !selectedTemplateId) return;
@@ -333,6 +351,23 @@ export default function PrintCertificates() {
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
     if (checked) {
+      // Find the student to get their certificate type
+      const student = findStudentById(studentId);
+      if (student) {
+        // Auto-switch to the template matching this student's certificate type
+        const matchingTemplate = templates.find(
+          t => t.certificate_type === student.certificateType && t.is_active
+        );
+        if (matchingTemplate) {
+          setSelectedTemplateId(matchingTemplate.id);
+          setSelectedType(student.certificateType);
+          setSelectedLanguage(matchingTemplate.language);
+        } else {
+          // Update type even if no template exists
+          setSelectedType(student.certificateType);
+        }
+      }
+      
       // Selecting via checkbox should also update preview
       setSelectedStudentIds((prev) => {
         const next = prev.includes(studentId) ? prev : [...prev, studentId];
@@ -387,7 +422,7 @@ export default function PrintCertificates() {
       return;
     }
 
-    const selectedStudents = currentStudents.filter(s => selectedStudentIds.includes(s.id));
+    const selectedStudents = allStudents.filter(s => selectedStudentIds.includes(s.id));
     const template = templates.find(t => t.id === selectedTemplateId);
 
     if (!template) {
@@ -433,7 +468,7 @@ export default function PrintCertificates() {
     if (!ok) toast.info('خصائص الطابعات غير مدعومة تلقائياً على هذا النظام');
   };
 
-  const previewStudent = currentStudents.find(s => s.id === previewStudentId);
+  const previewStudent = findStudentById(previewStudentId || '');
 
   return (
     <div className="space-y-6">
@@ -504,15 +539,15 @@ export default function PrintCertificates() {
               {recentStudentIds.length > 0 && (
                 <Badge variant="outline" className="text-xs gap-1">
                   <Clock className="h-3 w-3" />
-                  آخر {toWesternNumerals(Math.min(5, currentStudents.length))} إضافة
+                  آخر {toWesternNumerals(Math.min(5, allStudents.length))} إضافة
                 </Badge>
               )}
             </span>
-            <Badge variant="secondary">{toWesternNumerals(filteredStudents.length)}/{toWesternNumerals(currentStudents.length)}</Badge>
+            <Badge variant="secondary">{toWesternNumerals(filteredStudents.length)}/{toWesternNumerals(allStudents.length)}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {currentStudents.length === 0 ? (
+          {allStudents.length === 0 ? (
             <div className="text-center text-muted-foreground py-4">
               <p>لا يوجد طلاب</p>
               <Button size="sm" className="mt-2" onClick={() => setIsAddStudentOpen(true)}>
@@ -568,7 +603,24 @@ export default function PrintCertificates() {
                               ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 hover:border-green-400'
                               : 'hover:bg-muted border-transparent hover:border-muted-foreground/20'
                         }`}
-                        onClick={() => setPreviewStudentId(isPreviewSelected ? null : student.id)}
+                        onClick={() => {
+                          if (isPreviewSelected) {
+                            setPreviewStudentId(null);
+                          } else {
+                            // Auto-switch to matching template when clicking for preview
+                            const matchingTemplate = templates.find(
+                              t => t.certificate_type === student.certificateType && t.is_active
+                            );
+                            if (matchingTemplate) {
+                              setSelectedTemplateId(matchingTemplate.id);
+                              setSelectedType(student.certificateType);
+                              setSelectedLanguage(matchingTemplate.language);
+                            } else {
+                              setSelectedType(student.certificateType);
+                            }
+                            setPreviewStudentId(student.id);
+                          }
+                        }}
                       >
                         {isRecent && !isPreviewSelected && (
                           <div className="absolute -top-1 -right-1">
@@ -599,6 +651,9 @@ export default function PrintCertificates() {
                             جديد
                           </Badge>
                         )}
+                        <Badge variant="outline" className="text-xs">
+                          {certificateTypeLabels[student.certificateType]?.ar}
+                        </Badge>
                         <Badge variant="outline" className="text-xs">
                           {mentionLabels[student.mention as MentionType]?.ar || student.mention}
                         </Badge>
