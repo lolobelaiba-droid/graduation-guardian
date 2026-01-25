@@ -7,18 +7,10 @@ import { ThemeSelector } from "@/components/dashboard/ThemeSelector";
 import { ExportStatsDialog } from "@/components/dashboard/ExportStatsDialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useDashboardStats, useCertificateTypeDistribution } from "@/hooks/useDashboardStats";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useDashboardStats();
-  const { data: typeData } = useCertificateTypeDistribution();
-
-  // Calculate PhD and Master counts from type distribution
-  const phdCount = typeData 
-    ? (typeData.find(t => t.name === 'دكتوراه ل م د')?.value || 0) + 
-      (typeData.find(t => t.name === 'دكتوراه علوم')?.value || 0)
-    : 0;
-  const masterCount = typeData?.find(t => t.name === 'ماستر')?.value || 0;
 
   return (
     <div className="space-y-8">
@@ -27,7 +19,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">لوحة التحكم</h1>
           <p className="text-muted-foreground mt-1">
-            مرحباً بك في نظام إدارة الشهادات الجامعية
+            مرحباً بك في نظام إدارة شهادات الدكتوراه
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -42,31 +34,38 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
         <StatCard
-          title="إجمالي الطلاب"
-          value={isLoading ? "..." : stats?.totalStudents || 0}
-          subtitle="طالب مسجل في قاعدة البيانات"
+          title="إجمالي طلاب الدكتوراه"
+          value={isLoading ? "..." : stats?.totalPhdStudents || 0}
+          subtitle="دكتوراه ل م د + دكتوراه علوم"
           icon={Users}
           variant="blue"
         />
         <StatCard
-          title="طلاب الدكتوراه"
-          value={isLoading ? "..." : phdCount}
-          subtitle="دكتوراه ل م د + دكتوراه علوم"
+          title="دكتوراه ل م د"
+          value={isLoading ? "..." : stats?.phdLmdCount || 0}
+          subtitle="طالب"
           icon={GraduationCap}
           variant="green"
         />
         <StatCard
+          title="دكتوراه علوم"
+          value={isLoading ? "..." : stats?.phdScienceCount || 0}
+          subtitle="طالب"
+          icon={GraduationCap}
+          variant="orange"
+        />
+        <StatCard
           title="طلاب الماستر"
-          value={isLoading ? "..." : masterCount}
+          value={isLoading ? "..." : stats?.masterCount || 0}
           subtitle="طالب ماستر"
           icon={BookOpen}
-          variant="orange"
+          variant="purple"
         />
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row 1 - PhD only */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CertificateTypeChart />
         <GenderChart />
