@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from '@/types/certificates';
 import { mentionLabels } from '@/types/certificates';
 import ArabicReshaper from 'arabic-reshaper';
+import bidiFactory from 'bidi-js';
 import { getAllFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
 import { toWesternNumerals, formatCertificateDate } from './numerals';
 
@@ -10,6 +11,10 @@ const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
 
 const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+// Bidi reordering is required because jsPDF doesn't implement the Unicode BiDi algorithm.
+// We reorder *after* shaping so Arabic letters stay connected and the visual order becomes correct.
+const bidi = (bidiFactory as any)();
 
 function isArabicText(text: string): boolean {
   return !!text && ARABIC_REGEX.test(text);
@@ -31,6 +36,23 @@ function shapeArabicText(text: string): string {
   } catch (e) {
     console.warn('Arabic shaping failed, falling back to raw text', e);
     return text;
+  }
+}
+
+/**
+ * Convert logical Arabic string into a visually-correct string for jsPDF:
+ * 1) Arabic shaping (presentation forms)
+ * 2) BiDi reordering (RTL)
+ */
+function prepareArabicForPdf(text: string): string {
+  const reshaped = shapeArabicText(text);
+  try {
+    // bidi-js API: getReorderedInfo(str, baseDir) -> { text: string, ... }
+    const info = bidi?.getReorderedInfo?.(reshaped, 'rtl');
+    return info?.text ?? reshaped;
+  } catch (e) {
+    console.warn('Bidi reorder failed, falling back to reshaped text', e);
+    return reshaped;
   }
 }
 
@@ -282,8 +304,8 @@ export async function generatePDF(
       else if (field.text_align === 'right') align = 'right';
 
       if (valueIsArabic) {
-        const shaped = shapeArabicText(value);
-        doc.text(shaped, x, y, { align, isInputRtl: true } as any);
+        const prepared = prepareArabicForPdf(value);
+        doc.text(prepared, x, y, { align } as any);
       } else {
         doc.text(value, x, y, { align });
       }
@@ -458,12 +480,60 @@ export async function generateSinglePDF(
     else if (field.text_align === 'right') align = 'right';
 
     if (valueIsArabic) {
-      const shaped = shapeArabicText(value);
-      doc.text(shaped, field.position_x, field.position_y, { align, isInputRtl: true } as any);
+      const prepared = prepareArabicForPdf(value);
+      doc.text(prepared, field.position_x, field.position_y, { align } as any);
     } else {
       doc.text(value, field.position_x, field.position_y, { align });
     }
   });
 
+  return doc.output('blob');
+}
+
+// Generate a multi-page PDF as a Blob (used by desktop printing integration)
+export async function generatePDFBlob(
+  students: Record<string, unknown>[],
+  fields: TemplateField[],
+  template: CertificateTemplate,
+  certificateType: CertificateType
+): Promise<Blob> {
+  const isLandscape = template.page_orientation === 'landscape';
+  const doc = new jsPDF({
+    orientation: isLandscape ? 'landscape' : 'portrait',
+    unit: 'mm',
+    format: 'a4',
+    putOnlyUsedFonts: true,
+  });
+
+  const fontsNeeded = fields.filter((f) => f.is_visible && f.font_name).map((f) => f.font_name);
+  const registeredFonts = await registerFonts(doc, fontsNeeded);
+
+  students.forEach((student, index) => {
+    if (index > 0) doc.addPage();
+
+    fields
+      .filter((f) => f.is_visible)
+      .forEach((field) => {
+        const value = getFieldValue(student, field.field_key);
+        if (!value) return;
+
+        const valueIsArabic = !!field.is_rtl || isArabicText(value);
+        setFieldFontForText(doc, field.font_name, field.font_size, registeredFonts, { isArabic: valueIsArabic });
+        doc.setTextColor(field.font_color || '#000000');
+
+        let align: 'left' | 'center' | 'right' = 'center';
+        if (field.text_align === 'left') align = 'left';
+        else if (field.text_align === 'right') align = 'right';
+
+        if (valueIsArabic) {
+          doc.text(prepareArabicForPdf(value), field.position_x, field.position_y, { align } as any);
+        } else {
+          doc.text(value, field.position_x, field.position_y, { align });
+        }
+      });
+  });
+
+  // Keep filename semantics for callers if needed
+  void certificateType;
   return doc.output('blob');
 }

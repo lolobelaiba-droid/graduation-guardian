@@ -10,4 +10,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Add any IPC methods you need here
   getVersion: () => process.versions.electron,
   getPlatform: () => process.platform,
+
+  // Printers
+  getPrinters: () => ipcRenderer.invoke('printers:list'),
+  printPdf: (pdfArrayBuffer, options) =>
+    ipcRenderer.invoke('printers:print-pdf', { pdf: pdfArrayBuffer, options }),
+  openPrintersSettings: () => ipcRenderer.invoke('printers:open-settings'),
 });
