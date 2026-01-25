@@ -303,18 +303,6 @@ export default function Settings() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>الاتجاه الافتراضي</Label>
-                <Select defaultValue="portrait">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="portrait">عمودي</SelectItem>
-                    <SelectItem value="landscape">أفقي</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
                 <Label>الهامش العلوي (مم)</Label>
                 <Input type="number" defaultValue="20" />
               </div>
