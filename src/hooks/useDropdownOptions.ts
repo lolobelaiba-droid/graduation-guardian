@@ -82,3 +82,33 @@ export function useDeleteDropdownOption() {
     },
   });
 }
+
+export function useUpdateDropdownOption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, optionType, optionValue }: { id: string; optionType: OptionType; optionValue: string }) => {
+      const { data, error } = await supabase
+        .from('dropdown_options')
+        .update({ option_value: optionValue.trim() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('هذا الخيار موجود مسبقاً');
+        }
+        throw error;
+      }
+      return { data, optionType };
+    },
+    onSuccess: (variables) => {
+      queryClient.invalidateQueries({ queryKey: ['dropdown_options', variables.optionType] });
+      toast.success('تم تعديل الخيار بنجاح');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'حدث خطأ أثناء تعديل الخيار');
+    },
+  });
+}
