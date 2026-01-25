@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Building2,
   Database,
@@ -8,6 +8,7 @@ import {
   Upload,
   Save,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Paper sizes with dimensions in mm
 const PAPER_SIZES = [
@@ -47,6 +50,104 @@ export default function Settings() {
   const [paperSize, setPaperSize] = useState("a4");
   const [customWidth, setCustomWidth] = useState("210");
   const [customHeight, setCustomHeight] = useState("297");
+  const [orientation, setOrientation] = useState("portrait");
+  const [marginTop, setMarginTop] = useState("20");
+  const [marginBottom, setMarginBottom] = useState("20");
+  const [marginRight, setMarginRight] = useState("15");
+  const [marginLeft, setMarginLeft] = useState("15");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load print settings from database
+  useEffect(() => {
+    const loadPrintSettings = async () => {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("*")
+        .in("key", [
+          "print_paper_size",
+          "print_custom_width",
+          "print_custom_height",
+          "print_orientation",
+          "print_margin_top",
+          "print_margin_bottom",
+          "print_margin_right",
+          "print_margin_left",
+        ]);
+
+      if (!error && data) {
+        data.forEach((setting) => {
+          switch (setting.key) {
+            case "print_paper_size":
+              if (setting.value) setPaperSize(setting.value);
+              break;
+            case "print_custom_width":
+              if (setting.value) setCustomWidth(setting.value);
+              break;
+            case "print_custom_height":
+              if (setting.value) setCustomHeight(setting.value);
+              break;
+            case "print_orientation":
+              if (setting.value) setOrientation(setting.value);
+              break;
+            case "print_margin_top":
+              if (setting.value) setMarginTop(setting.value);
+              break;
+            case "print_margin_bottom":
+              if (setting.value) setMarginBottom(setting.value);
+              break;
+            case "print_margin_right":
+              if (setting.value) setMarginRight(setting.value);
+              break;
+            case "print_margin_left":
+              if (setting.value) setMarginLeft(setting.value);
+              break;
+          }
+        });
+      }
+    };
+
+    loadPrintSettings();
+  }, []);
+
+  const savePrintSettings = async () => {
+    setIsSaving(true);
+    try {
+      const settings = [
+        { key: "print_paper_size", value: paperSize },
+        { key: "print_custom_width", value: customWidth },
+        { key: "print_custom_height", value: customHeight },
+        { key: "print_orientation", value: orientation },
+        { key: "print_margin_top", value: marginTop },
+        { key: "print_margin_bottom", value: marginBottom },
+        { key: "print_margin_right", value: marginRight },
+        { key: "print_margin_left", value: marginLeft },
+      ];
+
+      for (const setting of settings) {
+        const { data: existing } = await supabase
+          .from("settings")
+          .select("id")
+          .eq("key", setting.key)
+          .single();
+
+        if (existing) {
+          await supabase
+            .from("settings")
+            .update({ value: setting.value })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("settings").insert([setting]);
+        }
+      }
+
+      toast.success("تم حفظ إعدادات الطباعة بنجاح");
+    } catch (error) {
+      console.error("Error saving print settings:", error);
+      toast.error("حدث خطأ أثناء حفظ الإعدادات");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -292,7 +393,7 @@ export default function Settings() {
 
               <div className="space-y-2">
                 <Label>الاتجاه الافتراضي</Label>
-                <Select defaultValue="portrait">
+                <Select value={orientation} onValueChange={setOrientation}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -304,25 +405,45 @@ export default function Settings() {
               </div>
               <div className="space-y-2">
                 <Label>الهامش العلوي (مم)</Label>
-                <Input type="number" defaultValue="20" />
+                <Input 
+                  type="number" 
+                  value={marginTop} 
+                  onChange={(e) => setMarginTop(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>الهامش السفلي (مم)</Label>
-                <Input type="number" defaultValue="20" />
+                <Input 
+                  type="number" 
+                  value={marginBottom} 
+                  onChange={(e) => setMarginBottom(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>الهامش الأيمن (مم)</Label>
-                <Input type="number" defaultValue="15" />
+                <Input 
+                  type="number" 
+                  value={marginRight} 
+                  onChange={(e) => setMarginRight(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>الهامش الأيسر (مم)</Label>
-                <Input type="number" defaultValue="15" />
+                <Input 
+                  type="number" 
+                  value={marginLeft} 
+                  onChange={(e) => setMarginLeft(e.target.value)}
+                />
               </div>
             </div>
 
             <div className="flex justify-end">
-              <Button className="gap-2">
-                <Save className="h-4 w-4" />
+              <Button className="gap-2" onClick={savePrintSettings} disabled={isSaving}>
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 حفظ التغييرات
               </Button>
             </div>
