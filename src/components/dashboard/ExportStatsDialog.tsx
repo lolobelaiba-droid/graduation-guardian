@@ -90,13 +90,11 @@ export function ExportStatsDialog() {
       }
 
       if (useDateFilter && startDate) {
-        query = query.gte("created_at", startDate.toISOString());
+        query = query.gte("defense_date", startDate.toISOString().split('T')[0]);
       }
 
       if (useDateFilter && endDate) {
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        query = query.lte("created_at", endOfDay.toISOString());
+        query = query.lte("defense_date", endDate.toISOString().split('T')[0]);
       }
 
       const { data } = await query;
@@ -304,7 +302,7 @@ export function ExportStatsDialog() {
                   onCheckedChange={(checked) => setUseDateFilter(checked as boolean)}
                 />
                 <Label htmlFor="useDateFilter" className="cursor-pointer">
-                  تصفية حسب تاريخ الإضافة
+                  تصفية حسب تاريخ المناقشة
                 </Label>
               </div>
 
