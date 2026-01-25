@@ -86,14 +86,31 @@ const DEFAULT_ARABIC_FONT = 'Amiri';
  */
 async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<string>> {
   const registeredFonts = new Set<string>(); // key: "family:style"
-  const allFonts = getAllFonts();
+  const allFontsRegistry = getAllFonts();
   
-  // Always ensure we have at least one Arabic font loaded as fallback
-  const uniqueFonts = [...new Set([DEFAULT_ARABIC_FONT, ...fontsNeeded])];
+  // Build a set of unique font families we need to load
+  const fontFamiliesToLoad = new Set<string>();
   
-  for (const fontFamily of uniqueFonts) {
+  // Always include the default Arabic font
+  fontFamiliesToLoad.add(DEFAULT_ARABIC_FONT);
+  
+  // Resolve each font name to its actual family
+  for (const fontName of fontsNeeded) {
+    if (!fontName) continue;
+    const font = getFontByName(fontName);
+    if (font) {
+      fontFamiliesToLoad.add(font.family);
+    } else {
+      // Try direct match as family name
+      fontFamiliesToLoad.add(fontName);
+    }
+  }
+  
+  console.log(`[PDF Fonts] Fonts to load: ${Array.from(fontFamiliesToLoad).join(', ')}`);
+  
+  for (const fontFamily of fontFamiliesToLoad) {
     // Find matching fonts (normal and bold variants)
-    const matchingFonts = allFonts.filter(f => 
+    const matchingFonts = allFontsRegistry.filter(f => 
       f.family === fontFamily || 
       f.name === fontFamily || 
       f.displayName === fontFamily ||
@@ -102,13 +119,14 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
     );
     
     if (matchingFonts.length === 0) {
-      console.warn(`Font not found: ${fontFamily}, will use fallback`);
+      console.warn(`[PDF Fonts] Font not found in registry: ${fontFamily}, will use fallback`);
       continue;
     }
 
     for (const font of matchingFonts) {
       // Skip system fonts - they're built into jsPDF but don't support Arabic
       if (font.isSystem) {
+        console.log(`[PDF Fonts] Skipping system font: ${font.family}`);
         continue;
       }
 
@@ -127,7 +145,7 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
           // Load and convert to base64
           const fontBuffer = await loadFontFile(font.url);
           if (!fontBuffer) {
-            console.error(`Failed to load font buffer: ${font.url}`);
+            console.error(`[PDF Fonts] Failed to load font buffer: ${font.url}`);
             continue;
           }
           fontBase64 = arrayBufferToBase64(fontBuffer);
@@ -137,7 +155,7 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
         const rawExt = font.url.split('?')[0].split('.').pop()?.toLowerCase();
         const ext = rawExt || 'ttf';
         if (ext !== 'ttf' && ext !== 'otf') {
-          console.warn(`Unsupported font format for PDF: .${ext} (${font.family}). Use TTF/OTF for PDF embedding.`);
+          console.warn(`[PDF Fonts] Unsupported font format: .${ext} (${font.family}). Use TTF/OTF.`);
           continue;
         }
 
@@ -151,13 +169,14 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
         (doc as any).addFont(fileName, font.family, font.style, 'Identity-H');
         
         registeredFonts.add(`${font.family}:${font.style}`);
-        console.log(`Registered font: ${font.family} (${font.style})`);
+        console.log(`[PDF Fonts] Registered: ${font.family} (${font.style})`);
       } catch (error) {
-        console.error(`Failed to load font ${font.family}:`, error);
+        console.error(`[PDF Fonts] Failed to load font ${font.family}:`, error);
       }
     }
   }
   
+  console.log(`[PDF Fonts] Total registered: ${registeredFonts.size} fonts`);
   return registeredFonts;
 }
 
@@ -221,31 +240,62 @@ function setFieldFontForText(
   registeredFonts: Set<string>,
   opts: { isArabic: boolean }
 ): void {
-  // If the text is Arabic, enforce an Arabic-capable font even if user selected a Latin/system font.
-  if (opts.isArabic) {
-    const desired = fontName ? getFontByName(fontName) : undefined;
-    const canUseDesired =
-      !!desired &&
-      (desired.isArabic || desired.family.toLowerCase() === DEFAULT_ARABIC_FONT.toLowerCase()) &&
-      (desired.isSystem ? false : registeredFonts.has(`${desired.family}:${desired.style}`));
+  const safeSetFont = (family: string, style: string): boolean => {
+    try {
+      doc.setFont(family, style as any);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
-    if (canUseDesired) {
-      try {
-        doc.setFont(desired!.family, desired!.style as any);
-      } catch {
-        // ignore
-      }
+  // Try to find the font by name in our registry
+  const font = fontName ? getFontByName(fontName) : undefined;
+  
+  console.log(`[PDF Font] Field font: "${fontName}", Found: ${font?.family || 'none'}, IsArabic: ${opts.isArabic}`);
+  
+  // If font is found and registered, use it directly
+  if (font && !font.isSystem && registeredFonts.has(`${font.family}:${font.style}`)) {
+    if (safeSetFont(font.family, font.style)) {
+      console.log(`[PDF Font] Using registered font: ${font.family} (${font.style})`);
       doc.setFontSize(fontSize);
       return;
     }
-
-    // Force Arabic fallback
-    setFieldFont(doc, DEFAULT_ARABIC_FONT, fontSize, registeredFonts);
-    return;
+  }
+  
+  // If font is a system font and text is NOT Arabic, use it
+  if (font && font.isSystem && !opts.isArabic) {
+    if (safeSetFont(font.family, font.style)) {
+      console.log(`[PDF Font] Using system font: ${font.family}`);
+      doc.setFontSize(fontSize);
+      return;
+    }
   }
 
-  // Non-Arabic text: honor the chosen font (system or embedded)
-  setFieldFont(doc, fontName, fontSize, registeredFonts);
+  // For Arabic text, we must use an Arabic-capable font
+  if (opts.isArabic) {
+    // Try the user's font if it's Arabic-capable and registered
+    if (font && font.isArabic && !font.isSystem && registeredFonts.has(`${font.family}:${font.style}`)) {
+      if (safeSetFont(font.family, font.style)) {
+        console.log(`[PDF Font] Using user's Arabic font: ${font.family}`);
+        doc.setFontSize(fontSize);
+        return;
+      }
+    }
+    
+    // Fallback to default Arabic font
+    if (registeredFonts.has(`${DEFAULT_ARABIC_FONT}:normal`) && safeSetFont(DEFAULT_ARABIC_FONT, 'normal')) {
+      console.log(`[PDF Font] Fallback to ${DEFAULT_ARABIC_FONT} for Arabic text`);
+      doc.setFontSize(fontSize);
+      return;
+    }
+  }
+
+  // Final fallback to times (Latin) or any available font
+  if (safeSetFont('times', 'normal')) {
+    console.log(`[PDF Font] Final fallback to times`);
+  }
+  doc.setFontSize(fontSize);
 }
 
 export async function generatePDF(
