@@ -15,11 +15,10 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { toWesternNumerals } from "@/lib/numerals";
 
-type ExportType = "students" | "printed" | "faculty" | "gender" | "certificate_type";
+type ExportType = "students" | "faculty" | "gender" | "certificate_type";
 
 const exportTypeLabels: Record<ExportType, string> = {
   students: "قائمة الطلاب",
-  printed: "الشهادات المطبوعة",
   faculty: "توزيع حسب الكليات",
   gender: "توزيع حسب الجنس",
   certificate_type: "توزيع حسب نوع الشهادة",
@@ -112,26 +111,6 @@ export function ExportStatsDialog() {
     return results;
   };
 
-  const fetchPrintedData = async () => {
-    let query = supabase.from("print_history").select("*");
-
-    if (certificateType !== "all") {
-      query = query.eq("certificate_type", certificateType as "phd_lmd" | "phd_science" | "master");
-    }
-
-    if (useDateFilter && startDate) {
-      query = query.gte("printed_at", startDate.toISOString());
-    }
-
-    if (useDateFilter && endDate) {
-      const endOfDay = new Date(endDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      query = query.lte("printed_at", endOfDay.toISOString());
-    }
-
-    const { data } = await query;
-    return data || [];
-  };
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -159,17 +138,6 @@ export function ExportStatsDialog() {
           break;
         }
 
-        case "printed": {
-          const printed = await fetchPrintedData();
-          exportData = printed.map((p) => ({
-            "نوع الشهادة": p.certificate_type === "phd_lmd" ? "دكتوراه ل م د" : p.certificate_type === "phd_science" ? "دكتوراه علوم" : "ماستر",
-            "عدد الشهادات": p.student_ids?.length || 0,
-            "تاريخ الطباعة": p.printed_at ? new Date(p.printed_at).toLocaleDateString("ar-SA") : "",
-            "المستخدم": p.printed_by || "",
-          }));
-          fileName = `الشهادات_المطبوعة_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
-          break;
-        }
 
         case "faculty": {
           const students = await fetchStudentData();
@@ -269,7 +237,7 @@ export function ExportStatsDialog() {
           </div>
 
           {/* Certificate Type Filter */}
-          {(exportType === "students" || exportType === "printed") && (
+          {exportType === "students" && (
             <div className="space-y-2">
               <Label>نوع الشهادة</Label>
               <Select value={certificateType} onValueChange={setCertificateType}>
@@ -327,7 +295,7 @@ export function ExportStatsDialog() {
           )}
 
           {/* Date Range Filter */}
-          {(exportType === "students" || exportType === "printed") && (
+          {exportType === "students" && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -336,7 +304,7 @@ export function ExportStatsDialog() {
                   onCheckedChange={(checked) => setUseDateFilter(checked as boolean)}
                 />
                 <Label htmlFor="useDateFilter" className="cursor-pointer">
-                  تصفية حسب الفترة الزمنية
+                  تصفية حسب تاريخ الإضافة
                 </Label>
               </div>
 
