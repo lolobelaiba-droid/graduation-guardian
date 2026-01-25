@@ -61,6 +61,9 @@ export default function Settings() {
   const [backupCount, setBackupCount] = useState("10");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [previousBackup, setPreviousBackup] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Print Settings State
@@ -203,47 +206,50 @@ export default function Settings() {
     return () => clearTimeout(timer);
   }, [autoBackup, backupFrequency, backupCount]);
 
+  const getCurrentBackupData = async () => {
+    const [
+      phdLmd,
+      phdScience,
+      master,
+      templates,
+      templateFields,
+      settings,
+      dropdownOptions,
+      customFonts,
+      activityLog,
+    ] = await Promise.all([
+      supabase.from("phd_lmd_certificates").select("*"),
+      supabase.from("phd_science_certificates").select("*"),
+      supabase.from("master_certificates").select("*"),
+      supabase.from("certificate_templates").select("*"),
+      supabase.from("certificate_template_fields").select("*"),
+      supabase.from("settings").select("*"),
+      supabase.from("dropdown_options").select("*"),
+      supabase.from("custom_fonts").select("*"),
+      supabase.from("activity_log").select("*"),
+    ]);
+
+    return {
+      version: "1.0",
+      created_at: new Date().toISOString(),
+      data: {
+        phd_lmd_certificates: phdLmd.data || [],
+        phd_science_certificates: phdScience.data || [],
+        master_certificates: master.data || [],
+        certificate_templates: templates.data || [],
+        certificate_template_fields: templateFields.data || [],
+        settings: settings.data || [],
+        dropdown_options: dropdownOptions.data || [],
+        custom_fonts: customFonts.data || [],
+        activity_log: activityLog.data || [],
+      },
+    };
+  };
+
   const downloadBackup = async () => {
     setIsDownloading(true);
     try {
-      // Fetch all data from tables
-      const [
-        phdLmd,
-        phdScience,
-        master,
-        templates,
-        templateFields,
-        settings,
-        dropdownOptions,
-        customFonts,
-        activityLog,
-      ] = await Promise.all([
-        supabase.from("phd_lmd_certificates").select("*"),
-        supabase.from("phd_science_certificates").select("*"),
-        supabase.from("master_certificates").select("*"),
-        supabase.from("certificate_templates").select("*"),
-        supabase.from("certificate_template_fields").select("*"),
-        supabase.from("settings").select("*"),
-        supabase.from("dropdown_options").select("*"),
-        supabase.from("custom_fonts").select("*"),
-        supabase.from("activity_log").select("*"),
-      ]);
-
-      const backupData = {
-        version: "1.0",
-        created_at: new Date().toISOString(),
-        data: {
-          phd_lmd_certificates: phdLmd.data || [],
-          phd_science_certificates: phdScience.data || [],
-          master_certificates: master.data || [],
-          certificate_templates: templates.data || [],
-          certificate_template_fields: templateFields.data || [],
-          settings: settings.data || [],
-          dropdown_options: dropdownOptions.data || [],
-          custom_fonts: customFonts.data || [],
-          activity_log: activityLog.data || [],
-        },
-      };
+      const backupData = await getCurrentBackupData();
 
       const blob = new Blob([JSON.stringify(backupData, null, 2)], {
         type: "application/json",
@@ -270,6 +276,54 @@ export default function Settings() {
     fileInputRef.current?.click();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const performRestore = async (tableData: Record<string, any[]>) => {
+    // Clear existing data and restore from backup
+    // Note: Order matters due to foreign key constraints
+
+    // First, delete dependent tables
+    await supabase.from("certificate_template_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    
+    // Then delete parent tables
+    await supabase.from("certificate_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+    // Delete certificate tables
+    await supabase.from("phd_lmd_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("phd_science_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("master_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("dropdown_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("custom_fonts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+    // Restore in order
+    if (tableData.phd_lmd_certificates?.length > 0) {
+      await supabase.from("phd_lmd_certificates").insert(tableData.phd_lmd_certificates);
+    }
+
+    if (tableData.phd_science_certificates?.length > 0) {
+      await supabase.from("phd_science_certificates").insert(tableData.phd_science_certificates);
+    }
+
+    if (tableData.master_certificates?.length > 0) {
+      await supabase.from("master_certificates").insert(tableData.master_certificates);
+    }
+
+    if (tableData.certificate_templates?.length > 0) {
+      await supabase.from("certificate_templates").insert(tableData.certificate_templates);
+    }
+
+    if (tableData.certificate_template_fields?.length > 0) {
+      await supabase.from("certificate_template_fields").insert(tableData.certificate_template_fields);
+    }
+
+    if (tableData.dropdown_options?.length > 0) {
+      await supabase.from("dropdown_options").insert(tableData.dropdown_options);
+    }
+
+    if (tableData.custom_fonts?.length > 0) {
+      await supabase.from("custom_fonts").insert(tableData.custom_fonts);
+    }
+  };
+
   const restoreBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -283,61 +337,16 @@ export default function Settings() {
         throw new Error("ملف النسخة الاحتياطية غير صالح");
       }
 
+      // Save current state before restoring
+      const currentBackup = await getCurrentBackupData();
+      setPreviousBackup(JSON.stringify(currentBackup));
+
       const { data: tableData } = backupData;
 
-      // Clear existing data and restore from backup
-      // Note: Order matters due to foreign key constraints
+      await performRestore(tableData);
 
-      // First, delete dependent tables
-      if (tableData.certificate_template_fields?.length > 0) {
-        await supabase.from("certificate_template_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      }
-      
-      // Then delete parent tables
-      if (tableData.certificate_templates?.length > 0) {
-        await supabase.from("certificate_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      }
-
-      // Restore in order
-      if (tableData.phd_lmd_certificates?.length > 0) {
-        await supabase.from("phd_lmd_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        await supabase.from("phd_lmd_certificates").insert(tableData.phd_lmd_certificates);
-      }
-
-      if (tableData.phd_science_certificates?.length > 0) {
-        await supabase.from("phd_science_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        await supabase.from("phd_science_certificates").insert(tableData.phd_science_certificates);
-      }
-
-      if (tableData.master_certificates?.length > 0) {
-        await supabase.from("master_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        await supabase.from("master_certificates").insert(tableData.master_certificates);
-      }
-
-      if (tableData.certificate_templates?.length > 0) {
-        await supabase.from("certificate_templates").insert(tableData.certificate_templates);
-      }
-
-      if (tableData.certificate_template_fields?.length > 0) {
-        await supabase.from("certificate_template_fields").insert(tableData.certificate_template_fields);
-      }
-
-      if (tableData.dropdown_options?.length > 0) {
-        await supabase.from("dropdown_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        await supabase.from("dropdown_options").insert(tableData.dropdown_options);
-      }
-
-      if (tableData.custom_fonts?.length > 0) {
-        await supabase.from("custom_fonts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        await supabase.from("custom_fonts").insert(tableData.custom_fonts);
-      }
-
-      toast.success("تم استعادة النسخة الاحتياطية بنجاح");
-      
-      // Reload page to reflect changes
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      setCanUndo(true);
+      toast.success("تم استعادة النسخة الاحتياطية بنجاح - يمكنك التراجع خلال هذه الجلسة");
     } catch (error) {
       console.error("Error restoring backup:", error);
       toast.error("حدث خطأ أثناء استعادة النسخة الاحتياطية");
@@ -347,6 +356,30 @@ export default function Settings() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const undoRestore = async () => {
+    if (!previousBackup) {
+      toast.error("لا توجد نسخة سابقة للتراجع إليها");
+      return;
+    }
+
+    setIsUndoing(true);
+    try {
+      const backupData = JSON.parse(previousBackup);
+      const { data: tableData } = backupData;
+
+      await performRestore(tableData);
+
+      setPreviousBackup(null);
+      setCanUndo(false);
+      toast.success("تم التراجع عن الاستعادة بنجاح");
+    } catch (error) {
+      console.error("Error undoing restore:", error);
+      toast.error("حدث خطأ أثناء التراجع");
+    } finally {
+      setIsUndoing(false);
     }
   };
 
@@ -601,10 +634,33 @@ export default function Settings() {
                   )}
                   استعادة من نسخة
                 </Button>
+                {canUndo && (
+                  <Button
+                    variant="destructive"
+                    className="gap-2"
+                    onClick={undoRestore}
+                    disabled={isUndoing}
+                  >
+                    {isUndoing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    التراجع عن الاستعادة
+                  </Button>
+                )}
               </div>
               <p className="text-sm text-muted-foreground mt-4">
                 سيتم تنزيل ملف JSON يحتوي على جميع بيانات النظام بما في ذلك الطلاب والقوالب والإعدادات
               </p>
+              {canUndo && (
+                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-yellow-600" />
+                  <span className="text-sm text-yellow-700 dark:text-yellow-400">
+                    يمكنك التراجع عن الاستعادة الأخيرة - هذا الخيار متاح فقط خلال هذه الجلسة
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>
