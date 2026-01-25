@@ -252,48 +252,50 @@ function setFieldFontForText(
   // Try to find the font by name in our registry
   const font = fontName ? getFontByName(fontName) : undefined;
   
-  console.log(`[PDF Font] Field font: "${fontName}", Found: ${font?.family || 'none'}, IsArabic: ${opts.isArabic}`);
+  console.log(`[PDF Font] Field font: "${fontName}", Found: ${font?.family || 'none'}, IsSystem: ${font?.isSystem}, IsArabic: ${opts.isArabic}`);
   
-  // If font is found and registered, use it directly
+  // PRIORITY 1: Use registered (embedded) fonts - they work for all text types
   if (font && !font.isSystem && registeredFonts.has(`${font.family}:${font.style}`)) {
     if (safeSetFont(font.family, font.style)) {
-      console.log(`[PDF Font] Using registered font: ${font.family} (${font.style})`);
-      doc.setFontSize(fontSize);
-      return;
-    }
-  }
-  
-  // If font is a system font and text is NOT Arabic, use it
-  if (font && font.isSystem && !opts.isArabic) {
-    if (safeSetFont(font.family, font.style)) {
-      console.log(`[PDF Font] Using system font: ${font.family}`);
+      console.log(`[PDF Font] ✓ Using embedded font: ${font.family} (${font.style})`);
       doc.setFontSize(fontSize);
       return;
     }
   }
 
-  // For Arabic text, we must use an Arabic-capable font
+  // PRIORITY 2: For Arabic text, ALWAYS use an Arabic-capable embedded font
+  // System fonts like "times" do NOT support Arabic glyphs in jsPDF
   if (opts.isArabic) {
-    // Try the user's font if it's Arabic-capable and registered
-    if (font && font.isArabic && !font.isSystem && registeredFonts.has(`${font.family}:${font.style}`)) {
-      if (safeSetFont(font.family, font.style)) {
-        console.log(`[PDF Font] Using user's Arabic font: ${font.family}`);
+    // Try to find a registered Arabic font
+    if (registeredFonts.has(`${DEFAULT_ARABIC_FONT}:normal`) && safeSetFont(DEFAULT_ARABIC_FONT, 'normal')) {
+      console.log(`[PDF Font] ✓ Using ${DEFAULT_ARABIC_FONT} for Arabic text (system fonts don't support Arabic in PDF)`);
+      doc.setFontSize(fontSize);
+      return;
+    }
+    
+    // Try any other registered Arabic font
+    for (const key of registeredFonts) {
+      const [family] = key.split(':');
+      if (safeSetFont(family, 'normal')) {
+        console.log(`[PDF Font] ✓ Using fallback Arabic font: ${family}`);
         doc.setFontSize(fontSize);
         return;
       }
     }
-    
-    // Fallback to default Arabic font
-    if (registeredFonts.has(`${DEFAULT_ARABIC_FONT}:normal`) && safeSetFont(DEFAULT_ARABIC_FONT, 'normal')) {
-      console.log(`[PDF Font] Fallback to ${DEFAULT_ARABIC_FONT} for Arabic text`);
+  }
+  
+  // PRIORITY 3: For Latin-only text, system fonts are acceptable
+  if (!opts.isArabic && font && font.isSystem) {
+    if (safeSetFont(font.family, font.style)) {
+      console.log(`[PDF Font] ✓ Using system font for Latin text: ${font.family}`);
       doc.setFontSize(fontSize);
       return;
     }
   }
 
-  // Final fallback to times (Latin) or any available font
+  // Final fallback
   if (safeSetFont('times', 'normal')) {
-    console.log(`[PDF Font] Final fallback to times`);
+    console.log(`[PDF Font] ⚠ Final fallback to times`);
   }
   doc.setFontSize(fontSize);
 }
