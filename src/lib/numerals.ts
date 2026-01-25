@@ -42,11 +42,45 @@ export function formatDateWithWesternNumerals(
   return toWesternNumerals(formatted);
 }
 
+// Arabic month names
+const arabicMonths: Record<number, string> = {
+  1: 'جانفي',
+  2: 'فيفري',
+  3: 'مارس',
+  4: 'أفريل',
+  5: 'ماي',
+  6: 'جوان',
+  7: 'جويلية',
+  8: 'أوت',
+  9: 'سبتمبر',
+  10: 'أكتوبر',
+  11: 'نوفمبر',
+  12: 'ديسمبر',
+};
+
+// French month names
+const frenchMonths: Record<number, string> = {
+  1: 'Janvier',
+  2: 'Février',
+  3: 'Mars',
+  4: 'Avril',
+  5: 'Mai',
+  6: 'Juin',
+  7: 'Juillet',
+  8: 'Août',
+  9: 'Septembre',
+  10: 'Octobre',
+  11: 'Novembre',
+  12: 'Décembre',
+};
+
 /**
  * Format a date for certificates with Western numerals
+ * Format: day (number) + month (word) + year (number)
+ * Example Arabic: "15 أوت 2024"
+ * Example French: "15 Août 2024"
  * @param date - Date to format
- * @param isArabic - If true, format as yyyy/mm/dd (reads day/month/year RTL)
- *                   If false, format as dd/mm/yyyy (reads day/month/year LTR)
+ * @param isArabic - If true, use Arabic month names, otherwise French
  */
 export function formatCertificateDate(date: Date | string, isArabic: boolean = false): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -56,13 +90,11 @@ export function formatCertificateDate(date: Date | string, isArabic: boolean = f
   }
   
   const day = String(dateObj.getDate()).padStart(2, '0');
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const monthNum = dateObj.getMonth() + 1;
   const year = String(dateObj.getFullYear());
   
-  // Arabic: yyyy/mm/dd (reads right-to-left as day/month/year)
-  // French: dd/mm/yyyy (reads left-to-right as day/month/year)
-  if (isArabic) {
-    return `${year}/${month}/${day}`;
-  }
-  return `${day}/${month}/${year}`;
+  const monthName = isArabic ? arabicMonths[monthNum] : frenchMonths[monthNum];
+  
+  // Format: day month year (e.g., "15 أوت 2024" or "15 Août 2024")
+  return `${day} ${monthName} ${year}`;
 }
