@@ -494,70 +494,6 @@ export default function PrintCertificates() {
         </div>
       </div>
 
-      {/* Type and Language Selection */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>نوع الشهادة</Label>
-              <Select value={selectedType} onValueChange={(v) => setSelectedType(v as CertificateType)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(certificateTypeLabels).map(([key, labels]) => (
-                    <SelectItem key={key} value={key}>
-                      {labels.ar}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>لغة القالب</Label>
-              <Select value={selectedLanguage} onValueChange={(v) => setSelectedLanguage(v as TemplateLanguage)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(languageLabels).map(([key, labels]) => (
-                    <SelectItem key={key} value={key}>
-                      {labels.ar}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>القالب المستخدم</Label>
-              <Select 
-                value={selectedTemplateId || ""} 
-                onValueChange={(v) => {
-                  if (v) {
-                    const template = templates.find(t => t.id === v);
-                    if (template) {
-                      setSelectedTemplateId(v);
-                      setSelectedType(template.certificate_type);
-                      setSelectedLanguage(template.language);
-                    }
-                  }
-                }}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="اختر قالباً..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.filter(t => t.is_active).map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.template_name} ({certificateTypeLabels[template.certificate_type]?.ar} - {languageLabels[template.language]?.ar})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Students List - Horizontal at top */}
       <Card>
@@ -1073,31 +1009,68 @@ export default function PrintCertificates() {
             </TabsContent>
 
             <TabsContent value="background">
-              {selectedTemplateId ? (
-                <div className="space-y-6">
-                  <div className="max-w-md">
-                    <BackgroundUpload
-                      templateId={selectedTemplateId}
-                      currentImageUrl={templates.find(t => t.id === selectedTemplateId)?.background_image_url || null}
-                      onUploadComplete={(url) => {
-                        updateTemplate.mutate({
-                          id: selectedTemplateId,
-                          background_image_url: url,
-                        });
+              <div className="space-y-6">
+                {/* Template Selection and Background Upload in same row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Template Selection */}
+                  <div className="space-y-3">
+                    <Label>القالب المستخدم</Label>
+                    <Select 
+                      value={selectedTemplateId || ""} 
+                      onValueChange={(v) => {
+                        if (v) {
+                          const template = templates.find(t => t.id === v);
+                          if (template) {
+                            setSelectedTemplateId(v);
+                            setSelectedType(template.certificate_type);
+                            setSelectedLanguage(template.language);
+                          }
+                        }
                       }}
-                    />
-                    <p className="text-xs text-muted-foreground mt-4">
-                      ارفع صورة الشهادة الفارغة (بدون بيانات الطالب) لاستخدامها كخلفية للمعاينة فقط.
-                      <br />
-                      <strong>ملاحظة:</strong> الخلفية لا تُطبع - تُستخدم فقط لضبط مواقع الحقول على الورقة المحضرة مسبقاً.
-                    </p>
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر قالباً..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.filter(t => t.is_active).map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.template_name} ({certificateTypeLabels[template.certificate_type]?.ar} - {languageLabels[template.language]?.ar})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!selectedTemplateId && (
+                      <p className="text-sm text-muted-foreground">
+                        يرجى اختيار قالب لإدارة صورة الخلفية
+                      </p>
+                    )}
                   </div>
+
+                  {/* Background Upload */}
+                  {selectedTemplateId && (
+                    <div>
+                      <BackgroundUpload
+                        templateId={selectedTemplateId}
+                        currentImageUrl={templates.find(t => t.id === selectedTemplateId)?.background_image_url || null}
+                        onUploadComplete={(url) => {
+                          updateTemplate.mutate({
+                            id: selectedTemplateId,
+                            background_image_url: url,
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-                  يرجى اختيار قالب أولاً
-                </div>
-              )}
+
+                {selectedTemplateId && (
+                  <p className="text-xs text-muted-foreground">
+                    ارفع صورة الشهادة الفارغة (بدون بيانات الطالب) لاستخدامها كخلفية للمعاينة فقط.
+                    <br />
+                    <strong>ملاحظة:</strong> الخلفية لا تُطبع - تُستخدم فقط لضبط مواقع الحقول على الورقة المحضرة مسبقاً.
+                  </p>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="font-properties">
