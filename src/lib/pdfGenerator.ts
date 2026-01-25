@@ -364,9 +364,39 @@ export async function generatePDF(
     });
   });
 
-  // Save the PDF
-  const fileName = `certificates_${certificateType}_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
+  // Open print dialog instead of downloading
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  
+  // Create an invisible iframe to load and print the PDF
+  const printFrame = document.createElement('iframe');
+  printFrame.style.position = 'fixed';
+  printFrame.style.right = '0';
+  printFrame.style.bottom = '0';
+  printFrame.style.width = '0';
+  printFrame.style.height = '0';
+  printFrame.style.border = 'none';
+  printFrame.src = pdfUrl;
+  
+  document.body.appendChild(printFrame);
+  
+  printFrame.onload = () => {
+    setTimeout(() => {
+      try {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+      } catch (e) {
+        // If print fails (e.g., cross-origin issues), fall back to opening in new tab
+        window.open(pdfUrl, '_blank');
+      }
+      
+      // Clean up after a delay to allow print dialog to open
+      setTimeout(() => {
+        document.body.removeChild(printFrame);
+        URL.revokeObjectURL(pdfUrl);
+      }, 1000);
+    }, 500);
+  };
 }
 
 function getFieldValue(student: Record<string, unknown>, fieldKey: string): string {
