@@ -9,6 +9,10 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+// Database imports
+const db = require('./database/database');
+const { registerDatabaseHandlers } = require('./database/ipc-handlers');
+
 let mainWindow;
 
 function createWindow() {
@@ -29,9 +33,6 @@ function createWindow() {
     titleBarStyle: 'default',
     show: false,
   });
-
-  // Remove the menu bar for a cleaner look (optional)
-  // Menu.setApplicationMenu(null);
 
   // Create a simple menu
   const template = [
@@ -64,6 +65,30 @@ function createWindow() {
         { label: 'حجم افتراضي', role: 'resetZoom' },
         { type: 'separator' },
         { label: 'ملء الشاشة', role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'قاعدة البيانات',
+      submenu: [
+        { 
+          label: 'فتح مجلد قاعدة البيانات', 
+          click: () => {
+            const dbPath = db.getDatabasePath();
+            shell.showItemInFolder(dbPath);
+          }
+        },
+        { 
+          label: 'نسخ قاعدة البيانات احتياطياً', 
+          click: async () => {
+            const dbPath = db.getDatabasePath();
+            const backupPath = path.join(
+              app.getPath('documents'),
+              `certificates_backup_${new Date().toISOString().split('T')[0]}.db`
+            );
+            fs.copyFileSync(dbPath, backupPath);
+            shell.showItemInFolder(backupPath);
+          }
+        }
       ]
     }
   ];
@@ -190,6 +215,12 @@ ipcMain.handle('printers:print-pdf', async (_event, payload) => {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Initialize database
+  db.initializeDatabase();
+  
+  // Register database IPC handlers
+  registerDatabaseHandlers();
+  
   createWindow();
 
   app.on('activate', () => {
@@ -202,9 +233,17 @@ app.whenReady().then(() => {
 
 // Quit when all windows are closed (except on macOS)
 app.on('window-all-closed', () => {
+  // Close database connection
+  db.closeDatabase();
+  
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Handle app before quit
+app.on('before-quit', () => {
+  db.closeDatabase();
 });
 
 // Handle any unhandled errors

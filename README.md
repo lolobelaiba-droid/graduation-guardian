@@ -1,73 +1,219 @@
-# Welcome to your Lovable project
+# نظام الشهادات الجامعية
+# University Certificate Management System
 
-## Project info
+نظام متكامل لإدارة وطباعة الشهادات الجامعية، يدعم العربية والفرنسية والإنجليزية.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 📋 جدول المحتويات
 
-## How can I edit this code?
+- [المميزات](#-المميزات)
+- [المتطلبات](#-المتطلبات)
+- [التشغيل في الويب](#-التشغيل-في-الويب)
+- [التشغيل كتطبيق سطح مكتب](#-التشغيل-كتطبيق-سطح-مكتب)
+- [بناء ملف التثبيت](#-بناء-ملف-التثبيت)
+- [قاعدة البيانات](#-قاعدة-البيانات)
+- [النسخ الاحتياطي](#-النسخ-الاحتياطي)
+- [المساهمة](#-المساهمة)
 
-There are several ways of editing your application.
+## ✨ المميزات
 
-**Use Lovable**
+- ✅ إدارة شهادات الدكتوراه (ل م د وعلوم) والماستر
+- ✅ تصميم قوالب شهادات مخصصة مع تحكم دقيق بالملليمتر
+- ✅ دعم متعدد اللغات (العربية، الفرنسية، الإنجليزية)
+- ✅ استيراد البيانات من Excel
+- ✅ طباعة مباشرة على الطابعات المحلية
+- ✅ نسخ احتياطي واستعادة
+- ✅ يعمل كتطبيق ويب أو سطح مكتب
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🔧 المتطلبات
 
-Changes made via Lovable will be committed automatically to this repo.
+### للتطوير والتشغيل المحلي:
+- Node.js 18 أو أحدث
+- npm أو yarn أو bun
 
-**Use your preferred IDE**
+### لتطبيق سطح المكتب (Electron):
+- Node.js 18+
+- Windows 10/11 أو macOS 10.15+ أو Linux
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### لبناء ملف التثبيت على Windows:
+- Windows 10/11
+- Visual Studio Build Tools (اختياري، لتحسين الأداء)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🌐 التشغيل في الويب
 
-Follow these steps:
+### 1. استنساخ المشروع
+```bash
+git clone <your-repo-url>
+cd <project-folder>
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 2. تثبيت الاعتماديات
+```bash
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 3. تشغيل خادم التطوير
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+سيفتح التطبيق على `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+> ⚠️ **ملاحظة**: في وضع الويب، يستخدم التطبيق Supabase كقاعدة بيانات سحابية. للعمل بدون إنترنت، استخدم وضع سطح المكتب.
 
-**Use GitHub Codespaces**
+## 💻 التشغيل كتطبيق سطح مكتب
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+تطبيق سطح المكتب يعمل **بدون إنترنت** باستخدام قاعدة بيانات SQLite محلية.
 
-## What technologies are used for this project?
+### 1. تثبيت الاعتماديات
+```bash
+npm install
+```
 
-This project is built with:
+### 2. تثبيت اعتماديات Electron الإضافية
+```bash
+npm install better-sqlite3 --save
+npm install electron-rebuild --save-dev
+npx electron-rebuild
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### 3. تشغيل في وضع التطوير
+```bash
+npm run electron:dev
+```
 
-## How can I deploy this project?
+هذا الأمر سيقوم بـ:
+1. تشغيل خادم Vite للواجهة
+2. تشغيل Electron وفتح نافذة التطبيق
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 📦 بناء ملف التثبيت
 
-## Can I connect a custom domain to my Lovable project?
+### لـ Windows (ملف exe):
 
-Yes, you can!
+```bash
+# بناء الواجهة أولاً
+npm run build
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+# بناء تطبيق Electron
+npm run electron:build
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+ستجد الملفات في مجلد `release/`:
+- `نظام الشهادات الجامعية-Portable-x.x.x.exe` - نسخة محمولة (لا تحتاج تثبيت)
+- `نظام الشهادات الجامعية-x.x.x-x64.exe` - ملف التثبيت الكامل
+
+### لـ macOS:
+```bash
+npm run build
+npm run electron:build
+```
+
+### لـ Linux:
+```bash
+npm run build
+npm run electron:build
+```
+
+## 🗄️ قاعدة البيانات
+
+### في وضع الويب:
+يستخدم التطبيق **Supabase** (PostgreSQL) كقاعدة بيانات سحابية.
+
+### في وضع سطح المكتب:
+يستخدم التطبيق **SQLite** كقاعدة بيانات محلية.
+
+#### موقع ملف قاعدة البيانات:
+- **Windows**: `%APPDATA%\نظام الشهادات الجامعية\certificates.db`
+- **macOS**: `~/Library/Application Support/نظام الشهادات الجامعية/certificates.db`
+- **Linux**: `~/.config/نظام الشهادات الجامعية/certificates.db`
+
+#### نسخ قاعدة البيانات احتياطياً:
+1. من قائمة التطبيق: **قاعدة البيانات** > **فتح مجلد قاعدة البيانات**
+2. انسخ ملف `certificates.db` إلى مكان آمن
+
+## 💾 النسخ الاحتياطي
+
+### تنزيل نسخة احتياطية:
+1. اذهب إلى **الإعدادات** > **النسخ الاحتياطي**
+2. اضغط على **تنزيل نسخة احتياطية**
+3. سيتم تنزيل ملف JSON يحتوي على جميع البيانات
+
+### استعادة نسخة احتياطية:
+1. اذهب إلى **الإعدادات** > **النسخ الاحتياطي**
+2. اضغط على **استعادة من نسخة**
+3. اختر ملف النسخة الاحتياطية
+4. راجع ملخص البيانات واضغط **تأكيد الاستعادة**
+
+> 💡 يمكنك التراجع عن الاستعادة خلال نفس الجلسة
+
+## 🔄 التبديل بين الويب وسطح المكتب
+
+التطبيق يكتشف البيئة تلقائياً:
+- في المتصفح ← يستخدم Supabase
+- في Electron ← يستخدم SQLite
+
+للنقل من الويب إلى سطح المكتب:
+1. في وضع الويب: قم بتنزيل نسخة احتياطية
+2. شغّل تطبيق سطح المكتب
+3. استعد النسخة الاحتياطية
+
+## 📁 هيكل المشروع
+
+```
+├── electron/              # ملفات Electron
+│   ├── main.js           # العملية الرئيسية
+│   ├── preload.js        # سكربت التحميل المسبق
+│   └── database/         # قاعدة البيانات المحلية
+│       ├── schema.sql    # بنية قاعدة البيانات
+│       ├── database.js   # وحدة SQLite
+│       └── ipc-handlers.js
+├── src/
+│   ├── components/       # مكونات React
+│   ├── hooks/           # React Hooks
+│   ├── lib/
+│   │   └── database/    # طبقة تجريد قاعدة البيانات
+│   ├── pages/           # صفحات التطبيق
+│   └── types/           # تعريفات TypeScript
+├── public/              # الملفات الثابتة
+└── electron-builder.json # إعدادات بناء Electron
+```
+
+## 🛠️ الأوامر المتاحة
+
+| الأمر | الوصف |
+|-------|--------|
+| `npm run dev` | تشغيل خادم التطوير (ويب) |
+| `npm run build` | بناء التطبيق للإنتاج |
+| `npm run electron:dev` | تشغيل Electron في وضع التطوير |
+| `npm run electron:build` | بناء تطبيق سطح المكتب |
+| `npm run preview` | معاينة البناء محلياً |
+
+## 🤝 المساهمة
+
+نرحب بالمساهمات! يرجى:
+1. Fork المشروع
+2. إنشاء فرع للميزة الجديدة
+3. إرسال Pull Request
+
+## 📄 الرخصة
+
+هذا المشروع مرخص تحت رخصة MIT.
+
+---
+
+## 🆘 استكشاف الأخطاء
+
+### التطبيق لا يفتح على Windows:
+- تأكد من تثبيت Visual C++ Redistributable
+- جرب تشغيل كمسؤول
+
+### خطأ في قاعدة البيانات:
+- احذف ملف `certificates.db` وأعد تشغيل التطبيق
+- سيتم إنشاء قاعدة بيانات جديدة فارغة
+
+### مشاكل في الطباعة:
+- تأكد من تثبيت تعريفات الطابعة
+- جرب طابعة PDF أولاً
+
+---
+
+**تم تطويره بـ ❤️ للجامعات العربية**
