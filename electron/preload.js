@@ -7,13 +7,72 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Add any IPC methods you need here
+  // App info
   getVersion: () => process.versions.electron,
   getPlatform: () => process.platform,
+  isElectron: true,
 
   // Printers
   getPrinters: () => ipcRenderer.invoke('printers:list'),
   printPdf: (pdfArrayBuffer, options) =>
     ipcRenderer.invoke('printers:print-pdf', { pdf: pdfArrayBuffer, options }),
   openPrintersSettings: () => ipcRenderer.invoke('printers:open-settings'),
+
+  // ============================================
+  // Database Operations
+  // ============================================
+  
+  // CRUD العامة
+  db: {
+    getAll: (tableName, orderBy, orderDir) => 
+      ipcRenderer.invoke('db:getAll', tableName, orderBy, orderDir),
+    getById: (tableName, id) => 
+      ipcRenderer.invoke('db:getById', tableName, id),
+    insert: (tableName, data) => 
+      ipcRenderer.invoke('db:insert', tableName, data),
+    update: (tableName, id, data) => 
+      ipcRenderer.invoke('db:update', tableName, id, data),
+    delete: (tableName, id) => 
+      ipcRenderer.invoke('db:delete', tableName, id),
+    deleteAll: (tableName) => 
+      ipcRenderer.invoke('db:deleteAll', tableName),
+    search: (tableName, column, query) => 
+      ipcRenderer.invoke('db:search', tableName, column, query),
+    
+    // الإعدادات
+    getSetting: (key) => 
+      ipcRenderer.invoke('db:getSetting', key),
+    setSetting: (key, value) => 
+      ipcRenderer.invoke('db:setSetting', key, value),
+    getAllSettings: () => 
+      ipcRenderer.invoke('db:getAllSettings'),
+    
+    // إعدادات المستخدم
+    getUserSetting: (key) => 
+      ipcRenderer.invoke('db:getUserSetting', key),
+    setUserSetting: (key, value) => 
+      ipcRenderer.invoke('db:setUserSetting', key, value),
+    getAllUserSettings: () => 
+      ipcRenderer.invoke('db:getAllUserSettings'),
+    
+    // القوالب
+    getTemplateWithFields: (templateId) => 
+      ipcRenderer.invoke('db:getTemplateWithFields', templateId),
+    getFieldsByTemplateId: (templateId) => 
+      ipcRenderer.invoke('db:getFieldsByTemplateId', templateId),
+    
+    // القوائم المنسدلة
+    getDropdownOptionsByType: (optionType) => 
+      ipcRenderer.invoke('db:getDropdownOptionsByType', optionType),
+    
+    // النسخ الاحتياطي
+    exportAllData: () => 
+      ipcRenderer.invoke('db:exportAllData'),
+    importAllData: (backupData) => 
+      ipcRenderer.invoke('db:importAllData', backupData),
+    
+    // معلومات
+    getPath: () => 
+      ipcRenderer.invoke('db:getPath'),
+  },
 });
