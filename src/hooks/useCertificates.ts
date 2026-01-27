@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { CertificateService } from "@/lib/database/certificate-service";
+import { TemplateService, TemplateFieldService } from "@/lib/database/template-service";
 import { toast } from "sonner";
 import type { 
   CertificateType, 
@@ -20,6 +23,12 @@ export function usePhdLmdCertificates() {
   return useQuery({
     queryKey: ["phd_lmd_certificates"],
     queryFn: async () => {
+      if (isElectron()) {
+        const { data, error } = await CertificateService.getAll('phd_lmd');
+        if (error) throw error;
+        return data as PhdLmdCertificate[];
+      }
+
       const { data, error } = await supabase
         .from("phd_lmd_certificates")
         .select("*")
@@ -36,6 +45,12 @@ export function useCreatePhdLmdCertificate() {
 
   return useMutation({
     mutationFn: async (data: Omit<PhdLmdCertificate, 'id' | 'created_at' | 'updated_at'>) => {
+      if (isElectron()) {
+        const result = await CertificateService.create('phd_lmd', data as Record<string, unknown>);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: certificate, error } = await supabase
         .from("phd_lmd_certificates")
         .insert(data)
@@ -58,7 +73,7 @@ export function useCreatePhdLmdCertificate() {
       queryClient.invalidateQueries({ queryKey: ["activity-log"] });
       toast.success("تم إضافة الطالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في إضافة الطالب: " + error.message);
     },
   });
@@ -69,6 +84,12 @@ export function useUpdatePhdLmdCertificate() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<PhdLmdCertificate> & { id: string }) => {
+      if (isElectron()) {
+        const result = await CertificateService.update('phd_lmd', id, data as Record<string, unknown>);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: certificate, error } = await supabase
         .from("phd_lmd_certificates")
         .update(data)
@@ -83,7 +104,7 @@ export function useUpdatePhdLmdCertificate() {
       queryClient.invalidateQueries({ queryKey: ["phd_lmd_certificates"] });
       toast.success("تم تحديث البيانات بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في تحديث البيانات: " + error.message);
     },
   });
@@ -94,6 +115,12 @@ export function useDeletePhdLmdCertificate() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isElectron()) {
+        const result = await CertificateService.delete('phd_lmd', id);
+        if (result.error) throw result.error;
+        return;
+      }
+
       const { error } = await supabase.from("phd_lmd_certificates").delete().eq("id", id);
       if (error) throw error;
     },
@@ -101,7 +128,7 @@ export function useDeletePhdLmdCertificate() {
       queryClient.invalidateQueries({ queryKey: ["phd_lmd_certificates"] });
       toast.success("تم حذف الطالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في حذف الطالب: " + error.message);
     },
   });
@@ -114,6 +141,12 @@ export function usePhdScienceCertificates() {
   return useQuery({
     queryKey: ["phd_science_certificates"],
     queryFn: async () => {
+      if (isElectron()) {
+        const { data, error } = await CertificateService.getAll('phd_science');
+        if (error) throw error;
+        return data as PhdScienceCertificate[];
+      }
+
       const { data, error } = await supabase
         .from("phd_science_certificates")
         .select("*")
@@ -130,6 +163,12 @@ export function useCreatePhdScienceCertificate() {
 
   return useMutation({
     mutationFn: async (data: Omit<PhdScienceCertificate, 'id' | 'created_at' | 'updated_at'>) => {
+      if (isElectron()) {
+        const result = await CertificateService.create('phd_science', data as Record<string, unknown>);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: certificate, error } = await supabase
         .from("phd_science_certificates")
         .insert(data)
@@ -152,7 +191,7 @@ export function useCreatePhdScienceCertificate() {
       queryClient.invalidateQueries({ queryKey: ["activity-log"] });
       toast.success("تم إضافة الطالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في إضافة الطالب: " + error.message);
     },
   });
@@ -163,6 +202,12 @@ export function useUpdatePhdScienceCertificate() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<PhdScienceCertificate> & { id: string }) => {
+      if (isElectron()) {
+        const result = await CertificateService.update('phd_science', id, data as Record<string, unknown>);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: certificate, error } = await supabase
         .from("phd_science_certificates")
         .update(data)
@@ -177,7 +222,7 @@ export function useUpdatePhdScienceCertificate() {
       queryClient.invalidateQueries({ queryKey: ["phd_science_certificates"] });
       toast.success("تم تحديث البيانات بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في تحديث البيانات: " + error.message);
     },
   });
@@ -188,6 +233,12 @@ export function useDeletePhdScienceCertificate() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isElectron()) {
+        const result = await CertificateService.delete('phd_science', id);
+        if (result.error) throw result.error;
+        return;
+      }
+
       const { error } = await supabase.from("phd_science_certificates").delete().eq("id", id);
       if (error) throw error;
     },
@@ -195,7 +246,7 @@ export function useDeletePhdScienceCertificate() {
       queryClient.invalidateQueries({ queryKey: ["phd_science_certificates"] });
       toast.success("تم حذف الطالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في حذف الطالب: " + error.message);
     },
   });
@@ -208,6 +259,12 @@ export function useMasterCertificates() {
   return useQuery({
     queryKey: ["master_certificates"],
     queryFn: async () => {
+      if (isElectron()) {
+        const { data, error } = await CertificateService.getAll('master');
+        if (error) throw error;
+        return data as MasterCertificate[];
+      }
+
       const { data, error } = await supabase
         .from("master_certificates")
         .select("*")
@@ -224,6 +281,12 @@ export function useCreateMasterCertificate() {
 
   return useMutation({
     mutationFn: async (data: Omit<MasterCertificate, 'id' | 'created_at' | 'updated_at'>) => {
+      if (isElectron()) {
+        const result = await CertificateService.create('master', data as Record<string, unknown>);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: certificate, error } = await supabase
         .from("master_certificates")
         .insert(data)
@@ -246,7 +309,7 @@ export function useCreateMasterCertificate() {
       queryClient.invalidateQueries({ queryKey: ["activity-log"] });
       toast.success("تم إضافة الطالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في إضافة الطالب: " + error.message);
     },
   });
@@ -257,6 +320,12 @@ export function useUpdateMasterCertificate() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<MasterCertificate> & { id: string }) => {
+      if (isElectron()) {
+        const result = await CertificateService.update('master', id, data as Record<string, unknown>);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: certificate, error } = await supabase
         .from("master_certificates")
         .update(data)
@@ -271,7 +340,7 @@ export function useUpdateMasterCertificate() {
       queryClient.invalidateQueries({ queryKey: ["master_certificates"] });
       toast.success("تم تحديث البيانات بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في تحديث البيانات: " + error.message);
     },
   });
@@ -282,6 +351,12 @@ export function useDeleteMasterCertificate() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isElectron()) {
+        const result = await CertificateService.delete('master', id);
+        if (result.error) throw result.error;
+        return;
+      }
+
       const { error } = await supabase.from("master_certificates").delete().eq("id", id);
       if (error) throw error;
     },
@@ -289,7 +364,7 @@ export function useDeleteMasterCertificate() {
       queryClient.invalidateQueries({ queryKey: ["master_certificates"] });
       toast.success("تم حذف الطالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في حذف الطالب: " + error.message);
     },
   });
@@ -302,6 +377,12 @@ export function useCertificateTemplates() {
   return useQuery({
     queryKey: ["certificate_templates"],
     queryFn: async () => {
+      if (isElectron()) {
+        const { data, error } = await TemplateService.getAll();
+        if (error) throw error;
+        return data as CertificateTemplate[];
+      }
+
       const { data, error } = await supabase
         .from("certificate_templates")
         .select("*")
@@ -318,6 +399,12 @@ export function useTemplateWithFields(templateId: string | null) {
     queryKey: ["template_with_fields", templateId],
     queryFn: async () => {
       if (!templateId) return null;
+
+      if (isElectron()) {
+        const { data, error } = await TemplateService.getWithFields(templateId);
+        if (error) throw error;
+        return data as TemplateWithFields;
+      }
 
       const { data, error } = await supabase
         .from("certificate_templates")
@@ -345,6 +432,12 @@ export function useCreateTemplate() {
       language: TemplateLanguage;
       page_orientation?: string;
     }) => {
+      if (isElectron()) {
+        const result = await TemplateService.create(data);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: template, error } = await supabase
         .from("certificate_templates")
         .insert(data)
@@ -367,7 +460,7 @@ export function useCreateTemplate() {
       queryClient.invalidateQueries({ queryKey: ["activity-log"] });
       toast.success("تم إنشاء القالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في إنشاء القالب: " + error.message);
     },
   });
@@ -378,6 +471,12 @@ export function useUpdateTemplate() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<CertificateTemplate> & { id: string }) => {
+      if (isElectron()) {
+        const result = await TemplateService.update(id, data);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: template, error } = await supabase
         .from("certificate_templates")
         .update(data)
@@ -392,7 +491,7 @@ export function useUpdateTemplate() {
       queryClient.invalidateQueries({ queryKey: ["certificate_templates"] });
       toast.success("تم تحديث القالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في تحديث القالب: " + error.message);
     },
   });
@@ -403,6 +502,12 @@ export function useDeleteTemplate() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isElectron()) {
+        const result = await TemplateService.delete(id);
+        if (result.error) throw result.error;
+        return;
+      }
+
       const { error } = await supabase.from("certificate_templates").delete().eq("id", id);
       if (error) throw error;
     },
@@ -410,7 +515,7 @@ export function useDeleteTemplate() {
       queryClient.invalidateQueries({ queryKey: ["certificate_templates"] });
       toast.success("تم حذف القالب بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في حذف القالب: " + error.message);
     },
   });
@@ -424,6 +529,12 @@ export function useTemplateFields(templateId: string | null) {
     queryKey: ["template_fields", templateId],
     queryFn: async () => {
       if (!templateId) return [];
+
+      if (isElectron()) {
+        const { data, error } = await TemplateFieldService.getByTemplateId(templateId);
+        if (error) throw error;
+        return data as TemplateField[];
+      }
 
       const { data, error } = await supabase
         .from("certificate_template_fields")
@@ -443,6 +554,12 @@ export function useCreateTemplateField() {
 
   return useMutation({
     mutationFn: async (data: Omit<TemplateField, 'id' | 'created_at'>) => {
+      if (isElectron()) {
+        const result = await TemplateFieldService.create(data);
+        if (result.error) throw result.error;
+        return result.data;
+      }
+
       const { data: field, error } = await supabase
         .from("certificate_template_fields")
         .insert(data)
@@ -456,7 +573,7 @@ export function useCreateTemplateField() {
       queryClient.invalidateQueries({ queryKey: ["template_fields", variables.template_id] });
       queryClient.invalidateQueries({ queryKey: ["template_with_fields", variables.template_id] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في إضافة الحقل: " + error.message);
     },
   });
@@ -467,6 +584,12 @@ export function useUpdateTemplateField() {
 
   return useMutation({
     mutationFn: async ({ id, template_id, ...data }: Partial<TemplateField> & { id: string; template_id: string }) => {
+      if (isElectron()) {
+        const result = await TemplateFieldService.update(id, data);
+        if (result.error) throw result.error;
+        return { field: result.data, template_id };
+      }
+
       const { data: field, error } = await supabase
         .from("certificate_template_fields")
         .update(data)
@@ -481,7 +604,7 @@ export function useUpdateTemplateField() {
       queryClient.invalidateQueries({ queryKey: ["template_fields", result.template_id] });
       queryClient.invalidateQueries({ queryKey: ["template_with_fields", result.template_id] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في تحديث الحقل: " + error.message);
     },
   });
@@ -492,6 +615,12 @@ export function useDeleteTemplateField() {
 
   return useMutation({
     mutationFn: async ({ id, template_id }: { id: string; template_id: string }) => {
+      if (isElectron()) {
+        const result = await TemplateFieldService.delete(id);
+        if (result.error) throw result.error;
+        return { template_id };
+      }
+
       const { error } = await supabase.from("certificate_template_fields").delete().eq("id", id);
       if (error) throw error;
       return { template_id };
@@ -500,7 +629,7 @@ export function useDeleteTemplateField() {
       queryClient.invalidateQueries({ queryKey: ["template_fields", result.template_id] });
       queryClient.invalidateQueries({ queryKey: ["template_with_fields", result.template_id] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في حذف الحقل: " + error.message);
     },
   });
@@ -513,6 +642,19 @@ export function useUserSettings() {
   return useQuery({
     queryKey: ["user_settings"],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAllUserSettings();
+        if (result.success && result.data) {
+          const settings: Record<string, unknown> = {};
+          (result.data as Array<{ setting_key: string; setting_value: unknown }>).forEach(item => {
+            settings[item.setting_key] = item.setting_value;
+          });
+          return settings;
+        }
+        return {};
+      }
+
       const { data, error } = await supabase
         .from("user_settings")
         .select("*");
@@ -533,6 +675,12 @@ export function useSaveUserSetting() {
 
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        await db.setUserSetting(key, JSON.stringify(value));
+        return;
+      }
+
       // First check if setting exists
       const { data: existing } = await supabase
         .from("user_settings")
@@ -567,6 +715,23 @@ export function useBulkCreateTemplateFields() {
 
   return useMutation({
     mutationFn: async (fields: Omit<TemplateField, 'id' | 'created_at'>[]) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const results = [];
+        for (const field of fields) {
+          const electronField = {
+            ...field,
+            is_rtl: field.is_rtl ? 1 : 0,
+            is_visible: field.is_visible ? 1 : 0
+          };
+          const result = await db.insert('certificate_template_fields', electronField);
+          if (result.success) {
+            results.push(result.data);
+          }
+        }
+        return results;
+      }
+
       const { data, error } = await supabase
         .from("certificate_template_fields")
         .insert(fields)
@@ -582,7 +747,7 @@ export function useBulkCreateTemplateFields() {
         queryClient.invalidateQueries({ queryKey: ["template_with_fields", templateId] });
       }
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في إضافة الحقول: " + error.message);
     },
   });

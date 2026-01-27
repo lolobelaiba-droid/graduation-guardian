@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
   type CertificateType,
   certificateFields,
@@ -70,15 +71,21 @@ export function ImportExcelDialog({
     const tableName = getCertificateTable(certificateType);
     let count = 0;
     
-    if (tableName === 'phd_lmd_certificates') {
-      const { count: c } = await supabase.from('phd_lmd_certificates').select('*', { count: 'exact', head: true });
-      count = c || 0;
-    } else if (tableName === 'phd_science_certificates') {
-      const { count: c } = await supabase.from('phd_science_certificates').select('*', { count: 'exact', head: true });
-      count = c || 0;
+    if (isElectron()) {
+      const db = getDbClient()!;
+      const result = await db.getAll(tableName);
+      count = result.success ? (result.data?.length || 0) : 0;
     } else {
-      const { count: c } = await supabase.from('master_certificates').select('*', { count: 'exact', head: true });
-      count = c || 0;
+      if (tableName === 'phd_lmd_certificates') {
+        const { count: c } = await supabase.from('phd_lmd_certificates').select('*', { count: 'exact', head: true });
+        count = c || 0;
+      } else if (tableName === 'phd_science_certificates') {
+        const { count: c } = await supabase.from('phd_science_certificates').select('*', { count: 'exact', head: true });
+        count = c || 0;
+      } else {
+        const { count: c } = await supabase.from('master_certificates').select('*', { count: 'exact', head: true });
+        count = c || 0;
+      }
     }
     
     setExistingCount(count);
@@ -258,16 +265,20 @@ export function ImportExcelDialog({
     if (importMode === "replace") {
       setImportProgress({ current: 0, total: excelData.length + 1 });
       try {
-        if (tableName === 'phd_lmd_certificates') {
-          await supabase.from('phd_lmd_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        } else if (tableName === 'phd_science_certificates') {
-          await supabase.from('phd_science_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (isElectron()) {
+          const db = getDbClient()!;
+          await db.deleteAll(tableName);
         } else {
-          await supabase.from('master_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          if (tableName === 'phd_lmd_certificates') {
+            await supabase.from('phd_lmd_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          } else if (tableName === 'phd_science_certificates') {
+            await supabase.from('phd_science_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          } else {
+            await supabase.from('master_certificates').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          }
         }
         toast.success(`تم حذف ${existingCount} سجل سابق`);
       } catch (error) {
-        console.error("Delete error:", error);
         errors.push("فشل في حذف البيانات السابقة");
       }
     } else {
@@ -280,26 +291,30 @@ export function ImportExcelDialog({
 
       try {
         let error;
-        if (tableName === 'phd_lmd_certificates') {
-          const result = await supabase.from('phd_lmd_certificates').insert(transformedDataRow as never);
-          error = result.error;
-        } else if (tableName === 'phd_science_certificates') {
-          const result = await supabase.from('phd_science_certificates').insert(transformedDataRow as never);
-          error = result.error;
+        if (isElectron()) {
+          const db = getDbClient()!;
+          const result = await db.insert(tableName, transformedDataRow);
+          error = result.success ? null : { message: result.error };
         } else {
-          const result = await supabase.from('master_certificates').insert(transformedDataRow as never);
-          error = result.error;
+          if (tableName === 'phd_lmd_certificates') {
+            const result = await supabase.from('phd_lmd_certificates').insert(transformedDataRow as never);
+            error = result.error;
+          } else if (tableName === 'phd_science_certificates') {
+            const result = await supabase.from('phd_science_certificates').insert(transformedDataRow as never);
+            error = result.error;
+          } else {
+            const result = await supabase.from('master_certificates').insert(transformedDataRow as never);
+            error = result.error;
+          }
         }
 
         if (error) {
-          console.error("Insert error:", error);
           failedCount++;
           errors.push(`السجل ${i + 1}: ${error.message}`);
         } else {
           successCount++;
         }
-      } catch (error) {
-        console.error("Import error:", error);
+      } catch {
         failedCount++;
         errors.push(`السجل ${i + 1}: خطأ غير متوقع`);
       }
@@ -314,11 +329,20 @@ export function ImportExcelDialog({
       ? `تم استبدال قاعدة البيانات بـ ${successCount} طالب من ملف Excel`
       : `تم استيراد ${successCount} طالب من ملف Excel`;
     
-    await supabase.from("activity_log").insert({
-      activity_type: "student_added",
-      description: activityDescription,
-      entity_type: "certificate",
-    });
+    if (isElectron()) {
+      const db = getDbClient()!;
+      await db.insert('activity_log', {
+        activity_type: "student_added",
+        description: activityDescription,
+        entity_type: "certificate",
+      });
+    } else {
+      await supabase.from("activity_log").insert({
+        activity_type: "student_added",
+        description: activityDescription,
+        entity_type: "certificate",
+      });
+    }
 
     // Invalidate queries
     queryClient.invalidateQueries({ queryKey: ["phd_lmd_certificates"] });

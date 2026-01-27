@@ -128,8 +128,8 @@ export async function loadFontFile(url: string): Promise<ArrayBuffer | null> {
     const arrayBuffer = await response.arrayBuffer();
     fontCache.set(url, arrayBuffer);
     return arrayBuffer;
-  } catch (error) {
-    console.error('Failed to load font:', error);
+  } catch {
+    // Silently fail for production - error will be handled by caller
     return null;
   }
 }

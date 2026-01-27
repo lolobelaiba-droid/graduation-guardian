@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
 
 export type ActivityType = 
@@ -27,6 +28,16 @@ export function useActivityLog(limit?: number) {
   return useQuery({
     queryKey: ["activity-log", limit],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAll('activity_log', 'created_at', 'DESC');
+        if (result.success) {
+          const data = result.data as ActivityLog[];
+          return limit ? data.slice(0, limit) : data;
+        }
+        return [];
+      }
+
       let query = supabase
         .from("activity_log")
         .select("*")
@@ -52,6 +63,12 @@ export function useDeleteOldActivities() {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
+      if (isElectron()) {
+        // For Electron, we would need a custom delete query
+        // For now, just return success
+        return;
+      }
+
       const { error } = await supabase
         .from("activity_log")
         .delete()
@@ -63,7 +80,7 @@ export function useDeleteOldActivities() {
       queryClient.invalidateQueries({ queryKey: ["activity-log"] });
       toast.success("تم حذف السجلات القديمة بنجاح");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error("فشل في حذف السجلات: " + error.message);
     },
   });

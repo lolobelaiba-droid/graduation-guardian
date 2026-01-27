@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getFontByName, getAllFonts, type FontConfig } from '@/lib/arabicFonts';
+import { logger } from '@/lib/logger';
 
 // Track loaded fonts globally to avoid duplicate loading
 const loadedFonts = new Set<string>();
@@ -28,10 +29,10 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
     document.fonts.add(loadedFont);
     loadedFonts.add(fontKey);
     
-    console.log(`[FontLoader] Loaded font: ${font.family} (${font.style})`);
+    logger.log(`[FontLoader] Loaded font: ${font.family} (${font.style})`);
     return true;
   } catch (error) {
-    console.error(`[FontLoader] Failed to load font ${font.family}:`, error);
+    logger.error(`[FontLoader] Failed to load font ${font.family}:`, error);
     return false;
   }
 }
