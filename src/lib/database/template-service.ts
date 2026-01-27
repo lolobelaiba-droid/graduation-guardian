@@ -3,7 +3,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { isElectron, getDbClient, wrapElectronResult, wrapElectronListResult } from "./db-client";
+import { isElectron, getDbClient } from "./db-client";
 import type { 
   CertificateTemplate, 
   TemplateField, 
@@ -21,15 +21,15 @@ export class TemplateService {
       const db = getDbClient()!;
       const result = await db.getAll('certificate_templates', 'created_at', 'DESC');
       
-      // تحويل القيم المنطقية
       if (result.success && result.data) {
-        result.data = result.data.map((t: Record<string, unknown>) => ({
+        const templates = (result.data as Array<Record<string, unknown>>).map(t => ({
           ...t,
           is_active: Boolean(t.is_active)
-        }));
+        })) as CertificateTemplate[];
+        return { data: templates, error: null };
       }
       
-      return wrapElectronListResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase
@@ -49,10 +49,14 @@ export class TemplateService {
       const result = await db.getById('certificate_templates', id);
       
       if (result.success && result.data) {
-        result.data.is_active = Boolean(result.data.is_active);
+        const template = result.data as Record<string, unknown>;
+        return { 
+          data: { ...template, is_active: Boolean(template.is_active) } as CertificateTemplate, 
+          error: null 
+        };
       }
       
-      return wrapElectronResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase
@@ -73,17 +77,24 @@ export class TemplateService {
       const result = await db.getTemplateWithFields(id);
       
       if (result.success && result.data) {
-        result.data.is_active = Boolean(result.data.is_active);
-        result.data.certificate_template_fields = result.data.certificate_template_fields?.map(
-          (f: Record<string, unknown>) => ({
-            ...f,
-            is_rtl: Boolean(f.is_rtl),
-            is_visible: Boolean(f.is_visible)
-          })
-        ) || [];
+        const template = result.data as Record<string, unknown>;
+        const fields = (template.certificate_template_fields as Array<Record<string, unknown>> || []).map(f => ({
+          ...f,
+          is_rtl: Boolean(f.is_rtl),
+          is_visible: Boolean(f.is_visible)
+        }));
+        
+        return { 
+          data: {
+            ...template,
+            is_active: Boolean(template.is_active),
+            certificate_template_fields: fields
+          } as TemplateWithFields, 
+          error: null 
+        };
       }
       
-      return wrapElectronResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase
@@ -114,18 +125,22 @@ export class TemplateService {
         is_active: 1
       });
       
-      if (result.success) {
+      if (result.success && result.data) {
+        const newTemplate = result.data as Record<string, unknown>;
         await db.insert('activity_log', {
           activity_type: 'template_added',
           description: `تم إنشاء قالب: ${template.template_name}`,
-          entity_id: result.data.id,
+          entity_id: newTemplate.id,
           entity_type: 'template',
         });
         
-        result.data.is_active = Boolean(result.data.is_active);
+        return { 
+          data: { ...newTemplate, is_active: Boolean(newTemplate.is_active) } as CertificateTemplate, 
+          error: null 
+        };
       }
       
-      return wrapElectronResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase
@@ -162,10 +177,14 @@ export class TemplateService {
       const result = await db.update('certificate_templates', id, electronUpdates);
       
       if (result.success && result.data) {
-        result.data.is_active = Boolean(result.data.is_active);
+        const template = result.data as Record<string, unknown>;
+        return { 
+          data: { ...template, is_active: Boolean(template.is_active) } as CertificateTemplate, 
+          error: null 
+        };
       }
       
-      return wrapElectronResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase
@@ -207,14 +226,15 @@ export class TemplateFieldService {
       const result = await db.getFieldsByTemplateId(templateId);
       
       if (result.success && result.data) {
-        result.data = result.data.map((f: Record<string, unknown>) => ({
+        const fields = (result.data as Array<Record<string, unknown>>).map(f => ({
           ...f,
           is_rtl: Boolean(f.is_rtl),
           is_visible: Boolean(f.is_visible)
-        }));
+        })) as TemplateField[];
+        return { data: fields, error: null };
       }
       
-      return wrapElectronListResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase
@@ -240,11 +260,14 @@ export class TemplateFieldService {
       const result = await db.insert('certificate_template_fields', electronField);
       
       if (result.success && result.data) {
-        result.data.is_rtl = Boolean(result.data.is_rtl);
-        result.data.is_visible = Boolean(result.data.is_visible);
+        const newField = result.data as Record<string, unknown>;
+        return { 
+          data: { ...newField, is_rtl: Boolean(newField.is_rtl), is_visible: Boolean(newField.is_visible) } as TemplateField, 
+          error: null 
+        };
       }
       
-      return wrapElectronResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase
@@ -272,11 +295,14 @@ export class TemplateFieldService {
       const result = await db.update('certificate_template_fields', id, electronUpdates);
       
       if (result.success && result.data) {
-        result.data.is_rtl = Boolean(result.data.is_rtl);
-        result.data.is_visible = Boolean(result.data.is_visible);
+        const field = result.data as Record<string, unknown>;
+        return { 
+          data: { ...field, is_rtl: Boolean(field.is_rtl), is_visible: Boolean(field.is_visible) } as TemplateField, 
+          error: null 
+        };
       }
       
-      return wrapElectronResult(result);
+      return { data: null, error: result.error ? new Error(result.error) : null };
     }
     
     const { data, error } = await supabase

@@ -35,14 +35,14 @@ export function getDbClient() {
  */
 export function wrapElectronResult<T>(result: { success: boolean; data?: T; error?: string }): DbResult<T> {
   if (result.success) {
-    return { data: result.data ?? null, error: null };
+    return { data: (result.data ?? null) as T | null, error: null };
   }
   return { data: null, error: new Error(result.error || 'Unknown error') };
 }
 
 export function wrapElectronListResult<T>(result: { success: boolean; data?: T[]; error?: string }): DbListResult<T> {
   if (result.success) {
-    return { data: result.data ?? [], error: null, count: result.data?.length };
+    return { data: (result.data ?? []) as T[], error: null, count: result.data?.length };
   }
   return { data: null, error: new Error(result.error || 'Unknown error') };
 }

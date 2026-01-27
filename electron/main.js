@@ -101,11 +101,15 @@ function createWindow() {
 
   if (isDev) {
     // In development, load from the Vite dev server
-    mainWindow.loadURL('http://localhost:5173');
+    // Try port 8080 first (Lovable default), then 5173 (Vite default)
+    mainWindow.loadURL('http://localhost:8080').catch(() => {
+      mainWindow.loadURL('http://localhost:5173');
+    });
     // Open DevTools in development
     mainWindow.webContents.openDevTools();
   } else {
-    // In production, load the built files
+    // In production, load the built files using file:// protocol
+    // The base path in vite.config.ts is set to "./" for relative paths
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 

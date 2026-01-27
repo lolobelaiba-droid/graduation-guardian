@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 
 export interface PrintSettings {
   paperSize: string;
@@ -40,101 +41,18 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   marginLeft: 15,
 };
 
-export function usePrintSettings() {
-  return useQuery({
-    queryKey: ["print_settings"],
-    queryFn: async (): Promise<PrintSettings> => {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("*")
-        .in("key", [
-          "print_paper_size",
-          "print_custom_width",
-          "print_custom_height",
-          "print_orientation",
-          "print_margin_top",
-          "print_margin_bottom",
-          "print_margin_right",
-          "print_margin_left",
-        ]);
+const PRINT_SETTING_KEYS = [
+  "print_paper_size",
+  "print_custom_width",
+  "print_custom_height",
+  "print_orientation",
+  "print_margin_top",
+  "print_margin_bottom",
+  "print_margin_right",
+  "print_margin_left",
+];
 
-      if (error) {
-        console.error("Error loading print settings:", error);
-        return DEFAULT_PRINT_SETTINGS;
-      }
-
-      const settings = { ...DEFAULT_PRINT_SETTINGS };
-      
-      data?.forEach((setting) => {
-        switch (setting.key) {
-          case "print_paper_size":
-            if (setting.value) settings.paperSize = setting.value;
-            break;
-          case "print_custom_width":
-            if (setting.value) settings.customWidth = parseFloat(setting.value);
-            break;
-          case "print_custom_height":
-            if (setting.value) settings.customHeight = parseFloat(setting.value);
-            break;
-          case "print_orientation":
-            if (setting.value) settings.orientation = setting.value;
-            break;
-          case "print_margin_top":
-            if (setting.value) settings.marginTop = parseFloat(setting.value);
-            break;
-          case "print_margin_bottom":
-            if (setting.value) settings.marginBottom = parseFloat(setting.value);
-            break;
-          case "print_margin_right":
-            if (setting.value) settings.marginRight = parseFloat(setting.value);
-            break;
-          case "print_margin_left":
-            if (setting.value) settings.marginLeft = parseFloat(setting.value);
-            break;
-        }
-      });
-
-      return settings;
-    },
-  });
-}
-
-// Get paper dimensions based on settings
-export function getPaperDimensions(settings: PrintSettings): { width: number; height: number } {
-  if (settings.paperSize === "custom") {
-    return { width: settings.customWidth, height: settings.customHeight };
-  }
-  
-  const size = PAPER_SIZES[settings.paperSize];
-  if (size) {
-    return size;
-  }
-  
-  // Default to A4
-  return { width: 210, height: 297 };
-}
-
-// Fetch print settings synchronously (for use in non-hook contexts)
-export async function fetchPrintSettings(): Promise<PrintSettings> {
-  const { data, error } = await supabase
-    .from("settings")
-    .select("*")
-    .in("key", [
-      "print_paper_size",
-      "print_custom_width",
-      "print_custom_height",
-      "print_orientation",
-      "print_margin_top",
-      "print_margin_bottom",
-      "print_margin_right",
-      "print_margin_left",
-    ]);
-
-  if (error) {
-    console.error("Error loading print settings:", error);
-    return DEFAULT_PRINT_SETTINGS;
-  }
-
+function parseSettingsData(data: Array<{ key: string; value: string | null }>): PrintSettings {
   const settings = { ...DEFAULT_PRINT_SETTINGS };
   
   data?.forEach((setting) => {
@@ -167,4 +85,79 @@ export async function fetchPrintSettings(): Promise<PrintSettings> {
   });
 
   return settings;
+}
+
+export function usePrintSettings() {
+  return useQuery({
+    queryKey: ["print_settings"],
+    queryFn: async (): Promise<PrintSettings> => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const allSettings = await db.getAllSettings();
+        if (allSettings.success && allSettings.data) {
+          const settingsArray = allSettings.data as Array<{ key: string; value: string | null }>;
+          const relevantSettings = settingsArray.filter(
+            s => PRINT_SETTING_KEYS.includes(s.key)
+          );
+          return parseSettingsData(relevantSettings);
+        }
+        return DEFAULT_PRINT_SETTINGS;
+      }
+
+      const { data, error } = await supabase
+        .from("settings")
+        .select("*")
+        .in("key", PRINT_SETTING_KEYS);
+
+      if (error) {
+        console.error("Error loading print settings:", error);
+        return DEFAULT_PRINT_SETTINGS;
+      }
+
+      return parseSettingsData(data || []);
+    },
+  });
+}
+
+// Get paper dimensions based on settings
+export function getPaperDimensions(settings: PrintSettings): { width: number; height: number } {
+  if (settings.paperSize === "custom") {
+    return { width: settings.customWidth, height: settings.customHeight };
+  }
+  
+  const size = PAPER_SIZES[settings.paperSize];
+  if (size) {
+    return size;
+  }
+  
+  // Default to A4
+  return { width: 210, height: 297 };
+}
+
+// Fetch print settings (for use in non-hook contexts)
+export async function fetchPrintSettings(): Promise<PrintSettings> {
+  if (isElectron()) {
+    const db = getDbClient()!;
+    const allSettings = await db.getAllSettings();
+    if (allSettings.success && allSettings.data) {
+      const settingsArray = allSettings.data as Array<{ key: string; value: string | null }>;
+      const relevantSettings = settingsArray.filter(
+        s => PRINT_SETTING_KEYS.includes(s.key)
+      );
+      return parseSettingsData(relevantSettings);
+    }
+    return DEFAULT_PRINT_SETTINGS;
+  }
+
+  const { data, error } = await supabase
+    .from("settings")
+    .select("*")
+    .in("key", PRINT_SETTING_KEYS);
+
+  if (error) {
+    console.error("Error loading print settings:", error);
+    return DEFAULT_PRINT_SETTINGS;
+  }
+
+  return parseSettingsData(data || []);
 }
