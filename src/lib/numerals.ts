@@ -91,10 +91,11 @@ export function formatCertificateDate(date: Date | string, isArabic: boolean = f
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
   const year = String(dateObj.getFullYear());
   
-  // Arabic: yyyy/mm/dd (reads right-to-left as day/month/year)
-  // French: dd/mm/yyyy (reads left-to-right as day/month/year)
+  // Both Arabic and French use dd/mm/yyyy format
+  // For Arabic, we add LTR marks to ensure correct rendering in PDF
   if (isArabic) {
-    return `${year}/${month}/${day}`;
+    // Use explicit LTR embedding to prevent BiDi reordering
+    return `\u200E${day}\u200E/\u200E${month}\u200E/\u200E${year}\u200E`;
   }
   return `${day}/${month}/${year}`;
 }
@@ -121,5 +122,13 @@ export function formatDefenseDate(date: Date | string, isArabic: boolean = false
   const monthName = isArabic ? arabicMonths[monthNum] : frenchMonths[monthNum];
   
   // Format: day month year (e.g., "15 أوت 2024" or "15 Août 2024")
+  // For Arabic in PDF, we use LTR marks to ensure correct rendering order
+  // The numbers should appear as: day monthName year (15 أوت 2024)
+  if (isArabic) {
+    // Use explicit LTR embedding for numbers to prevent BiDi reordering issues
+    // Format: \u200E (LTR mark) ensures numbers stay in correct visual order
+    return `\u200E${day}\u200E ${monthName} \u200E${year}\u200E`;
+  }
+  
   return `${day} ${monthName} ${year}`;
 }

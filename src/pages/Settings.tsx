@@ -11,6 +11,8 @@ import {
   Loader2,
   Check,
   AlertTriangle,
+  Image,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +92,11 @@ export default function Settings() {
   } | null>(null);
   const [currentDataSummary, setCurrentDataSummary] = useState<BackupSummary | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Logo state
+  const [universityLogo, setUniversityLogo] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   // Print Settings State
   const [paperSize, setPaperSize] = useState("a4");
@@ -130,6 +137,9 @@ export default function Settings() {
               break;
             case "university_website":
               if (setting.value) setWebsite(setting.value);
+              break;
+            case "university_logo":
+              if (setting.value) setUniversityLogo(setting.value);
               break;
             // Backup settings
             case "auto_backup":
@@ -208,6 +218,61 @@ export default function Settings() {
       toast.error("حدث خطأ أثناء حفظ الإعدادات");
     } finally {
       setIsSavingUniversity(false);
+    }
+  };
+
+  // Handle logo upload
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("يرجى اختيار ملف صورة صالح");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن يكون أقل من 2 ميجابايت");
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        await saveSetting("university_logo", base64);
+        setUniversityLogo(base64);
+        toast.success("تم رفع الشعار بنجاح");
+        setIsUploadingLogo(false);
+      };
+      reader.onerror = () => {
+        toast.error("حدث خطأ أثناء قراءة الملف");
+        setIsUploadingLogo(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      toast.error("حدث خطأ أثناء رفع الشعار");
+      setIsUploadingLogo(false);
+    } finally {
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removeLogo = async () => {
+    try {
+      await saveSetting("university_logo", "");
+      setUniversityLogo(null);
+      toast.success("تم حذف الشعار");
+    } catch (error) {
+      console.error("Error removing logo:", error);
+      toast.error("حدث خطأ أثناء حذف الشعار");
     }
   };
 
@@ -653,13 +718,45 @@ export default function Settings() {
             <div className="space-y-4">
               <Label>شعار الجامعة</Label>
               <div className="flex items-center gap-4">
-                <div className="w-24 h-24 bg-muted rounded-xl flex items-center justify-center border-2 border-dashed border-border">
-                  <Building2 className="h-8 w-8 text-muted-foreground" />
+                <div className="w-24 h-24 bg-muted rounded-xl flex items-center justify-center border-2 border-dashed border-border overflow-hidden relative">
+                  {universityLogo ? (
+                    <>
+                      <img src={universityLogo} alt="شعار الجامعة" className="w-full h-full object-contain" />
+                      <button
+                        onClick={removeLogo}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity"
+                        title="حذف الشعار"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <Image className="h-8 w-8 text-muted-foreground" />
+                  )}
                 </div>
-                <Button variant="outline" className="gap-2">
-                  <Upload className="h-4 w-4" />
-                  رفع شعار جديد
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="file"
+                    ref={logoInputRef}
+                    onChange={handleLogoUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isUploadingLogo}
+                  >
+                    {isUploadingLogo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    رفع شعار جديد
+                  </Button>
+                  <p className="text-xs text-muted-foreground">PNG, JPG أو SVG - الحد الأقصى 2 ميجابايت</p>
+                </div>
               </div>
             </div>
 
