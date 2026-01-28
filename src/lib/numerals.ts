@@ -91,12 +91,11 @@ export function formatCertificateDate(date: Date | string, isArabic: boolean = f
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
   const year = String(dateObj.getFullYear());
   
-  // Both Arabic and French use dd/mm/yyyy format
-  // For Arabic, we add LTR marks to ensure correct rendering in PDF
-  if (isArabic) {
-    // Use explicit LTR embedding to prevent BiDi reordering
-    return `\u200E${day}\u200E/\u200E${month}\u200E/\u200E${year}\u200E`;
-  }
+  // Both Arabic and French use dd/mm/yyyy format.
+  // IMPORTANT: Do NOT inject direction-control characters here.
+  // Some embedded PDF fonts render U+200E as a visible glyph (often like “|”).
+  // Direction handling for PDF is done in the PDF generator layer.
+  if (isArabic) return `${day}/${month}/${year}`;
   return `${day}/${month}/${year}`;
 }
 
@@ -122,13 +121,9 @@ export function formatDefenseDate(date: Date | string, isArabic: boolean = false
   const monthName = isArabic ? arabicMonths[monthNum] : frenchMonths[monthNum];
   
   // Format: day month year (e.g., "15 أوت 2024" or "15 Août 2024")
-  // For Arabic in PDF, we use LTR marks to ensure correct rendering order
-  // The numbers should appear as: day monthName year (15 أوت 2024)
-  if (isArabic) {
-    // Use explicit LTR embedding for numbers to prevent BiDi reordering issues
-    // Format: \u200E (LTR mark) ensures numbers stay in correct visual order
-    return `\u200E${day}\u200E ${monthName} \u200E${year}\u200E`;
-  }
+  // IMPORTANT: Do NOT inject direction-control characters here.
+  // PDF direction handling is done in the PDF generator layer.
+  if (isArabic) return `${day} ${monthName} ${year}`;
   
   return `${day} ${monthName} ${year}`;
 }

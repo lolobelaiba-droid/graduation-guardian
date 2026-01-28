@@ -47,10 +47,26 @@ function shapeArabicText(text: string): string {
  * 2) BiDi reordering (RTL)
  */
 function prepareArabicForPdf(text: string): string {
+  // Backwards-compatible helper (default RTL)
+  return prepareArabicForPdfWithDir(text, 'rtl');
+}
+
+// Arabic dates contain Western digits + neutral separators/spaces; forcing baseDir=rtl
+// can flip the visual order in jsPDF after BiDi reordering.
+// We treat date-like strings as LTR base direction while keeping Arabic shaping.
+const DATE_SLASH_RE = /^\s*\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{2,4}\s*$/;
+const DATE_WORD_RE = /^\s*\d{1,2}\s+[^\d]+\s+\d{4}\s*$/;
+function isDateLikeText(text: string): boolean {
+  if (!text) return false;
+  // Quick check: must contain digits and either slashes or a trailing 4-digit year.
+  if (!/\d/.test(text)) return false;
+  return DATE_SLASH_RE.test(text) || DATE_WORD_RE.test(text);
+}
+
+function prepareArabicForPdfWithDir(text: string, baseDir: 'rtl' | 'ltr'): string {
   const reshaped = shapeArabicText(text);
   try {
-    // bidi-js API: getReorderedInfo(str, baseDir) -> { text: string, ... }
-    const info = bidi?.getReorderedInfo?.(reshaped, 'rtl');
+    const info = bidi?.getReorderedInfo?.(reshaped, baseDir);
     return info?.text ?? reshaped;
   } catch {
     logger.warn('Bidi reorder failed, falling back to reshaped text');
@@ -371,7 +387,7 @@ export async function generatePDF(
       else if (field.text_align === 'right') align = 'right';
 
       if (valueIsArabic) {
-        const prepared = prepareArabicForPdf(value);
+        const prepared = prepareArabicForPdfWithDir(value, isDateLikeText(value) ? 'ltr' : 'rtl');
         doc.text(prepared, x, y, { align } as any);
       } else {
         doc.text(value, x, y, { align });
@@ -560,7 +576,7 @@ export async function generateSinglePDF(
     else if (field.text_align === 'right') align = 'right';
 
     if (valueIsArabic) {
-      const prepared = prepareArabicForPdf(value);
+      const prepared = prepareArabicForPdfWithDir(value, isDateLikeText(value) ? 'ltr' : 'rtl');
       doc.text(prepared, field.position_x, field.position_y, { align } as any);
     } else {
       doc.text(value, field.position_x, field.position_y, { align });
@@ -620,7 +636,12 @@ export async function generatePDFBlob(
         else if (field.text_align === 'right') align = 'right';
 
         if (valueIsArabic) {
-          doc.text(prepareArabicForPdf(value), field.position_x, field.position_y, { align } as any);
+          doc.text(
+            prepareArabicForPdfWithDir(value, isDateLikeText(value) ? 'ltr' : 'rtl'),
+            field.position_x,
+            field.position_y,
+            { align } as any
+          );
         } else {
           doc.text(value, field.position_x, field.position_y, { align });
         }
