@@ -74,6 +74,41 @@ function prepareArabicForPdfWithDir(text: string, baseDir: 'rtl' | 'ltr'): strin
   }
 }
 
+/**
+ * Dates are a special case in jsPDF:
+ * - We want the *semantic* order to remain: day ثم الشهر ثم السنة
+ * - But Arabic month names still need shaping + RTL visual order.
+ *
+ * Using full-string BiDi on mixed (digits + Arabic + spaces) can reorder the tokens
+ * (e.g. month/year/day). So we format dates by shaping/reordering ONLY the Arabic month part.
+ */
+const AR_WORD_DATE_RE = /^\s*(\d{1,2})\s+(.+?)\s+(\d{4})\s*$/;
+
+function prepareArabicDateForPdf(text: string): string {
+  const trimmed = (text ?? '').trim();
+  if (!trimmed) return '';
+
+  // Pure numeric dates like 15/08/2024 should be kept as-is.
+  if (DATE_SLASH_RE.test(trimmed)) return trimmed;
+
+  // Word month dates like: "15 أوت 2024" (or multi-word month names)
+  // Keep the token order day -> month -> year, and only fix the Arabic month visual order.
+  const match = AR_WORD_DATE_RE.exec(trimmed);
+  if (match) {
+    const [, day, monthRaw, year] = match;
+    // If the middle token isn't Arabic, fall back to the normal date strategy.
+    if (!isArabicText(monthRaw)) {
+      return prepareArabicForPdfWithDir(trimmed, 'ltr');
+    }
+
+    const monthVisual = prepareArabicForPdfWithDir(monthRaw, 'rtl');
+    return `${day} ${monthVisual} ${year}`;
+  }
+
+  // Fallback for other date-like strings
+  return prepareArabicForPdfWithDir(trimmed, 'ltr');
+}
+
 // Load image as base64
 async function loadImageAsBase64(url: string): Promise<string | null> {
   try {
@@ -387,7 +422,9 @@ export async function generatePDF(
       else if (field.text_align === 'right') align = 'right';
 
       if (valueIsArabic) {
-        const prepared = prepareArabicForPdfWithDir(value, isDateLikeText(value) ? 'ltr' : 'rtl');
+        const prepared = isDateLikeText(value)
+          ? prepareArabicDateForPdf(value)
+          : prepareArabicForPdfWithDir(value, 'rtl');
         doc.text(prepared, x, y, { align } as any);
       } else {
         doc.text(value, x, y, { align });
@@ -576,7 +613,9 @@ export async function generateSinglePDF(
     else if (field.text_align === 'right') align = 'right';
 
     if (valueIsArabic) {
-      const prepared = prepareArabicForPdfWithDir(value, isDateLikeText(value) ? 'ltr' : 'rtl');
+      const prepared = isDateLikeText(value)
+        ? prepareArabicDateForPdf(value)
+        : prepareArabicForPdfWithDir(value, 'rtl');
       doc.text(prepared, field.position_x, field.position_y, { align } as any);
     } else {
       doc.text(value, field.position_x, field.position_y, { align });
@@ -637,7 +676,7 @@ export async function generatePDFBlob(
 
         if (valueIsArabic) {
           doc.text(
-            prepareArabicForPdfWithDir(value, isDateLikeText(value) ? 'ltr' : 'rtl'),
+            isDateLikeText(value) ? prepareArabicDateForPdf(value) : prepareArabicForPdfWithDir(value, 'rtl'),
             field.position_x,
             field.position_y,
             { align } as any
