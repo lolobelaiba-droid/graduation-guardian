@@ -1,6 +1,14 @@
 /**
  * Utility functions for converting numerals to Western Arabic (0-9)
+ * and date formatting for certificates
  */
+
+import {
+  formatDateWithPattern,
+  getEffectiveDatePattern,
+  DEFAULT_DATE_FORMAT_SETTINGS,
+  type DateFormatSettings,
+} from './dateFormats';
 
 // Map of Hindi/Eastern Arabic numerals to Western Arabic
 const hindiToArabicMap: Record<string, string> = {
@@ -42,8 +50,8 @@ export function formatDateWithWesternNumerals(
   return toWesternNumerals(formatted);
 }
 
-// Arabic month names
-const arabicMonths: Record<number, string> = {
+// Arabic month names (exported for use in dateFormats.ts)
+export const arabicMonths: Record<number, string> = {
   1: 'جانفي',
   2: 'فيفري',
   3: 'مارس',
@@ -58,8 +66,8 @@ const arabicMonths: Record<number, string> = {
   12: 'ديسمبر',
 };
 
-// French month names
-const frenchMonths: Record<number, string> = {
+// French month names (exported for use in dateFormats.ts)
+export const frenchMonths: Record<number, string> = {
   1: 'Janvier',
   2: 'Février',
   3: 'Mars',
@@ -75,55 +83,76 @@ const frenchMonths: Record<number, string> = {
 };
 
 /**
- * Format a date for certificates with Western numerals (for birth dates)
+ * Format a date for certificates using saved format settings
  * @param date - Date to format
- * @param isArabic - If true, format as yyyy/mm/dd (reads day/month/year RTL)
- *                   If false, format as dd/mm/yyyy (reads day/month/year LTR)
+ * @param isArabic - If true, format for Arabic context
+ * @param formatSettings - Optional format settings (uses defaults if not provided)
  */
-export function formatCertificateDate(date: Date | string, isArabic: boolean = false): string {
+export function formatCertificateDate(
+  date: Date | string,
+  isArabic: boolean = false,
+  formatSettings?: DateFormatSettings
+): string {
+  const settings = formatSettings || DEFAULT_DATE_FORMAT_SETTINGS;
+  const pattern = getEffectiveDatePattern(
+    settings.birthDateFormat,
+    settings.birthDateCustomPattern
+  );
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
   if (isNaN(dateObj.getTime())) {
     return toWesternNumerals(String(date));
   }
   
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const year = String(dateObj.getFullYear());
-  
-  // Both Arabic and French use dd/mm/yyyy format.
-  // IMPORTANT: Do NOT inject direction-control characters here.
-  // Some embedded PDF fonts render U+200E as a visible glyph (often like “|”).
-  // Direction handling for PDF is done in the PDF generator layer.
-  if (isArabic) return `${day}/${month}/${year}`;
-  return `${day}/${month}/${year}`;
+  return formatDateWithPattern(dateObj, pattern, isArabic);
 }
 
 /**
- * Format defense/certificate date with month name
- * Format: day (number) + month (word) + year (number)
- * Example Arabic: "15 أوت 2024"
- * Example French: "15 Août 2024"
+ * Format defense/certificate date using saved format settings
  * @param date - Date to format
  * @param isArabic - If true, use Arabic month names, otherwise French
+ * @param formatSettings - Optional format settings (uses defaults if not provided)
  */
-export function formatDefenseDate(date: Date | string, isArabic: boolean = false): string {
+export function formatDefenseDate(
+  date: Date | string,
+  isArabic: boolean = false,
+  formatSettings?: DateFormatSettings
+): string {
+  const settings = formatSettings || DEFAULT_DATE_FORMAT_SETTINGS;
+  const pattern = getEffectiveDatePattern(
+    settings.defenseDateFormat,
+    settings.defenseDateCustomPattern
+  );
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
   if (isNaN(dateObj.getTime())) {
     return toWesternNumerals(String(date));
   }
   
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  const monthNum = dateObj.getMonth() + 1;
-  const year = String(dateObj.getFullYear());
+  return formatDateWithPattern(dateObj, pattern, isArabic);
+}
+
+/**
+ * Format certificate issue date using saved format settings
+ */
+export function formatCertificateIssueDate(
+  date: Date | string,
+  isArabic: boolean = false,
+  formatSettings?: DateFormatSettings
+): string {
+  const settings = formatSettings || DEFAULT_DATE_FORMAT_SETTINGS;
+  const pattern = getEffectiveDatePattern(
+    settings.certificateDateFormat,
+    settings.certificateDateCustomPattern
+  );
   
-  const monthName = isArabic ? arabicMonths[monthNum] : frenchMonths[monthNum];
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   
-  // Format: day month year (e.g., "15 أوت 2024" or "15 Août 2024")
-  // IMPORTANT: Do NOT inject direction-control characters here.
-  // PDF direction handling is done in the PDF generator layer.
-  if (isArabic) return `${day} ${monthName} ${year}`;
+  if (isNaN(dateObj.getTime())) {
+    return toWesternNumerals(String(date));
+  }
   
-  return `${day} ${monthName} ${year}`;
+  return formatDateWithPattern(dateObj, pattern, isArabic);
 }

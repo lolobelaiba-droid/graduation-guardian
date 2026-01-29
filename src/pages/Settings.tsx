@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   Image,
   X,
+  Calendar,
 } from "lucide-react";
+import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -632,6 +634,10 @@ export default function Settings() {
             <Building2 className="h-4 w-4" />
             معلومات الجامعة
           </TabsTrigger>
+          <TabsTrigger value="dateformat" className="gap-2 py-2">
+            <Calendar className="h-4 w-4" />
+            تنسيق التواريخ
+          </TabsTrigger>
           <TabsTrigger value="backup" className="gap-2 py-2">
             <Database className="h-4 w-4" />
             النسخ الاحتياطية
@@ -645,6 +651,11 @@ export default function Settings() {
             الأمان
           </TabsTrigger>
         </TabsList>
+
+        {/* Date Format Tab */}
+        <TabsContent value="dateformat">
+          <DateFormatSettings />
+        </TabsContent>
 
         {/* University Info Tab */}
         <TabsContent value="university">

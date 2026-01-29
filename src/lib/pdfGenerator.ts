@@ -4,8 +4,10 @@ import { mentionLabels } from '@/types/certificates';
 import ArabicReshaper from 'arabic-reshaper';
 import bidiFactory from 'bidi-js';
 import { getAllFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
-import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from './numerals';
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from './numerals';
 import { fetchPrintSettings, getPaperDimensions, type PrintSettings, DEFAULT_PRINT_SETTINGS } from '@/hooks/usePrintSettings';
+import { fetchDateFormatSettings } from '@/hooks/useDateFormatSettings';
+import type { DateFormatSettings } from './dateFormats';
 import { logger } from './logger';
 
 // Default A4 dimensions in mm (fallback)
@@ -360,8 +362,9 @@ export async function generatePDF(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<void> {
-  // Fetch print settings if not provided
+  // Fetch print settings and date format settings
   const settings = printSettings || await fetchPrintSettings();
+  const dateFormatSettings = await fetchDateFormatSettings();
   
   // Use template orientation or fall back to settings
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
@@ -404,7 +407,7 @@ export async function generatePDF(
 
     // Add visible fields
     fields.filter(f => f.is_visible).forEach((field) => {
-      const value = getFieldValue(student, field.field_key);
+      const value = getFieldValue(student, field.field_key, dateFormatSettings);
       if (!value) return;
 
       // Set font properties
@@ -437,7 +440,11 @@ export async function generatePDF(
   doc.save(fileName);
 }
 
-function getFieldValue(student: Record<string, unknown>, fieldKey: string): string {
+function getFieldValue(
+  student: Record<string, unknown>,
+  fieldKey: string,
+  dateSettings?: DateFormatSettings
+): string {
   // Handle mention fields - convert enum to display text
   if (fieldKey === 'mention_ar') {
     const mentionValue = student['mention'] as MentionType;
@@ -465,13 +472,12 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
   }
 
   // Handle bilingual date fields - they all use the same source data
-  // Arabic dates: yyyy/mm/dd (reads day/month/year RTL)
-  // French dates: dd/mm/yyyy (reads day/month/year LTR)
+  // Use saved date format settings
   if (fieldKey === 'date_of_birth_ar') {
     const value = student['date_of_birth'];
     if (value) {
       try {
-        return formatCertificateDate(value as string, true); // Arabic format
+        return formatCertificateDate(value as string, true, dateSettings);
       } catch {
         return toWesternNumerals(String(value));
       }
@@ -483,7 +489,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     const value = student['date_of_birth'];
     if (value) {
       try {
-        return formatCertificateDate(value as string, false); // French format
+        return formatCertificateDate(value as string, false, dateSettings);
       } catch {
         return toWesternNumerals(String(value));
       }
@@ -495,7 +501,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     const value = student['defense_date'];
     if (value) {
       try {
-        return formatDefenseDate(value as string, true); // Arabic format with month name
+        return formatDefenseDate(value as string, true, dateSettings);
       } catch {
         return toWesternNumerals(String(value));
       }
@@ -507,7 +513,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     const value = student['defense_date'];
     if (value) {
       try {
-        return formatDefenseDate(value as string, false); // French format with month name
+        return formatDefenseDate(value as string, false, dateSettings);
       } catch {
         return toWesternNumerals(String(value));
       }
@@ -519,7 +525,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     const value = student['certificate_date'];
     if (value) {
       try {
-        return formatCertificateDate(value as string, true); // Arabic format
+        return formatCertificateIssueDate(value as string, true, dateSettings);
       } catch {
         return toWesternNumerals(String(value));
       }
@@ -531,7 +537,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
     const value = student['certificate_date'];
     if (value) {
       try {
-        return formatCertificateDate(value as string, false); // French format
+        return formatCertificateIssueDate(value as string, false, dateSettings);
       } catch {
         return toWesternNumerals(String(value));
       }
@@ -546,7 +552,7 @@ function getFieldValue(student: Record<string, unknown>, fieldKey: string): stri
   // Legacy date fields support (default to French format)
   if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
     try {
-      return formatCertificateDate(value as string, false);
+      return formatCertificateDate(value as string, false, dateSettings);
     } catch {
       return toWesternNumerals(String(value));
     }
@@ -564,8 +570,9 @@ export async function generateSinglePDF(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<Blob> {
-  // Fetch print settings if not provided
+  // Fetch print settings and date format settings
   const settings = printSettings || await fetchPrintSettings();
+  const dateFormatSettings = await fetchDateFormatSettings();
   
   // Use template orientation or fall back to settings
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
@@ -600,7 +607,7 @@ export async function generateSinglePDF(
 
   // Add visible fields
   fields.filter(f => f.is_visible).forEach((field) => {
-    const value = getFieldValue(student, field.field_key);
+    const value = getFieldValue(student, field.field_key, dateFormatSettings);
     if (!value) return;
 
     // Set font properties
@@ -633,8 +640,9 @@ export async function generatePDFBlob(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<Blob> {
-  // Fetch print settings if not provided
+  // Fetch print settings and date format settings
   const settings = printSettings || await fetchPrintSettings();
+  const dateFormatSettings = await fetchDateFormatSettings();
   
   // Use template orientation or fall back to settings
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
@@ -663,7 +671,7 @@ export async function generatePDFBlob(
     fields
       .filter((f) => f.is_visible)
       .forEach((field) => {
-        const value = getFieldValue(student, field.field_key);
+        const value = getFieldValue(student, field.field_key, dateFormatSettings);
         if (!value) return;
 
         const valueIsArabic = !!field.is_rtl || isArabicText(value);
