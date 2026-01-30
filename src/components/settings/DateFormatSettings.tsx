@@ -83,13 +83,20 @@ export default function DateFormatSettings() {
     const effectivePattern = getEffectiveDatePattern(langConfig.formatId, langConfig.customPattern);
     const preview = getFormatPreview(effectivePattern, langCode === 'ar');
 
+    const isArabicSection = langCode === 'ar';
+    
     return (
-      <div className="space-y-2 p-3 bg-muted/20 rounded-lg border border-muted">
+      <div 
+        className="space-y-2 p-3 bg-muted/20 rounded-lg border border-muted"
+        dir={isArabicSection ? "rtl" : "ltr"}
+      >
         <Label className="text-sm font-medium text-muted-foreground">{langLabel}</Label>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">الصيغة</Label>
+            <Label className="text-xs text-muted-foreground">
+              {isArabicSection ? "الصيغة" : "Format"}
+            </Label>
             <Select 
               value={langConfig.formatId} 
               onValueChange={(v) => updateFieldConfig(setter, langCode, { formatId: v })}
@@ -100,7 +107,7 @@ export default function DateFormatSettings() {
               <SelectContent>
                 {DATE_FORMAT_PRESETS.map((preset) => (
                   <SelectItem key={preset.id} value={preset.id}>
-                    {preset.label_ar}
+                    {isArabicSection ? preset.label_ar : preset.label_fr}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -109,7 +116,9 @@ export default function DateFormatSettings() {
 
           {langConfig.formatId === "custom" && (
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">النمط المخصص</Label>
+              <Label className="text-xs text-muted-foreground">
+                {isArabicSection ? "النمط المخصص" : "Motif personnalisé"}
+              </Label>
               <Input
                 value={langConfig.customPattern}
                 onChange={(e) => updateFieldConfig(setter, langCode, { customPattern: e.target.value })}
@@ -122,7 +131,9 @@ export default function DateFormatSettings() {
         </div>
 
         <div className="flex items-center gap-2 pt-1">
-          <span className="text-xs text-muted-foreground">معاينة:</span>
+          <span className="text-xs text-muted-foreground">
+            {isArabicSection ? "معاينة:" : "Aperçu:"}
+          </span>
           <span 
             className="font-medium bg-primary/10 px-2 py-0.5 rounded text-sm"
             dir="ltr"
