@@ -75,6 +75,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6">
         <FacultyChart />
       </div>
+
+      {/* Footer */}
+      <footer className="mt-12 pt-6 border-t border-border text-center">
+        <p className="text-sm text-muted-foreground">
+          الحقوق محفوظة © نيابة مديرية الجامعة للبحث العلمي 2026 - جامعة أم البواقي
+        </p>
+      </footer>
     </div>
   );
 }
