@@ -23,8 +23,9 @@ export {
   prepareArabicText,
   processMixedText,
   
-  // Date processing
+  // Date processing (PDF-only, hard-coded solution)
   formatArabicDateForPdf,
+  formatArabicDateFromDateObject,
   
   // Main processing functions
   processTextForPdf,
