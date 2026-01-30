@@ -18,39 +18,35 @@ import {
   getFormatPreview,
   getEffectiveDatePattern,
   DEFAULT_DATE_FORMAT_SETTINGS,
+  type DateFormatSettings as DateFormatSettingsType,
+  type DateFieldConfig,
+  type SingleDateFormat,
 } from "@/lib/dateFormats";
 
 export default function DateFormatSettings() {
   const { settings, isLoading, isSaving, saveSettings } = useDateFormatSettings();
 
-  const [birthDateFormat, setBirthDateFormat] = useState(settings.birthDateFormat);
-  const [birthDateCustomPattern, setBirthDateCustomPattern] = useState(settings.birthDateCustomPattern);
-  const [defenseDateFormat, setDefenseDateFormat] = useState(settings.defenseDateFormat);
-  const [defenseDateCustomPattern, setDefenseDateCustomPattern] = useState(settings.defenseDateCustomPattern);
-  const [certificateDateFormat, setCertificateDateFormat] = useState(settings.certificateDateFormat);
-  const [certificateDateCustomPattern, setCertificateDateCustomPattern] = useState(settings.certificateDateCustomPattern);
+  const [birthDate, setBirthDate] = useState<DateFieldConfig>(settings.birthDate);
+  const [defenseDate, setDefenseDate] = useState<DateFieldConfig>(settings.defenseDate);
+  const [certificateDate, setCertificateDate] = useState<DateFieldConfig>(settings.certificateDate);
 
   // Sync state with loaded settings
   useEffect(() => {
     if (!isLoading) {
-      setBirthDateFormat(settings.birthDateFormat);
-      setBirthDateCustomPattern(settings.birthDateCustomPattern);
-      setDefenseDateFormat(settings.defenseDateFormat);
-      setDefenseDateCustomPattern(settings.defenseDateCustomPattern);
-      setCertificateDateFormat(settings.certificateDateFormat);
-      setCertificateDateCustomPattern(settings.certificateDateCustomPattern);
+      setBirthDate(settings.birthDate);
+      setDefenseDate(settings.defenseDate);
+      setCertificateDate(settings.certificateDate);
     }
   }, [isLoading, settings]);
 
   const handleSave = async () => {
-    const success = await saveSettings({
-      birthDateFormat,
-      birthDateCustomPattern,
-      defenseDateFormat,
-      defenseDateCustomPattern,
-      certificateDateFormat,
-      certificateDateCustomPattern,
-    });
+    const newSettings: DateFormatSettingsType = {
+      birthDate,
+      defenseDate,
+      certificateDate,
+    };
+
+    const success = await saveSettings(newSettings);
 
     if (success) {
       toast.success("تم حفظ إعدادات تنسيق التواريخ");
@@ -60,35 +56,45 @@ export default function DateFormatSettings() {
   };
 
   const handleReset = () => {
-    setBirthDateFormat(DEFAULT_DATE_FORMAT_SETTINGS.birthDateFormat);
-    setBirthDateCustomPattern(DEFAULT_DATE_FORMAT_SETTINGS.birthDateCustomPattern);
-    setDefenseDateFormat(DEFAULT_DATE_FORMAT_SETTINGS.defenseDateFormat);
-    setDefenseDateCustomPattern(DEFAULT_DATE_FORMAT_SETTINGS.defenseDateCustomPattern);
-    setCertificateDateFormat(DEFAULT_DATE_FORMAT_SETTINGS.certificateDateFormat);
-    setCertificateDateCustomPattern(DEFAULT_DATE_FORMAT_SETTINGS.certificateDateCustomPattern);
+    setBirthDate(DEFAULT_DATE_FORMAT_SETTINGS.birthDate);
+    setDefenseDate(DEFAULT_DATE_FORMAT_SETTINGS.defenseDate);
+    setCertificateDate(DEFAULT_DATE_FORMAT_SETTINGS.certificateDate);
     toast.info("تم إعادة تعيين الإعدادات للقيم الافتراضية - اضغط حفظ للتأكيد");
   };
 
-  const renderFormatSelector = (
-    label: string,
-    formatId: string,
-    setFormatId: (v: string) => void,
-    customPattern: string,
-    setCustomPattern: (v: string) => void
+  const updateFieldConfig = (
+    setter: React.Dispatch<React.SetStateAction<DateFieldConfig>>,
+    lang: 'ar' | 'fr',
+    updates: Partial<SingleDateFormat>
   ) => {
-    const effectivePattern = getEffectiveDatePattern(formatId, customPattern);
-    const previewAr = getFormatPreview(effectivePattern, true);
-    const previewFr = getFormatPreview(effectivePattern, false);
+    setter(prev => ({
+      ...prev,
+      [lang]: { ...prev[lang], ...updates },
+    }));
+  };
+
+  const renderLanguageSelector = (
+    langLabel: string,
+    langCode: 'ar' | 'fr',
+    config: DateFieldConfig,
+    setter: React.Dispatch<React.SetStateAction<DateFieldConfig>>
+  ) => {
+    const langConfig = config[langCode];
+    const effectivePattern = getEffectiveDatePattern(langConfig.formatId, langConfig.customPattern);
+    const preview = getFormatPreview(effectivePattern, langCode === 'ar');
 
     return (
-      <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
-        <Label className="text-base font-medium">{label}</Label>
+      <div className="space-y-2 p-3 bg-muted/20 rounded-lg border border-muted">
+        <Label className="text-sm font-medium text-muted-foreground">{langLabel}</Label>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">الصيغة</Label>
-            <Select value={formatId} onValueChange={setFormatId}>
-              <SelectTrigger>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">الصيغة</Label>
+            <Select 
+              value={langConfig.formatId} 
+              onValueChange={(v) => updateFieldConfig(setter, langCode, { formatId: v })}
+            >
+              <SelectTrigger className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -101,38 +107,45 @@ export default function DateFormatSettings() {
             </Select>
           </div>
 
-          {formatId === "custom" && (
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">
-                النمط المخصص
-              </Label>
+          {langConfig.formatId === "custom" && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">النمط المخصص</Label>
               <Input
-                value={customPattern}
-                onChange={(e) => setCustomPattern(e.target.value)}
+                value={langConfig.customPattern}
+                onChange={(e) => updateFieldConfig(setter, langCode, { customPattern: e.target.value })}
                 placeholder="DD/MM/YYYY"
                 dir="ltr"
-                className="font-mono"
+                className="font-mono h-9"
               />
-              <p className="text-xs text-muted-foreground">
-                الرموز: DD (يوم), MM (شهر رقم), MMMM (اسم الشهر), YYYY (سنة)
-              </p>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-4 pt-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">معاينة عربي:</span>
-            <span className="font-medium bg-primary/10 px-2 py-1 rounded text-sm" dir="ltr">
-              {previewAr}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">معاينة فرنسي:</span>
-            <span className="font-medium bg-primary/10 px-2 py-1 rounded text-sm" dir="ltr">
-              {previewFr}
-            </span>
-          </div>
+        <div className="flex items-center gap-2 pt-1">
+          <span className="text-xs text-muted-foreground">معاينة:</span>
+          <span 
+            className="font-medium bg-primary/10 px-2 py-0.5 rounded text-sm"
+            dir="ltr"
+          >
+            {preview}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDateFieldSection = (
+    label: string,
+    config: DateFieldConfig,
+    setter: React.Dispatch<React.SetStateAction<DateFieldConfig>>
+  ) => {
+    return (
+      <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+        <Label className="text-base font-medium">{label}</Label>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {renderLanguageSelector("العربية", "ar", config, setter)}
+          {renderLanguageSelector("الفرنسية", "fr", config, setter)}
         </div>
       </div>
     );
@@ -153,7 +166,7 @@ export default function DateFormatSettings() {
         <div>
           <h3 className="text-lg font-semibold">تنسيق التواريخ</h3>
           <p className="text-sm text-muted-foreground">
-            تخصيص طريقة عرض التواريخ في الشهادات المطبوعة
+            تخصيص طريقة عرض التواريخ في الشهادات المطبوعة (عربي وفرنسي بشكل مستقل)
           </p>
         </div>
       </div>
@@ -161,29 +174,14 @@ export default function DateFormatSettings() {
       <Separator />
 
       <div className="space-y-4">
-        {renderFormatSelector(
-          "تاريخ الميلاد",
-          birthDateFormat,
-          setBirthDateFormat,
-          birthDateCustomPattern,
-          setBirthDateCustomPattern
-        )}
+        {renderDateFieldSection("تاريخ الميلاد", birthDate, setBirthDate)}
+        {renderDateFieldSection("تاريخ المناقشة", defenseDate, setDefenseDate)}
+        {renderDateFieldSection("تاريخ الشهادة", certificateDate, setCertificateDate)}
+      </div>
 
-        {renderFormatSelector(
-          "تاريخ المناقشة",
-          defenseDateFormat,
-          setDefenseDateFormat,
-          defenseDateCustomPattern,
-          setDefenseDateCustomPattern
-        )}
-
-        {renderFormatSelector(
-          "تاريخ الشهادة",
-          certificateDateFormat,
-          setCertificateDateFormat,
-          certificateDateCustomPattern,
-          setCertificateDateCustomPattern
-        )}
+      <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+        <p className="font-medium mb-1">الرموز المتاحة:</p>
+        <p>DD (يوم) • MM (شهر رقم) • MMMM (اسم الشهر) • YYYY (سنة)</p>
       </div>
 
       <div className="flex items-center justify-between pt-4">

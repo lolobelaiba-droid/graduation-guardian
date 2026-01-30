@@ -368,44 +368,15 @@ export default function PrintCertificates() {
         }
       }
       
-      // Selecting via checkbox should also update preview
-      setSelectedStudentIds((prev) => {
-        const next = prev.includes(studentId) ? prev : [...prev, studentId];
-        return next;
-      });
+      // Single selection mode - replace the current selection
+      setSelectedStudentIds([studentId]);
       setPreviewStudentId(studentId);
       return;
     }
 
-    // Unselecting should clear preview if it was showing this student
-    setSelectedStudentIds((prev) => {
-      const next = prev.filter((id) => id !== studentId);
-
-      // If no one is selected anymore, clear preview
-      if (next.length === 0) {
-        setPreviewStudentId(null);
-      } else if (previewStudentId === studentId) {
-        // If the previewed student was unchecked, clear preview so placeholders show
-        setPreviewStudentId(null);
-      }
-
-      return next;
-    });
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      // Select only filtered students when searching
-      const allIds = filteredStudents.map((s) => s.id);
-      setSelectedStudentIds(allIds);
-      // Keep current preview if exists, otherwise set to first
-      if (!previewStudentId && allIds.length > 0) {
-        setPreviewStudentId(allIds[0]);
-      }
-    } else {
-      setSelectedStudentIds([]);
-      setPreviewStudentId(null);
-    }
+    // Unselecting - clear both selection and preview
+    setSelectedStudentIds([]);
+    setPreviewStudentId(null);
   };
 
   const handlePrint = async () => {
@@ -568,18 +539,31 @@ export default function PrintCertificates() {
                 />
               </div>
 
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <Checkbox
-                  checked={selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-                <span className="text-sm font-medium">تحديد الكل</span>
-                {studentSearch && (
+              {selectedStudentIds.length === 1 && (
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Badge variant="default" className="text-xs">
+                    طالب محدد: {findStudentById(selectedStudentIds[0])?.full_name_ar}
+                  </Badge>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs"
+                    onClick={() => {
+                      setSelectedStudentIds([]);
+                      setPreviewStudentId(null);
+                    }}
+                  >
+                    إلغاء التحديد
+                  </Button>
+                </div>
+              )}
+              {studentSearch && (
+                <div className="flex items-center gap-2 pb-2 border-b">
                   <span className="text-xs text-muted-foreground">
                     ({toWesternNumerals(filteredStudents.length)} نتيجة)
                   </span>
-                )}
-              </div>
+                </div>
+              )}
 
               {filteredStudents.length === 0 ? (
                 <div className="text-center text-muted-foreground py-4">

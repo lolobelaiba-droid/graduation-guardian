@@ -35,7 +35,8 @@ export function useDateFormatSettings() {
 
         if (!error && data?.value) {
           const parsed = JSON.parse(data.value) as DateFormatSettings;
-          const merged = { ...DEFAULT_DATE_FORMAT_SETTINGS, ...parsed };
+          // Merge with defaults to handle any missing fields
+          const merged = mergeWithDefaults(parsed);
           cachedSettings = merged;
           setSettings(merged);
         }
@@ -91,6 +92,51 @@ export function useDateFormatSettings() {
 }
 
 /**
+ * Merge loaded settings with defaults to handle migration from old format
+ */
+function mergeWithDefaults(parsed: any): DateFormatSettings {
+  const defaults = DEFAULT_DATE_FORMAT_SETTINGS;
+  
+  // If it's the new format (has birthDate.ar), use as-is with defaults
+  if (parsed.birthDate?.ar) {
+    return {
+      birthDate: {
+        ar: { ...defaults.birthDate.ar, ...parsed.birthDate?.ar },
+        fr: { ...defaults.birthDate.fr, ...parsed.birthDate?.fr },
+      },
+      defenseDate: {
+        ar: { ...defaults.defenseDate.ar, ...parsed.defenseDate?.ar },
+        fr: { ...defaults.defenseDate.fr, ...parsed.defenseDate?.fr },
+      },
+      certificateDate: {
+        ar: { ...defaults.certificateDate.ar, ...parsed.certificateDate?.ar },
+        fr: { ...defaults.certificateDate.fr, ...parsed.certificateDate?.fr },
+      },
+    };
+  }
+  
+  // Migration from old format (birthDateFormat, etc.)
+  if (parsed.birthDateFormat) {
+    return {
+      birthDate: {
+        ar: { formatId: parsed.birthDateFormat, customPattern: parsed.birthDateCustomPattern || 'DD/MM/YYYY' },
+        fr: { formatId: parsed.birthDateFormat, customPattern: parsed.birthDateCustomPattern || 'DD/MM/YYYY' },
+      },
+      defenseDate: {
+        ar: { formatId: parsed.defenseDateFormat, customPattern: parsed.defenseDateCustomPattern || 'DD MMMM YYYY' },
+        fr: { formatId: parsed.defenseDateFormat, customPattern: parsed.defenseDateCustomPattern || 'DD MMMM YYYY' },
+      },
+      certificateDate: {
+        ar: { formatId: parsed.certificateDateFormat, customPattern: parsed.certificateDateCustomPattern || 'DD/MM/YYYY' },
+        fr: { formatId: parsed.certificateDateFormat, customPattern: parsed.certificateDateCustomPattern || 'DD/MM/YYYY' },
+      },
+    };
+  }
+  
+  return defaults;
+}
+
+/**
  * Fetch date format settings synchronously from cache or return defaults
  * For use in PDF generator and other sync contexts
  */
@@ -113,8 +159,8 @@ export async function fetchDateFormatSettings(): Promise<DateFormatSettings> {
       .single();
 
     if (!error && data?.value) {
-      const parsed = JSON.parse(data.value) as DateFormatSettings;
-      cachedSettings = { ...DEFAULT_DATE_FORMAT_SETTINGS, ...parsed };
+      const parsed = JSON.parse(data.value);
+      cachedSettings = mergeWithDefaults(parsed);
       return cachedSettings;
     }
   } catch {

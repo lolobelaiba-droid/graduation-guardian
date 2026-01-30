@@ -1,6 +1,7 @@
 /**
  * Date format configuration and utilities for certificates
  * Supports multiple predefined formats + custom pattern
+ * Separate configurations for Arabic and French for each date field
  */
 
 // Predefined date format presets
@@ -72,23 +73,49 @@ export const DATE_FORMAT_PRESETS: DateFormatPreset[] = [
   },
 ];
 
-// Date format settings structure
-export interface DateFormatSettings {
-  birthDateFormat: string; // Preset ID or 'custom'
-  birthDateCustomPattern: string;
-  defenseDateFormat: string;
-  defenseDateCustomPattern: string;
-  certificateDateFormat: string;
-  certificateDateCustomPattern: string;
+// Single language date format (for one date field in one language)
+export interface SingleDateFormat {
+  formatId: string; // Preset ID or 'custom'
+  customPattern: string;
 }
 
+// Date field configuration with separate Arabic and French formats
+export interface DateFieldConfig {
+  ar: SingleDateFormat;
+  fr: SingleDateFormat;
+}
+
+// Date format settings structure - separate AR/FR for each date type
+export interface DateFormatSettings {
+  birthDate: DateFieldConfig;
+  defenseDate: DateFieldConfig;
+  certificateDate: DateFieldConfig;
+}
+
+// Default format for a single language
+const DEFAULT_SINGLE_FORMAT_SLASH: SingleDateFormat = {
+  formatId: 'dd_mm_yyyy_slash',
+  customPattern: 'DD/MM/YYYY',
+};
+
+const DEFAULT_SINGLE_FORMAT_WORD: SingleDateFormat = {
+  formatId: 'dd_mmmm_yyyy',
+  customPattern: 'DD MMMM YYYY',
+};
+
 export const DEFAULT_DATE_FORMAT_SETTINGS: DateFormatSettings = {
-  birthDateFormat: 'dd_mm_yyyy_slash',
-  birthDateCustomPattern: 'DD/MM/YYYY',
-  defenseDateFormat: 'dd_mmmm_yyyy',
-  defenseDateCustomPattern: 'DD MMMM YYYY',
-  certificateDateFormat: 'dd_mm_yyyy_slash',
-  certificateDateCustomPattern: 'DD/MM/YYYY',
+  birthDate: {
+    ar: DEFAULT_SINGLE_FORMAT_SLASH,
+    fr: DEFAULT_SINGLE_FORMAT_SLASH,
+  },
+  defenseDate: {
+    ar: DEFAULT_SINGLE_FORMAT_WORD,
+    fr: DEFAULT_SINGLE_FORMAT_WORD,
+  },
+  certificateDate: {
+    ar: DEFAULT_SINGLE_FORMAT_SLASH,
+    fr: DEFAULT_SINGLE_FORMAT_SLASH,
+  },
 };
 
 // Arabic month names
@@ -130,6 +157,9 @@ const frenchMonths: Record<number, string> = {
  * - MM: Month number (2 digits)
  * - MMMM: Month name (Arabic or French)
  * - YYYY: Full year (4 digits)
+ * 
+ * For Arabic dates, we manually construct the string in LTR order
+ * to prevent BiDi reordering issues in the preview
  */
 export function formatDateWithPattern(
   date: Date | string,
@@ -148,6 +178,37 @@ export function formatDateWithPattern(
   const monthNum = dateObj.getMonth() + 1;
   const monthName = isArabic ? arabicMonths[monthNum] : frenchMonths[monthNum];
 
+  // For Arabic with month name patterns, manually construct to avoid BiDi reordering
+  if (isArabic && pattern.includes('MMMM')) {
+    // Parse pattern to get component order
+    const parts: string[] = [];
+    let remaining = pattern;
+    
+    while (remaining.length > 0) {
+      if (remaining.startsWith('YYYY')) {
+        parts.push(year);
+        remaining = remaining.slice(4);
+      } else if (remaining.startsWith('MMMM')) {
+        parts.push(monthName);
+        remaining = remaining.slice(4);
+      } else if (remaining.startsWith('MM')) {
+        parts.push(month);
+        remaining = remaining.slice(2);
+      } else if (remaining.startsWith('DD')) {
+        parts.push(day);
+        remaining = remaining.slice(2);
+      } else {
+        // Separator character
+        parts.push(remaining[0]);
+        remaining = remaining.slice(1);
+      }
+    }
+    
+    // Join parts - this maintains the logical order
+    return parts.join('');
+  }
+
+  // Standard replacement for non-Arabic or numeric-only patterns
   let result = pattern;
   result = result.replace(/YYYY/g, year);
   result = result.replace(/MMMM/g, monthName);
@@ -158,7 +219,7 @@ export function formatDateWithPattern(
 }
 
 /**
- * Get effective pattern from settings for a date field
+ * Get effective pattern from a single format config
  */
 export function getEffectiveDatePattern(
   formatId: string,
@@ -169,6 +230,17 @@ export function getEffectiveDatePattern(
   }
   const preset = DATE_FORMAT_PRESETS.find((p) => p.id === formatId);
   return preset?.pattern || 'DD/MM/YYYY';
+}
+
+/**
+ * Get effective pattern from DateFieldConfig for a specific language
+ */
+export function getPatternFromConfig(
+  config: DateFieldConfig,
+  isArabic: boolean
+): string {
+  const langConfig = isArabic ? config.ar : config.fr;
+  return getEffectiveDatePattern(langConfig.formatId, langConfig.customPattern);
 }
 
 /**
