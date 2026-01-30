@@ -4,6 +4,7 @@ import type { TemplateField, CertificateTemplate, CertificateType, MentionType }
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
+import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { usePrintSettings, getPaperDimensions, DEFAULT_PRINT_SETTINGS } from "@/hooks/usePrintSettings";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
@@ -214,6 +215,20 @@ export function CertificatePreview({
     // Convert any Hindi numerals to Western Arabic for all values
     return value ? toWesternNumerals(String(value)) : '';
   }, [student, dateFormatSettings]);
+
+  // Helper to get text direction for date fields
+  const getDateFieldDirection = useCallback((fieldKey: string): 'rtl' | 'ltr' | undefined => {
+    if (!fieldKey.endsWith('_ar')) return undefined;
+    
+    if (fieldKey.includes('birth')) {
+      return getTextDirectionFromConfig(dateFormatSettings.birthDate, true);
+    } else if (fieldKey.includes('defense')) {
+      return getTextDirectionFromConfig(dateFormatSettings.defenseDate, true);
+    } else if (fieldKey.includes('certificate')) {
+      return getTextDirectionFromConfig(dateFormatSettings.certificateDate, true);
+    }
+    return undefined;
+  }, [dateFormatSettings]);
 
   const isRtlLanguage = template.language.includes('ar');
   const selectedField = fields.find(f => f.id === selectedFieldId);
@@ -471,6 +486,12 @@ export function CertificatePreview({
             const isVisible = field.is_visible;
             const isDragging = dragState?.fieldId === field.id;
             const position = getFieldPosition(field);
+            
+            // Determine field direction - use date settings for Arabic date fields
+            const dateDirection = getDateFieldDirection(field.field_key);
+            const fieldDirection = dateDirection !== undefined 
+              ? dateDirection 
+              : (field.is_rtl ? 'rtl' : 'ltr');
 
             return (
               <div
@@ -500,7 +521,7 @@ export function CertificatePreview({
                     fontFamily: fieldFontStyles[field.id] || getFontFamilyCSS(field.font_name),
                     color: isVisible ? field.font_color : '#999',
                     textAlign: field.text_align as 'left' | 'right' | 'center',
-                    direction: field.is_rtl ? 'rtl' : 'ltr',
+                    direction: fieldDirection,
                     whiteSpace: 'nowrap',
                     padding: '2px 4px',
                     textDecoration: !isVisible ? 'line-through' : 'none',

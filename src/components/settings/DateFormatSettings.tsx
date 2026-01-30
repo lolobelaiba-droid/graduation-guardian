@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Save, Loader2, RotateCcw } from "lucide-react";
+import { Calendar, Save, Loader2, RotateCcw, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 import {
@@ -84,10 +85,11 @@ export default function DateFormatSettings() {
     const preview = getFormatPreview(effectivePattern, langCode === 'ar');
 
     const isArabicSection = langCode === 'ar';
+    const textDirection = langConfig.textDirection || (isArabicSection ? 'rtl' : 'ltr');
     
     return (
       <div 
-        className="space-y-2 p-3 bg-muted/20 rounded-lg border border-muted"
+        className="space-y-3 p-3 bg-muted/20 rounded-lg border border-muted"
         dir={isArabicSection ? "rtl" : "ltr"}
       >
         <Label className="text-sm font-medium text-muted-foreground">{langLabel}</Label>
@@ -101,10 +103,10 @@ export default function DateFormatSettings() {
               value={langConfig.formatId} 
               onValueChange={(v) => updateFieldConfig(setter, langCode, { formatId: v })}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 bg-background">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover border shadow-md z-50">
                 {DATE_FORMAT_PRESETS.map((preset) => (
                   <SelectItem key={preset.id} value={preset.id}>
                     {isArabicSection ? preset.label_ar : preset.label_fr}
@@ -130,13 +132,42 @@ export default function DateFormatSettings() {
           )}
         </div>
 
+        {/* Text direction selector - only for Arabic */}
+        {isArabicSection && (
+          <div className="space-y-2 pt-2 border-t border-muted/50">
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <Label className="text-xs text-muted-foreground">اتجاه النص في PDF</Label>
+            </div>
+            <RadioGroup
+              value={textDirection}
+              onValueChange={(v) => updateFieldConfig(setter, langCode, { textDirection: v as 'rtl' | 'ltr' })}
+              className="flex gap-4"
+              dir="rtl"
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="rtl" id={`${langCode}-rtl`} />
+                <Label htmlFor={`${langCode}-rtl`} className="text-sm cursor-pointer">
+                  من اليمين لليسار (RTL)
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="ltr" id={`${langCode}-ltr`} />
+                <Label htmlFor={`${langCode}-ltr`} className="text-sm cursor-pointer">
+                  من اليسار لليمين (LTR)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 pt-1">
           <span className="text-xs text-muted-foreground">
             {isArabicSection ? "معاينة:" : "Aperçu:"}
           </span>
           <span 
             className="font-medium bg-primary/10 px-2 py-0.5 rounded text-sm"
-            dir={isArabicSection ? "rtl" : "ltr"}
+            dir={textDirection}
           >
             {preview}
           </span>

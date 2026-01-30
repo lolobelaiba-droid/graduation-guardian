@@ -30,6 +30,7 @@ import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCert
 import { fetchPrintSettings, getPaperDimensions, type PrintSettings, DEFAULT_PRINT_SETTINGS } from '@/hooks/usePrintSettings';
 import { fetchDateFormatSettings } from '@/hooks/useDateFormatSettings';
 import type { DateFormatSettings } from './dateFormats';
+import { getTextDirectionFromConfig } from './dateFormats';
 import { logger } from './logger';
 
 // ============================================================================
@@ -402,7 +403,8 @@ function renderField(
   doc: jsPDF,
   field: TemplateField,
   value: string,
-  registeredFonts: Set<string>
+  registeredFonts: Set<string>,
+  dateSettings?: DateFormatSettings
 ): void {
   if (!value) return;
 
@@ -410,11 +412,28 @@ function renderField(
   const language = getFieldLanguage(field.field_key, value, field.is_rtl ?? false);
   const isDateFieldType = isDateField(field.field_key);
   
+  // Determine date text direction from settings
+  let dateTextDirection: 'rtl' | 'ltr' = 'rtl';
+  if (isDateFieldType && dateSettings) {
+    const isArabicDateField = field.field_key.endsWith('_ar');
+    if (isArabicDateField) {
+      // Get the date type from field key
+      if (field.field_key.includes('birth')) {
+        dateTextDirection = getTextDirectionFromConfig(dateSettings.birthDate, true);
+      } else if (field.field_key.includes('defense')) {
+        dateTextDirection = getTextDirectionFromConfig(dateSettings.defenseDate, true);
+      } else if (field.field_key.includes('certificate')) {
+        dateTextDirection = getTextDirectionFromConfig(dateSettings.certificateDate, true);
+      }
+    }
+  }
+  
   // Process text for PDF
   const processed: ProcessedText = processTextForPdf(value, {
     language,
     isDateField: isDateFieldType,
-    forceRtl: language === 'ar' || language === 'mixed'
+    forceRtl: language === 'ar' || language === 'mixed',
+    dateTextDirection: dateTextDirection
   });
   
   // Set font (must use Arabic-capable font for Arabic text)
@@ -483,7 +502,7 @@ export async function generatePDF(
     // Render visible fields
     fields.filter(f => f.is_visible).forEach((field) => {
       const value = getFieldValue(student, field.field_key, dateFormatSettings);
-      renderField(doc, field, value, registeredFonts);
+      renderField(doc, field, value, registeredFonts, dateFormatSettings);
     });
   });
 
@@ -528,7 +547,7 @@ export async function generateSinglePDF(
   // Render visible fields
   fields.filter(f => f.is_visible).forEach((field) => {
     const value = getFieldValue(student, field.field_key, dateFormatSettings);
-    renderField(doc, field, value, registeredFonts);
+    renderField(doc, field, value, registeredFonts, dateFormatSettings);
   });
 
   return doc.output('blob');
@@ -570,7 +589,7 @@ export async function generatePDFBlob(
 
     fields.filter(f => f.is_visible).forEach((field) => {
       const value = getFieldValue(student, field.field_key, dateFormatSettings);
-      renderField(doc, field, value, registeredFonts);
+      renderField(doc, field, value, registeredFonts, dateFormatSettings);
     });
   });
 

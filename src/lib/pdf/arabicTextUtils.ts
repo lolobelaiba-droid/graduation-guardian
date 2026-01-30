@@ -56,6 +56,8 @@ export interface TextProcessingOptions {
   isDateField?: boolean;
   /** Force RTL direction even for mixed content */
   forceRtl?: boolean;
+  /** Text direction for Arabic dates - 'rtl' or 'ltr' (only applies to Arabic date fields) */
+  dateTextDirection?: 'rtl' | 'ltr';
 }
 
 /** Result of text processing */
@@ -265,92 +267,96 @@ export function formatArabicDateFromDateObject(date: Date): string {
  * - Numeric date: "15/08/2024" or "2024/08/15"
  * - Word date: "15 أوت 2024"
  * 
- * The output is ALWAYS: YEAR DAY SHAPED_MONTH
+ * For RTL direction: Output is YEAR DAY SHAPED_MONTH (renders visually as MONTH DAY YEAR from right)
+ * For LTR direction: Output is SHAPED_MONTH DAY YEAR (renders visually as DAY MONTH YEAR from left)
  * 
  * @param dateString - The date string from the database or UI
+ * @param direction - Text direction: 'rtl' or 'ltr' (default: 'rtl')
  * @returns The formatted string for jsPDF
  */
-export function formatArabicDateForPdf(dateString: string): string {
+export function formatArabicDateForPdf(dateString: string, direction: 'rtl' | 'ltr' = 'rtl'): string {
   if (!dateString) return '';
   
   const trimmed = dateString.trim();
   
+  // Parse the date to extract day, month, year
+  let day: number, month: number, year: string;
+  
   // Try to parse as ISO date first (YYYY-MM-DD)
   const isoMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(trimmed);
   if (isoMatch) {
-    const [, year, month, day] = isoMatch;
-    const monthIndex = parseInt(month, 10) - 1;
-    const shapedMonth = shapeArabicText(ARABIC_MONTHS_PDF[monthIndex] || '');
-    return `${year} ${parseInt(day, 10)} ${shapedMonth}`;
+    year = isoMatch[1];
+    month = parseInt(isoMatch[2], 10) - 1;
+    day = parseInt(isoMatch[3], 10);
   }
-  
   // Try numeric date with slashes: dd/mm/yyyy or yyyy/mm/dd
-  const slashMatch = /^(\d{1,4})\/(\d{1,2})\/(\d{1,4})$/.exec(trimmed);
-  if (slashMatch) {
-    const [, p1, p2, p3] = slashMatch;
-    let year: string, month: number, day: number;
-    
-    if (p1.length === 4) {
-      // yyyy/mm/dd
-      year = p1;
-      month = parseInt(p2, 10) - 1;
-      day = parseInt(p3, 10);
-    } else {
-      // dd/mm/yyyy
-      day = parseInt(p1, 10);
-      month = parseInt(p2, 10) - 1;
-      year = p3;
+  else {
+    const slashMatch = /^(\d{1,4})\/(\d{1,2})\/(\d{1,4})$/.exec(trimmed);
+    if (slashMatch) {
+      const [, p1, p2, p3] = slashMatch;
+      if (p1.length === 4) {
+        // yyyy/mm/dd
+        year = p1;
+        month = parseInt(p2, 10) - 1;
+        day = parseInt(p3, 10);
+      } else {
+        // dd/mm/yyyy
+        day = parseInt(p1, 10);
+        month = parseInt(p2, 10) - 1;
+        year = p3;
+      }
     }
-    
-    const shapedMonth = shapeArabicText(ARABIC_MONTHS_PDF[month] || '');
-    return `${year} ${day} ${shapedMonth}`;
-  }
-  
-  // Try numeric date with dashes: dd-mm-yyyy or yyyy-mm-dd
-  const dashMatch = /^(\d{1,4})-(\d{1,2})-(\d{1,4})$/.exec(trimmed);
-  if (dashMatch) {
-    const [, p1, p2, p3] = dashMatch;
-    let year: string, month: number, day: number;
-    
-    if (p1.length === 4) {
-      year = p1;
-      month = parseInt(p2, 10) - 1;
-      day = parseInt(p3, 10);
-    } else {
-      day = parseInt(p1, 10);
-      month = parseInt(p2, 10) - 1;
-      year = p3;
+    // Try numeric date with dashes: dd-mm-yyyy or yyyy-mm-dd
+    else {
+      const dashMatch = /^(\d{1,4})-(\d{1,2})-(\d{1,4})$/.exec(trimmed);
+      if (dashMatch) {
+        const [, p1, p2, p3] = dashMatch;
+        if (p1.length === 4) {
+          year = p1;
+          month = parseInt(p2, 10) - 1;
+          day = parseInt(p3, 10);
+        } else {
+          day = parseInt(p1, 10);
+          month = parseInt(p2, 10) - 1;
+          year = p3;
+        }
+      }
+      // Try word-based date: "15 أوت 2024"
+      else {
+        const wordMatch1 = /^(\d{1,2})\s+(.+?)\s+(\d{4})$/.exec(trimmed);
+        if (wordMatch1) {
+          day = parseInt(wordMatch1[1], 10);
+          const monthIndex = findArabicMonthIndex(wordMatch1[2]);
+          month = monthIndex >= 0 ? monthIndex : 0;
+          year = wordMatch1[3];
+        }
+        // Try word-based date: "أوت 15 2024"
+        else {
+          const wordMatch2 = /^(.+?)\s+(\d{1,2})\s+(\d{4})$/.exec(trimmed);
+          if (wordMatch2) {
+            const monthIndex = findArabicMonthIndex(wordMatch2[1]);
+            month = monthIndex >= 0 ? monthIndex : 0;
+            day = parseInt(wordMatch2[2], 10);
+            year = wordMatch2[3];
+          } else {
+            // Fallback: return shaped text without date processing
+            return shapeArabicText(trimmed);
+          }
+        }
+      }
     }
-    
-    const shapedMonth = shapeArabicText(ARABIC_MONTHS_PDF[month] || '');
-    return `${year} ${day} ${shapedMonth}`;
   }
   
-  // Try word-based date: "15 أوت 2024" or "أوت 15 2024"
-  // Extract numbers and month text
-  const wordMatch1 = /^(\d{1,2})\s+(.+?)\s+(\d{4})$/.exec(trimmed);
-  if (wordMatch1) {
-    const [, day, monthText, year] = wordMatch1;
-    // Find the matching Arabic month or use the original
-    const monthIndex = findArabicMonthIndex(monthText);
-    const shapedMonth = monthIndex >= 0 
-      ? shapeArabicText(ARABIC_MONTHS_PDF[monthIndex])
-      : shapeArabicText(monthText);
-    return `${year} ${day} ${shapedMonth}`;
-  }
+  const shapedMonth = shapeArabicText(ARABIC_MONTHS_PDF[month] || '');
   
-  const wordMatch2 = /^(.+?)\s+(\d{1,2})\s+(\d{4})$/.exec(trimmed);
-  if (wordMatch2) {
-    const [, monthText, day, year] = wordMatch2;
-    const monthIndex = findArabicMonthIndex(monthText);
-    const shapedMonth = monthIndex >= 0 
-      ? shapeArabicText(ARABIC_MONTHS_PDF[monthIndex])
-      : shapeArabicText(monthText);
+  // Format based on direction
+  // RTL: jsPDF needs YEAR DAY MONTH order to display as MONTH DAY YEAR visually from right
+  // LTR: jsPDF needs DAY MONTH YEAR order to display correctly from left
+  if (direction === 'rtl') {
     return `${year} ${day} ${shapedMonth}`;
+  } else {
+    return `${day} ${shapedMonth} ${year}`;
   }
-  
-  // Fallback: return shaped text without date processing
-  return shapeArabicText(trimmed);
 }
 
 /**
@@ -421,7 +427,7 @@ export function processTextForPdf(
   text: string,
   options: TextProcessingOptions
 ): ProcessedText {
-  const { language, isDateField = false, forceRtl } = options;
+  const { language, isDateField = false, forceRtl, dateTextDirection = 'rtl' } = options;
   const original = text || '';
   
   if (!original) {
@@ -443,8 +449,8 @@ export function processTextForPdf(
   // CRITICAL: Date fields with Arabic MUST use the hard-coded PDF formatter
   // This bypasses ALL BiDi logic - jsPDF receives the exact required order
   if (isDateField && isArabic) {
-    processedText = formatArabicDateForPdf(original);
-    align = 'right';
+    processedText = formatArabicDateForPdf(original, dateTextDirection);
+    align = dateTextDirection === 'rtl' ? 'right' : 'left';
   }
   // Non-Arabic date fields (French/English dates)
   else if (isDateField) {
