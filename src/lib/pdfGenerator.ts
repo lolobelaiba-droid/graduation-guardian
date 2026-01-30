@@ -1,8 +1,30 @@
+/**
+ * PDF Certificate Generator
+ * 
+ * This module generates certificates as PDF documents using jsPDF.
+ * All Arabic text is processed through the centralized Arabic text utilities
+ * to ensure correct RTL rendering and visual order.
+ * 
+ * IMPORTANT: jsPDF does not support Unicode BiDi algorithm.
+ * All Arabic correctness is controlled at the application level.
+ * 
+ * PDF Rendering Contract:
+ * - Arabic text: Always use processTextForPdf() then doc.text(text, x, y, { align: 'right' })
+ * - Latin text: Use as-is with appropriate alignment
+ * - Mixed text: Process through Arabic utilities, use 'right' alignment
+ * - Never rely on setR2L() or direction: rtl in jsPDF
+ */
+
 import jsPDF from 'jspdf';
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from '@/types/certificates';
 import { mentionLabels } from '@/types/certificates';
-import ArabicReshaper from 'arabic-reshaper';
-import bidiFactory from 'bidi-js';
+import { 
+  processTextForPdf, 
+  containsArabic,
+  isDateLikeText,
+  type FieldLanguage,
+  type ProcessedText 
+} from './pdf/arabicTextUtils';
 import { getAllFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from './numerals';
 import { fetchPrintSettings, getPaperDimensions, type PrintSettings, DEFAULT_PRINT_SETTINGS } from '@/hooks/usePrintSettings';
@@ -10,135 +32,59 @@ import { fetchDateFormatSettings } from '@/hooks/useDateFormatSettings';
 import type { DateFormatSettings } from './dateFormats';
 import { logger } from './logger';
 
-// Default A4 dimensions in mm (fallback)
-const A4_WIDTH = 210;
-const A4_HEIGHT = 297;
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 
-const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+/** Default Arabic font - must be Unicode-capable and embedded */
+const DEFAULT_ARABIC_FONT = 'Amiri';
 
-// Bidi reordering is required because jsPDF doesn't implement the Unicode BiDi algorithm.
-// We reorder *after* shaping so Arabic letters stay connected and the visual order becomes correct.
-const bidi = (bidiFactory as any)();
+/** Cache for loaded font data (base64) - shared across documents */
+const fontDataCache = new Map<string, string>();
 
-function isArabicText(text: string): boolean {
-  return !!text && ARABIC_REGEX.test(text);
+// ============================================================================
+// FIELD LANGUAGE DETECTION
+// ============================================================================
+
+/**
+ * Determine the language of a field based on its key and content
+ */
+function getFieldLanguage(fieldKey: string, value: string, isRtl?: boolean): FieldLanguage {
+  // Explicit language markers in field key
+  if (fieldKey.endsWith('_ar')) return 'ar';
+  if (fieldKey.endsWith('_fr') || fieldKey.endsWith('_en')) return 'fr';
+  
+  // RTL flag indicates Arabic
+  if (isRtl) return 'ar';
+  
+  // Content-based detection
+  if (containsArabic(value)) {
+    // Check if it's mixed with Latin
+    if (/[a-zA-Z]/.test(value)) return 'mixed';
+    return 'ar';
+  }
+  
+  return 'en';
 }
 
 /**
- * Robust Arabic shaping (ligatures + contextual forms) using arabic-reshaper.
- * This produces Arabic Presentation Forms that jsPDF can draw when the font is embedded with Identity-H.
+ * Check if a field key represents a date field
  */
-function shapeArabicText(text: string): string {
-  if (!text) return '';
-  if (!isArabicText(text)) return text;
-  try {
-    // arabic-reshaper is CommonJS; depending on bundler it may appear as default or direct export.
-    const reshaper =
-      (ArabicReshaper as any)?.convertArabic ? (ArabicReshaper as any) : (ArabicReshaper as any)?.default;
-    // arabic-reshaper returns a string of presentation forms.
-    return reshaper?.convertArabic?.(text) ?? text;
-  } catch {
-    logger.warn('Arabic shaping failed, falling back to raw text');
-    return text;
-  }
+function isDateField(fieldKey: string): boolean {
+  return (
+    fieldKey.includes('date_of_birth') ||
+    fieldKey.includes('defense_date') ||
+    fieldKey.includes('certificate_date')
+  );
 }
+
+// ============================================================================
+// IMAGE LOADING
+// ============================================================================
 
 /**
- * Convert logical Arabic string into a visually-correct string for jsPDF:
- * 1) Arabic shaping (presentation forms)
- * 2) BiDi reordering (RTL)
+ * Load an image as base64 for PDF embedding
  */
-function prepareArabicForPdf(text: string): string {
-  // Backwards-compatible helper (default RTL)
-  return prepareArabicForPdfWithDir(text, 'rtl');
-}
-
-// Arabic dates contain Western digits + neutral separators/spaces; forcing baseDir=rtl
-// can flip the visual order in jsPDF after BiDi reordering.
-// We treat date-like strings as LTR base direction while keeping Arabic shaping.
-const DATE_SLASH_RE = /^\s*\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{2,4}\s*$/;
-const DATE_WORD_RE = /^\s*\d{1,2}\s+[^\d]+\s+\d{4}\s*$/;
-function isDateLikeText(text: string): boolean {
-  if (!text) return false;
-  // Quick check: must contain digits and either slashes or a trailing 4-digit year.
-  if (!/\d/.test(text)) return false;
-  return DATE_SLASH_RE.test(text) || DATE_WORD_RE.test(text);
-}
-
-function prepareArabicForPdfWithDir(text: string, baseDir: 'rtl' | 'ltr'): string {
-  const reshaped = shapeArabicText(text);
-  try {
-    const info = bidi?.getReorderedInfo?.(reshaped, baseDir);
-    return info?.text ?? reshaped;
-  } catch {
-    logger.warn('Bidi reorder failed, falling back to reshaped text');
-    return reshaped;
-  }
-}
-
-/**
- * Dates are a special case in jsPDF:
- * - We want the *semantic* order to remain: day ثم الشهر ثم السنة
- * - But Arabic month names still need shaping + RTL visual order.
- *
- * Using full-string BiDi on mixed (digits + Arabic + spaces) can reorder the tokens
- * (e.g. month/year/day). So we format dates by shaping/reordering ONLY the Arabic month part.
- */
-const AR_WORD_DATE_RE = /^\s*(\d{1,2})\s+(.+?)\s+(\d{4})\s*$/;
-
-/**
- * Prepare Arabic date for PDF with correct RTL visual order.
- * 
- * For Arabic dates, we want them to read right-to-left naturally.
- * Since jsPDF's BiDi algorithm will reverse mixed content when using RTL,
- * we reverse the component order first (year-month-day), then apply RTL BiDi.
- * This results in the correct visual order: day-month-year when read RTL.
- */
-function prepareArabicDateForPdf(text: string, forceRtl: boolean = true): string {
-  const trimmed = (text ?? '').trim();
-  if (!trimmed) return '';
-
-  // Pure numeric dates like 15/08/2024
-  if (DATE_SLASH_RE.test(trimmed)) {
-    if (forceRtl) {
-      // For RTL dates, reverse the order so BiDi displays correctly
-      const parts = trimmed.split('/');
-      if (parts.length === 3) {
-        // Assume dd/mm/yyyy -> reverse to yyyy/mm/dd for RTL BiDi
-        const reversed = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        return prepareArabicForPdfWithDir(reversed, 'rtl');
-      }
-    }
-    return trimmed;
-  }
-
-  // Word month dates like: "15 أوت 2024"
-  const match = AR_WORD_DATE_RE.exec(trimmed);
-  if (match) {
-    const [, day, monthRaw, year] = match;
-    
-    if (forceRtl && isArabicText(monthRaw)) {
-      // Reverse order to year-month-day, then apply RTL BiDi
-      // This will display as day-month-year when read right-to-left
-      const monthVisual = shapeArabicText(monthRaw);
-      const reversed = `${year} ${monthVisual} ${day}`;
-      return prepareArabicForPdfWithDir(reversed, 'rtl');
-    }
-    
-    // For non-Arabic months or LTR
-    if (!isArabicText(monthRaw)) {
-      return prepareArabicForPdfWithDir(trimmed, 'ltr');
-    }
-    
-    const monthVisual = prepareArabicForPdfWithDir(monthRaw, 'rtl');
-    return `${day} ${monthVisual} ${year}`;
-  }
-
-  // Fallback for other date-like strings
-  return prepareArabicForPdfWithDir(trimmed, forceRtl ? 'rtl' : 'ltr');
-}
-
-// Load image as base64
 async function loadImageAsBase64(url: string): Promise<string | null> {
   try {
     const response = await fetch(url);
@@ -150,27 +96,28 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
       reader.readAsDataURL(blob);
     });
   } catch {
-    logger.error('Failed to load image');
+    logger.error('[PDF] Failed to load image');
     return null;
   }
 }
 
-// Cache for loaded font data (ArrayBuffer) - shared across documents
-const fontDataCache = new Map<string, string>(); // url -> base64
-
-// Default Arabic font to use as fallback
-const DEFAULT_ARABIC_FONT = 'Amiri';
+// ============================================================================
+// FONT MANAGEMENT
+// ============================================================================
 
 /**
- * Load and register fonts in jsPDF document
- * Always loads a default Arabic font first to ensure Arabic text renders correctly
- * NOTE: Each jsPDF document needs fonts registered separately
+ * Load and register fonts in jsPDF document.
+ * 
+ * Font Safety Rules:
+ * - Always loads DEFAULT_ARABIC_FONT to ensure Arabic text renders correctly
+ * - Embedded fonts use Identity-H encoding for Unicode support
+ * - System fonts are only used for Latin text fallback
  */
 async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<string>> {
-  const registeredFonts = new Set<string>(); // key: "family:style"
+  const registeredFonts = new Set<string>();
   const allFontsRegistry = getAllFonts();
   
-  // Build a set of unique font families we need to load
+  // Build set of unique font families to load
   const fontFamiliesToLoad = new Set<string>();
   
   // Always include the default Arabic font
@@ -183,15 +130,13 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
     if (font) {
       fontFamiliesToLoad.add(font.family);
     } else {
-      // Try direct match as family name
       fontFamiliesToLoad.add(fontName);
     }
   }
   
-  logger.log(`[PDF Fonts] Fonts to load: ${Array.from(fontFamiliesToLoad).join(', ')}`);
+  logger.log(`[PDF Fonts] Loading: ${Array.from(fontFamiliesToLoad).join(', ')}`);
   
   for (const fontFamily of fontFamiliesToLoad) {
-    // Find matching fonts (normal and bold variants)
     const matchingFonts = allFontsRegistry.filter(f => 
       f.family === fontFamily || 
       f.name === fontFamily || 
@@ -201,33 +146,23 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
     );
     
     if (matchingFonts.length === 0) {
-      logger.warn(`[PDF Fonts] Font not found in registry: ${fontFamily}, will use fallback`);
+      logger.warn(`[PDF Fonts] Font not found: ${fontFamily}`);
       continue;
     }
 
     for (const font of matchingFonts) {
-      // Skip system fonts - they're built into jsPDF but don't support Arabic
-      if (font.isSystem) {
-        logger.log(`[PDF Fonts] Skipping system font: ${font.family}`);
-        continue;
-      }
-
-      // Skip if no URL (system font)
-      if (!font.url) {
-        continue;
-      }
+      // Skip system fonts - they don't support Arabic in jsPDF
+      if (font.isSystem || !font.url) continue;
 
       try {
         let fontBase64: string;
         
-        // Check if we have cached the base64 data
         if (fontDataCache.has(font.url)) {
           fontBase64 = fontDataCache.get(font.url)!;
         } else {
-          // Load and convert to base64
           const fontBuffer = await loadFontFile(font.url);
           if (!fontBuffer) {
-            logger.error(`[PDF Fonts] Failed to load font buffer: ${font.url}`);
+            logger.error(`[PDF Fonts] Failed to load: ${font.url}`);
             continue;
           }
           fontBase64 = arrayBufferToBase64(fontBuffer);
@@ -237,90 +172,44 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
         const rawExt = font.url.split('?')[0].split('.').pop()?.toLowerCase();
         const ext = rawExt || 'ttf';
         if (ext !== 'ttf' && ext !== 'otf') {
-          logger.warn(`[PDF Fonts] Unsupported font format: .${ext} (${font.family}). Use TTF/OTF.`);
+          logger.warn(`[PDF Fonts] Unsupported format: .${ext}`);
           continue;
         }
 
         const fileName = `${font.name}.${ext}`;
         
-        // Add font file to virtual file system for THIS document
+        // Add font to virtual file system
         doc.addFileToVFS(fileName, fontBase64);
         
-        // Register the font for THIS document
-        // Use Identity-H so Unicode glyphs (Arabic) map correctly.
+        // Register with Identity-H for Unicode (Arabic) support
         (doc as any).addFont(fileName, font.family, font.style, 'Identity-H');
         
         registeredFonts.add(`${font.family}:${font.style}`);
         logger.log(`[PDF Fonts] Registered: ${font.family} (${font.style})`);
       } catch (error) {
-        logger.error(`[PDF Fonts] Failed to load font ${font.family}:`, error);
+        logger.error(`[PDF Fonts] Failed to load ${font.family}:`, error);
       }
     }
   }
   
-  logger.log(`[PDF Fonts] Total registered: ${registeredFonts.size} fonts`);
+  logger.log(`[PDF Fonts] Total registered: ${registeredFonts.size}`);
   return registeredFonts;
 }
 
 /**
- * Set font for a field in jsPDF
- * Falls back to Amiri (Arabic font) if the requested font is not available
+ * Set font for a field in jsPDF.
+ * 
+ * Font Selection Priority:
+ * 1. Requested embedded font (if registered)
+ * 2. Default Arabic font (for Arabic text)
+ * 3. Times (for Latin fallback)
  */
-function setFieldFont(doc: jsPDF, fontName: string | undefined, fontSize: number, registeredFonts: Set<string>): void {
-  const safeSetFont = (family: string, style: string) => {
-    try {
-      doc.setFont(family, style as any);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const fallbackArabic = () => safeSetFont(DEFAULT_ARABIC_FONT, 'normal');
-  const fallbackLatin = () => safeSetFont('times', 'normal');
-
-  // If no font specified, default to Arabic fallback (safe for mixed templates)
-  if (!fontName) {
-    if (!fallbackArabic()) fallbackLatin();
-    doc.setFontSize(fontSize);
-    return;
-  }
-
-  const font = getFontByName(fontName);
-  const textLooksArabic = font?.isArabic ?? false;
-
-  // System fonts: available without embedding, but NOT reliable for Arabic glyphs.
-  if (font?.isSystem) {
-    // If a system font was chosen but we need Arabic, force Arabic fallback.
-    if (textLooksArabic) {
-      if (!fallbackArabic()) fallbackLatin();
-    } else {
-      if (!safeSetFont(font.family, font.style)) fallbackLatin();
-    }
-    doc.setFontSize(fontSize);
-    return;
-  }
-
-  // Embedded fonts: must be registered per document.
-  if (font && registeredFonts.has(`${font.family}:${font.style}`)) {
-    if (!safeSetFont(font.family, font.style)) {
-      // Fallback if something went wrong
-      if (!fallbackArabic()) fallbackLatin();
-    }
-  } else {
-    // Unknown/unregistered font
-    if (!fallbackArabic()) fallbackLatin();
-  }
-
-  doc.setFontSize(fontSize);
-}
-
-function setFieldFontForText(
-  doc: jsPDF,
-  fontName: string | undefined,
-  fontSize: number,
+function setFieldFont(
+  doc: jsPDF, 
+  fontName: string | undefined, 
+  fontSize: number, 
   registeredFonts: Set<string>,
-  opts: { isArabic: boolean }
+  isArabic: boolean
 ): void {
   const safeSetFont = (family: string, style: string): boolean => {
     try {
@@ -331,35 +220,34 @@ function setFieldFontForText(
     }
   };
 
-  // Try to find the font by name in our registry
   const font = fontName ? getFontByName(fontName) : undefined;
   
-  logger.log(`[PDF Font] Field font: "${fontName}", Found: ${font?.family || 'none'}, IsSystem: ${font?.isSystem}, IsArabic: ${opts.isArabic}`);
+  logger.log(`[PDF Font] Field: "${fontName}", Found: ${font?.family || 'none'}, IsArabic: ${isArabic}`);
   
-  // PRIORITY 1: Use registered (embedded) fonts - they work for all text types
+  // PRIORITY 1: Use registered embedded font
   if (font && !font.isSystem && registeredFonts.has(`${font.family}:${font.style}`)) {
     if (safeSetFont(font.family, font.style)) {
-      logger.log(`[PDF Font] ✓ Using embedded font: ${font.family} (${font.style})`);
+      logger.log(`[PDF Font] ✓ Using embedded: ${font.family}`);
       doc.setFontSize(fontSize);
       return;
     }
   }
 
-  // PRIORITY 2: For Arabic text, ALWAYS use an Arabic-capable embedded font
-  // System fonts like "times" do NOT support Arabic glyphs in jsPDF
-  if (opts.isArabic) {
-    // Try to find a registered Arabic font
-    if (registeredFonts.has(`${DEFAULT_ARABIC_FONT}:normal`) && safeSetFont(DEFAULT_ARABIC_FONT, 'normal')) {
-      logger.log(`[PDF Font] ✓ Using ${DEFAULT_ARABIC_FONT} for Arabic text (system fonts don't support Arabic in PDF)`);
+  // PRIORITY 2: For Arabic text, ALWAYS use Arabic-capable embedded font
+  // System fonts do NOT support Arabic glyphs in jsPDF
+  if (isArabic) {
+    if (registeredFonts.has(`${DEFAULT_ARABIC_FONT}:normal`) && 
+        safeSetFont(DEFAULT_ARABIC_FONT, 'normal')) {
+      logger.log(`[PDF Font] ✓ Using ${DEFAULT_ARABIC_FONT} for Arabic`);
       doc.setFontSize(fontSize);
       return;
     }
     
-    // Try any other registered Arabic font
+    // Try any other registered font
     for (const key of registeredFonts) {
       const [family] = key.split(':');
       if (safeSetFont(family, 'normal')) {
-        logger.log(`[PDF Font] ✓ Using fallback Arabic font: ${family}`);
+        logger.log(`[PDF Font] ✓ Fallback Arabic: ${family}`);
         doc.setFontSize(fontSize);
         return;
       }
@@ -367,9 +255,9 @@ function setFieldFontForText(
   }
   
   // PRIORITY 3: For Latin-only text, system fonts are acceptable
-  if (!opts.isArabic && font && font.isSystem) {
+  if (!isArabic && font && font.isSystem) {
     if (safeSetFont(font.family, font.style)) {
-      logger.log(`[PDF Font] ✓ Using system font for Latin text: ${font.family}`);
+      logger.log(`[PDF Font] ✓ System font for Latin: ${font.family}`);
       doc.setFontSize(fontSize);
       return;
     }
@@ -377,129 +265,41 @@ function setFieldFontForText(
 
   // Final fallback
   if (safeSetFont('times', 'normal')) {
-    logger.log(`[PDF Font] ⚠ Final fallback to times`);
+    logger.log(`[PDF Font] ⚠ Final fallback: times`);
   }
   doc.setFontSize(fontSize);
 }
 
-export async function generatePDF(
-  students: Record<string, unknown>[],
-  fields: TemplateField[],
-  template: CertificateTemplate,
-  certificateType: CertificateType,
-  printSettings?: PrintSettings
-): Promise<void> {
-  // Fetch print settings and date format settings
-  const settings = printSettings || await fetchPrintSettings();
-  const dateFormatSettings = await fetchDateFormatSettings();
-  
-  // Use template orientation or fall back to settings
-  const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
-  
-  // Get paper dimensions from settings
-  const paperDimensions = getPaperDimensions(settings);
-  const pageWidth = isLandscape ? paperDimensions.height : paperDimensions.width;
-  const pageHeight = isLandscape ? paperDimensions.width : paperDimensions.height;
+// ============================================================================
+// FIELD VALUE EXTRACTION
+// ============================================================================
 
-  // Determine the format for jsPDF
-  const format = settings.paperSize === 'custom' 
-    ? [paperDimensions.width, paperDimensions.height] 
-    : settings.paperSize;
-
-  const doc = new jsPDF({
-    orientation: isLandscape ? 'landscape' : 'portrait',
-    unit: 'mm',
-    format: format,
-    putOnlyUsedFonts: true,
-  });
-
-  // Collect all fonts needed from fields
-  const fontsNeeded = fields
-    .filter(f => f.is_visible && f.font_name)
-    .map(f => f.font_name);
-
-  // Register fonts
-  const registeredFonts = await registerFonts(doc, fontsNeeded);
-
-  // NOTE: Background is NOT included in PDF - it's only for visual positioning in preview
-  // The PDF is designed to print on pre-printed certificate paper
-
-  // Process each student
-  students.forEach((student, index) => {
-    if (index > 0) {
-      doc.addPage();
-    }
-
-    // NO background image in PDF - printing on pre-printed paper
-
-    // Add visible fields
-    fields.filter(f => f.is_visible).forEach((field) => {
-      const value = getFieldValue(student, field.field_key, dateFormatSettings);
-      if (!value) return;
-
-      // Set font properties
-      const valueIsArabic = !!field.is_rtl || isArabicText(value);
-      setFieldFontForText(doc, field.font_name, field.font_size, registeredFonts, { isArabic: valueIsArabic });
-      doc.setTextColor(field.font_color || '#000000');
-
-      // Calculate text position
-      const x = field.position_x;
-      const y = field.position_y;
-
-      // Handle text alignment
-      let align: 'left' | 'center' | 'right' = 'center';
-      if (field.text_align === 'left') align = 'left';
-      else if (field.text_align === 'right') align = 'right';
-
-      if (valueIsArabic) {
-        const prepared = isDateLikeText(value)
-          ? prepareArabicDateForPdf(value)
-          : prepareArabicForPdfWithDir(value, 'rtl');
-        doc.text(prepared, x, y, { align } as any);
-      } else {
-        doc.text(value, x, y, { align });
-      }
-    });
-  });
-
-  // Save the PDF
-  const fileName = `certificates_${certificateType}_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
-}
-
+/**
+ * Get the display value for a certificate field.
+ * Handles date formatting, mention labels, and numeral conversion.
+ */
 function getFieldValue(
   student: Record<string, unknown>,
   fieldKey: string,
   dateSettings?: DateFormatSettings
 ): string {
-  // Handle mention fields - convert enum to display text
+  // Handle mention fields
   if (fieldKey === 'mention_ar') {
     const mentionValue = student['mention'] as MentionType;
-    if (mentionValue) {
-      return mentionLabels[mentionValue]?.ar || String(mentionValue);
-    }
-    return '';
+    return mentionValue ? mentionLabels[mentionValue]?.ar || String(mentionValue) : '';
   }
   
   if (fieldKey === 'mention_fr') {
     const mentionValue = student['mention'] as MentionType;
-    if (mentionValue) {
-      return mentionLabels[mentionValue]?.fr || String(mentionValue);
-    }
-    return '';
+    return mentionValue ? mentionLabels[mentionValue]?.fr || String(mentionValue) : '';
   }
   
-  // Legacy support for old 'mention' field key
   if (fieldKey === 'mention') {
     const mentionValue = student['mention'] as MentionType;
-    if (mentionValue) {
-      return mentionLabels[mentionValue]?.ar || String(mentionValue);
-    }
-    return '';
+    return mentionValue ? mentionLabels[mentionValue]?.ar || String(mentionValue) : '';
   }
 
-  // Handle bilingual date fields - they all use the same source data
-  // Use saved date format settings
+  // Handle bilingual date fields
   if (fieldKey === 'date_of_birth_ar') {
     const value = student['date_of_birth'];
     if (value) {
@@ -573,10 +373,9 @@ function getFieldValue(
   }
 
   const value = student[fieldKey];
-  
   if (!value) return '';
 
-  // Legacy date fields support (default to French format)
+  // Legacy date fields (default to French format)
   if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
     try {
       return formatCertificateDate(value as string, false, dateSettings);
@@ -585,11 +384,118 @@ function getFieldValue(
     }
   }
 
-  // Convert any Hindi numerals to Western Arabic for all values
+  // Convert Hindi numerals to Western Arabic
   return toWesternNumerals(String(value));
 }
 
-// Export function to generate PDF for a single student (for preview)
+// ============================================================================
+// CORE RENDERING FUNCTION
+// ============================================================================
+
+/**
+ * Render a single field to the PDF document.
+ * 
+ * This is the core function that processes text and renders it correctly.
+ * All Arabic text processing happens here through the centralized utilities.
+ */
+function renderField(
+  doc: jsPDF,
+  field: TemplateField,
+  value: string,
+  registeredFonts: Set<string>
+): void {
+  if (!value) return;
+
+  // Determine field language
+  const language = getFieldLanguage(field.field_key, value, field.is_rtl ?? false);
+  const isDateFieldType = isDateField(field.field_key);
+  
+  // Process text for PDF
+  const processed: ProcessedText = processTextForPdf(value, {
+    language,
+    isDateField: isDateFieldType,
+    forceRtl: language === 'ar' || language === 'mixed'
+  });
+  
+  // Set font (must use Arabic-capable font for Arabic text)
+  setFieldFont(doc, field.font_name, field.font_size, registeredFonts, processed.isArabic);
+  
+  // Set text color
+  doc.setTextColor(field.font_color || '#000000');
+  
+  // Determine alignment
+  // Field's explicit alignment takes precedence, otherwise use processed recommendation
+  let align: 'left' | 'center' | 'right' = 'center';
+  if (field.text_align === 'left') align = 'left';
+  else if (field.text_align === 'right') align = 'right';
+  else if (field.text_align === 'center') align = 'center';
+  else align = processed.align; // Use recommended alignment
+  
+  // Render text
+  // IMPORTANT: Always use the processed text, never raw Arabic strings
+  doc.text(processed.text, field.position_x, field.position_y, { align });
+  
+  logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}`);
+}
+
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+
+/**
+ * Generate a PDF document with multiple certificates (one per student).
+ * Saves the PDF to the user's device.
+ */
+export async function generatePDF(
+  students: Record<string, unknown>[],
+  fields: TemplateField[],
+  template: CertificateTemplate,
+  certificateType: CertificateType,
+  printSettings?: PrintSettings
+): Promise<void> {
+  const settings = printSettings || await fetchPrintSettings();
+  const dateFormatSettings = await fetchDateFormatSettings();
+  
+  const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
+  const paperDimensions = getPaperDimensions(settings);
+  
+  const format = settings.paperSize === 'custom' 
+    ? [paperDimensions.width, paperDimensions.height] 
+    : settings.paperSize;
+
+  const doc = new jsPDF({
+    orientation: isLandscape ? 'landscape' : 'portrait',
+    unit: 'mm',
+    format: format,
+    putOnlyUsedFonts: true,
+  });
+
+  // Collect and register fonts
+  const fontsNeeded = fields
+    .filter(f => f.is_visible && f.font_name)
+    .map(f => f.font_name);
+  const registeredFonts = await registerFonts(doc, fontsNeeded);
+
+  // Process each student
+  students.forEach((student, index) => {
+    if (index > 0) doc.addPage();
+
+    // Render visible fields
+    fields.filter(f => f.is_visible).forEach((field) => {
+      const value = getFieldValue(student, field.field_key, dateFormatSettings);
+      renderField(doc, field, value, registeredFonts);
+    });
+  });
+
+  // Save PDF
+  const fileName = `certificates_${certificateType}_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
+}
+
+/**
+ * Generate a PDF for a single student and return as Blob.
+ * Used for preview functionality.
+ */
 export async function generateSinglePDF(
   student: Record<string, unknown>,
   fields: TemplateField[],
@@ -597,19 +503,12 @@ export async function generateSinglePDF(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<Blob> {
-  // Fetch print settings and date format settings
   const settings = printSettings || await fetchPrintSettings();
   const dateFormatSettings = await fetchDateFormatSettings();
   
-  // Use template orientation or fall back to settings
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
-  
-  // Get paper dimensions from settings
   const paperDimensions = getPaperDimensions(settings);
-  const pageWidth = isLandscape ? paperDimensions.height : paperDimensions.width;
-  const pageHeight = isLandscape ? paperDimensions.width : paperDimensions.height;
-
-  // Determine the format for jsPDF
+  
   const format = settings.paperSize === 'custom' 
     ? [paperDimensions.width, paperDimensions.height] 
     : settings.paperSize;
@@ -621,45 +520,24 @@ export async function generateSinglePDF(
     putOnlyUsedFonts: true,
   });
 
-  // Collect all fonts needed from fields
   const fontsNeeded = fields
     .filter(f => f.is_visible && f.font_name)
     .map(f => f.font_name);
-
-  // Register fonts
   const registeredFonts = await registerFonts(doc, fontsNeeded);
 
-  // NOTE: Background is NOT included in PDF - it's only for visual positioning in preview
-  // The PDF is designed to print on pre-printed certificate paper
-
-  // Add visible fields
+  // Render visible fields
   fields.filter(f => f.is_visible).forEach((field) => {
     const value = getFieldValue(student, field.field_key, dateFormatSettings);
-    if (!value) return;
-
-    // Set font properties
-    const valueIsArabic = !!field.is_rtl || isArabicText(value);
-    setFieldFontForText(doc, field.font_name, field.font_size, registeredFonts, { isArabic: valueIsArabic });
-    doc.setTextColor(field.font_color || '#000000');
-
-    let align: 'left' | 'center' | 'right' = 'center';
-    if (field.text_align === 'left') align = 'left';
-    else if (field.text_align === 'right') align = 'right';
-
-    if (valueIsArabic) {
-      const prepared = isDateLikeText(value)
-        ? prepareArabicDateForPdf(value)
-        : prepareArabicForPdfWithDir(value, 'rtl');
-      doc.text(prepared, field.position_x, field.position_y, { align } as any);
-    } else {
-      doc.text(value, field.position_x, field.position_y, { align });
-    }
+    renderField(doc, field, value, registeredFonts);
   });
 
   return doc.output('blob');
 }
 
-// Generate a multi-page PDF as a Blob (used by desktop printing integration)
+/**
+ * Generate a multi-page PDF and return as Blob.
+ * Used by desktop printing integration.
+ */
 export async function generatePDFBlob(
   students: Record<string, unknown>[],
   fields: TemplateField[],
@@ -667,17 +545,12 @@ export async function generatePDFBlob(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<Blob> {
-  // Fetch print settings and date format settings
   const settings = printSettings || await fetchPrintSettings();
   const dateFormatSettings = await fetchDateFormatSettings();
   
-  // Use template orientation or fall back to settings
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
-  
-  // Get paper dimensions from settings
   const paperDimensions = getPaperDimensions(settings);
-
-  // Determine the format for jsPDF
+  
   const format = settings.paperSize === 'custom' 
     ? [paperDimensions.width, paperDimensions.height] 
     : settings.paperSize;
@@ -689,40 +562,19 @@ export async function generatePDFBlob(
     putOnlyUsedFonts: true,
   });
 
-  const fontsNeeded = fields.filter((f) => f.is_visible && f.font_name).map((f) => f.font_name);
+  const fontsNeeded = fields.filter(f => f.is_visible && f.font_name).map(f => f.font_name);
   const registeredFonts = await registerFonts(doc, fontsNeeded);
 
   students.forEach((student, index) => {
     if (index > 0) doc.addPage();
 
-    fields
-      .filter((f) => f.is_visible)
-      .forEach((field) => {
-        const value = getFieldValue(student, field.field_key, dateFormatSettings);
-        if (!value) return;
-
-        const valueIsArabic = !!field.is_rtl || isArabicText(value);
-        setFieldFontForText(doc, field.font_name, field.font_size, registeredFonts, { isArabic: valueIsArabic });
-        doc.setTextColor(field.font_color || '#000000');
-
-        let align: 'left' | 'center' | 'right' = 'center';
-        if (field.text_align === 'left') align = 'left';
-        else if (field.text_align === 'right') align = 'right';
-
-        if (valueIsArabic) {
-          doc.text(
-            isDateLikeText(value) ? prepareArabicDateForPdf(value) : prepareArabicForPdfWithDir(value, 'rtl'),
-            field.position_x,
-            field.position_y,
-            { align } as any
-          );
-        } else {
-          doc.text(value, field.position_x, field.position_y, { align });
-        }
-      });
+    fields.filter(f => f.is_visible).forEach((field) => {
+      const value = getFieldValue(student, field.field_key, dateFormatSettings);
+      renderField(doc, field, value, registeredFonts);
+    });
   });
 
-  // Keep filename semantics for callers if needed
+  // Keep certificateType reference for potential future use
   void certificateType;
   return doc.output('blob');
 }
