@@ -3,9 +3,10 @@ import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, Eye
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
-import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from "@/lib/numerals";
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { usePrintSettings, getPaperDimensions, DEFAULT_PRINT_SETTINGS } from "@/hooks/usePrintSettings";
+import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -104,6 +105,9 @@ export function CertificatePreview({
   const { data: printSettings } = usePrintSettings();
   const settings = printSettings || DEFAULT_PRINT_SETTINGS;
   
+  // Load date format settings from database
+  const { settings: dateFormatSettings } = useDateFormatSettings();
+  
   // Memoize font styles with fontVersion dependency to force re-render when fonts change
   const fieldFontStyles = useMemo(() => {
     return fields.reduce((acc, field) => {
@@ -121,7 +125,7 @@ export function CertificatePreview({
   const width = isLandscape ? paperDimensions.height : paperDimensions.width;
   const height = isLandscape ? paperDimensions.width : paperDimensions.height;
 
-  const getFieldValue = (fieldKey: string): string => {
+  const getFieldValue = useCallback((fieldKey: string): string => {
     // Handle mention fields - convert enum to display text
     if (fieldKey === 'mention_ar') {
       const mentionValue = student['mention'] as MentionType;
@@ -149,12 +153,11 @@ export function CertificatePreview({
     }
     
     // Handle bilingual date fields - they all use the same source data
-    // Arabic dates: yyyy/mm/dd (reads day/month/year RTL)
-    // French dates: dd/mm/yyyy (reads day/month/year LTR)
+    // Use saved date format settings
     if (fieldKey === 'date_of_birth_ar') {
       const value = student['date_of_birth'];
       if (value) {
-        return formatCertificateDate(value as string, true); // Arabic format
+        return formatCertificateDate(value as string, true, dateFormatSettings);
       }
       return '';
     }
@@ -162,7 +165,7 @@ export function CertificatePreview({
     if (fieldKey === 'date_of_birth_fr') {
       const value = student['date_of_birth'];
       if (value) {
-        return formatCertificateDate(value as string, false); // French format
+        return formatCertificateDate(value as string, false, dateFormatSettings);
       }
       return '';
     }
@@ -170,7 +173,7 @@ export function CertificatePreview({
     if (fieldKey === 'defense_date_ar') {
       const value = student['defense_date'];
       if (value) {
-        return formatDefenseDate(value as string, true); // Arabic format with month name
+        return formatDefenseDate(value as string, true, dateFormatSettings);
       }
       return '';
     }
@@ -178,7 +181,7 @@ export function CertificatePreview({
     if (fieldKey === 'defense_date_fr') {
       const value = student['defense_date'];
       if (value) {
-        return formatDefenseDate(value as string, false); // French format with month name
+        return formatDefenseDate(value as string, false, dateFormatSettings);
       }
       return '';
     }
@@ -186,7 +189,7 @@ export function CertificatePreview({
     if (fieldKey === 'certificate_date_ar') {
       const value = student['certificate_date'];
       if (value) {
-        return formatCertificateDate(value as string, true); // Arabic format
+        return formatCertificateIssueDate(value as string, true, dateFormatSettings);
       }
       return '';
     }
@@ -194,7 +197,7 @@ export function CertificatePreview({
     if (fieldKey === 'certificate_date_fr') {
       const value = student['certificate_date'];
       if (value) {
-        return formatCertificateDate(value as string, false); // French format
+        return formatCertificateIssueDate(value as string, false, dateFormatSettings);
       }
       return '';
     }
@@ -204,13 +207,13 @@ export function CertificatePreview({
     // Legacy date fields support (default to French format)
     if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
       if (value) {
-        return formatCertificateDate(value as string, false);
+        return formatCertificateDate(value as string, false, dateFormatSettings);
       }
     }
     
     // Convert any Hindi numerals to Western Arabic for all values
     return value ? toWesternNumerals(String(value)) : '';
-  };
+  }, [student, dateFormatSettings]);
 
   const isRtlLanguage = template.language.includes('ar');
   const selectedField = fields.find(f => f.id === selectedFieldId);
