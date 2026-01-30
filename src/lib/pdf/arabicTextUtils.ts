@@ -229,7 +229,7 @@ const ARABIC_MONTHS_PDF = [
  * This function generates Arabic dates in the EXACT format required by jsPDF.
  * jsPDF is treated as an LTR-only drawing engine - no BiDi, no RTL flags.
  * 
- * The output order is: YEAR MONTH DAY
+ * The output order is: YEAR DAY MONTH
  * When rendered with align: "right", this produces the correct visual order.
  * 
  * EXPLICITLY FORBIDDEN:
@@ -250,8 +250,8 @@ export function formatArabicDateFromDateObject(date: Date): string {
   // Shape the Arabic month for proper glyph rendering
   const shapedMonth = shapeArabicText(month);
   
-  // jsPDF MUST receive this exact order: YEAR MONTH DAY
-  return `${year} ${shapedMonth} ${day}`;
+  // jsPDF MUST receive this exact order: YEAR DAY MONTH
+  return `${year} ${day} ${shapedMonth}`;
 }
 
 /**
@@ -265,7 +265,7 @@ export function formatArabicDateFromDateObject(date: Date): string {
  * - Numeric date: "15/08/2024" or "2024/08/15"
  * - Word date: "15 أوت 2024"
  * 
- * The output is ALWAYS: YEAR SHAPED_MONTH DAY
+ * The output is ALWAYS: YEAR DAY SHAPED_MONTH
  * 
  * @param dateString - The date string from the database or UI
  * @returns The formatted string for jsPDF
@@ -281,7 +281,7 @@ export function formatArabicDateForPdf(dateString: string): string {
     const [, year, month, day] = isoMatch;
     const monthIndex = parseInt(month, 10) - 1;
     const shapedMonth = shapeArabicText(ARABIC_MONTHS_PDF[monthIndex] || '');
-    return `${year} ${shapedMonth} ${parseInt(day, 10)}`;
+    return `${year} ${parseInt(day, 10)} ${shapedMonth}`;
   }
   
   // Try numeric date with slashes: dd/mm/yyyy or yyyy/mm/dd
@@ -303,7 +303,7 @@ export function formatArabicDateForPdf(dateString: string): string {
     }
     
     const shapedMonth = shapeArabicText(ARABIC_MONTHS_PDF[month] || '');
-    return `${year} ${shapedMonth} ${day}`;
+    return `${year} ${day} ${shapedMonth}`;
   }
   
   // Try numeric date with dashes: dd-mm-yyyy or yyyy-mm-dd
@@ -323,7 +323,7 @@ export function formatArabicDateForPdf(dateString: string): string {
     }
     
     const shapedMonth = shapeArabicText(ARABIC_MONTHS_PDF[month] || '');
-    return `${year} ${shapedMonth} ${day}`;
+    return `${year} ${day} ${shapedMonth}`;
   }
   
   // Try word-based date: "15 أوت 2024" or "أوت 15 2024"
@@ -336,7 +336,7 @@ export function formatArabicDateForPdf(dateString: string): string {
     const shapedMonth = monthIndex >= 0 
       ? shapeArabicText(ARABIC_MONTHS_PDF[monthIndex])
       : shapeArabicText(monthText);
-    return `${year} ${shapedMonth} ${day}`;
+    return `${year} ${day} ${shapedMonth}`;
   }
   
   const wordMatch2 = /^(.+?)\s+(\d{1,2})\s+(\d{4})$/.exec(trimmed);
@@ -346,7 +346,7 @@ export function formatArabicDateForPdf(dateString: string): string {
     const shapedMonth = monthIndex >= 0 
       ? shapeArabicText(ARABIC_MONTHS_PDF[monthIndex])
       : shapeArabicText(monthText);
-    return `${year} ${shapedMonth} ${day}`;
+    return `${year} ${day} ${shapedMonth}`;
   }
   
   // Fallback: return shaped text without date processing
