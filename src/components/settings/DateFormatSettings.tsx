@@ -136,7 +136,7 @@ export default function DateFormatSettings() {
           </span>
           <span 
             className="font-medium bg-primary/10 px-2 py-0.5 rounded text-sm"
-            dir="ltr"
+            dir={isArabicSection ? "rtl" : "ltr"}
           >
             {preview}
           </span>
