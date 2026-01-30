@@ -52,6 +52,7 @@ export function ImportExcelDialog({
   const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const [excelColumns, setExcelColumns] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
+  const [ignoredRequiredFields, setIgnoredRequiredFields] = useState<string[]>([]);
   const [importProgress, setImportProgress] = useState<ImportProgress>({ current: 0, total: 0 });
   const [importResults, setImportResults] = useState<ImportResults>({ success: 0, failed: 0, errors: [] });
   const [importMode, setImportMode] = useState<ImportMode>("append");
@@ -97,6 +98,7 @@ export function ImportExcelDialog({
     setExcelData([]);
     setExcelColumns([]);
     setColumnMapping({});
+    setIgnoredRequiredFields([]);
     setImportProgress({ current: 0, total: 0 });
     setImportResults({ success: 0, failed: 0, errors: [] });
     setImportMode("append");
@@ -439,7 +441,15 @@ export function ImportExcelDialog({
               excelData={excelData}
               columnMapping={columnMapping}
               requiredFields={requiredFields}
+              ignoredRequiredFields={ignoredRequiredFields}
               onMappingChange={handleMappingChange}
+              onIgnoreFieldToggle={(fieldKey) => {
+                setIgnoredRequiredFields(prev => 
+                  prev.includes(fieldKey) 
+                    ? prev.filter(k => k !== fieldKey)
+                    : [...prev, fieldKey]
+                );
+              }}
               onBack={existingCount > 0 ? () => setStep("mode") : resetDialog}
               onNext={() => setStep("preview")}
             />

@@ -5,7 +5,7 @@
 
 import {
   formatDateWithPattern,
-  getEffectiveDatePattern,
+  getPatternFromConfig,
   DEFAULT_DATE_FORMAT_SETTINGS,
   type DateFormatSettings,
 } from './dateFormats';
@@ -83,7 +83,7 @@ export const frenchMonths: Record<number, string> = {
 };
 
 /**
- * Format a date for certificates using saved format settings
+ * Format a birth date for certificates using saved format settings
  * @param date - Date to format
  * @param isArabic - If true, format for Arabic context
  * @param formatSettings - Optional format settings (uses defaults if not provided)
@@ -94,10 +94,7 @@ export function formatCertificateDate(
   formatSettings?: DateFormatSettings
 ): string {
   const settings = formatSettings || DEFAULT_DATE_FORMAT_SETTINGS;
-  const pattern = getEffectiveDatePattern(
-    settings.birthDateFormat,
-    settings.birthDateCustomPattern
-  );
+  const pattern = getPatternFromConfig(settings.birthDate, isArabic);
   
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
@@ -109,7 +106,7 @@ export function formatCertificateDate(
 }
 
 /**
- * Format defense/certificate date using saved format settings
+ * Format defense date using saved format settings
  * @param date - Date to format
  * @param isArabic - If true, use Arabic month names, otherwise French
  * @param formatSettings - Optional format settings (uses defaults if not provided)
@@ -120,10 +117,7 @@ export function formatDefenseDate(
   formatSettings?: DateFormatSettings
 ): string {
   const settings = formatSettings || DEFAULT_DATE_FORMAT_SETTINGS;
-  const pattern = getEffectiveDatePattern(
-    settings.defenseDateFormat,
-    settings.defenseDateCustomPattern
-  );
+  const pattern = getPatternFromConfig(settings.defenseDate, isArabic);
   
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
@@ -143,10 +137,7 @@ export function formatCertificateIssueDate(
   formatSettings?: DateFormatSettings
 ): string {
   const settings = formatSettings || DEFAULT_DATE_FORMAT_SETTINGS;
-  const pattern = getEffectiveDatePattern(
-    settings.certificateDateFormat,
-    settings.certificateDateCustomPattern
-  );
+  const pattern = getPatternFromConfig(settings.certificateDate, isArabic);
   
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   

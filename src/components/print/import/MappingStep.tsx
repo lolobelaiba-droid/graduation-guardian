@@ -1,7 +1,8 @@
-import { ArrowLeft, CheckCircle2, AlertCircle, Link2, Link2Off } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertCircle, Link2, Link2Off, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,9 @@ interface MappingStepProps {
   excelData: ExcelRow[];
   columnMapping: ColumnMapping;
   requiredFields: FieldDefinition[];
+  ignoredRequiredFields: string[];
   onMappingChange: (excelCol: string, fieldKey: string) => void;
+  onIgnoreFieldToggle: (fieldKey: string) => void;
   onBack: () => void;
   onNext: () => void;
 }
@@ -28,7 +31,9 @@ export function MappingStep({
   excelData,
   columnMapping,
   requiredFields,
+  ignoredRequiredFields,
   onMappingChange,
+  onIgnoreFieldToggle,
   onBack,
   onNext,
 }: MappingStepProps) {
@@ -38,7 +43,9 @@ export function MappingStep({
 
   const getUnmappedRequiredFields = () => {
     const mappedKeys = Object.values(columnMapping);
-    return requiredFields.filter((f) => f.required && !mappedKeys.includes(f.key));
+    return requiredFields.filter(
+      (f) => f.required && !mappedKeys.includes(f.key) && !ignoredRequiredFields.includes(f.key)
+    );
   };
 
   const getMappedRequiredFields = () => {
@@ -57,6 +64,7 @@ export function MappingStep({
   const unmappedRequired = getUnmappedRequiredFields();
   const mappedRequired = getMappedRequiredFields();
   const totalRequired = requiredFields.filter(f => f.required).length;
+  const activeRequired = totalRequired - ignoredRequiredFields.length;
   const isValid = unmappedRequired.length === 0;
 
   return (
@@ -76,7 +84,7 @@ export function MappingStep({
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">الحقول المطلوبة</span>
               <Badge variant={isValid ? "default" : "outline"} className={isValid ? "bg-green-600" : ""}>
-                {mappedRequired.length}/{totalRequired}
+                {mappedRequired.length}/{activeRequired}
               </Badge>
             </div>
           </CardContent>
@@ -91,19 +99,56 @@ export function MappingStep({
         </Card>
       </div>
 
-      {/* Unmapped Required Warning */}
+      {/* Unmapped Required Warning with ignore option */}
       {unmappedRequired.length > 0 && (
         <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
           <div className="flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-destructive">حقول مطلوبة غير مربوطة:</p>
-              <div className="flex flex-wrap gap-1 mt-1">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-destructive mb-2">حقول مطلوبة غير مربوطة:</p>
+              <div className="space-y-2">
                 {unmappedRequired.map((f) => (
-                  <Badge key={f.key} variant="destructive" className="text-xs">
-                    {f.name_ar}
-                  </Badge>
+                  <div key={f.key} className="flex items-center justify-between bg-background/50 rounded px-2 py-1">
+                    <span className="text-sm">{f.name_ar}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={() => onIgnoreFieldToggle(f.key)}
+                    >
+                      <EyeOff className="h-3 w-3" />
+                      تجاهل هذا الحقل
+                    </Button>
+                  </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ignored fields notice */}
+      {ignoredRequiredFields.length > 0 && (
+        <div className="bg-muted/50 border rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <EyeOff className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-muted-foreground mb-2">حقول متجاهلة (سيتم استيرادها فارغة):</p>
+              <div className="flex flex-wrap gap-2">
+                {ignoredRequiredFields.map((key) => {
+                  const field = requiredFields.find(f => f.key === key);
+                  return (
+                    <Badge 
+                      key={key} 
+                      variant="outline" 
+                      className="text-xs cursor-pointer hover:bg-destructive/10"
+                      onClick={() => onIgnoreFieldToggle(key)}
+                    >
+                      {field?.name_ar || key}
+                      <span className="mr-1 text-destructive">×</span>
+                    </Badge>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -119,7 +164,7 @@ export function MappingStep({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-[350px]">
+          <ScrollArea className="h-[300px]">
             <div className="divide-y">
               {/* Header */}
               <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 text-sm font-medium sticky top-0">
