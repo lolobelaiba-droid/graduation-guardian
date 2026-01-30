@@ -86,29 +86,56 @@ function prepareArabicForPdfWithDir(text: string, baseDir: 'rtl' | 'ltr'): strin
  */
 const AR_WORD_DATE_RE = /^\s*(\d{1,2})\s+(.+?)\s+(\d{4})\s*$/;
 
-function prepareArabicDateForPdf(text: string): string {
+/**
+ * Prepare Arabic date for PDF with correct RTL visual order.
+ * 
+ * For Arabic dates, we want them to read right-to-left naturally.
+ * Since jsPDF's BiDi algorithm will reverse mixed content when using RTL,
+ * we reverse the component order first (year-month-day), then apply RTL BiDi.
+ * This results in the correct visual order: day-month-year when read RTL.
+ */
+function prepareArabicDateForPdf(text: string, forceRtl: boolean = true): string {
   const trimmed = (text ?? '').trim();
   if (!trimmed) return '';
 
-  // Pure numeric dates like 15/08/2024 should be kept as-is.
-  if (DATE_SLASH_RE.test(trimmed)) return trimmed;
+  // Pure numeric dates like 15/08/2024
+  if (DATE_SLASH_RE.test(trimmed)) {
+    if (forceRtl) {
+      // For RTL dates, reverse the order so BiDi displays correctly
+      const parts = trimmed.split('/');
+      if (parts.length === 3) {
+        // Assume dd/mm/yyyy -> reverse to yyyy/mm/dd for RTL BiDi
+        const reversed = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return prepareArabicForPdfWithDir(reversed, 'rtl');
+      }
+    }
+    return trimmed;
+  }
 
-  // Word month dates like: "15 أوت 2024" (or multi-word month names)
-  // Keep the token order day -> month -> year, and only fix the Arabic month visual order.
+  // Word month dates like: "15 أوت 2024"
   const match = AR_WORD_DATE_RE.exec(trimmed);
   if (match) {
     const [, day, monthRaw, year] = match;
-    // If the middle token isn't Arabic, fall back to the normal date strategy.
+    
+    if (forceRtl && isArabicText(monthRaw)) {
+      // Reverse order to year-month-day, then apply RTL BiDi
+      // This will display as day-month-year when read right-to-left
+      const monthVisual = shapeArabicText(monthRaw);
+      const reversed = `${year} ${monthVisual} ${day}`;
+      return prepareArabicForPdfWithDir(reversed, 'rtl');
+    }
+    
+    // For non-Arabic months or LTR
     if (!isArabicText(monthRaw)) {
       return prepareArabicForPdfWithDir(trimmed, 'ltr');
     }
-
+    
     const monthVisual = prepareArabicForPdfWithDir(monthRaw, 'rtl');
     return `${day} ${monthVisual} ${year}`;
   }
 
   // Fallback for other date-like strings
-  return prepareArabicForPdfWithDir(trimmed, 'ltr');
+  return prepareArabicForPdfWithDir(trimmed, forceRtl ? 'rtl' : 'ltr');
 }
 
 // Load image as base64
