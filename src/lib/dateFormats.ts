@@ -77,6 +77,8 @@ export const DATE_FORMAT_PRESETS: DateFormatPreset[] = [
 export interface SingleDateFormat {
   formatId: string; // Preset ID or 'custom'
   customPattern: string;
+  /** Text direction for Arabic dates - 'rtl' or 'ltr' (default: 'rtl') */
+  textDirection?: 'rtl' | 'ltr';
 }
 
 // Date field configuration with separate Arabic and French formats
@@ -96,25 +98,39 @@ export interface DateFormatSettings {
 const DEFAULT_SINGLE_FORMAT_SLASH: SingleDateFormat = {
   formatId: 'dd_mm_yyyy_slash',
   customPattern: 'DD/MM/YYYY',
+  textDirection: 'rtl',
 };
 
 const DEFAULT_SINGLE_FORMAT_WORD: SingleDateFormat = {
   formatId: 'dd_mmmm_yyyy',
   customPattern: 'DD MMMM YYYY',
+  textDirection: 'rtl',
+};
+
+const DEFAULT_FR_FORMAT_SLASH: SingleDateFormat = {
+  formatId: 'dd_mm_yyyy_slash',
+  customPattern: 'DD/MM/YYYY',
+  textDirection: 'ltr',
+};
+
+const DEFAULT_FR_FORMAT_WORD: SingleDateFormat = {
+  formatId: 'dd_mmmm_yyyy',
+  customPattern: 'DD MMMM YYYY',
+  textDirection: 'ltr',
 };
 
 export const DEFAULT_DATE_FORMAT_SETTINGS: DateFormatSettings = {
   birthDate: {
     ar: DEFAULT_SINGLE_FORMAT_SLASH,
-    fr: DEFAULT_SINGLE_FORMAT_SLASH,
+    fr: DEFAULT_FR_FORMAT_SLASH,
   },
   defenseDate: {
     ar: DEFAULT_SINGLE_FORMAT_WORD,
-    fr: DEFAULT_SINGLE_FORMAT_WORD,
+    fr: DEFAULT_FR_FORMAT_WORD,
   },
   certificateDate: {
     ar: DEFAULT_SINGLE_FORMAT_SLASH,
-    fr: DEFAULT_SINGLE_FORMAT_SLASH,
+    fr: DEFAULT_FR_FORMAT_SLASH,
   },
 };
 
@@ -241,6 +257,27 @@ export function getPatternFromConfig(
 ): string {
   const langConfig = isArabic ? config.ar : config.fr;
   return getEffectiveDatePattern(langConfig.formatId, langConfig.customPattern);
+}
+
+/**
+ * Get text direction from DateFieldConfig for a specific language
+ */
+export function getTextDirectionFromConfig(
+  config: DateFieldConfig,
+  isArabic: boolean
+): 'rtl' | 'ltr' {
+  const langConfig = isArabic ? config.ar : config.fr;
+  return langConfig.textDirection || (isArabic ? 'rtl' : 'ltr');
+}
+
+/**
+ * Get date field config for a specific date type
+ */
+export function getDateFieldConfig(
+  settings: DateFormatSettings,
+  dateType: 'birthDate' | 'defenseDate' | 'certificateDate'
+): DateFieldConfig {
+  return settings[dateType];
 }
 
 /**
