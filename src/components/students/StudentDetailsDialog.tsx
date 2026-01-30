@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { CertificateType, MentionType, Certificate } from "@/types/certificates";
 import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
+import { formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
+import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 
 interface StudentDetailsDialogProps {
   open: boolean;
@@ -48,9 +50,24 @@ export default function StudentDetailsDialog({
   student,
   certificateType,
 }: StudentDetailsDialogProps) {
+  // Load date format settings
+  const { settings: dateFormatSettings } = useDateFormatSettings();
+  
   if (!student) return null;
 
-  const formatDate = (dateStr: string) => {
+  const formatBirthDate = (dateStr: string) => {
+    return formatCertificateDate(dateStr, true, dateFormatSettings);
+  };
+  
+  const formatDefenseDateValue = (dateStr: string) => {
+    return formatDefenseDate(dateStr, true, dateFormatSettings);
+  };
+  
+  const formatCertificateDateValue = (dateStr: string) => {
+    return formatCertificateIssueDate(dateStr, true, dateFormatSettings);
+  };
+  
+  const formatSystemDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("ar-SA");
   };
 
@@ -79,7 +96,7 @@ export default function StudentDetailsDialog({
             <DetailRow label="رقم الطالب" value={student.student_number} />
             <DetailRow label="الاسم بالعربية" value={student.full_name_ar} />
             <DetailRow label="الاسم بالفرنسية" value={student.full_name_fr} isRtl={false} />
-            <DetailRow label="تاريخ الميلاد" value={formatDate(student.date_of_birth)} />
+            <DetailRow label="تاريخ الميلاد" value={formatBirthDate(student.date_of_birth)} />
             <DetailRow label="مكان الميلاد بالعربية" value={student.birthplace_ar} />
             <DetailRow label="مكان الميلاد بالفرنسية" value={student.birthplace_fr} isRtl={false} />
           </div>
@@ -128,10 +145,10 @@ export default function StudentDetailsDialog({
           {/* Dates */}
           <SectionTitle>التواريخ</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-            <DetailRow label="تاريخ المناقشة" value={formatDate(student.defense_date)} />
-            <DetailRow label="تاريخ الشهادة" value={formatDate(student.certificate_date)} />
-            <DetailRow label="تاريخ الإنشاء" value={formatDate(student.created_at)} />
-            <DetailRow label="آخر تحديث" value={formatDate(student.updated_at)} />
+            <DetailRow label="تاريخ المناقشة" value={formatDefenseDateValue(student.defense_date)} />
+            <DetailRow label="تاريخ الشهادة" value={formatCertificateDateValue(student.certificate_date)} />
+            <DetailRow label="تاريخ الإنشاء" value={formatSystemDate(student.created_at)} />
+            <DetailRow label="آخر تحديث" value={formatSystemDate(student.updated_at)} />
           </div>
         </div>
       </DialogContent>

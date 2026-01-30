@@ -11,10 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { toWesternNumerals, formatCertificateDate, formatDefenseDate } from "@/lib/numerals";
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
+import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { usePrintSettings, getPaperDimensions, DEFAULT_PRINT_SETTINGS } from "@/hooks/usePrintSettings";
+import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 
 // Default A4 dimensions in mm (fallback)
 const A4_WIDTH_MM = 210;
@@ -109,6 +111,9 @@ export function FullPreviewDialog({
   const { data: printSettings } = usePrintSettings();
   const settings = printSettings || DEFAULT_PRINT_SETTINGS;
   
+  // Load date format settings from database
+  const { settings: dateFormatSettings } = useDateFormatSettings();
+  
   // Memoize font styles with fontVersion dependency to force re-render when fonts change
   const fieldFontStyles = useMemo(() => {
     return fields.reduce((acc, field) => {
@@ -129,7 +134,7 @@ export function FullPreviewDialog({
   const hasFieldChanges = fieldChanges.length > 0;
   const hasAnyChanges = hasBackgroundChanges || hasFieldChanges;
 
-  const getFieldValue = (fieldKey: string): string => {
+  const getFieldValue = useCallback((fieldKey: string): string => {
     // Handle mention fields
     if (fieldKey === 'mention_ar') {
       const mentionValue = student['mention'] as MentionType;
@@ -144,41 +149,55 @@ export function FullPreviewDialog({
       return mentionValue ? mentionLabels[mentionValue]?.ar || String(mentionValue) : '';
     }
 
-    // Handle bilingual date fields
+    // Handle bilingual date fields - use saved date format settings
     if (fieldKey === 'date_of_birth_ar') {
       const value = student['date_of_birth'];
-      return value ? formatCertificateDate(value as string, true) : '';
+      return value ? formatCertificateDate(value as string, true, dateFormatSettings) : '';
     }
     if (fieldKey === 'date_of_birth_fr') {
       const value = student['date_of_birth'];
-      return value ? formatCertificateDate(value as string, false) : '';
+      return value ? formatCertificateDate(value as string, false, dateFormatSettings) : '';
     }
     if (fieldKey === 'defense_date_ar') {
       const value = student['defense_date'];
-      return value ? formatDefenseDate(value as string, true) : '';
+      return value ? formatDefenseDate(value as string, true, dateFormatSettings) : '';
     }
     if (fieldKey === 'defense_date_fr') {
       const value = student['defense_date'];
-      return value ? formatDefenseDate(value as string, false) : '';
+      return value ? formatDefenseDate(value as string, false, dateFormatSettings) : '';
     }
     if (fieldKey === 'certificate_date_ar') {
       const value = student['certificate_date'];
-      return value ? formatCertificateDate(value as string, true) : '';
+      return value ? formatCertificateIssueDate(value as string, true, dateFormatSettings) : '';
     }
     if (fieldKey === 'certificate_date_fr') {
       const value = student['certificate_date'];
-      return value ? formatCertificateDate(value as string, false) : '';
+      return value ? formatCertificateIssueDate(value as string, false, dateFormatSettings) : '';
     }
 
     const value = student[fieldKey];
     
     // Legacy date fields
     if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
-      return value ? formatCertificateDate(value as string, false) : '';
+      return value ? formatCertificateDate(value as string, false, dateFormatSettings) : '';
     }
 
     return value ? toWesternNumerals(String(value)) : '';
-  };
+  }, [student, dateFormatSettings]);
+
+  // Helper to get text direction for date fields
+  const getDateFieldDirection = useCallback((fieldKey: string): 'rtl' | 'ltr' | undefined => {
+    if (!fieldKey.endsWith('_ar')) return undefined;
+    
+    if (fieldKey.includes('birth')) {
+      return getTextDirectionFromConfig(dateFormatSettings.birthDate, true);
+    } else if (fieldKey.includes('defense')) {
+      return getTextDirectionFromConfig(dateFormatSettings.defenseDate, true);
+    } else if (fieldKey.includes('certificate')) {
+      return getTextDirectionFromConfig(dateFormatSettings.certificateDate, true);
+    }
+    return undefined;
+  }, [dateFormatSettings]);
 
   const handleBackgroundMove = (direction: 'up' | 'down' | 'left' | 'right') => {
     setHasBackgroundChanges(true);
@@ -575,6 +594,10 @@ export function FullPreviewDialog({
                 const hasChange = fieldChanges.some(c => c.fieldId === field.id);
                 const value = getFieldValue(field.field_key);
                 
+                // Get text direction for date fields from settings
+                const dateDirection = getDateFieldDirection(field.field_key);
+                const effectiveDirection = dateDirection !== undefined ? dateDirection : (field.is_rtl ? 'rtl' : 'ltr');
+                
                 return (
                   <div
                     key={field.id}
@@ -604,7 +627,7 @@ export function FullPreviewDialog({
                         fontFamily: fieldFontStyles[field.id] || getFontFamilyCSS(field.font_name),
                         color: field.font_color,
                         textAlign: field.text_align as 'left' | 'right' | 'center',
-                        direction: field.is_rtl ? 'rtl' : 'ltr',
+                        direction: effectiveDirection,
                         whiteSpace: 'nowrap',
                       }}
                       onMouseDown={(e) => showFieldControls && handleFieldMouseDown(e, field)}
