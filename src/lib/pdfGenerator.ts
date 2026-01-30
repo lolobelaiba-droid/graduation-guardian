@@ -22,7 +22,6 @@ import {
   processTextForPdf, 
   containsArabic,
   isDateLikeText,
-  shapeArabicText,
   type FieldLanguage,
   type ProcessedText 
 } from './pdf/arabicTextUtils';
@@ -429,14 +428,7 @@ function renderField(
     }
   }
   
-  // SPECIAL CASE: Arabic certificate date field - render parts separately to prevent reversal
-  // This ONLY applies to certificate_date_ar field
-  if (field.field_key === 'certificate_date_ar') {
-    renderArabicCertificateDateField(doc, field, value, registeredFonts, dateTextDirection);
-    return;
-  }
-  
-  // Process text for PDF (all other fields use standard processing)
+  // Process text for PDF
   const processed: ProcessedText = processTextForPdf(value, {
     language,
     isDateField: isDateFieldType,
@@ -463,85 +455,6 @@ function renderField(
   doc.text(processed.text, field.position_x, field.position_y, { align });
   
   logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}`);
-}
-
-/**
- * SPECIAL RENDERER: Arabic Certificate Date Field Only
- * 
- * This function renders the Arabic certificate date by splitting it into
- * separate parts (day, month, year) and rendering each with individual
- * doc.text() calls. This prevents jsPDF from reversing the text order.
- * 
- * SCOPE: Only affects certificate_date_ar field. No other fields are touched.
- */
-function renderArabicCertificateDateField(
-  doc: jsPDF,
-  field: TemplateField,
-  value: string,
-  registeredFonts: Set<string>,
-  direction: 'rtl' | 'ltr'
-): void {
-  // Set font for Arabic text
-  setFieldFont(doc, field.font_name, field.font_size, registeredFonts, true);
-  doc.setTextColor(field.font_color || '#000000');
-  
-  // Parse the date string - expected format: "DD monthName YYYY" (e.g., "15 أكتوبر 2024")
-  const parts = value.trim().split(/\s+/);
-  
-  if (parts.length < 3) {
-    // Fallback: render as single text if parsing fails
-    const shaped = shapeArabicText(value);
-    doc.text(shaped, field.position_x, field.position_y, { align: 'right' });
-    logger.log(`[PDF Render] certificate_date_ar (fallback): ${value}`);
-    return;
-  }
-  
-  // Extract day, month, year
-  const day = parts[0];
-  const monthArabic = parts[1];
-  const year = parts[2];
-  
-  // Shape only the Arabic month (for proper ligatures)
-  const shapedMonth = shapeArabicText(monthArabic);
-  
-  // Calculate approximate widths for positioning
-  // Using a rough estimate based on font size (can be refined)
-  const spaceWidth = field.font_size * 0.15; // Space between parts
-  const charWidthEstimate = field.font_size * 0.35; // Average character width
-  
-  const yearWidth = year.length * charWidthEstimate * 0.9; // Numbers are narrower
-  const dayWidth = day.length * charWidthEstimate * 0.9;
-  const monthWidth = monthArabic.length * charWidthEstimate * 1.1; // Arabic chars are wider
-  
-  let currentX = field.position_x;
-  
-  if (direction === 'rtl') {
-    // RTL: Render from right to left visually: YEAR <- DAY <- MONTH
-    // But for correct visual display (day month year), we render: year, day, month from right
-    // Starting position is the rightmost point
-    
-    // Render year first (rightmost)
-    doc.text(year, currentX, field.position_y, { align: 'right' });
-    currentX -= yearWidth + spaceWidth;
-    
-    // Render day
-    doc.text(day, currentX, field.position_y, { align: 'right' });
-    currentX -= dayWidth + spaceWidth;
-    
-    // Render shaped Arabic month (leftmost)
-    doc.text(shapedMonth, currentX, field.position_y, { align: 'right' });
-  } else {
-    // LTR: Render from left to right: day month year
-    doc.text(day, currentX, field.position_y, { align: 'left' });
-    currentX += dayWidth + spaceWidth;
-    
-    doc.text(shapedMonth, currentX, field.position_y, { align: 'left' });
-    currentX += monthWidth + spaceWidth;
-    
-    doc.text(year, currentX, field.position_y, { align: 'left' });
-  }
-  
-  logger.log(`[PDF Render] certificate_date_ar (split render): ${day} ${monthArabic} ${year}, dir: ${direction}`);
 }
 
 // ============================================================================
