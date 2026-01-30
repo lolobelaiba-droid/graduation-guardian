@@ -123,7 +123,7 @@ export default function DateFormatSettings() {
         <div className="flex items-center gap-4 pt-2">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">معاينة عربي:</span>
-            <span className="font-medium bg-primary/10 px-2 py-1 rounded text-sm">
+            <span className="font-medium bg-primary/10 px-2 py-1 rounded text-sm" dir="ltr">
               {previewAr}
             </span>
           </div>
