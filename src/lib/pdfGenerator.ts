@@ -22,6 +22,7 @@ import {
   processTextForPdf, 
   containsArabic,
   isDateLikeText,
+  shapeArabicText,
   type FieldLanguage,
   type ProcessedText 
 } from './pdf/arabicTextUtils';
@@ -394,10 +395,73 @@ function getFieldValue(
 // ============================================================================
 
 /**
+ * Render Arabic date field by splitting into separate parts.
+ * This prevents BiDi reordering issues by rendering each component individually.
+ * 
+ * ONLY applies to defense_date_ar field.
+ */
+function renderArabicDateFieldSplit(
+  doc: jsPDF,
+  field: TemplateField,
+  value: string,
+  registeredFonts: Set<string>
+): void {
+  // Parse the pre-formatted date string (format: "DD MonthName YYYY")
+  const parts = value.trim().split(/\s+/);
+  
+  if (parts.length < 3) {
+    // Fallback: render as single string if parsing fails
+    const shaped = shapeArabicText(value);
+    doc.text(shaped, field.position_x, field.position_y, { align: 'right' });
+    return;
+  }
+  
+  // Extract day, month, year
+  const day = parts[0];
+  const monthName = parts.slice(1, -1).join(' '); // Handle multi-word months
+  const year = parts[parts.length - 1];
+  
+  // Shape Arabic month name for proper glyph rendering
+  const shapedMonth = shapeArabicText(monthName);
+  
+  // Set font
+  setFieldFont(doc, field.font_name, field.font_size, registeredFonts, true);
+  doc.setTextColor(field.font_color || '#000000');
+  
+  // Calculate text widths for positioning
+  const yearWidth = doc.getTextWidth(year);
+  const monthWidth = doc.getTextWidth(shapedMonth);
+  const dayWidth = doc.getTextWidth(day);
+  const spaceWidth = doc.getTextWidth(' ');
+  
+  // For RTL: Start from the right position and render right-to-left
+  // Visual order should be: DAY MONTH YEAR (reading right to left)
+  // So we render: YEAR first (leftmost), then MONTH, then DAY (rightmost)
+  const startX = field.position_x;
+  const y = field.position_y;
+  
+  // Render from right to left (day is rightmost)
+  // Day (rightmost - at startX, aligned right)
+  doc.text(day, startX, y, { align: 'right' });
+  
+  // Month (to the left of day)
+  const monthX = startX - dayWidth - spaceWidth;
+  doc.text(shapedMonth, monthX, y, { align: 'right' });
+  
+  // Year (leftmost)
+  const yearX = monthX - monthWidth - spaceWidth;
+  doc.text(year, yearX, y, { align: 'right' });
+  
+  logger.log(`[PDF Render] Arabic date split: day=${day}, month=${monthName}, year=${year}`);
+}
+
+/**
  * Render a single field to the PDF document.
  * 
  * This is the core function that processes text and renders it correctly.
  * All Arabic text processing happens here through the centralized utilities.
+ * 
+ * SPECIAL CASE: defense_date_ar uses split rendering to prevent BiDi reversal.
  */
 function renderField(
   doc: jsPDF,
@@ -407,6 +471,12 @@ function renderField(
   dateSettings?: DateFormatSettings
 ): void {
   if (!value) return;
+
+  // SPECIAL CASE: defense_date_ar - use split rendering for Arabic date
+  if (field.field_key === 'defense_date_ar') {
+    renderArabicDateFieldSplit(doc, field, value, registeredFonts);
+    return;
+  }
 
   // Determine field language
   const language = getFieldLanguage(field.field_key, value, field.is_rtl ?? false);
