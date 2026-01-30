@@ -415,6 +415,11 @@ export function processMixedText(text: string, forceRtl: boolean = true): string
  * This is the main entry point for all text processing.
  * It automatically detects the text type and applies appropriate processing.
  * 
+ * IMPORTANT FOR ARABIC DATES:
+ * Arabic dates are pre-formatted by formatDateWithPattern() in the correct logical order.
+ * We ONLY apply Arabic shaping (ligatures) - NO BiDi reordering.
+ * The visual order is already correct from the formatting function.
+ * 
  * @param text - The raw text to process
  * @param options - Processing options
  * @returns Processed text with recommended alignment
@@ -441,15 +446,17 @@ export function processTextForPdf(
   
   const detectedLanguage = detectLanguage(original);
   const isArabic = language === 'ar' || detectedLanguage === 'ar' || detectedLanguage === 'mixed';
-  const shouldForceRtl = forceRtl ?? isArabic;
   
   let processedText: string;
   let align: 'left' | 'center' | 'right';
   
-  // CRITICAL: Date fields with Arabic MUST use the hard-coded PDF formatter
-  // This bypasses ALL BiDi logic - jsPDF receives the exact required order
+  // CRITICAL: Arabic date fields are PRE-FORMATTED by formatDateWithPattern()
+  // The logical order (e.g., "12 أكتوبر 2024") is ALREADY CORRECT
+  // We ONLY apply Arabic shaping for proper glyph rendering - NO BiDi reordering
   if (isDateField && isArabic) {
-    processedText = formatArabicDateForPdf(original, dateTextDirection);
+    // Only shape the Arabic text (ligatures/contextual forms) - do NOT reorder
+    processedText = shapeArabicTextOnly(original);
+    // Use the alignment from dateTextDirection setting
     align = dateTextDirection === 'rtl' ? 'right' : 'left';
   }
   // Non-Arabic date fields (French/English dates)
@@ -459,7 +466,7 @@ export function processTextForPdf(
   }
   // Arabic or mixed text (non-date)
   else if (isArabic) {
-    processedText = processMixedText(original, shouldForceRtl);
+    processedText = processMixedText(original, forceRtl ?? true);
     align = 'right';
   }
   // Pure Latin/English
@@ -474,6 +481,25 @@ export function processTextForPdf(
     isArabic,
     original
   };
+}
+
+/**
+ * Apply Arabic shaping ONLY (no BiDi reordering).
+ * Used for pre-formatted Arabic dates where the logical order is already correct.
+ */
+function shapeArabicTextOnly(text: string): string {
+  if (!text) return '';
+  
+  // Split by spaces to preserve the order of components
+  const parts = text.split(/(\s+)/);
+  
+  return parts.map(part => {
+    // Only shape parts that contain Arabic characters
+    if (containsArabic(part)) {
+      return shapeArabicText(part);
+    }
+    return part;
+  }).join('');
 }
 
 /**
