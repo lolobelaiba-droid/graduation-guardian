@@ -173,7 +173,10 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
         e.preventDefault();
         
         if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
-          addMember(filteredSuggestions[highlightedIndex]);
+          const { name } = extractTitleAndName(filteredSuggestions[highlightedIndex]);
+          // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
+          const titleToUse = selectedTitle || extractTitleAndName(filteredSuggestions[highlightedIndex]).title;
+          addMember(formatMember(titleToUse, name));
           return;
         }
         
@@ -225,7 +228,10 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
     };
 
     const handleSuggestionClick = (suggestion: string) => {
-      addMember(suggestion);
+      const { name } = extractTitleAndName(suggestion);
+      // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
+      const titleToUse = selectedTitle || extractTitleAndName(suggestion).title;
+      addMember(formatMember(titleToUse, name));
       inputRef.current?.focus();
     };
 
