@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { toWesternNumerals } from "@/lib/numerals";
 
-type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor" | "jury_stats";
+type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor" | "jury_stats" | "custom_pivot";
 
 const exportTypeLabels: Record<ExportType, string> = {
   students: "قائمة الطلاب",
@@ -24,6 +24,21 @@ const exportTypeLabels: Record<ExportType, string> = {
   certificate_type: "توزيع حسب نوع الشهادة",
   supervisor: "إحصائيات المشرفين",
   jury_stats: "إحصائيات اللجان (مشرف/رئيس/عضو)",
+  custom_pivot: "إحصائيات مخصصة (جدول محوري)",
+};
+
+// Available fields for pivot table
+type PivotField = "certificate_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "mention" | "defense_year" | "first_registration_year";
+
+const pivotFieldLabels: Record<PivotField, string> = {
+  certificate_type: "نوع الشهادة",
+  faculty_ar: "الكلية",
+  gender: "الجنس",
+  branch_ar: "الشعبة",
+  specialty_ar: "التخصص",
+  mention: "التقدير",
+  defense_year: "سنة المناقشة",
+  first_registration_year: "سنة أول تسجيل",
 };
 
 const certificateTypeLabels = {
@@ -50,6 +65,10 @@ export function ExportStatsDialog() {
   const [useDateFilter, setUseDateFilter] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [faculties, setFaculties] = useState<string[]>([]);
+  
+  // Custom pivot states
+  const [pivotRowField, setPivotRowField] = useState<PivotField>("faculty_ar");
+  const [pivotColField, setPivotColField] = useState<PivotField>("certificate_type");
 
   // Load faculties when dialog opens
   const loadFaculties = async () => {
@@ -476,6 +495,108 @@ export function ExportStatsDialog() {
           setIsExporting(false);
           return;
         }
+
+        case "custom_pivot": {
+          // Fetch all student data
+          const [phdLmd, phdScience, master] = await Promise.all([
+            supabase.from("phd_lmd_certificates").select("*"),
+            supabase.from("phd_science_certificates").select("*"),
+            supabase.from("master_certificates").select("*"),
+          ]);
+
+          const allStudents = [
+            ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+            ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+            ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
+          ];
+
+          // Helper to get field value
+          const getFieldValue = (student: any, field: PivotField): string => {
+            switch (field) {
+              case "certificate_type":
+                return student.certificate_type || "غير محدد";
+              case "faculty_ar":
+                return student.faculty_ar || "غير محدد";
+              case "gender":
+                return student.gender === "male" ? "ذكور" : student.gender === "female" ? "إناث" : "غير محدد";
+              case "branch_ar":
+                return student.branch_ar || "غير محدد";
+              case "specialty_ar":
+                return student.specialty_ar || "غير محدد";
+              case "mention":
+                return student.mention === "very_honorable" ? "مشرف جدا" : student.mention === "honorable" ? "مشرف" : "غير محدد";
+              case "defense_year":
+                return student.defense_date ? new Date(student.defense_date).getFullYear().toString() : "غير محدد";
+              case "first_registration_year":
+                return student.first_registration_year || "غير محدد";
+              default:
+                return "غير محدد";
+            }
+          };
+
+          // Collect unique values for rows and columns
+          const rowValues = new Set<string>();
+          const colValues = new Set<string>();
+
+          allStudents.forEach((student) => {
+            rowValues.add(getFieldValue(student, pivotRowField));
+            colValues.add(getFieldValue(student, pivotColField));
+          });
+
+          const sortedRows = Array.from(rowValues).sort();
+          const sortedCols = Array.from(colValues).sort();
+
+          // Build pivot table data
+          const pivotData: Record<string, Record<string, number>> = {};
+          sortedRows.forEach((row) => {
+            pivotData[row] = {};
+            sortedCols.forEach((col) => {
+              pivotData[row][col] = 0;
+            });
+          });
+
+          // Count occurrences
+          allStudents.forEach((student) => {
+            const rowVal = getFieldValue(student, pivotRowField);
+            const colVal = getFieldValue(student, pivotColField);
+            pivotData[rowVal][colVal]++;
+          });
+
+          // Create export data
+          const pivotExportData: any[] = [];
+          sortedRows.forEach((rowValue) => {
+            const row: any = { [pivotFieldLabels[pivotRowField]]: rowValue };
+            let rowTotal = 0;
+            sortedCols.forEach((colValue) => {
+              row[colValue] = pivotData[rowValue][colValue];
+              rowTotal += pivotData[rowValue][colValue];
+            });
+            row["المجموع"] = rowTotal;
+            pivotExportData.push(row);
+          });
+
+          // Add total row
+          const totalRow: any = { [pivotFieldLabels[pivotRowField]]: "المجموع الكلي" };
+          let grandTotal = 0;
+          sortedCols.forEach((colValue) => {
+            const colTotal = sortedRows.reduce((sum, row) => sum + pivotData[row][colValue], 0);
+            totalRow[colValue] = colTotal;
+            grandTotal += colTotal;
+          });
+          totalRow["المجموع"] = grandTotal;
+          pivotExportData.push(totalRow);
+
+          // Create workbook
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(pivotExportData);
+          XLSX.utils.book_append_sheet(wb, ws, "جدول محوري");
+          XLSX.writeFile(wb, `إحصائيات_مخصصة_${pivotFieldLabels[pivotRowField]}_${pivotFieldLabels[pivotColField]}_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+
+          toast.success(`تم تصدير الجدول المحوري: ${toWesternNumerals(sortedRows.length)} صف × ${toWesternNumerals(sortedCols.length)} عمود`);
+          setOpen(false);
+          setIsExporting(false);
+          return;
+        }
       }
 
       if (exportData.length === 0) {
@@ -661,6 +782,52 @@ export function ExportStatsDialog() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Custom Pivot Configuration */}
+          {exportType === "custom_pivot" && (
+            <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
+              <div className="text-sm text-muted-foreground mb-2">
+                اختر الحقول لإنشاء جدول محوري مخصص
+              </div>
+              
+              <div className="space-y-2">
+                <Label>الحقل العمودي (الصفوف)</Label>
+                <Select value={pivotRowField} onValueChange={(v) => setPivotRowField(v as PivotField)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(pivotFieldLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key} disabled={key === pivotColField}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>الحقل الأفقي (الأعمدة)</Label>
+                <Select value={pivotColField} onValueChange={(v) => setPivotColField(v as PivotField)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(pivotFieldLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key} disabled={key === pivotRowField}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="text-xs text-muted-foreground bg-background p-2 rounded border">
+                <strong>مثال:</strong> إذا اخترت "الكلية" كحقل عمودي و"نوع الشهادة" كحقل أفقي، 
+                ستحصل على جدول يوضح عدد الطلاب لكل كلية موزعين حسب نوع الشهادة.
+              </div>
             </div>
           )}
 
