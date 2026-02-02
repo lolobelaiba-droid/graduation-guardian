@@ -158,8 +158,10 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
         e.preventDefault();
         
         if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
-          const { title, name } = extractTitleAndName(filteredSuggestions[highlightedIndex]);
-          confirmEntry(title, name);
+          const { name } = extractTitleAndName(filteredSuggestions[highlightedIndex]);
+          // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
+          const titleToUse = selectedTitle || extractTitleAndName(filteredSuggestions[highlightedIndex]).title;
+          confirmEntry(titleToUse, name);
           setShowSuggestions(false);
           setHighlightedIndex(-1);
           return;
@@ -219,8 +221,10 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
     };
 
     const handleSuggestionClick = (suggestion: string) => {
-      const { title, name } = extractTitleAndName(suggestion);
-      confirmEntry(title, name);
+      const { name } = extractTitleAndName(suggestion);
+      // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
+      const titleToUse = selectedTitle || extractTitleAndName(suggestion).title;
+      confirmEntry(titleToUse, name);
       setShowSuggestions(false);
       setHighlightedIndex(-1);
       inputRef.current?.focus();
