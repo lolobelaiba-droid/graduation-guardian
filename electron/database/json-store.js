@@ -1,21 +1,22 @@
 /**
  * نظام تخزين البيانات باستخدام ملفات JSON
  * بديل عن better-sqlite3 لتجنب مشاكل البناء مع Native modules
+ * ملاحظة: يستخدم صيغة ES5 للتوافق مع Electron
  */
 
-const path = require('path');
-const fs = require('fs');
-const { app } = require('electron');
+var path = require('path');
+var fs = require('fs');
+var app = require('electron').app;
 
 // مسار مجلد البيانات
-let dataDir = null;
+var dataDir = null;
 
 /**
  * الحصول على مسار مجلد البيانات
  */
 function getDataDir() {
   if (dataDir) return dataDir;
-  const userDataPath = app.getPath('userData');
+  var userDataPath = app.getPath('userData');
   dataDir = path.join(userDataPath, 'data');
   return dataDir;
 }
@@ -24,14 +25,14 @@ function getDataDir() {
  * الحصول على مسار ملف جدول معين
  */
 function getTablePath(tableName) {
-  return path.join(getDataDir(), `${tableName}.json`);
+  return path.join(getDataDir(), tableName + '.json');
 }
 
 /**
  * التأكد من وجود مجلد البيانات
  */
 function ensureDataDir() {
-  const dir = getDataDir();
+  var dir = getDataDir();
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -41,15 +42,15 @@ function ensureDataDir() {
  * قراءة بيانات جدول
  */
 function readTable(tableName) {
-  const filePath = getTablePath(tableName);
+  var filePath = getTablePath(tableName);
   if (!fs.existsSync(filePath)) {
     return [];
   }
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
+    var content = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(content);
   } catch (error) {
-    console.error(`Error reading table ${tableName}:`, error);
+    console.error('Error reading table ' + tableName + ':', error);
     return [];
   }
 }
@@ -59,12 +60,12 @@ function readTable(tableName) {
  */
 function writeTable(tableName, data) {
   ensureDataDir();
-  const filePath = getTablePath(tableName);
+  var filePath = getTablePath(tableName);
   try {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
     return true;
   } catch (error) {
-    console.error(`Error writing table ${tableName}:`, error);
+    console.error('Error writing table ' + tableName + ':', error);
     return false;
   }
 }
@@ -74,8 +75,8 @@ function writeTable(tableName, data) {
  */
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
 }
@@ -103,7 +104,7 @@ function initializeDatabase() {
   console.log('JSON Store initialized at:', getDataDir());
   
   // إنشاء الجداول الافتراضية إذا لم تكن موجودة
-  const tables = [
+  var tables = [
     'settings',
     'user_settings',
     'phd_lmd_certificates',
@@ -117,8 +118,8 @@ function initializeDatabase() {
     'print_history'
   ];
   
-  tables.forEach(table => {
-    const filePath = getTablePath(table);
+  tables.forEach(function(table) {
+    var filePath = getTablePath(table);
     if (!fs.existsSync(filePath)) {
       writeTable(table, []);
     }
@@ -140,13 +141,16 @@ function getDatabasePath() {
 // عمليات CRUD العامة
 // ============================================
 
-function getAll(tableName, orderBy = 'created_at', orderDir = 'DESC') {
-  const data = readTable(tableName);
+function getAll(tableName, orderBy, orderDir) {
+  if (orderBy === undefined) orderBy = 'created_at';
+  if (orderDir === undefined) orderDir = 'DESC';
+  
+  var data = readTable(tableName);
   
   // ترتيب البيانات
-  return data.sort((a, b) => {
-    const aVal = a[orderBy] || '';
-    const bVal = b[orderBy] || '';
+  return data.sort(function(a, b) {
+    var aVal = a[orderBy] || '';
+    var bVal = b[orderBy] || '';
     
     if (orderDir.toUpperCase() === 'ASC') {
       return aVal > bVal ? 1 : -1;
@@ -157,19 +161,29 @@ function getAll(tableName, orderBy = 'created_at', orderDir = 'DESC') {
 }
 
 function getById(tableName, id) {
-  const data = readTable(tableName);
-  return data.find(item => item.id === id) || null;
+  var data = readTable(tableName);
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].id === id) {
+      return data[i];
+    }
+  }
+  return null;
 }
 
 function insert(tableName, record) {
-  const data = readTable(tableName);
+  var data = readTable(tableName);
   
-  const newRecord = {
-    ...record,
-    id: record.id || generateUUID(),
-    created_at: record.created_at || getCurrentDateTime(),
-    updated_at: getCurrentDateTime()
-  };
+  var newRecord = {};
+  // نسخ جميع الخصائص من السجل الأصلي
+  for (var key in record) {
+    if (record.hasOwnProperty(key)) {
+      newRecord[key] = record[key];
+    }
+  }
+  // إضافة الخصائص الافتراضية
+  newRecord.id = record.id || generateUUID();
+  newRecord.created_at = record.created_at || getCurrentDateTime();
+  newRecord.updated_at = getCurrentDateTime();
   
   data.push(newRecord);
   writeTable(tableName, data);
@@ -178,26 +192,37 @@ function insert(tableName, record) {
 }
 
 function update(tableName, id, updates) {
-  const data = readTable(tableName);
-  const index = data.findIndex(item => item.id === id);
+  var data = readTable(tableName);
+  var index = -1;
+  
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].id === id) {
+      index = i;
+      break;
+    }
+  }
   
   if (index === -1) {
     return null;
   }
   
-  data[index] = {
-    ...data[index],
-    ...updates,
-    updated_at: getCurrentDateTime()
-  };
+  // دمج التحديثات مع السجل الحالي
+  for (var key in updates) {
+    if (updates.hasOwnProperty(key)) {
+      data[index][key] = updates[key];
+    }
+  }
+  data[index].updated_at = getCurrentDateTime();
   
   writeTable(tableName, data);
   return data[index];
 }
 
 function deleteById(tableName, id) {
-  const data = readTable(tableName);
-  const filtered = data.filter(item => item.id !== id);
+  var data = readTable(tableName);
+  var filtered = data.filter(function(item) {
+    return item.id !== id;
+  });
   writeTable(tableName, filtered);
   return { changes: data.length - filtered.length };
 }
@@ -208,13 +233,13 @@ function deleteAll(tableName) {
 }
 
 function search(tableName, column, query) {
-  const data = readTable(tableName);
-  const lowerQuery = query.toLowerCase();
+  var data = readTable(tableName);
+  var lowerQuery = query.toLowerCase();
   
-  return data.filter(item => {
-    const value = item[column];
+  return data.filter(function(item) {
+    var value = item[column];
     if (typeof value === 'string') {
-      return value.toLowerCase().includes(lowerQuery);
+      return value.toLowerCase().indexOf(lowerQuery) !== -1;
     }
     return false;
   });
@@ -225,13 +250,25 @@ function search(tableName, column, query) {
 // ============================================
 
 function getSetting(key) {
-  const data = readTable('settings');
-  return data.find(item => item.key === key) || null;
+  var data = readTable('settings');
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].key === key) {
+      return data[i];
+    }
+  }
+  return null;
 }
 
 function setSetting(key, value) {
-  const data = readTable('settings');
-  const index = data.findIndex(item => item.key === key);
+  var data = readTable('settings');
+  var index = -1;
+  
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].key === key) {
+      index = i;
+      break;
+    }
+  }
   
   if (index !== -1) {
     data[index].value = value;
@@ -239,8 +276,8 @@ function setSetting(key, value) {
   } else {
     data.push({
       id: generateUUID(),
-      key,
-      value,
+      key: key,
+      value: value,
       updated_at: getCurrentDateTime()
     });
   }
@@ -258,15 +295,27 @@ function getAllSettings() {
 // ============================================
 
 function getUserSetting(key) {
-  const data = readTable('user_settings');
-  return data.find(item => item.setting_key === key) || null;
+  var data = readTable('user_settings');
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].setting_key === key) {
+      return data[i];
+    }
+  }
+  return null;
 }
 
 function setUserSetting(key, value) {
-  const data = readTable('user_settings');
-  const index = data.findIndex(item => item.setting_key === key);
+  var data = readTable('user_settings');
+  var index = -1;
   
-  const jsonValue = typeof value === 'string' ? value : JSON.stringify(value);
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].setting_key === key) {
+      index = i;
+      break;
+    }
+  }
+  
+  var jsonValue = typeof value === 'string' ? value : JSON.stringify(value);
   
   if (index !== -1) {
     data[index].setting_value = jsonValue;
@@ -293,25 +342,45 @@ function getAllUserSettings() {
 // ============================================
 
 function getTemplateWithFields(templateId) {
-  const template = getById('certificate_templates', templateId);
+  var template = getById('certificate_templates', templateId);
   if (!template) return null;
   
-  const allFields = readTable('certificate_template_fields');
-  const fields = allFields
-    .filter(f => f.template_id === templateId)
-    .sort((a, b) => (a.field_order || 0) - (b.field_order || 0));
+  var allFields = readTable('certificate_template_fields');
+  var fields = allFields.filter(function(f) {
+    return f.template_id === templateId;
+  });
   
-  return {
-    ...template,
-    certificate_template_fields: fields
-  };
+  fields.sort(function(a, b) {
+    var orderA = a.field_order || 0;
+    var orderB = b.field_order || 0;
+    return orderA - orderB;
+  });
+  
+  // نسخ القالب وإضافة الحقول
+  var result = {};
+  for (var key in template) {
+    if (template.hasOwnProperty(key)) {
+      result[key] = template[key];
+    }
+  }
+  result.certificate_template_fields = fields;
+  
+  return result;
 }
 
 function getFieldsByTemplateId(templateId) {
-  const allFields = readTable('certificate_template_fields');
-  return allFields
-    .filter(f => f.template_id === templateId)
-    .sort((a, b) => (a.field_order || 0) - (b.field_order || 0));
+  var allFields = readTable('certificate_template_fields');
+  var filtered = allFields.filter(function(f) {
+    return f.template_id === templateId;
+  });
+  
+  filtered.sort(function(a, b) {
+    var orderA = a.field_order || 0;
+    var orderB = b.field_order || 0;
+    return orderA - orderB;
+  });
+  
+  return filtered;
 }
 
 // ============================================
@@ -319,31 +388,43 @@ function getFieldsByTemplateId(templateId) {
 // ============================================
 
 function getDropdownOptionsByType(optionType) {
-  const allOptions = readTable('dropdown_options');
-  return allOptions
+  var allOptions = readTable('dropdown_options');
+  var filtered = allOptions.filter(function(o) {
+    return o.option_type === optionType;
+  });
+  
+  filtered.sort(function(a, b) {
+    var orderA = a.display_order || 0;
+    var orderB = b.display_order || 0;
+    return orderA - orderB;
+  });
+  
+  return filtered;
 }
 
 // ============================================
 // عمليات خاصة بسجل الأنشطة
 // ============================================
 
-function deleteOldActivities(daysOld = 30) {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-  const cutoffISO = cutoffDate.toISOString();
+function deleteOldActivities(daysOld) {
+  if (daysOld === undefined) {
+    daysOld = 30;
+  }
   
-  const data = readTable('activity_log');
-  const filtered = data.filter(item => {
-    if (!item.created_at) return true; // Keep items without date
+  var cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+  var cutoffISO = cutoffDate.toISOString();
+  
+  var data = readTable('activity_log');
+  var filtered = data.filter(function(item) {
+    if (!item.created_at) return true;
     return item.created_at >= cutoffISO;
   });
   
-  const deletedCount = data.length - filtered.length;
+  var deletedCount = data.length - filtered.length;
   writeTable('activity_log', filtered);
   
-  return { deletedCount };
-    .filter(o => o.option_type === optionType)
-    .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  return { deletedCount: deletedCount };
 }
 
 // ============================================
@@ -364,13 +445,13 @@ function exportAllData() {
       user_settings: readTable('user_settings'),
       dropdown_options: readTable('dropdown_options'),
       custom_fonts: readTable('custom_fonts'),
-      activity_log: readTable('activity_log'),
+      activity_log: readTable('activity_log')
     }
   };
 }
 
 function importAllData(backupData) {
-  const { data } = backupData;
+  var data = backupData.data;
   
   // حذف البيانات الحالية وإعادة الكتابة
   if (data.phd_lmd_certificates) {
@@ -417,39 +498,39 @@ function importAllData(backupData) {
 // ============================================
 
 module.exports = {
-  initializeDatabase,
-  closeDatabase,
-  getDatabasePath,
-  generateUUID,
+  initializeDatabase: initializeDatabase,
+  closeDatabase: closeDatabase,
+  getDatabasePath: getDatabasePath,
+  generateUUID: generateUUID,
   
   // عمليات CRUD العامة
-  getAll,
-  getById,
-  insert,
-  update,
-  deleteById,
-  deleteAll,
-  search,
+  getAll: getAll,
+  getById: getById,
+  insert: insert,
+  update: update,
+  deleteById: deleteById,
+  deleteAll: deleteAll,
+  search: search,
   
   // الإعدادات
-  getSetting,
-  setSetting,
-  getAllSettings,
-  getUserSetting,
-  setUserSetting,
-  getAllUserSettings,
+  getSetting: getSetting,
+  setSetting: setSetting,
+  getAllSettings: getAllSettings,
+  getUserSetting: getUserSetting,
+  setUserSetting: setUserSetting,
+  getAllUserSettings: getAllUserSettings,
   
   // القوالب
-  getTemplateWithFields,
-  getFieldsByTemplateId,
+  getTemplateWithFields: getTemplateWithFields,
+  getFieldsByTemplateId: getFieldsByTemplateId,
   
   // القوائم المنسدلة
-  getDropdownOptionsByType,
+  getDropdownOptionsByType: getDropdownOptionsByType,
   
   // سجل الأنشطة
-  deleteOldActivities,
+  deleteOldActivities: deleteOldActivities,
   
   // النسخ الاحتياطي
-  exportAllData,
-  importAllData,
+  exportAllData: exportAllData,
+  importAllData: importAllData
 };
