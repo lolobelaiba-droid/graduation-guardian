@@ -456,12 +456,80 @@ function renderArabicDateFieldSplit(
 }
 
 /**
+ * Render certificate number (student_number) field by splitting into separate parts.
+ * This prevents BiDi reordering issues with mixed Arabic/Latin text like "05/2025/ل م د".
+ * 
+ * The certificate number format is typically: "XX/YYYY/TEXT" where:
+ * - XX is a number
+ * - YYYY is a year
+ * - TEXT is Arabic text like "ل م د"
+ */
+function renderCertificateNumberSplit(
+  doc: jsPDF,
+  field: TemplateField,
+  value: string,
+  registeredFonts: Set<string>
+): void {
+  // Set font first to calculate widths correctly
+  const hasArabic = containsArabic(value);
+  setFieldFont(doc, field.font_name, field.font_size, registeredFonts, hasArabic);
+  doc.setTextColor(field.font_color || '#000000');
+  
+  // Split by "/" to get parts
+  const parts = value.split('/').filter(p => p.trim() !== '');
+  
+  if (parts.length === 0) {
+    // Fallback: render as-is
+    doc.text(value, field.position_x, field.position_y, { align: 'right' });
+    return;
+  }
+  
+  // Process each part - shape Arabic text, keep numbers as-is
+  const processedParts = parts.map(part => {
+    const trimmed = part.trim();
+    if (containsArabic(trimmed)) {
+      return shapeArabicText(trimmed);
+    }
+    return trimmed;
+  });
+  
+  const startX = field.position_x;
+  const y = field.position_y;
+  const slashWidth = doc.getTextWidth('/');
+  
+  // For RTL rendering, we render from right to left
+  // The rightmost part should be at startX
+  let currentX = startX;
+  
+  for (let i = 0; i < processedParts.length; i++) {
+    const part = processedParts[i];
+    
+    // Render the part
+    doc.text(part, currentX, y, { align: 'right' });
+    
+    // Move left for the next part
+    const partWidth = doc.getTextWidth(part);
+    currentX = currentX - partWidth;
+    
+    // Add slash between parts (except after the last one)
+    if (i < processedParts.length - 1) {
+      doc.text('/', currentX, y, { align: 'right' });
+      currentX = currentX - slashWidth;
+    }
+  }
+  
+  logger.log(`[PDF Render] Certificate number split: parts=${processedParts.join(', ')}`);
+}
+
+/**
  * Render a single field to the PDF document.
  * 
  * This is the core function that processes text and renders it correctly.
  * All Arabic text processing happens here through the centralized utilities.
  * 
- * SPECIAL CASE: defense_date_ar uses split rendering to prevent BiDi reversal.
+ * SPECIAL CASES:
+ * - defense_date_ar: uses split rendering to prevent BiDi reversal
+ * - student_number: uses split rendering for mixed Arabic/Latin certificate numbers
  */
 function renderField(
   doc: jsPDF,
@@ -475,6 +543,12 @@ function renderField(
   // SPECIAL CASE: defense_date_ar - use split rendering for Arabic date
   if (field.field_key === 'defense_date_ar') {
     renderArabicDateFieldSplit(doc, field, value, registeredFonts);
+    return;
+  }
+
+  // SPECIAL CASE: student_number (certificate number) - use split rendering for mixed content
+  if (field.field_key === 'student_number' && containsArabic(value)) {
+    renderCertificateNumberSplit(doc, field, value, registeredFonts);
     return;
   }
 
