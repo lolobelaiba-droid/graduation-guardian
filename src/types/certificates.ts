@@ -29,7 +29,6 @@ export interface BaseCertificate {
   professional_email?: string | null;
   phone_number?: string | null;
   supervisor_ar: string;
-  supervisor_fr?: string | null;
 }
 
 // PhD LMD Certificate

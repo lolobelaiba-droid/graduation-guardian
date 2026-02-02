@@ -139,6 +139,9 @@ export default function StudentDetailsDialog({
                 <DetailRow label="رئيس اللجنة" value={student.jury_president_ar} />
                 <DetailRow label="أعضاء اللجنة" value={student.jury_members_ar} />
               </div>
+              {'supervisor_ar' in student && (
+                <DetailRow label="المشرف" value={student.supervisor_ar} />
+              )}
             </>
           )}
 
