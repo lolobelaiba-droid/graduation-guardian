@@ -112,6 +112,8 @@ export type Database = {
           background_offset_x: number | null
           background_offset_y: number | null
           background_scale: number | null
+          background_scale_x: number | null
+          background_scale_y: number | null
           certificate_type: Database["public"]["Enums"]["certificate_type"]
           created_at: string | null
           id: string
@@ -134,6 +136,8 @@ export type Database = {
           background_offset_x?: number | null
           background_offset_y?: number | null
           background_scale?: number | null
+          background_scale_x?: number | null
+          background_scale_y?: number | null
           certificate_type: Database["public"]["Enums"]["certificate_type"]
           created_at?: string | null
           id?: string
@@ -156,6 +160,8 @@ export type Database = {
           background_offset_x?: number | null
           background_offset_y?: number | null
           background_scale?: number | null
+          background_scale_x?: number | null
+          background_scale_y?: number | null
           certificate_type?: Database["public"]["Enums"]["certificate_type"]
           created_at?: string | null
           id?: string

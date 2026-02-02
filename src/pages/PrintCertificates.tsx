@@ -60,6 +60,8 @@ export default function PrintCertificates() {
   const [backgroundOffsetX, setBackgroundOffsetX] = useState(0);
   const [backgroundOffsetY, setBackgroundOffsetY] = useState(0);
   const [backgroundScale, setBackgroundScale] = useState(100);
+  const [backgroundScaleX, setBackgroundScaleX] = useState(100);
+  const [backgroundScaleY, setBackgroundScaleY] = useState(100);
   const [showBackgroundControls, setShowBackgroundControls] = useState(false);
   
   // Track original background values for detecting unsaved changes
@@ -259,6 +261,8 @@ export default function PrintCertificates() {
         setBackgroundOffsetX(offsetX);
         setBackgroundOffsetY(offsetY);
         setBackgroundScale((template as any).background_scale || 100);
+        setBackgroundScaleX((template as any).background_scale_x || (template as any).background_scale || 100);
+        setBackgroundScaleY((template as any).background_scale_y || (template as any).background_scale || 100);
         // Track original values
         setOriginalBackgroundOffsetX(offsetX);
         setOriginalBackgroundOffsetY(offsetY);
@@ -267,6 +271,8 @@ export default function PrintCertificates() {
       setBackgroundOffsetX(0);
       setBackgroundOffsetY(0);
       setBackgroundScale(100);
+      setBackgroundScaleX(100);
+      setBackgroundScaleY(100);
       setOriginalBackgroundOffsetX(0);
       setOriginalBackgroundOffsetY(0);
     }
@@ -1282,16 +1288,22 @@ export default function PrintCertificates() {
           initialOffsetX={backgroundOffsetX}
           initialOffsetY={backgroundOffsetY}
           initialScale={backgroundScale}
+          initialScaleX={backgroundScaleX}
+          initialScaleY={backgroundScaleY}
           onSaveSettings={(settings) => {
             updateTemplate.mutate({
               id: selectedTemplateId,
               background_offset_x: settings.background_offset_x,
               background_offset_y: settings.background_offset_y,
               background_scale: settings.background_scale,
+              background_scale_x: settings.background_scale_x,
+              background_scale_y: settings.background_scale_y,
             } as any);
             setBackgroundOffsetX(settings.background_offset_x);
             setBackgroundOffsetY(settings.background_offset_y);
             setBackgroundScale(settings.background_scale);
+            if (settings.background_scale_x !== undefined) setBackgroundScaleX(settings.background_scale_x);
+            if (settings.background_scale_y !== undefined) setBackgroundScaleY(settings.background_scale_y);
           }}
           onFieldMove={(fieldId, newX, newY) => {
             updateField.mutate({
