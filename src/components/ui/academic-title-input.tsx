@@ -28,7 +28,7 @@ const formatWithTitle = (title: string | null, name: string): string => {
 
 const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInputProps>(
   ({ value, onChange, suggestions = [], placeholder = "اختر الرتبة ثم اكتب الاسم واضغط Enter", className, dir = "auto", ...props }, ref) => {
-    const { titles, isLoading } = useAcademicTitles();
+    const { titles, isLoading, refetch } = useAcademicTitles();
     const abbreviations = React.useMemo(() => titles.map(t => t.abbreviation), [titles]);
     
     const [inputValue, setInputValue] = React.useState("");
@@ -372,6 +372,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
                 </Badge>
               ))}
               <ManageAcademicTitlesDialog
+                onTitlesChange={refetch}
                 trigger={
                   <button
                     type="button"

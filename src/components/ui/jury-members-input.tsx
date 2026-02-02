@@ -62,7 +62,7 @@ const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove, extractTitl
 
 const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProps>(
   ({ value, onChange, suggestions = [], placeholder = "اختر الرتبة ثم اكتب الاسم واضغط Enter", className, dir = "auto" }, ref) => {
-    const { titles, isLoading } = useAcademicTitles();
+    const { titles, isLoading, refetch } = useAcademicTitles();
     const abbreviations = React.useMemo(() => titles.map(t => t.abbreviation), [titles]);
     
     const [inputValue, setInputValue] = React.useState("");
@@ -343,6 +343,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
                 </Badge>
               ))}
               <ManageAcademicTitlesDialog
+                onTitlesChange={refetch}
                 trigger={
                   <button
                     type="button"
