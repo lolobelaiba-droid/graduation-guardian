@@ -17,27 +17,27 @@ export function FacultyChart() {
   const { data: distribution = [], isLoading } = useFacultyDistribution();
 
   return (
-    <div className="bg-card rounded-2xl shadow-card p-6">
-      <h3 className="text-lg font-semibold mb-6">توزيع الطلاب حسب الكلية</h3>
+    <div className="bg-card rounded-2xl shadow-card p-6 h-full">
+      <h3 className="text-lg font-semibold mb-4">توزيع الطلاب حسب الكلية</h3>
       
       {isLoading ? (
-        <div className="flex items-center justify-center h-[300px]">
+        <div className="flex items-center justify-center h-[200px]">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : distribution.length === 0 ? (
-        <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+        <div className="flex items-center justify-center h-[200px] text-muted-foreground">
           لا توجد بيانات
         </div>
       ) : (
-        <div className="h-[300px]">
+        <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={distribution}
                 cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
+                cy="45%"
+                innerRadius={40}
+                outerRadius={70}
                 paddingAngle={2}
                 dataKey="value"
                 nameKey="name"
@@ -56,8 +56,8 @@ export function FacultyChart() {
                     const data = payload[0].payload;
                     return (
                       <div className="bg-popover text-popover-foreground rounded-lg shadow-lg p-3 border border-border">
-                        <p className="font-medium">{data.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-sm">{data.name}</p>
+                        <p className="text-xs text-muted-foreground">
                           {data.value} طالب
                         </p>
                       </div>
@@ -67,11 +67,12 @@ export function FacultyChart() {
                 }}
               />
               <Legend
-                layout="vertical"
-                align="left"
-                verticalAlign="middle"
+                layout="horizontal"
+                align="center"
+                verticalAlign="bottom"
+                wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
                 formatter={(value) => (
-                  <span className="text-sm text-foreground">{value}</span>
+                  <span className="text-xs text-foreground">{value}</span>
                 )}
               />
             </PieChart>
