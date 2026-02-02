@@ -51,6 +51,29 @@ const generateAcademicYears = (): string[] => {
 
 export const academicYears = generateAcademicYears();
 
+// Schema for Master (without supervisor, first_registration_year, email, phone)
+const masterSchema = z.object({
+  student_number: z.string().min(1, "رقم الشهادة مطلوب"),
+  full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
+  full_name_fr: z.string().optional().nullable(),
+  gender: z.enum(['male', 'female']),
+  date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
+  birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
+  birthplace_fr: z.string().optional().nullable(),
+  university_ar: z.string().optional().nullable(),
+  university_fr: z.string().optional().nullable(),
+  faculty_ar: z.string().min(1, "الكلية مطلوبة"),
+  faculty_fr: z.string().optional().nullable(),
+  branch_ar: z.string().min(1, "الشعبة مطلوبة"),
+  branch_fr: z.string().optional().nullable(),
+  specialty_ar: z.string().min(1, "التخصص مطلوب"),
+  specialty_fr: z.string().optional().nullable(),
+  mention: z.enum(['honorable', 'very_honorable']),
+  defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
+  certificate_date: z.string().optional(),
+});
+
+// Base schema for PhD types (includes supervisor and contact info)
 const baseSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
@@ -130,7 +153,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
     switch (selectedType) {
       case 'phd_lmd': return phdLmdSchema;
       case 'phd_science': return phdScienceSchema;
-      case 'master': return baseSchema;
+      case 'master': return masterSchema;
     }
   };
 
@@ -701,27 +724,31 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
               />
             </div>
 
-            {/* Supervisor */}
-            <SectionHeader title="المشرف / Directeur de thèse" />
-            
-            <FormField
-              control={form.control}
-              name="supervisor_ar"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>اسم ولقب المشرف *</FormLabel>
-                  <FormControl>
-                    <AcademicTitleInput
-                      {...field}
-                      suggestions={suggestions?.supervisor_ar || []}
-                      dir="auto"
-                      placeholder="اختر الرتبة ثم اكتب الاسم"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Supervisor - PhD only */}
+            {showPhdOnlyFields && (
+              <>
+                <SectionHeader title="المشرف / Directeur de thèse" />
+                
+                <FormField
+                  control={form.control}
+                  name="supervisor_ar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>اسم ولقب المشرف *</FormLabel>
+                      <FormControl>
+                        <AcademicTitleInput
+                          {...field}
+                          suggestions={suggestions?.supervisor_ar || []}
+                          dir="auto"
+                          placeholder="اختر الرتبة ثم اكتب الاسم"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
 
             {/* Thesis */}
             {showThesisFields && (
