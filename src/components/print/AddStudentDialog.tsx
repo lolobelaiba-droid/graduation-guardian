@@ -69,6 +69,8 @@ const baseSchema = z.object({
   first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
+  supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
+  supervisor_fr: z.string().optional().nullable(),
 });
 
 const phdSchema = baseSchema.extend({
@@ -153,6 +155,8 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       first_registration_year: '',
       professional_email: '',
       phone_number: '',
+      supervisor_ar: '',
+      supervisor_fr: '',
     },
   });
 
@@ -623,6 +627,47 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                     <FormLabel>spécialité</FormLabel>
                     <FormControl>
                       <Input {...field} value={field.value || ''} dir="ltr" placeholder="Spécialité" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Supervisor */}
+            <SectionHeader title="المشرف / Directeur de thèse" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="supervisor_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>اسم ولقب المشرف (عربي) *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="الاسم الكامل للمشرف"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="supervisor_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom et prénom du directeur</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        dir="ltr" 
+                        placeholder="Nom complet du directeur"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
