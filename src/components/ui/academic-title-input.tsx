@@ -55,10 +55,10 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
 
     // التحقق من أن النص الحالي هو رتبة علمية فقط
     const isJustAcademicTitle = (text: string): boolean => {
-      const trimmed = text.trim();
-      return TITLE_VALUES.some(
-        title => trimmed === title || trimmed === title + " "
-      );
+      const trimmed = text.trim().toLowerCase();
+      // التحقق من الرتب العربية والإنجليزية
+      const allTitles = ["أد", "د", "أ", "أ.د", "د.", "prof", "dr", "pr", "prof.", "dr.", "pr."];
+      return allTitles.some(title => trimmed === title.toLowerCase());
     };
 
     // إضافة رتبة علمية
