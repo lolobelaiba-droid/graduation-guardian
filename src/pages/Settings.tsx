@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   Building2,
   Database,
-  Shield,
   Printer,
   Download,
   Upload,
@@ -647,10 +646,6 @@ export default function Settings() {
             <Printer className="h-4 w-4" />
             إعدادات الطباعة
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2 py-2">
-            <Shield className="h-4 w-4" />
-            الأمان
-          </TabsTrigger>
         </TabsList>
 
         {/* Date Format Tab */}
@@ -910,36 +905,6 @@ export default function Settings() {
           <TemplatePrintSettings />
         </TabsContent>
 
-        {/* Security Tab */}
-        <TabsContent value="security">
-          <div className="bg-card rounded-2xl shadow-card p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">إعدادات الأمان</h3>
-            </div>
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
-                <Input id="currentPassword" type="password" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
-                <Input id="newPassword" type="password" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
-                <Input id="confirmPassword" type="password" />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button className="gap-2">
-                <Save className="h-4 w-4" />
-                تحديث كلمة المرور
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
