@@ -9,7 +9,14 @@
   "files": [
     "dist/**/*",
     "electron/**/*",
-    "public/**/*"
+    "!electron/database/database.js",
+    "!electron/database/schema.sql"
+  ],
+  "extraResources": [
+    {
+      "from": "public/fonts",
+      "to": "fonts"
+    }
   ],
   "win": {
     "target": [
@@ -22,15 +29,12 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/favicon.ico",
+    "icon": null,
     "artifactName": "${productName}-${version}-${arch}.${ext}"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "installerIcon": "public/favicon.ico",
-    "uninstallerIcon": "public/favicon.ico",
-    "installerHeaderIcon": "public/favicon.ico",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "نظام الشهادات"
@@ -40,12 +44,14 @@
   },
   "mac": {
     "target": ["dmg", "zip"],
-    "icon": "public/favicon.ico",
+    "icon": null,
     "category": "public.app-category.productivity"
   },
   "linux": {
     "target": ["AppImage", "deb"],
-    "icon": "public/favicon.ico",
+    "icon": null,
     "category": "Office"
-  }
+  },
+  "asar": true,
+  "compression": "maximum"
 }
