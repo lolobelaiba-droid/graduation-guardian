@@ -283,8 +283,14 @@ function setFieldFont(
 function getFieldValue(
   student: Record<string, unknown>,
   fieldKey: string,
-  dateSettings?: DateFormatSettings
+  dateSettings?: DateFormatSettings,
+  field?: TemplateField
 ): string {
+  // Handle static text fields - return the stored text from field_name_fr
+  if (fieldKey.startsWith('static_text_') && field?.field_name_fr) {
+    return field.field_name_fr;
+  }
+
   // Handle mention fields
   if (fieldKey === 'mention_ar') {
     const mentionValue = student['mention'] as MentionType;
@@ -662,7 +668,7 @@ export async function generatePDF(
 
     // Render visible fields
     fields.filter(f => f.is_visible).forEach((field) => {
-      const value = getFieldValue(student, field.field_key, dateFormatSettings);
+      const value = getFieldValue(student, field.field_key, dateFormatSettings, field);
       renderField(doc, field, value, registeredFonts, dateFormatSettings);
     });
   });
@@ -708,7 +714,7 @@ export async function generateSinglePDF(
 
   // Render visible fields
   fields.filter(f => f.is_visible).forEach((field) => {
-    const value = getFieldValue(student, field.field_key, dateFormatSettings);
+    const value = getFieldValue(student, field.field_key, dateFormatSettings, field);
     renderField(doc, field, value, registeredFonts, dateFormatSettings);
   });
 
@@ -751,7 +757,7 @@ export async function generatePDFBlob(
     if (index > 0) doc.addPage();
 
     fields.filter(f => f.is_visible).forEach((field) => {
-      const value = getFieldValue(student, field.field_key, dateFormatSettings);
+      const value = getFieldValue(student, field.field_key, dateFormatSettings, field);
       renderField(doc, field, value, registeredFonts, dateFormatSettings);
     });
   });

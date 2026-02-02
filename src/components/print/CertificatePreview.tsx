@@ -126,7 +126,17 @@ export function CertificatePreview({
   const width = isLandscape ? paperDimensions.height : paperDimensions.width;
   const height = isLandscape ? paperDimensions.width : paperDimensions.height;
 
-  const getFieldValue = useCallback((fieldKey: string): string => {
+  // Check if a field is a static text field
+  const isStaticTextField = useCallback((fieldKey: string): boolean => {
+    return fieldKey.startsWith('static_text_');
+  }, []);
+
+  const getFieldValue = useCallback((fieldKey: string, field?: TemplateField): string => {
+    // Handle static text fields - return the stored text from field_name_fr
+    if (fieldKey.startsWith('static_text_') && field?.field_name_fr) {
+      return field.field_name_fr;
+    }
+
     // Handle mention fields - convert enum to display text
     if (fieldKey === 'mention_ar') {
       const mentionValue = student['mention'] as MentionType;
@@ -534,7 +544,7 @@ export function CertificatePreview({
                   {isSelected && showControls && !isDragging && (
                     <GripVertical className="inline-block h-3 w-3 ml-1 text-muted-foreground" />
                   )}
-                  {getFieldValue(field.field_key) || `[${field.field_name_ar}]`}
+                  {getFieldValue(field.field_key, field) || `[${field.field_name_ar}]`}
                 </div>
 
                 {/* Movement controls - show when field is selected, controls enabled, and not dragging */}
