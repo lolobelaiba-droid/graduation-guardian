@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_titles: {
+        Row: {
+          abbreviation: string
+          created_at: string
+          display_order: number | null
+          full_name: string
+          id: string
+        }
+        Insert: {
+          abbreviation: string
+          created_at?: string
+          display_order?: number | null
+          full_name: string
+          id?: string
+        }
+        Update: {
+          abbreviation?: string
+          created_at?: string
+          display_order?: number | null
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
       activity_log: {
         Row: {
           activity_type: Database["public"]["Enums"]["activity_type"]

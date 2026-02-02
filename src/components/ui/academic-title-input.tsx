@@ -3,7 +3,9 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, Settings } from "lucide-react";
+import { useAcademicTitles } from "@/hooks/useAcademicTitles";
+import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
 
 interface AcademicTitleInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value: string;
@@ -13,34 +15,6 @@ interface AcademicTitleInputProps extends Omit<React.InputHTMLAttributes<HTMLInp
   className?: string;
   dir?: "auto" | "ltr" | "rtl";
 }
-
-// الرتب العلمية المعروفة
-const ACADEMIC_TITLES = [
-  { label: "أد", value: "أد" },
-  { label: "د", value: "د" },
-  { label: "أ", value: "أ" },
-  { label: "Prof", value: "Prof" },
-  { label: "Dr", value: "Dr" },
-  { label: "Pr", value: "Pr" },
-];
-
-const TITLE_VALUES = ACADEMIC_TITLES.map(t => t.value);
-
-// استخراج الرتبة من النص
-const extractTitleAndName = (text: string): { title: string | null; name: string } => {
-  const trimmed = text.trim();
-  const titlePattern = /^(أد|د|أ|أ\.د|د\.|Prof\.|Dr\.|Pr\.|Prof|Dr|Pr)\s*/i;
-  const match = trimmed.match(titlePattern);
-  
-  if (match) {
-    return {
-      title: match[1],
-      name: trimmed.slice(match[0].length).trim()
-    };
-  }
-  
-  return { title: null, name: trimmed };
-};
 
 // تنسيق مع الرتبة
 const formatWithTitle = (title: string | null, name: string): string => {
@@ -54,6 +28,9 @@ const formatWithTitle = (title: string | null, name: string): string => {
 
 const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInputProps>(
   ({ value, onChange, suggestions = [], placeholder = "اختر الرتبة ثم اكتب الاسم واضغط Enter", className, dir = "auto", ...props }, ref) => {
+    const { titles, isLoading } = useAcademicTitles();
+    const abbreviations = React.useMemo(() => titles.map(t => t.abbreviation), [titles]);
+    
     const [inputValue, setInputValue] = React.useState("");
     const [selectedTitle, setSelectedTitle] = React.useState<string | null>(null);
     const [confirmedEntry, setConfirmedEntry] = React.useState<{ title: string | null; name: string } | null>(null);
@@ -62,9 +39,32 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
     const containerRef = React.useRef<HTMLDivElement>(null);
     const inputRef = React.useRef<HTMLInputElement>(null);
 
+    // استخراج الرتبة من النص ديناميكياً
+    const extractTitleAndName = React.useCallback((text: string): { title: string | null; name: string } => {
+      const trimmed = text.trim();
+      
+      // إنشاء نمط regex ديناميكي من الاختصارات
+      if (abbreviations.length === 0) {
+        return { title: null, name: trimmed };
+      }
+      
+      const escapedAbbrs = abbreviations.map(a => a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const pattern = new RegExp(`^(${escapedAbbrs.join('|')})\\.?\\s*`, 'i');
+      const match = trimmed.match(pattern);
+      
+      if (match) {
+        return {
+          title: match[1],
+          name: trimmed.slice(match[0].length).trim()
+        };
+      }
+      
+      return { title: null, name: trimmed };
+    }, [abbreviations]);
+
     // تحليل القيمة الأولية
     React.useEffect(() => {
-      if (value) {
+      if (value && abbreviations.length > 0) {
         const { title, name } = extractTitleAndName(value);
         if (name) {
           setConfirmedEntry({ title, name });
@@ -75,12 +75,12 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
           setConfirmedEntry(null);
           setInputValue("");
         }
-      } else {
+      } else if (!value) {
         setConfirmedEntry(null);
         setSelectedTitle(null);
         setInputValue("");
       }
-    }, []);
+    }, [abbreviations.length]);
 
     // تحديث القيمة الأم
     const updateValue = React.useCallback((entry: { title: string | null; name: string } | null) => {
@@ -97,12 +97,11 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
       const lower = inputValue.toLowerCase();
       return suggestions
         .filter(s => {
-          // استخراج الاسم من الاقتراح للمقارنة
           const { name } = extractTitleAndName(s);
           return name.toLowerCase().includes(lower) && s !== value;
         })
         .slice(0, 8);
-    }, [suggestions, inputValue, value]);
+    }, [suggestions, inputValue, value, extractTitleAndName]);
 
     // Handle click outside
     React.useEffect(() => {
@@ -119,7 +118,6 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
     // اختيار رتبة
     const selectTitle = (title: string) => {
       if (confirmedEntry) {
-        // إذا كان هناك إدخال مؤكد، نحدث الرتبة فيه
         const newEntry = { ...confirmedEntry, title };
         setConfirmedEntry(newEntry);
         updateValue(newEntry);
@@ -135,7 +133,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
       inputRef.current?.focus();
     };
 
-    // تأكيد الإدخال (عند الضغط على Enter)
+    // تأكيد الإدخال
     const confirmEntry = (title: string | null, name: string) => {
       if (name.trim()) {
         const entry = { title, name: name.trim() };
@@ -159,7 +157,6 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
         
         if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
           const { name } = extractTitleAndName(filteredSuggestions[highlightedIndex]);
-          // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
           const titleToUse = selectedTitle || extractTitleAndName(filteredSuggestions[highlightedIndex]).title;
           confirmEntry(titleToUse, name);
           setShowSuggestions(false);
@@ -169,7 +166,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
         
         // إذا كتب المستخدم رتبة في حقل الإدخال
         const trimmedInput = inputValue.trim().toLowerCase();
-        const matchedTitle = TITLE_VALUES.find(t => t.toLowerCase() === trimmedInput);
+        const matchedTitle = abbreviations.find(a => a.toLowerCase() === trimmedInput);
         if (matchedTitle && !selectedTitle) {
           setSelectedTitle(matchedTitle);
           setInputValue("");
@@ -192,7 +189,6 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
         if (!inputValue && selectedTitle) {
           removeSelectedTitle();
         } else if (!inputValue && !selectedTitle && confirmedEntry) {
-          // إعادة الإدخال المؤكد للتعديل
           setSelectedTitle(confirmedEntry.title);
           setInputValue(confirmedEntry.name);
           setConfirmedEntry(null);
@@ -222,7 +218,6 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
 
     const handleSuggestionClick = (suggestion: string) => {
       const { name } = extractTitleAndName(suggestion);
-      // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
       const titleToUse = selectedTitle || extractTitleAndName(suggestion).title;
       confirmEntry(titleToUse, name);
       setShowSuggestions(false);
@@ -240,7 +235,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
           )}
           onClick={() => inputRef.current?.focus()}
         >
-          {/* الإدخال المؤكد (الرتبة + الاسم) */}
+          {/* الإدخال المؤكد */}
           {confirmedEntry && (
             <div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border">
               {confirmedEntry.title && (
@@ -264,11 +259,9 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
             </div>
           )}
 
-          {/* الرتبة المختارة (قبل التأكيد) */}
+          {/* الرتبة المختارة */}
           {!confirmedEntry && selectedTitle && (
-            <Badge
-              className="gap-1 px-2 py-1 text-sm shrink-0 bg-blue-600 text-white hover:bg-blue-700"
-            >
+            <Badge className="gap-1 px-2 py-1 text-sm shrink-0 bg-blue-600 text-white hover:bg-blue-700">
               {selectedTitle}
               <button
                 type="button"
@@ -305,7 +298,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
             />
           )}
 
-          {/* زر تعديل إذا كان هناك إدخال مؤكد */}
+          {/* حقل للتعديل */}
           {confirmedEntry && (
             <Input
               ref={(node) => {
@@ -318,7 +311,6 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
               }}
               value=""
               onFocus={() => {
-                // عند التركيز، نعيد الإدخال للتعديل
                 setSelectedTitle(confirmedEntry.title);
                 setInputValue(confirmedEntry.name);
                 setConfirmedEntry(null);
@@ -357,26 +349,42 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
         )}
 
         {/* Academic titles badges */}
-        {!confirmedEntry && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className="text-xs text-muted-foreground ml-1">الرتبة:</span>
-            {ACADEMIC_TITLES.map((title) => (
-              <Badge
-                key={title.label}
-                variant={selectedTitle === title.value ? "default" : "outline"}
-                className={cn(
-                  "cursor-pointer transition-colors text-xs px-2 py-0.5",
-                  selectedTitle === title.value 
-                    ? "bg-blue-600 text-white" 
-                    : "hover:bg-blue-600 hover:text-white"
-                )}
-                onClick={() => selectTitle(title.value)}
-              >
-                {title.label}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <span className="text-xs text-muted-foreground ml-1">الرتبة:</span>
+          {isLoading ? (
+            <span className="text-xs text-muted-foreground">جاري التحميل...</span>
+          ) : (
+            <>
+              {titles.map((title) => (
+                <Badge
+                  key={title.id}
+                  variant={selectedTitle === title.abbreviation || confirmedEntry?.title === title.abbreviation ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-colors text-xs px-2 py-0.5",
+                    (selectedTitle === title.abbreviation || confirmedEntry?.title === title.abbreviation)
+                      ? "bg-blue-600 text-white" 
+                      : "hover:bg-blue-600 hover:text-white"
+                  )}
+                  onClick={() => selectTitle(title.abbreviation)}
+                  title={title.full_name}
+                >
+                  {title.abbreviation}
+                </Badge>
+              ))}
+              <ManageAcademicTitlesDialog
+                trigger={
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center h-5 w-5 rounded-full border border-dashed border-muted-foreground/50 hover:border-primary hover:text-primary transition-colors"
+                    title="إدارة الرتب العلمية"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </button>
+                }
+              />
+            </>
+          )}
+        </div>
       </div>
     );
   }

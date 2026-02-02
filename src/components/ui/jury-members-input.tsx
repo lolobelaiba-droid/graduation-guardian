@@ -2,8 +2,10 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, Settings } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAcademicTitles } from "@/hooks/useAcademicTitles";
+import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
 
 interface JuryMembersInputProps {
   value: string;
@@ -13,34 +15,6 @@ interface JuryMembersInputProps {
   className?: string;
   dir?: "auto" | "ltr" | "rtl";
 }
-
-// الرتب العلمية المعروفة
-const ACADEMIC_TITLES = [
-  { label: "أد", value: "أد" },
-  { label: "د", value: "د" },
-  { label: "أ", value: "أ" },
-  { label: "Prof", value: "Prof" },
-  { label: "Dr", value: "Dr" },
-  { label: "Pr", value: "Pr" },
-];
-
-const TITLE_VALUES = ACADEMIC_TITLES.map(t => t.value);
-
-// استخراج الرتبة من النص
-const extractTitleAndName = (text: string): { title: string | null; name: string } => {
-  const trimmed = text.trim();
-  const titlePattern = /^(أد|د|أ|أ\.د|د\.|Prof\.|Dr\.|Pr\.|Prof|Dr|Pr)\s*/i;
-  const match = trimmed.match(titlePattern);
-  
-  if (match) {
-    return {
-      title: match[1],
-      name: trimmed.slice(match[0].length).trim()
-    };
-  }
-  
-  return { title: null, name: trimmed };
-};
 
 // تنسيق العضو مع الرتبة
 const formatMember = (title: string | null, name: string): string => {
@@ -56,9 +30,10 @@ const formatMember = (title: string | null, name: string): string => {
 interface MemberBadgeProps {
   member: string;
   onRemove: () => void;
+  extractTitleAndName: (text: string) => { title: string | null; name: string };
 }
 
-const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove }) => {
+const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove, extractTitleAndName }) => {
   const { title, name } = extractTitleAndName(member);
   
   return (
@@ -87,6 +62,9 @@ const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove }) => {
 
 const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProps>(
   ({ value, onChange, suggestions = [], placeholder = "اختر الرتبة ثم اكتب الاسم واضغط Enter", className, dir = "auto" }, ref) => {
+    const { titles, isLoading } = useAcademicTitles();
+    const abbreviations = React.useMemo(() => titles.map(t => t.abbreviation), [titles]);
+    
     const [inputValue, setInputValue] = React.useState("");
     const [selectedTitle, setSelectedTitle] = React.useState<string | null>(null);
     const [members, setMembers] = React.useState<string[]>([]);
@@ -94,6 +72,28 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
     const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
     const containerRef = React.useRef<HTMLDivElement>(null);
     const inputRef = React.useRef<HTMLInputElement>(null);
+
+    // استخراج الرتبة من النص ديناميكياً
+    const extractTitleAndName = React.useCallback((text: string): { title: string | null; name: string } => {
+      const trimmed = text.trim();
+      
+      if (abbreviations.length === 0) {
+        return { title: null, name: trimmed };
+      }
+      
+      const escapedAbbrs = abbreviations.map(a => a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const pattern = new RegExp(`^(${escapedAbbrs.join('|')})\\.?\\s*`, 'i');
+      const match = trimmed.match(pattern);
+      
+      if (match) {
+        return {
+          title: match[1],
+          name: trimmed.slice(match[0].length).trim()
+        };
+      }
+      
+      return { title: null, name: trimmed };
+    }, [abbreviations]);
 
     // Parse initial value into members array
     React.useEffect(() => {
@@ -117,12 +117,11 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
       const lower = inputValue.toLowerCase();
       return suggestions
         .filter(s => {
-          // استخراج الاسم من الاقتراح للمقارنة
           const { name } = extractTitleAndName(s);
           return name.toLowerCase().includes(lower) && !members.includes(s);
         })
         .slice(0, 8);
-    }, [suggestions, inputValue, members]);
+    }, [suggestions, inputValue, members, extractTitleAndName]);
 
     // Handle click outside
     React.useEffect(() => {
@@ -174,7 +173,6 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
         
         if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
           const { name } = extractTitleAndName(filteredSuggestions[highlightedIndex]);
-          // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
           const titleToUse = selectedTitle || extractTitleAndName(filteredSuggestions[highlightedIndex]).title;
           addMember(formatMember(titleToUse, name));
           return;
@@ -182,7 +180,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
         
         // إذا كتب المستخدم رتبة في حقل الإدخال
         const trimmedInput = inputValue.trim().toLowerCase();
-        const matchedTitle = TITLE_VALUES.find(t => t.toLowerCase() === trimmedInput);
+        const matchedTitle = abbreviations.find(a => a.toLowerCase() === trimmedInput);
         if (matchedTitle && !selectedTitle) {
           setSelectedTitle(matchedTitle);
           setInputValue("");
@@ -229,7 +227,6 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
 
     const handleSuggestionClick = (suggestion: string) => {
       const { name } = extractTitleAndName(suggestion);
-      // استخدم الرتبة المختارة من المستخدم إذا وجدت، وإلا استخدم الرتبة من الاقتراح
       const titleToUse = selectedTitle || extractTitleAndName(suggestion).title;
       addMember(formatMember(titleToUse, name));
       inputRef.current?.focus();
@@ -251,14 +248,13 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
               key={index}
               member={member}
               onRemove={() => removeMember(index)}
+              extractTitleAndName={extractTitleAndName}
             />
           ))}
           
           {/* الرتبة المختارة للعضو الجديد */}
           {selectedTitle && (
-            <Badge
-              className="gap-1 px-2 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700"
-            >
+            <Badge className="gap-1 px-2 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700">
               {selectedTitle}
               <button
                 type="button"
@@ -324,23 +320,41 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
         )}
 
         {/* Academic titles badges */}
-        <div className="flex flex-wrap gap-1.5 mt-2">
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
           <span className="text-xs text-muted-foreground ml-1">الرتبة:</span>
-          {ACADEMIC_TITLES.map((title) => (
-            <Badge
-              key={title.label}
-              variant={selectedTitle === title.value ? "default" : "outline"}
-              className={cn(
-                "cursor-pointer transition-colors text-xs px-2 py-0.5",
-                selectedTitle === title.value 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-primary hover:text-primary-foreground"
-              )}
-              onClick={() => selectTitle(title.value)}
-            >
-              {title.label}
-            </Badge>
-          ))}
+          {isLoading ? (
+            <span className="text-xs text-muted-foreground">جاري التحميل...</span>
+          ) : (
+            <>
+              {titles.map((title) => (
+                <Badge
+                  key={title.id}
+                  variant={selectedTitle === title.abbreviation ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-colors text-xs px-2 py-0.5",
+                    selectedTitle === title.abbreviation 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-primary hover:text-primary-foreground"
+                  )}
+                  onClick={() => selectTitle(title.abbreviation)}
+                  title={title.full_name}
+                >
+                  {title.abbreviation}
+                </Badge>
+              ))}
+              <ManageAcademicTitlesDialog
+                trigger={
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center h-5 w-5 rounded-full border border-dashed border-muted-foreground/50 hover:border-primary hover:text-primary transition-colors"
+                    title="إدارة الرتب العلمية"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </button>
+                }
+              />
+            </>
+          )}
         </div>
       </div>
     );
