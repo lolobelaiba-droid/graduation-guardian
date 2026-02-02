@@ -99,7 +99,7 @@ export interface TemplateWithFields extends CertificateTemplate {
 export const certificateTypeLabels: Record<CertificateType, { ar: string; fr: string; en: string }> = {
   phd_lmd: { ar: 'دكتوراه ل م د', fr: 'Doctorat LMD', en: 'PhD LMD' },
   phd_science: { ar: 'دكتوراه علوم', fr: 'Doctorat Sciences', en: 'PhD Science' },
-  master: { ar: 'ماجستير', fr: 'Master', en: 'Master' },
+  master: { ar: 'ماجستير', fr: 'Magister', en: 'Magister' },
 };
 
 // Language labels
