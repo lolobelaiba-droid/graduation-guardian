@@ -85,16 +85,15 @@ export function ExportStatsDialog() {
   };
 
   const removeRowField = (field: PivotField) => {
-    if (pivotRowFields.length > 1) {
-      setPivotRowFields(pivotRowFields.filter(f => f !== field));
-    }
+    setPivotRowFields(pivotRowFields.filter(f => f !== field));
   };
 
   const removeColField = (field: PivotField) => {
-    if (pivotColFields.length > 1) {
-      setPivotColFields(pivotColFields.filter(f => f !== field));
-    }
+    setPivotColFields(pivotColFields.filter(f => f !== field));
   };
+
+  // Check if pivot export is valid
+  const isPivotValid = pivotRowFields.length > 0 && pivotColFields.length > 0;
 
   // Get available fields (not already selected)
   const getAvailableFields = (): PivotField[] => {
@@ -842,10 +841,12 @@ export function ExportStatsDialog() {
               <div className="space-y-2">
                 <Label>حقول الصفوف (عموديًا)</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {pivotRowFields.map((field) => (
-                    <Badge key={field} variant="secondary" className="gap-1 py-1">
-                      {pivotFieldLabels[field]}
-                      {pivotRowFields.length > 1 && (
+                  {pivotRowFields.length === 0 ? (
+                    <span className="text-xs text-destructive">يرجى إضافة حقل واحد على الأقل</span>
+                  ) : (
+                    pivotRowFields.map((field) => (
+                      <Badge key={field} variant="secondary" className="gap-1 py-1">
+                        {pivotFieldLabels[field]}
                         <button
                           type="button"
                           onClick={() => removeRowField(field)}
@@ -853,9 +854,9 @@ export function ExportStatsDialog() {
                         >
                           <X className="h-3 w-3" />
                         </button>
-                      )}
-                    </Badge>
-                  ))}
+                      </Badge>
+                    ))
+                  )}
                 </div>
                 {getAvailableFields().length > 0 && (
                   <Select value="" onValueChange={(v) => addRowField(v as PivotField)}>
@@ -880,10 +881,12 @@ export function ExportStatsDialog() {
               <div className="space-y-2">
                 <Label>حقول الأعمدة (أفقيًا)</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {pivotColFields.map((field) => (
-                    <Badge key={field} variant="outline" className="gap-1 py-1">
-                      {pivotFieldLabels[field]}
-                      {pivotColFields.length > 1 && (
+                  {pivotColFields.length === 0 ? (
+                    <span className="text-xs text-destructive">يرجى إضافة حقل واحد على الأقل</span>
+                  ) : (
+                    pivotColFields.map((field) => (
+                      <Badge key={field} variant="outline" className="gap-1 py-1">
+                        {pivotFieldLabels[field]}
                         <button
                           type="button"
                           onClick={() => removeColField(field)}
@@ -891,9 +894,9 @@ export function ExportStatsDialog() {
                         >
                           <X className="h-3 w-3" />
                         </button>
-                      )}
-                    </Badge>
-                  ))}
+                      </Badge>
+                    ))
+                  )}
                 </div>
                 {getAvailableFields().length > 0 && (
                   <Select value="" onValueChange={(v) => addColField(v as PivotField)}>
@@ -924,7 +927,7 @@ export function ExportStatsDialog() {
           {/* Export Button */}
           <Button
             onClick={handleExport}
-            disabled={isExporting}
+            disabled={isExporting || (exportType === "custom_pivot" && !isPivotValid)}
             className="w-full gap-2"
             size="lg"
           >
