@@ -91,15 +91,18 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
       }
     }, [onChange]);
 
-    // Filter suggestions based on input
+    // Filter suggestions based on input (only name, not title)
     const filteredSuggestions = React.useMemo(() => {
-      const searchText = selectedTitle ? `${selectedTitle} ${inputValue}` : inputValue;
-      if (!searchText.trim()) return [];
-      const lower = searchText.toLowerCase();
+      if (!inputValue.trim()) return [];
+      const lower = inputValue.toLowerCase();
       return suggestions
-        .filter(s => s.toLowerCase().includes(lower) && s !== value)
+        .filter(s => {
+          // استخراج الاسم من الاقتراح للمقارنة
+          const { name } = extractTitleAndName(s);
+          return name.toLowerCase().includes(lower) && s !== value;
+        })
         .slice(0, 8);
-    }, [suggestions, inputValue, selectedTitle, value]);
+    }, [suggestions, inputValue, value]);
 
     // Handle click outside
     React.useEffect(() => {
