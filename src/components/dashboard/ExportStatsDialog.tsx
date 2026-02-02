@@ -15,14 +15,15 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { toWesternNumerals } from "@/lib/numerals";
 
-type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor";
+type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor" | "jury_stats";
 
 const exportTypeLabels: Record<ExportType, string> = {
   students: "قائمة الطلاب",
   faculty: "توزيع حسب الكليات",
   gender: "توزيع حسب الجنس",
   certificate_type: "توزيع حسب نوع الشهادة",
-  supervisor: "توزيع حسب المشرف (رئيس اللجنة)",
+  supervisor: "إحصائيات المشرفين",
+  jury_stats: "إحصائيات اللجان (رئيس/عضو)",
 };
 
 const certificateTypeLabels = {
@@ -181,7 +182,7 @@ export function ExportStatsDialog() {
         }
 
         case "supervisor": {
-          // Fetch all students (they now have supervisor field)
+          // Fetch all students with supervisor field
           const [phdLmd, phdScience, master] = await Promise.all([
             supabase.from("phd_lmd_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
             supabase.from("phd_science_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
@@ -199,6 +200,7 @@ export function ExportStatsDialog() {
           
           allStudents.forEach((s) => {
             const supervisor = (s as any).supervisor_ar || "غير محدد";
+            if (!supervisor.trim()) return; // Skip empty supervisors
             if (!supervisorData[supervisor]) {
               supervisorData[supervisor] = { count: 0, students: [] };
             }
@@ -216,7 +218,7 @@ export function ExportStatsDialog() {
             .sort((a, b) => b[1].count - a[1].count)
             .map(([name, data], index) => ({
               "الترتيب": index + 1,
-              "اسم المشرف (رئيس اللجنة)": name,
+              "اسم المشرف": name,
               "عدد الطلاب": data.count,
             }));
 
@@ -227,7 +229,7 @@ export function ExportStatsDialog() {
             .forEach(([supervisor, data]) => {
               data.students.forEach((student) => {
                 detailedData.push({
-                  "المشرف (رئيس اللجنة)": supervisor,
+                  "المشرف": supervisor,
                   "اسم الطالب": student.name,
                   "التخصص": student.specialty,
                   "نوع الشهادة": student.type,
@@ -242,9 +244,128 @@ export function ExportStatsDialog() {
           const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
           XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص المشرفين");
           XLSX.utils.book_append_sheet(wb, wsDetailed, "التفاصيل");
-          XLSX.writeFile(wb, `توزيع_المشرفين_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_المشرفين_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
 
           toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(supervisorData).length)} مشرف بنجاح`);
+          setOpen(false);
+          setIsExporting(false);
+          return;
+        }
+
+        case "jury_stats": {
+          // Fetch all jury data (president and members)
+          const [phdLmd, phdScience] = await Promise.all([
+            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, full_name_ar, specialty_ar, defense_date"),
+            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, full_name_ar, specialty_ar, defense_date"),
+          ]);
+
+          const allRecords = [
+            ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+            ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+          ];
+
+          // Track professor appearances
+          const professorStats: Record<string, { 
+            asPresident: number; 
+            asMember: number; 
+            total: number;
+            presidentDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
+            memberDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
+          }> = {};
+
+          allRecords.forEach((record) => {
+            // Process president
+            const president = (record as any).jury_president_ar?.trim();
+            if (president) {
+              if (!professorStats[president]) {
+                professorStats[president] = { asPresident: 0, asMember: 0, total: 0, presidentDetails: [], memberDetails: [] };
+              }
+              professorStats[president].asPresident++;
+              professorStats[president].total++;
+              professorStats[president].presidentDetails.push({
+                student: record.full_name_ar,
+                specialty: record.specialty_ar,
+                type: record.certificate_type,
+                date: record.defense_date,
+              });
+            }
+
+            // Process members
+            const membersStr = (record as any).jury_members_ar || "";
+            const members = membersStr.split(/[،,]/).map((m: string) => m.trim()).filter(Boolean);
+            
+            members.forEach((member: string) => {
+              if (!member) return;
+              if (!professorStats[member]) {
+                professorStats[member] = { asPresident: 0, asMember: 0, total: 0, presidentDetails: [], memberDetails: [] };
+              }
+              professorStats[member].asMember++;
+              professorStats[member].total++;
+              professorStats[member].memberDetails.push({
+                student: record.full_name_ar,
+                specialty: record.specialty_ar,
+                type: record.certificate_type,
+                date: record.defense_date,
+              });
+            });
+          });
+
+          // Create summary sheet
+          const summaryData = Object.entries(professorStats)
+            .sort((a, b) => b[1].total - a[1].total)
+            .map(([name, stats], index) => ({
+              "الترتيب": index + 1,
+              "اسم الأستاذ": name,
+              "رئيس لجنة": stats.asPresident,
+              "عضو لجنة": stats.asMember,
+              "المجموع": stats.total,
+            }));
+
+          // Create president details sheet
+          const presidentDetails: any[] = [];
+          Object.entries(professorStats)
+            .sort((a, b) => b[1].asPresident - a[1].asPresident)
+            .forEach(([professor, stats]) => {
+              stats.presidentDetails.forEach((detail) => {
+                presidentDetails.push({
+                  "الأستاذ": professor,
+                  "الدور": "رئيس لجنة",
+                  "اسم الطالب": detail.student,
+                  "التخصص": detail.specialty,
+                  "نوع الشهادة": detail.type,
+                  "تاريخ المناقشة": detail.date,
+                });
+              });
+            });
+
+          // Create member details sheet
+          const memberDetails: any[] = [];
+          Object.entries(professorStats)
+            .sort((a, b) => b[1].asMember - a[1].asMember)
+            .forEach(([professor, stats]) => {
+              stats.memberDetails.forEach((detail) => {
+                memberDetails.push({
+                  "الأستاذ": professor,
+                  "الدور": "عضو لجنة",
+                  "اسم الطالب": detail.student,
+                  "التخصص": detail.specialty,
+                  "نوع الشهادة": detail.type,
+                  "تاريخ المناقشة": detail.date,
+                });
+              });
+            });
+
+          // Create workbook with three sheets
+          const wb = XLSX.utils.book_new();
+          const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+          const wsPresident = XLSX.utils.json_to_sheet(presidentDetails);
+          const wsMember = XLSX.utils.json_to_sheet(memberDetails);
+          XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص الأساتذة");
+          XLSX.utils.book_append_sheet(wb, wsPresident, "تفاصيل رئاسة اللجان");
+          XLSX.utils.book_append_sheet(wb, wsMember, "تفاصيل عضوية اللجان");
+          XLSX.writeFile(wb, `إحصائيات_اللجان_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+
+          toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(professorStats).length)} أستاذ بنجاح`);
           setOpen(false);
           setIsExporting(false);
           return;
