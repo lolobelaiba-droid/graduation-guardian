@@ -203,6 +203,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   const showJuryFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const showResearchLabField = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const isResearchLabRequired = selectedType === 'phd_lmd';
+  const showPhdOnlyFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -261,71 +262,77 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="first_registration_year"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>سنة أول تسجيل في الدكتوراه *</FormLabel>
-                    <FormControl>
-                      <DropdownWithAdd
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        optionType="academic_year"
-                        placeholder="اختر أو أضف السنة الجامعية"
-                        defaultOptions={academicYears}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {showPhdOnlyFields && (
+                <FormField
+                  control={form.control}
+                  name="first_registration_year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>سنة أول تسجيل في الدكتوراه *</FormLabel>
+                      <FormControl>
+                        <DropdownWithAdd
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          optionType="academic_year"
+                          placeholder="اختر أو أضف السنة الجامعية"
+                          defaultOptions={academicYears}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
-            {/* Contact Info */}
-            <SectionHeader title="معلومات الاتصال" />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="professional_email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني المهني</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ''} 
-                        type="email" 
-                        dir="ltr" 
-                        placeholder="example@university.dz" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم الهاتف</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ''} 
-                        type="tel" 
-                        dir="ltr" 
-                        placeholder="0XX XXX XXXX" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Contact Info - PhD only */}
+            {showPhdOnlyFields && (
+              <>
+                <SectionHeader title="معلومات الاتصال" />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="professional_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>البريد الإلكتروني المهني</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            value={field.value || ''} 
+                            type="email" 
+                            dir="ltr" 
+                            placeholder="example@university.dz" 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="phone_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رقم الهاتف</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            value={field.value || ''} 
+                            type="tel" 
+                            dir="ltr" 
+                            placeholder="0XX XXX XXXX" 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Mention Fields - Separated */}
             <SectionHeader title="التقدير / Mention" />
