@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock, FileType } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock, FileType, User, Hash, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -79,7 +79,11 @@ export default function PrintCertificates() {
   }>>([]);
 
   // Student search
+  // Student search with suggestions
   const [studentSearch, setStudentSearch] = useState('');
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Desktop printing (Electron) state
   const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.getPrinters;
@@ -218,7 +222,65 @@ export default function PrintCertificates() {
 
   const allStudents = getAllStudents();
 
-  // Filter students by search
+  // Filter students by search with smart matching
+  const getSearchSuggestions = () => {
+    if (!studentSearch.trim()) return [];
+    const search = studentSearch.toLowerCase().trim();
+    const words = search.split(/\s+/);
+    
+    return allStudents
+      .map(student => {
+        let score = 0;
+        const matchedFields: string[] = [];
+        
+        // Check name matches (highest priority)
+        const nameAr = student.full_name_ar?.toLowerCase() || '';
+        const nameFr = student.full_name_fr?.toLowerCase() || '';
+        
+        // Exact match at start of name
+        if (nameAr.startsWith(search) || nameFr.startsWith(search)) {
+          score += 100;
+          matchedFields.push('name');
+        } 
+        // Contains full search term
+        else if (nameAr.includes(search) || nameFr.includes(search)) {
+          score += 50;
+          matchedFields.push('name');
+        }
+        // Check each word
+        else {
+          words.forEach(word => {
+            if (nameAr.includes(word) || nameFr.includes(word)) {
+              score += 20;
+              if (!matchedFields.includes('name')) matchedFields.push('name');
+            }
+          });
+        }
+        
+        // Check student number (high priority)
+        const studentNum = student.student_number?.toLowerCase() || '';
+        if (studentNum.includes(search)) {
+          score += 80;
+          matchedFields.push('number');
+        }
+        
+        // Check specialty
+        const specialty = student.specialty_ar?.toLowerCase() || '';
+        if (specialty.includes(search)) {
+          score += 30;
+          matchedFields.push('specialty');
+        }
+        
+        return { student, score, matchedFields };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8); // Limit to 8 suggestions
+  };
+  
+  const searchSuggestions = getSearchSuggestions();
+
+  // Filter students by search (for main list)
   const filteredStudents = allStudents.filter(student => {
     if (!studentSearch.trim()) return true;
     const search = studentSearch.toLowerCase();
@@ -229,6 +291,38 @@ export default function PrintCertificates() {
       student.specialty_ar?.toLowerCase().includes(search)
     );
   });
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle selecting a suggestion
+  const handleSelectSuggestion = (student: StudentWithType) => {
+    setStudentSearch(student.full_name_ar);
+    setShowSearchSuggestions(false);
+    
+    // Auto-switch to matching template
+    const matchingTemplate = templates.find(
+      t => t.certificate_type === student.certificateType && t.is_active
+    );
+    if (matchingTemplate) {
+      setSelectedTemplateId(matchingTemplate.id);
+      setSelectedType(student.certificateType);
+      setSelectedLanguage(matchingTemplate.language);
+    } else {
+      setSelectedType(student.certificateType);
+    }
+    
+    setSelectedStudentIds([student.id]);
+    setPreviewStudentId(student.id);
+  };
 
   // Get the 5 most recently added students (for highlighting)
   const recentStudentIds = allStudents.slice(0, 5).map(s => s.id);
@@ -534,15 +628,100 @@ export default function PrintCertificates() {
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Search Box */}
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {/* Search Box with Smart Suggestions */}
+              <div className="relative" ref={searchContainerRef}>
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                 <Input
-                  placeholder="بحث عن طالب بالاسم أو الرقم أو التخصص..."
+                  ref={searchInputRef}
+                  placeholder="بحث بالاسم أو اللقب أو رقم الشهادة..."
                   value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
+                  onChange={(e) => {
+                    setStudentSearch(e.target.value);
+                    setShowSearchSuggestions(true);
+                  }}
+                  onFocus={() => setShowSearchSuggestions(true)}
                   className="pr-9"
                 />
+                
+                {/* Smart Suggestions Dropdown */}
+                {showSearchSuggestions && studentSearch.trim() && searchSuggestions.length > 0 && (
+                  <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                    <div className="p-2 text-xs text-muted-foreground border-b bg-muted/30">
+                      اقتراحات ذكية ({toWesternNumerals(searchSuggestions.length)})
+                    </div>
+                    {searchSuggestions.map(({ student, matchedFields }) => (
+                      <div
+                        key={student.id}
+                        className="flex items-start gap-3 p-3 hover:bg-accent cursor-pointer border-b border-border/50 last:border-0 transition-colors"
+                        onClick={() => handleSelectSuggestion(student)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground truncate">
+                              {student.full_name_ar}
+                            </span>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-[10px] shrink-0 ${
+                                student.certificateType === 'phd_lmd' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' :
+                                student.certificateType === 'phd_science' ? 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300' :
+                                'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                              }`}
+                            >
+                              {certificateTypeLabels[student.certificateType].ar}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                            {matchedFields.includes('number') && (
+                              <span className="flex items-center gap-1 text-primary">
+                                <Hash className="h-3 w-3" />
+                                {student.student_number}
+                              </span>
+                            )}
+                            {!matchedFields.includes('number') && student.student_number && (
+                              <span className="flex items-center gap-1">
+                                <Hash className="h-3 w-3" />
+                                {student.student_number}
+                              </span>
+                            )}
+                            {matchedFields.includes('specialty') && (
+                              <span className="flex items-center gap-1 text-primary">
+                                <BookOpen className="h-3 w-3" />
+                                {student.specialty_ar}
+                              </span>
+                            )}
+                            {!matchedFields.includes('specialty') && student.specialty_ar && (
+                              <span className="flex items-center gap-1">
+                                <BookOpen className="h-3 w-3" />
+                                {student.specialty_ar}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {student.full_name_fr && (
+                            <div className="text-xs text-muted-foreground/70 mt-0.5 truncate">
+                              {student.full_name_fr}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {filteredStudents.length > searchSuggestions.length && (
+                      <div className="p-2 text-center text-xs text-muted-foreground bg-muted/30">
+                        و {toWesternNumerals(filteredStudents.length - searchSuggestions.length)} نتائج أخرى...
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* No results message */}
+                {showSearchSuggestions && studentSearch.trim() && searchSuggestions.length === 0 && (
+                  <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg p-4 text-center">
+                    <p className="text-sm text-muted-foreground">لا توجد نتائج لـ "{studentSearch}"</p>
+                  </div>
+                )}
               </div>
 
               {selectedStudentIds.length === 1 && (
