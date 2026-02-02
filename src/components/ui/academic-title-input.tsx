@@ -63,20 +63,23 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
 
     // إضافة رتبة علمية
     const addTitle = (titleValue: string) => {
+      // تأكد من أن الرتبة تنتهي بمسافة
+      const titleWithSpace = titleValue.endsWith(" ") ? titleValue : titleValue + " ";
+      
       // إذا كان الحقل فارغاً أو يحتوي على رتبة فقط، استبدلها
       if (!value.trim() || isJustAcademicTitle(value)) {
-        onChange(titleValue);
+        onChange(titleWithSpace);
       } else {
         // إذا كان هناك نص، أضف الرتبة في البداية
         const cleanValue = value.trim();
         // تحقق إذا كان النص يبدأ برتبة بالفعل
-        const startsWithTitle = TITLE_VALUES.some(t => cleanValue.startsWith(t));
+        const startsWithTitle = TITLE_VALUES.some(t => cleanValue.startsWith(t + " ") || cleanValue.startsWith(t));
         if (startsWithTitle) {
           // استبدل الرتبة الموجودة
-          const textWithoutTitle = cleanValue.replace(/^(أد|د|أ|Prof|Dr|Pr)\s*/i, '');
-          onChange(titleValue + textWithoutTitle);
+          const textWithoutTitle = cleanValue.replace(/^(أد|د|أ|أ\.د|د\.|Prof|Dr|Pr|Prof\.|Dr\.|Pr\.)\s*/i, '').trim();
+          onChange(titleWithSpace + textWithoutTitle);
         } else {
-          onChange(titleValue + cleanValue);
+          onChange(titleWithSpace + cleanValue);
         }
       }
       inputRef.current?.focus();

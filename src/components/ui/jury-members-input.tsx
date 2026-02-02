@@ -74,24 +74,26 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
 
     // التحقق من أن النص الحالي هو رتبة علمية فقط
     const isJustAcademicTitle = (text: string): boolean => {
-      const trimmed = text.trim();
-      return TITLE_VALUES.some(
-        title => trimmed === title || trimmed === title + " "
-      );
+      const trimmed = text.trim().toLowerCase();
+      const allTitles = ["أد", "د", "أ", "أ.د", "د.", "prof", "dr", "pr", "prof.", "dr.", "pr."];
+      return allTitles.some(title => trimmed === title.toLowerCase());
     };
 
     // إضافة رتبة علمية في حقل الإدخال
     const addTitleToInput = (titleValue: string) => {
+      // تأكد من أن الرتبة تنتهي بمسافة
+      const titleWithSpace = titleValue.endsWith(" ") ? titleValue : titleValue + " ";
+      
       if (!inputValue.trim() || isJustAcademicTitle(inputValue)) {
-        setInputValue(titleValue);
+        setInputValue(titleWithSpace);
       } else {
         const cleanValue = inputValue.trim();
-        const startsWithTitle = TITLE_VALUES.some(t => cleanValue.startsWith(t));
+        const startsWithTitle = TITLE_VALUES.some(t => cleanValue.startsWith(t + " ") || cleanValue.startsWith(t));
         if (startsWithTitle) {
-          const textWithoutTitle = cleanValue.replace(/^(أد|د|أ|Prof|Dr|Pr)\s*/i, '');
-          setInputValue(titleValue + textWithoutTitle);
+          const textWithoutTitle = cleanValue.replace(/^(أد|د|أ|أ\.د|د\.|Prof|Dr|Pr|Prof\.|Dr\.|Pr\.)\s*/i, '').trim();
+          setInputValue(titleWithSpace + textWithoutTitle);
         } else {
-          setInputValue(titleValue + cleanValue);
+          setInputValue(titleWithSpace + cleanValue);
         }
       }
       inputRef.current?.focus();
