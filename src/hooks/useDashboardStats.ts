@@ -172,3 +172,129 @@ export function useCertificateTypeDistribution() {
     },
   });
 }
+
+/**
+ * Extract the lower year from a registration year string like "2020/2021"
+ */
+function extractLowerYear(registrationYear: string | null): number | null {
+  if (!registrationYear) return null;
+  
+  // Handle format like "2020/2021" - take the first (lower) year
+  const match = registrationYear.match(/(\d{4})/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  return null;
+}
+
+/**
+ * Extract year from a date string
+ */
+function extractYearFromDate(dateString: string | null): number | null {
+  if (!dateString) return null;
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return null;
+  
+  return date.getFullYear();
+}
+
+interface RegistrationStats {
+  phdLmdAverage: number | null;
+  phdScienceAverage: number | null;
+  overallAverage: number | null;
+  phdLmdCount: number;
+  phdScienceCount: number;
+  totalCount: number;
+}
+
+export function useAverageRegistrationYears() {
+  return useQuery({
+    queryKey: ["average_registration_years"],
+    queryFn: async (): Promise<RegistrationStats> => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const [phdLmd, phdScience] = await Promise.all([
+          db.getAll('phd_lmd_certificates'),
+          db.getAll('phd_science_certificates'),
+        ]);
+
+        const phdLmdData = (phdLmd.data as Array<{ first_registration_year: string | null; defense_date: string | null }>) || [];
+        const phdScienceData = (phdScience.data as Array<{ first_registration_year: string | null; defense_date: string | null }>) || [];
+
+        const calculateAverage = (data: Array<{ first_registration_year: string | null; defense_date: string | null }>) => {
+          const validYears: number[] = [];
+          
+          for (const student of data) {
+            const registrationYear = extractLowerYear(student.first_registration_year);
+            const defenseYear = extractYearFromDate(student.defense_date);
+            
+            if (registrationYear && defenseYear && defenseYear >= registrationYear) {
+              validYears.push(defenseYear - registrationYear);
+            }
+          }
+          
+          if (validYears.length === 0) return null;
+          return validYears.reduce((sum, y) => sum + y, 0) / validYears.length;
+        };
+
+        const phdLmdAverage = calculateAverage(phdLmdData);
+        const phdScienceAverage = calculateAverage(phdScienceData);
+        
+        // Calculate overall average
+        const allData = [...phdLmdData, ...phdScienceData];
+        const overallAverage = calculateAverage(allData);
+
+        return {
+          phdLmdAverage,
+          phdScienceAverage,
+          overallAverage,
+          phdLmdCount: phdLmdData.length,
+          phdScienceCount: phdScienceData.length,
+          totalCount: allData.length,
+        };
+      }
+
+      // Web mode - use Supabase
+      const [phdLmd, phdScience] = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("first_registration_year, defense_date"),
+        supabase.from("phd_science_certificates").select("first_registration_year, defense_date"),
+      ]);
+
+      const phdLmdData = phdLmd.data || [];
+      const phdScienceData = phdScience.data || [];
+
+      const calculateAverage = (data: Array<{ first_registration_year: string | null; defense_date: string | null }>) => {
+        const validYears: number[] = [];
+        
+        for (const student of data) {
+          const registrationYear = extractLowerYear(student.first_registration_year);
+          const defenseYear = extractYearFromDate(student.defense_date);
+          
+          if (registrationYear && defenseYear && defenseYear >= registrationYear) {
+            validYears.push(defenseYear - registrationYear);
+          }
+        }
+        
+        if (validYears.length === 0) return null;
+        return validYears.reduce((sum, y) => sum + y, 0) / validYears.length;
+      };
+
+      const phdLmdAverage = calculateAverage(phdLmdData);
+      const phdScienceAverage = calculateAverage(phdScienceData);
+      
+      // Calculate overall average
+      const allData = [...phdLmdData, ...phdScienceData];
+      const overallAverage = calculateAverage(allData);
+
+      return {
+        phdLmdAverage,
+        phdScienceAverage,
+        overallAverage,
+        phdLmdCount: phdLmdData.length,
+        phdScienceCount: phdScienceData.length,
+        totalCount: allData.length,
+      };
+    },
+  });
+}

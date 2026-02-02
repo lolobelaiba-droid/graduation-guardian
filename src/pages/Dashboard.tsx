@@ -3,6 +3,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { FacultyChart } from "@/components/dashboard/FacultyChart";
 import { CertificateTypeChart } from "@/components/dashboard/CertificateTypeChart";
 import { GenderChart } from "@/components/dashboard/GenderChart";
+import { AverageRegistrationYears } from "@/components/dashboard/AverageRegistrationYears";
 import { ThemeSelector } from "@/components/dashboard/ThemeSelector";
 import { ExportStatsDialog } from "@/components/dashboard/ExportStatsDialog";
 import { Button } from "@/components/ui/button";
@@ -66,14 +67,15 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row 1 - PhD only */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <CertificateTypeChart />
         <GenderChart />
+        <FacultyChart />
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Stats Row 2 - Average Registration Years */}
       <div className="grid grid-cols-1 gap-6">
-        <FacultyChart />
+        <AverageRegistrationYears />
       </div>
 
       {/* Footer */}
