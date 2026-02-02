@@ -119,6 +119,13 @@ export type Database = {
           language: Database["public"]["Enums"]["template_language"]
           page_orientation: string | null
           page_size: string | null
+          print_custom_height: number | null
+          print_custom_width: number | null
+          print_margin_bottom: number | null
+          print_margin_left: number | null
+          print_margin_right: number | null
+          print_margin_top: number | null
+          print_paper_size: string | null
           template_name: string
           updated_at: string | null
         }
@@ -134,6 +141,13 @@ export type Database = {
           language?: Database["public"]["Enums"]["template_language"]
           page_orientation?: string | null
           page_size?: string | null
+          print_custom_height?: number | null
+          print_custom_width?: number | null
+          print_margin_bottom?: number | null
+          print_margin_left?: number | null
+          print_margin_right?: number | null
+          print_margin_top?: number | null
+          print_paper_size?: string | null
           template_name: string
           updated_at?: string | null
         }
@@ -149,6 +163,13 @@ export type Database = {
           language?: Database["public"]["Enums"]["template_language"]
           page_orientation?: string | null
           page_size?: string | null
+          print_custom_height?: number | null
+          print_custom_width?: number | null
+          print_margin_bottom?: number | null
+          print_margin_left?: number | null
+          print_margin_right?: number | null
+          print_margin_top?: number | null
+          print_paper_size?: string | null
           template_name?: string
           updated_at?: string | null
         }

@@ -28,7 +28,7 @@ import {
 } from './pdf/arabicTextUtils';
 import { getAllFonts, loadFontFile, arrayBufferToBase64, getFontByName } from './arabicFonts';
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from './numerals';
-import { fetchPrintSettings, getPaperDimensions, type PrintSettings, DEFAULT_PRINT_SETTINGS } from '@/hooks/usePrintSettings';
+import { getPaperDimensions, type PrintSettings } from '@/hooks/usePrintSettings';
 import { fetchDateFormatSettings } from '@/hooks/useDateFormatSettings';
 import type { DateFormatSettings } from './dateFormats';
 import { getTextDirectionFromConfig } from './dateFormats';
@@ -606,6 +606,22 @@ function renderField(
 // ============================================================================
 
 /**
+ * Get print settings from template or fallback to global settings
+ */
+function getTemplatePrintSettings(template: CertificateTemplate): PrintSettings {
+  return {
+    paperSize: (template as any).print_paper_size || 'a4',
+    customWidth: (template as any).print_custom_width || 210,
+    customHeight: (template as any).print_custom_height || 297,
+    orientation: template.page_orientation || 'portrait',
+    marginTop: (template as any).print_margin_top || 20,
+    marginBottom: (template as any).print_margin_bottom || 20,
+    marginRight: (template as any).print_margin_right || 15,
+    marginLeft: (template as any).print_margin_left || 15,
+  };
+}
+
+/**
  * Generate a PDF document with multiple certificates (one per student).
  * Saves the PDF to the user's device.
  */
@@ -616,7 +632,8 @@ export async function generatePDF(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<void> {
-  const settings = printSettings || await fetchPrintSettings();
+  // Use template-specific settings, then passed settings, then fetch global
+  const settings = printSettings || getTemplatePrintSettings(template);
   const dateFormatSettings = await fetchDateFormatSettings();
   
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
@@ -666,7 +683,8 @@ export async function generateSinglePDF(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<Blob> {
-  const settings = printSettings || await fetchPrintSettings();
+  // Use template-specific settings, then passed settings
+  const settings = printSettings || getTemplatePrintSettings(template);
   const dateFormatSettings = await fetchDateFormatSettings();
   
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';
@@ -708,7 +726,8 @@ export async function generatePDFBlob(
   certificateType: CertificateType,
   printSettings?: PrintSettings
 ): Promise<Blob> {
-  const settings = printSettings || await fetchPrintSettings();
+  // Use template-specific settings, then passed settings
+  const settings = printSettings || getTemplatePrintSettings(template);
   const dateFormatSettings = await fetchDateFormatSettings();
   
   const isLandscape = template.page_orientation === 'landscape' || settings.orientation === 'landscape';

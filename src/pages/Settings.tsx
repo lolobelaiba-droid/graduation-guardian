@@ -16,6 +16,7 @@ import {
   Calendar,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
+import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -906,110 +907,7 @@ export default function Settings() {
 
         {/* Print Settings Tab */}
         <TabsContent value="print">
-          <div className="bg-card rounded-2xl shadow-card p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">إعدادات الطباعة الافتراضية</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>حجم الورق الافتراضي</Label>
-                <Select value={paperSize} onValueChange={setPaperSize}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAPER_SIZES.map((size) => (
-                      <SelectItem key={size.value} value={size.value}>
-                        {size.label} {size.width > 0 && `(${size.width}×${size.height} مم)`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {paperSize === "custom" && (
-                <>
-                  <div className="space-y-2">
-                    <Label>العرض المخصص (مم)</Label>
-                    <Input
-                      type="number"
-                      value={customWidth}
-                      onChange={(e) => setCustomWidth(e.target.value)}
-                      min="50"
-                      max="2000"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>الارتفاع المخصص (مم)</Label>
-                    <Input
-                      type="number"
-                      value={customHeight}
-                      onChange={(e) => setCustomHeight(e.target.value)}
-                      min="50"
-                      max="2000"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="space-y-2">
-                <Label>الاتجاه الافتراضي</Label>
-                <Select value={orientation} onValueChange={setOrientation}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="portrait">عمودي</SelectItem>
-                    <SelectItem value="landscape">أفقي</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>الهامش العلوي (مم)</Label>
-                <Input
-                  type="number"
-                  value={marginTop}
-                  onChange={(e) => setMarginTop(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>الهامش السفلي (مم)</Label>
-                <Input
-                  type="number"
-                  value={marginBottom}
-                  onChange={(e) => setMarginBottom(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>الهامش الأيمن (مم)</Label>
-                <Input
-                  type="number"
-                  value={marginRight}
-                  onChange={(e) => setMarginRight(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>الهامش الأيسر (مم)</Label>
-                <Input
-                  type="number"
-                  value={marginLeft}
-                  onChange={(e) => setMarginLeft(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button className="gap-2" onClick={savePrintSettings} disabled={isSaving}>
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                حفظ التغييرات
-              </Button>
-            </div>
-          </div>
+          <TemplatePrintSettings />
         </TabsContent>
 
         {/* Security Tab */}
