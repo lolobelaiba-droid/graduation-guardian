@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS phd_lmd_certificates (
     jury_members_ar TEXT NOT NULL,
     jury_members_fr TEXT,
     gender TEXT DEFAULT 'male' CHECK(gender IN ('male', 'female')),
+    first_registration_year TEXT,
+    professional_email TEXT,
+    phone_number TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -77,11 +80,14 @@ CREATE TABLE IF NOT EXISTS phd_science_certificates (
     jury_members_ar TEXT NOT NULL,
     jury_members_fr TEXT,
     gender TEXT DEFAULT 'male' CHECK(gender IN ('male', 'female')),
+    first_registration_year TEXT,
+    professional_email TEXT,
+    phone_number TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
 
--- جدول شهادات الماستر
+-- جدول شهادات الماجستير
 CREATE TABLE IF NOT EXISTS master_certificates (
     id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
     student_number TEXT NOT NULL,
@@ -102,6 +108,9 @@ CREATE TABLE IF NOT EXISTS master_certificates (
     defense_date TEXT NOT NULL,
     certificate_date TEXT NOT NULL DEFAULT (date('now')),
     gender TEXT DEFAULT 'male' CHECK(gender IN ('male', 'female')),
+    first_registration_year TEXT,
+    professional_email TEXT,
+    phone_number TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );

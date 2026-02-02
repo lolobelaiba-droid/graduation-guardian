@@ -223,11 +223,14 @@ export type Database = {
           defense_date: string
           faculty_ar: string
           faculty_fr: string | null
+          first_registration_year: string | null
           full_name_ar: string
           full_name_fr: string | null
           gender: string | null
           id: string
           mention: Database["public"]["Enums"]["mention_type"]
+          phone_number: string | null
+          professional_email: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -246,11 +249,14 @@ export type Database = {
           defense_date: string
           faculty_ar?: string
           faculty_fr?: string | null
+          first_registration_year?: string | null
           full_name_ar: string
           full_name_fr?: string | null
           gender?: string | null
           id?: string
           mention?: Database["public"]["Enums"]["mention_type"]
+          phone_number?: string | null
+          professional_email?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -269,11 +275,14 @@ export type Database = {
           defense_date?: string
           faculty_ar?: string
           faculty_fr?: string | null
+          first_registration_year?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
           gender?: string | null
           id?: string
           mention?: Database["public"]["Enums"]["mention_type"]
+          phone_number?: string | null
+          professional_email?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
@@ -297,6 +306,7 @@ export type Database = {
           faculty_fr: string | null
           field_ar: string
           field_fr: string | null
+          first_registration_year: string | null
           full_name_ar: string
           full_name_fr: string | null
           gender: string | null
@@ -306,6 +316,8 @@ export type Database = {
           jury_president_ar: string
           jury_president_fr: string | null
           mention: Database["public"]["Enums"]["mention_type"]
+          phone_number: string | null
+          professional_email: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -328,6 +340,7 @@ export type Database = {
           faculty_fr?: string | null
           field_ar: string
           field_fr?: string | null
+          first_registration_year?: string | null
           full_name_ar: string
           full_name_fr?: string | null
           gender?: string | null
@@ -337,6 +350,8 @@ export type Database = {
           jury_president_ar: string
           jury_president_fr?: string | null
           mention?: Database["public"]["Enums"]["mention_type"]
+          phone_number?: string | null
+          professional_email?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -359,6 +374,7 @@ export type Database = {
           faculty_fr?: string | null
           field_ar?: string
           field_fr?: string | null
+          first_registration_year?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
           gender?: string | null
@@ -368,6 +384,8 @@ export type Database = {
           jury_president_ar?: string
           jury_president_fr?: string | null
           mention?: Database["public"]["Enums"]["mention_type"]
+          phone_number?: string | null
+          professional_email?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
@@ -391,6 +409,7 @@ export type Database = {
           defense_date: string
           faculty_ar: string
           faculty_fr: string | null
+          first_registration_year: string | null
           full_name_ar: string
           full_name_fr: string | null
           gender: string | null
@@ -400,6 +419,8 @@ export type Database = {
           jury_president_ar: string
           jury_president_fr: string | null
           mention: Database["public"]["Enums"]["mention_type"]
+          phone_number: string | null
+          professional_email: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -420,6 +441,7 @@ export type Database = {
           defense_date: string
           faculty_ar?: string
           faculty_fr?: string | null
+          first_registration_year?: string | null
           full_name_ar: string
           full_name_fr?: string | null
           gender?: string | null
@@ -429,6 +451,8 @@ export type Database = {
           jury_president_ar: string
           jury_president_fr?: string | null
           mention?: Database["public"]["Enums"]["mention_type"]
+          phone_number?: string | null
+          professional_email?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -449,6 +473,7 @@ export type Database = {
           defense_date?: string
           faculty_ar?: string
           faculty_fr?: string | null
+          first_registration_year?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
           gender?: string | null
@@ -458,6 +483,8 @@ export type Database = {
           jury_president_ar?: string
           jury_president_fr?: string | null
           mention?: Database["public"]["Enums"]["mention_type"]
+          phone_number?: string | null
+          professional_email?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string

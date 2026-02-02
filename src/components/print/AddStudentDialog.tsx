@@ -36,8 +36,19 @@ import {
 } from "@/types/certificates";
 import { DropdownWithAdd } from "./DropdownWithAdd";
 
+// توليد السنوات الجامعية من 2000/2001 إلى 2024/2025
+const generateAcademicYears = (): string[] => {
+  const years: string[] = [];
+  for (let year = 2000; year <= 2024; year++) {
+    years.push(`${year}/${year + 1}`);
+  }
+  return years;
+};
+
+export const academicYears = generateAcademicYears();
+
 const baseSchema = z.object({
-  student_number: z.string().min(1, "الرقم مطلوب"),
+  student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
   gender: z.enum(['male', 'female']),
@@ -55,6 +66,9 @@ const baseSchema = z.object({
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
+  first_registration_year: z.string().optional().nullable(),
+  professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
+  phone_number: z.string().optional().nullable(),
 });
 
 const phdSchema = baseSchema.extend({
@@ -136,6 +150,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       jury_president_fr: '',
       jury_members_ar: '',
       jury_members_fr: '',
+      first_registration_year: '',
+      professional_email: '',
+      phone_number: '',
     },
   });
 
@@ -212,15 +229,80 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
             {/* Basic Info */}
             <SectionHeader title="المعلومات الأساسية" />
             
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="student_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الرقم *</FormLabel>
+                    <FormLabel>رقم الشهادة *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="رقم الطالب" />
+                      <Input {...field} placeholder="رقم الشهادة" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="first_registration_year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>سنة أول تسجيل في الدكتوراه</FormLabel>
+                    <FormControl>
+                      <DropdownWithAdd
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        optionType="academic_year"
+                        placeholder="اختر أو أضف السنة الجامعية"
+                        defaultOptions={academicYears}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Contact Info */}
+            <SectionHeader title="معلومات الاتصال" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="professional_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني المهني</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        type="email" 
+                        dir="ltr" 
+                        placeholder="example@university.dz" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رقم الهاتف</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        type="tel" 
+                        dir="ltr" 
+                        placeholder="0XX XXX XXXX" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

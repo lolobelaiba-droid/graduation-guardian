@@ -33,6 +33,7 @@ interface DropdownWithAddProps {
   optionType: OptionType;
   placeholder?: string;
   dir?: "ltr" | "rtl";
+  defaultOptions?: string[];
 }
 
 export function DropdownWithAdd({
@@ -41,16 +42,34 @@ export function DropdownWithAdd({
   optionType,
   placeholder = "اختر...",
   dir = "rtl",
+  defaultOptions = [],
 }: DropdownWithAddProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [newValue, setNewValue] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const { data: options = [], isLoading } = useDropdownOptions(optionType);
+  const { data: dbOptions = [], isLoading } = useDropdownOptions(optionType);
   const addOption = useAddDropdownOption();
   const deleteOption = useDeleteDropdownOption();
   const updateOption = useUpdateDropdownOption();
+
+  // Merge default options with database options
+  const allOptions = [...dbOptions];
+  defaultOptions.forEach((defOpt) => {
+    if (!allOptions.some((opt) => opt.option_value === defOpt)) {
+      allOptions.push({
+        id: `default-${defOpt}`,
+        option_type: optionType,
+        option_value: defOpt,
+        display_order: 0,
+        created_at: '',
+      });
+    }
+  });
+  
+  // Sort options
+  allOptions.sort((a, b) => a.option_value.localeCompare(b.option_value));
 
   const handleAdd = async () => {
     if (!newValue.trim()) return;
@@ -123,7 +142,7 @@ export function DropdownWithAdd({
           list={`${optionType}-options`}
         />
         <datalist id={`${optionType}-options`}>
-          {options.map((opt) => (
+          {allOptions.map((opt) => (
             <option key={opt.id} value={opt.option_value} />
           ))}
         </datalist>
@@ -156,12 +175,12 @@ export function DropdownWithAdd({
                   <p className="text-sm text-muted-foreground text-center py-4">
                     جاري التحميل...
                   </p>
-                ) : options.length === 0 ? (
+                ) : allOptions.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     لا توجد خيارات محفوظة
                   </p>
                 ) : (
-                  options.map((opt) => (
+                  allOptions.map((opt) => (
                     <Button
                       key={opt.id}
                       type="button"
@@ -209,12 +228,12 @@ export function DropdownWithAdd({
             {/* Manage Tab */}
             <TabsContent value="manage" className="p-3">
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {options.length === 0 ? (
+                {dbOptions.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     لا توجد خيارات للإدارة
                   </p>
                 ) : (
-                  options.map((opt) => (
+                  dbOptions.map((opt) => (
                     <div
                       key={opt.id}
                       className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border"
