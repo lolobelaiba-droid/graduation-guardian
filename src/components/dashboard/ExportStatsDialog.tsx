@@ -23,7 +23,7 @@ const exportTypeLabels: Record<ExportType, string> = {
   gender: "توزيع حسب الجنس",
   certificate_type: "توزيع حسب نوع الشهادة",
   supervisor: "إحصائيات المشرفين",
-  jury_stats: "إحصائيات اللجان (رئيس/عضو)",
+  jury_stats: "إحصائيات اللجان (مشرف/رئيس/عضو)",
 };
 
 const certificateTypeLabels = {
