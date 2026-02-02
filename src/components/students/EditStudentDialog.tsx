@@ -64,7 +64,6 @@ const phdLmdSchema = z.object({
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
-  research_lab_ar: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -100,7 +99,6 @@ const phdScienceSchema = z.object({
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
-  research_lab_ar: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -134,7 +132,6 @@ const masterSchema = z.object({
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
-  research_lab_ar: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -194,7 +191,6 @@ export default function EditStudentDialog({
         professional_email?: string;
         phone_number?: string;
         supervisor_ar?: string;
-        research_lab_ar?: string;
       };
       
       const baseValues = {
@@ -208,7 +204,6 @@ export default function EditStudentDialog({
         university_fr: student.university_fr || "Université Mohamed Khider Biskra",
         faculty_ar: student.faculty_ar || "",
         faculty_fr: student.faculty_fr || "",
-        research_lab_ar: studentWithExtras.research_lab_ar || "",
         branch_ar: student.branch_ar,
         branch_fr: student.branch_fr || "",
         specialty_ar: student.specialty_ar,
@@ -477,33 +472,10 @@ export default function EditStudentDialog({
                   control={form.control}
                   name={"faculty_ar" as keyof FormValues}
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="md:col-span-2">
                       <FormLabel>الكلية *</FormLabel>
                       <FormControl>
-                        <DropdownWithAdd
-                          value={(field.value as string) || ''}
-                          onChange={field.onChange}
-                          optionType="faculty"
-                          placeholder="اختر أو أدخل الكلية"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={"research_lab_ar" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>مخبر البحث</FormLabel>
-                      <FormControl>
-                        <DropdownWithAdd
-                          value={(field.value as string) || ''}
-                          onChange={field.onChange}
-                          optionType="research_lab"
-                          placeholder="اختر أو أدخل مخبر البحث"
-                        />
+                        <Input {...field} value={(field.value as string) || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
