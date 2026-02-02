@@ -73,6 +73,14 @@ export interface CertificateTemplate {
   background_image_url: string | null;
   created_at: string;
   updated_at: string;
+  // Print settings per template
+  print_paper_size?: string;
+  print_custom_width?: number;
+  print_custom_height?: number;
+  print_margin_top?: number;
+  print_margin_bottom?: number;
+  print_margin_right?: number;
+  print_margin_left?: number;
 }
 
 // Template Field
