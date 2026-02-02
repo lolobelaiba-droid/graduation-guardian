@@ -538,6 +538,33 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
               />
             </div>
 
+            {/* Research Lab - After Faculty */}
+            {showResearchLabField && (
+              <>
+                <SectionHeader title="مخبر البحث / Laboratoire de recherche" />
+                <div className="grid grid-cols-1 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="research_lab_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>مخبر البحث {isResearchLabRequired ? '*' : ''}</FormLabel>
+                        <FormControl>
+                          <DropdownWithAdd
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            optionType="research_lab"
+                            placeholder="اختر أو أدخل اسم مخبر البحث"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
+
             {/* Field (PhD LMD only) */}
             {showFieldField && (
               <>
@@ -688,33 +715,6 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                 </FormItem>
               )}
             />
-
-            {/* Research Lab */}
-            {showResearchLabField && (
-              <>
-                <SectionHeader title="مخبر البحث / Laboratoire de recherche" />
-                <div className="grid grid-cols-1 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="research_lab_ar"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>مخبر البحث {isResearchLabRequired ? '*' : ''}</FormLabel>
-                        <FormControl>
-                          <DropdownWithAdd
-                            value={field.value || ''}
-                            onChange={field.onChange}
-                            optionType="research_lab"
-                            placeholder="اختر أو أدخل اسم مخبر البحث"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
 
             {/* Thesis */}
             {showThesisFields && (
