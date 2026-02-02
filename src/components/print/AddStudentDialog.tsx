@@ -66,7 +66,7 @@ const baseSchema = z.object({
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
-  first_registration_year: z.string().optional().nullable(),
+  first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
 });
@@ -249,7 +249,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                 name="first_registration_year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>سنة أول تسجيل في الدكتوراه</FormLabel>
+                    <FormLabel>سنة أول تسجيل في الدكتوراه *</FormLabel>
                     <FormControl>
                       <DropdownWithAdd
                         value={field.value || ''}

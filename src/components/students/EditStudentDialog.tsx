@@ -75,7 +75,7 @@ const phdLmdSchema = z.object({
   jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
   jury_members_fr: z.string().optional().nullable(),
-  first_registration_year: z.string().optional().nullable(),
+  first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
 });
@@ -107,7 +107,7 @@ const phdScienceSchema = z.object({
   jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
   jury_members_fr: z.string().optional().nullable(),
-  first_registration_year: z.string().optional().nullable(),
+  first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
 });
@@ -133,7 +133,7 @@ const masterSchema = z.object({
   mention: z.enum(["honorable", "very_honorable"]),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
-  first_registration_year: z.string().optional().nullable(),
+  first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
 });
@@ -296,7 +296,7 @@ export default function EditStudentDialog({
                   name={"first_registration_year" as keyof FormValues}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>سنة أول تسجيل في الدكتوراه</FormLabel>
+                      <FormLabel>سنة أول تسجيل في الدكتوراه *</FormLabel>
                       <FormControl>
                         <DropdownWithAdd
                           value={(field.value as string) || ''}
