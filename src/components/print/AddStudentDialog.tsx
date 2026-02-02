@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { JuryMembersInput } from "@/components/ui/jury-members-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -114,7 +115,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   // Fetch suggestions for autocomplete fields
   const { data: suggestions } = useMultipleFieldSuggestions([
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 
-    'supervisor_ar', 'jury_president_ar'
+    'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
   // Update selected type when prop changes
@@ -775,10 +776,10 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                       <FormItem>
                         <FormLabel>أعضاء اللجنة *</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            rows={3} 
-                            placeholder="اسم العضو 1، اسم العضو 2، ... (يمكن الكتابة بالعربية أو الفرنسية)"
+                          <JuryMembersInput
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            suggestions={suggestions?.jury_members_ar || []}
                             dir="auto"
                           />
                         </FormControl>

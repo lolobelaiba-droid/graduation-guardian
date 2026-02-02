@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { JuryMembersInput } from "@/components/ui/jury-members-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -167,7 +168,7 @@ export default function EditStudentDialog({
   // Fetch suggestions for autocomplete fields
   const { data: suggestions } = useMultipleFieldSuggestions([
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 
-    'supervisor_ar', 'jury_president_ar'
+    'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
   const getSchema = () => {
@@ -722,12 +723,11 @@ export default function EditStudentDialog({
                       <FormItem>
                         <FormLabel>أعضاء اللجنة *</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            value={(field.value as string) || ""} 
-                            rows={3}
+                          <JuryMembersInput
+                            value={(field.value as string) || ""}
+                            onChange={field.onChange}
+                            suggestions={suggestions?.jury_members_ar || []}
                             dir="auto"
-                            placeholder="اسم العضو 1، اسم العضو 2، ... (يمكن الكتابة بالعربية أو الفرنسية)"
                           />
                         </FormControl>
                         <FormMessage />
