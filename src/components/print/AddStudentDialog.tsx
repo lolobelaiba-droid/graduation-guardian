@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { JuryMembersInput } from "@/components/ui/jury-members-input";
+import { AcademicTitleInput } from "@/components/ui/academic-title-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -757,10 +758,11 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                       <FormItem>
                         <FormLabel>رئيس اللجنة *</FormLabel>
                         <FormControl>
-                          <AutocompleteInput
-                            {...field}
+                          <AcademicTitleInput
+                            value={field.value || ''}
+                            onChange={field.onChange}
                             suggestions={suggestions?.jury_president_ar || []}
-                            placeholder="اسم رئيس اللجنة (يمكن الكتابة بالعربية أو الفرنسية)"
+                            placeholder="اكتب الرتبة (أد، د) ثم الاسم"
                             dir="auto"
                           />
                         </FormControl>
