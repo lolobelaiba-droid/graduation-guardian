@@ -78,6 +78,8 @@ const phdLmdSchema = z.object({
   first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
+  supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
+  supervisor_fr: z.string().optional().nullable(),
 });
 
 type PhdLmdFormValues = z.infer<typeof phdLmdSchema>;
@@ -110,6 +112,8 @@ const phdScienceSchema = z.object({
   first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
+  supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
+  supervisor_fr: z.string().optional().nullable(),
 });
 
 type PhdScienceFormValues = z.infer<typeof phdScienceSchema>;
@@ -136,6 +140,8 @@ const masterSchema = z.object({
   first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
+  supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
+  supervisor_fr: z.string().optional().nullable(),
 });
 
 type MasterFormValues = z.infer<typeof masterSchema>;
@@ -177,6 +183,8 @@ export default function EditStudentDialog({
         first_registration_year?: string;
         professional_email?: string;
         phone_number?: string;
+        supervisor_ar?: string;
+        supervisor_fr?: string;
       };
       
       const baseValues = {
@@ -200,6 +208,8 @@ export default function EditStudentDialog({
         first_registration_year: studentWithExtras.first_registration_year || "",
         professional_email: studentWithExtras.professional_email || "",
         phone_number: studentWithExtras.phone_number || "",
+        supervisor_ar: studentWithExtras.supervisor_ar || "",
+        supervisor_fr: studentWithExtras.supervisor_fr || "",
       };
 
       if (certificateType === "phd_lmd" && "field_ar" in student) {
@@ -599,6 +609,48 @@ export default function EditStudentDialog({
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Supervisor Information */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-primary">المشرف / Directeur de thèse</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={"supervisor_ar" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>اسم ولقب المشرف (عربي) *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          value={(field.value as string) || ""} 
+                          placeholder="الاسم الكامل للمشرف"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"supervisor_fr" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom et prénom du directeur</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          value={(field.value as string) || ""} 
+                          dir="ltr" 
+                          placeholder="Nom complet du directeur"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

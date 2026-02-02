@@ -181,22 +181,24 @@ export function ExportStatsDialog() {
         }
 
         case "supervisor": {
-          // Fetch PhD students only (they have jury_president field)
-          const [phdLmd, phdScience] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("jury_president_ar, full_name_ar, specialty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("jury_president_ar, full_name_ar, specialty_ar, defense_date"),
+          // Fetch all students (they now have supervisor field)
+          const [phdLmd, phdScience, master] = await Promise.all([
+            supabase.from("phd_lmd_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+            supabase.from("phd_science_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+            supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
           ]);
 
           const allStudents = [
             ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
             ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+            ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
           ];
 
           // Group by supervisor
           const supervisorData: Record<string, { count: number; students: Array<{ name: string; specialty: string; type: string; date: string }> }> = {};
           
           allStudents.forEach((s) => {
-            const supervisor = s.jury_president_ar || "غير محدد";
+            const supervisor = (s as any).supervisor_ar || "غير محدد";
             if (!supervisorData[supervisor]) {
               supervisorData[supervisor] = { count: 0, students: [] };
             }
