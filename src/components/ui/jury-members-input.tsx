@@ -16,19 +16,79 @@ interface JuryMembersInputProps {
 
 // الرتب العلمية المعروفة
 const ACADEMIC_TITLES = [
-  { label: "أد", value: "أد " },
-  { label: "د", value: "د " },
-  { label: "أ", value: "أ " },
-  { label: "Prof", value: "Prof " },
-  { label: "Dr", value: "Dr " },
-  { label: "Pr", value: "Pr " },
+  { label: "أد", value: "أد" },
+  { label: "د", value: "د" },
+  { label: "أ", value: "أ" },
+  { label: "Prof", value: "Prof" },
+  { label: "Dr", value: "Dr" },
+  { label: "Pr", value: "Pr" },
 ];
 
-const TITLE_VALUES = ACADEMIC_TITLES.map(t => t.value.trim());
+const TITLE_VALUES = ACADEMIC_TITLES.map(t => t.value);
+
+// استخراج الرتبة من النص
+const extractTitleAndName = (text: string): { title: string | null; name: string } => {
+  const trimmed = text.trim();
+  const titlePattern = /^(أد|د|أ|أ\.د|د\.|Prof\.|Dr\.|Pr\.|Prof|Dr|Pr)\s*/i;
+  const match = trimmed.match(titlePattern);
+  
+  if (match) {
+    return {
+      title: match[1],
+      name: trimmed.slice(match[0].length).trim()
+    };
+  }
+  
+  return { title: null, name: trimmed };
+};
+
+// تنسيق العضو مع الرتبة
+const formatMember = (title: string | null, name: string): string => {
+  if (title && name) {
+    return `${title} ${name}`;
+  } else if (title) {
+    return title;
+  }
+  return name;
+};
+
+// مكون لعرض عضو واحد مع فصل الرتبة
+interface MemberBadgeProps {
+  member: string;
+  onRemove: () => void;
+}
+
+const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove }) => {
+  const { title, name } = extractTitleAndName(member);
+  
+  return (
+    <div className="flex items-center gap-0.5 bg-secondary rounded-md overflow-hidden">
+      {title && (
+        <span className="bg-primary text-primary-foreground px-1.5 py-1 text-sm font-medium">
+          {title}
+        </span>
+      )}
+      <span className="px-1.5 py-1 text-sm">
+        {name || (title ? "" : member)}
+      </span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="hover:bg-muted rounded-full p-0.5 mx-1"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </div>
+  );
+};
 
 const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProps>(
-  ({ value, onChange, suggestions = [], placeholder = "اكتب الرتبة ثم الاسم واضغط Enter", className, dir = "auto" }, ref) => {
+  ({ value, onChange, suggestions = [], placeholder = "اختر الرتبة ثم اكتب الاسم واضغط Enter", className, dir = "auto" }, ref) => {
     const [inputValue, setInputValue] = React.useState("");
+    const [selectedTitle, setSelectedTitle] = React.useState<string | null>(null);
     const [members, setMembers] = React.useState<string[]>([]);
     const [showSuggestions, setShowSuggestions] = React.useState(false);
     const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
@@ -53,12 +113,13 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
 
     // Filter suggestions based on input
     const filteredSuggestions = React.useMemo(() => {
-      if (!inputValue.trim()) return [];
-      const lower = inputValue.toLowerCase();
+      const searchText = selectedTitle ? `${selectedTitle} ${inputValue}` : inputValue;
+      if (!searchText.trim()) return [];
+      const lower = searchText.toLowerCase();
       return suggestions
         .filter(s => s.toLowerCase().includes(lower) && !members.includes(s))
         .slice(0, 8);
-    }, [suggestions, inputValue, members]);
+    }, [suggestions, inputValue, selectedTitle, members]);
 
     // Handle click outside
     React.useEffect(() => {
@@ -72,33 +133,19 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // التحقق من أن النص الحالي هو رتبة علمية فقط
-    const isJustAcademicTitle = (text: string): boolean => {
-      const trimmed = text.trim().toLowerCase();
-      const allTitles = ["أد", "د", "أ", "أ.د", "د.", "prof", "dr", "pr", "prof.", "dr.", "pr."];
-      return allTitles.some(title => trimmed === title.toLowerCase());
-    };
-
-    // إضافة رتبة علمية في حقل الإدخال
-    const addTitleToInput = (titleValue: string) => {
-      // تأكد من أن الرتبة تنتهي بمسافة
-      const titleWithSpace = titleValue.endsWith(" ") ? titleValue : titleValue + " ";
-      
-      if (!inputValue.trim() || isJustAcademicTitle(inputValue)) {
-        setInputValue(titleWithSpace);
-      } else {
-        const cleanValue = inputValue.trim();
-        const startsWithTitle = TITLE_VALUES.some(t => cleanValue.startsWith(t + " ") || cleanValue.startsWith(t));
-        if (startsWithTitle) {
-          const textWithoutTitle = cleanValue.replace(/^(أد|د|أ|أ\.د|د\.|Prof|Dr|Pr|Prof\.|Dr\.|Pr\.)\s*/i, '').trim();
-          setInputValue(titleWithSpace + textWithoutTitle);
-        } else {
-          setInputValue(titleWithSpace + cleanValue);
-        }
-      }
+    // اختيار رتبة
+    const selectTitle = (title: string) => {
+      setSelectedTitle(title);
       inputRef.current?.focus();
     };
 
+    // إزالة الرتبة المختارة
+    const removeSelectedTitle = () => {
+      setSelectedTitle(null);
+      inputRef.current?.focus();
+    };
+
+    // إضافة عضو
     const addMember = (memberName: string) => {
       const trimmed = memberName.trim();
       if (trimmed && !members.includes(trimmed)) {
@@ -107,6 +154,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
         updateValue(newMembers);
       }
       setInputValue("");
+      setSelectedTitle(null);
       setShowSuggestions(false);
       setHighlightedIndex(-1);
     };
@@ -123,17 +171,34 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
         
         if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
           addMember(filteredSuggestions[highlightedIndex]);
-        } else if (inputValue.trim()) {
-          if (isJustAcademicTitle(inputValue)) {
-            if (!inputValue.endsWith(" ")) {
-              setInputValue(inputValue + " ");
-            }
-          } else {
-            addMember(inputValue);
-          }
+          return;
         }
-      } else if (e.key === "Backspace" && !inputValue && members.length > 0) {
-        removeMember(members.length - 1);
+        
+        // إذا كتب المستخدم رتبة في حقل الإدخال
+        const trimmedInput = inputValue.trim().toLowerCase();
+        const matchedTitle = TITLE_VALUES.find(t => t.toLowerCase() === trimmedInput);
+        if (matchedTitle && !selectedTitle) {
+          setSelectedTitle(matchedTitle);
+          setInputValue("");
+          return;
+        }
+        
+        // إذا كان هناك رتبة مختارة واسم
+        if (selectedTitle && inputValue.trim()) {
+          addMember(formatMember(selectedTitle, inputValue.trim()));
+          return;
+        }
+        
+        // إذا كان هناك اسم بدون رتبة
+        if (inputValue.trim()) {
+          addMember(inputValue.trim());
+        }
+      } else if (e.key === "Backspace") {
+        if (!inputValue && selectedTitle) {
+          removeSelectedTitle();
+        } else if (!inputValue && !selectedTitle && members.length > 0) {
+          removeMember(members.length - 1);
+        }
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         if (showSuggestions && filteredSuggestions.length > 0) {
@@ -171,25 +236,36 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
           )}
           onClick={() => inputRef.current?.focus()}
         >
+          {/* الأعضاء المضافون */}
           {members.map((member, index) => (
-            <Badge
+            <MemberBadge
               key={index}
-              variant="secondary"
-              className="gap-1 px-2 py-1 text-sm"
+              member={member}
+              onRemove={() => removeMember(index)}
+            />
+          ))}
+          
+          {/* الرتبة المختارة للعضو الجديد */}
+          {selectedTitle && (
+            <Badge
+              variant="default"
+              className="gap-1 px-2 py-1 text-sm bg-primary text-primary-foreground"
             >
-              {member}
+              {selectedTitle}
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  removeMember(index);
+                  removeSelectedTitle();
                 }}
-                className="hover:bg-muted rounded-full p-0.5"
+                className="hover:bg-primary-foreground/20 rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />
               </button>
             </Badge>
-          ))}
+          )}
+          
+          {/* حقل الإدخال */}
           <Input
             ref={(node) => {
               if (typeof ref === 'function') {
@@ -203,7 +279,13 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={() => setShowSuggestions(true)}
-            placeholder={members.length === 0 ? placeholder : "أضف عضو آخر..."}
+            placeholder={
+              selectedTitle 
+                ? "اكتب الاسم واللقب ثم Enter..." 
+                : members.length === 0 
+                  ? placeholder 
+                  : "أضف عضو آخر..."
+            }
             dir={dir}
             className="flex-1 min-w-[150px] border-0 p-0 h-7 focus-visible:ring-0 focus-visible:ring-offset-0"
           />
@@ -239,9 +321,14 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
           {ACADEMIC_TITLES.map((title) => (
             <Badge
               key={title.label}
-              variant="outline"
-              className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs px-2 py-0.5"
-              onClick={() => addTitleToInput(title.value)}
+              variant={selectedTitle === title.value ? "default" : "outline"}
+              className={cn(
+                "cursor-pointer transition-colors text-xs px-2 py-0.5",
+                selectedTitle === title.value 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-primary hover:text-primary-foreground"
+              )}
+              onClick={() => selectTitle(title.value)}
             >
               {title.label}
             </Badge>
