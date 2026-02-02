@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, CalendarIcon, FileSpreadsheet } from "lucide-react";
+import { Download, CalendarIcon, FileSpreadsheet, Plus, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -66,9 +67,40 @@ export function ExportStatsDialog() {
   const [isExporting, setIsExporting] = useState(false);
   const [faculties, setFaculties] = useState<string[]>([]);
   
-  // Custom pivot states
-  const [pivotRowField, setPivotRowField] = useState<PivotField>("faculty_ar");
-  const [pivotColField, setPivotColField] = useState<PivotField>("certificate_type");
+  // Custom pivot states - now support multiple fields
+  const [pivotRowFields, setPivotRowFields] = useState<PivotField[]>(["faculty_ar"]);
+  const [pivotColFields, setPivotColFields] = useState<PivotField[]>(["certificate_type"]);
+
+  // Helper to add a field
+  const addRowField = (field: PivotField) => {
+    if (!pivotRowFields.includes(field) && !pivotColFields.includes(field)) {
+      setPivotRowFields([...pivotRowFields, field]);
+    }
+  };
+
+  const addColField = (field: PivotField) => {
+    if (!pivotColFields.includes(field) && !pivotRowFields.includes(field)) {
+      setPivotColFields([...pivotColFields, field]);
+    }
+  };
+
+  const removeRowField = (field: PivotField) => {
+    if (pivotRowFields.length > 1) {
+      setPivotRowFields(pivotRowFields.filter(f => f !== field));
+    }
+  };
+
+  const removeColField = (field: PivotField) => {
+    if (pivotColFields.length > 1) {
+      setPivotColFields(pivotColFields.filter(f => f !== field));
+    }
+  };
+
+  // Get available fields (not already selected)
+  const getAvailableFields = (): PivotField[] => {
+    const usedFields = [...pivotRowFields, ...pivotColFields];
+    return (Object.keys(pivotFieldLabels) as PivotField[]).filter(f => !usedFields.includes(f));
+  };
 
   // Load faculties when dialog opens
   const loadFaculties = async () => {
@@ -534,13 +566,23 @@ export function ExportStatsDialog() {
             }
           };
 
-          // Collect unique values for rows and columns
+          // Helper to get combined key for multiple fields
+          const getCombinedKey = (student: any, fields: PivotField[]): string => {
+            return fields.map(f => getFieldValue(student, f)).join(" | ");
+          };
+
+          // Get combined labels for headers
+          const getRowHeaderLabel = (): string => {
+            return pivotRowFields.map(f => pivotFieldLabels[f]).join(" / ");
+          };
+
+          // Collect unique combined values for rows and columns
           const rowValues = new Set<string>();
           const colValues = new Set<string>();
 
           allStudents.forEach((student) => {
-            rowValues.add(getFieldValue(student, pivotRowField));
-            colValues.add(getFieldValue(student, pivotColField));
+            rowValues.add(getCombinedKey(student, pivotRowFields));
+            colValues.add(getCombinedKey(student, pivotColFields));
           });
 
           const sortedRows = Array.from(rowValues).sort();
@@ -557,15 +599,15 @@ export function ExportStatsDialog() {
 
           // Count occurrences
           allStudents.forEach((student) => {
-            const rowVal = getFieldValue(student, pivotRowField);
-            const colVal = getFieldValue(student, pivotColField);
+            const rowVal = getCombinedKey(student, pivotRowFields);
+            const colVal = getCombinedKey(student, pivotColFields);
             pivotData[rowVal][colVal]++;
           });
 
           // Create export data
           const pivotExportData: any[] = [];
           sortedRows.forEach((rowValue) => {
-            const row: any = { [pivotFieldLabels[pivotRowField]]: rowValue };
+            const row: any = { [getRowHeaderLabel()]: rowValue };
             let rowTotal = 0;
             sortedCols.forEach((colValue) => {
               row[colValue] = pivotData[rowValue][colValue];
@@ -576,7 +618,7 @@ export function ExportStatsDialog() {
           });
 
           // Add total row
-          const totalRow: any = { [pivotFieldLabels[pivotRowField]]: "المجموع الكلي" };
+          const totalRow: any = { [getRowHeaderLabel()]: "المجموع الكلي" };
           let grandTotal = 0;
           sortedCols.forEach((colValue) => {
             const colTotal = sortedRows.reduce((sum, row) => sum + pivotData[row][colValue], 0);
@@ -586,11 +628,15 @@ export function ExportStatsDialog() {
           totalRow["المجموع"] = grandTotal;
           pivotExportData.push(totalRow);
 
+          // Create filename
+          const rowFieldNames = pivotRowFields.map(f => pivotFieldLabels[f]).join("-");
+          const colFieldNames = pivotColFields.map(f => pivotFieldLabels[f]).join("-");
+
           // Create workbook
           const wb = XLSX.utils.book_new();
           const ws = XLSX.utils.json_to_sheet(pivotExportData);
           XLSX.utils.book_append_sheet(wb, ws, "جدول محوري");
-          XLSX.writeFile(wb, `إحصائيات_مخصصة_${pivotFieldLabels[pivotRowField]}_${pivotFieldLabels[pivotColField]}_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_مخصصة_${rowFieldNames}_×_${colFieldNames}_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
 
           toast.success(`تم تصدير الجدول المحوري: ${toWesternNumerals(sortedRows.length)} صف × ${toWesternNumerals(sortedCols.length)} عمود`);
           setOpen(false);
@@ -789,44 +835,88 @@ export function ExportStatsDialog() {
           {exportType === "custom_pivot" && (
             <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
               <div className="text-sm text-muted-foreground mb-2">
-                اختر الحقول لإنشاء جدول محوري مخصص
+                اختر الحقول لإنشاء جدول محوري مخصص (يمكنك إضافة أكثر من حقل)
               </div>
               
+              {/* Row Fields */}
               <div className="space-y-2">
-                <Label>الحقل العمودي (الصفوف)</Label>
-                <Select value={pivotRowField} onValueChange={(v) => setPivotRowField(v as PivotField)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(pivotFieldLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key} disabled={key === pivotColField}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>حقول الصفوف (عموديًا)</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {pivotRowFields.map((field) => (
+                    <Badge key={field} variant="secondary" className="gap-1 py-1">
+                      {pivotFieldLabels[field]}
+                      {pivotRowFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRowField(field)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+                {getAvailableFields().length > 0 && (
+                  <Select value="" onValueChange={(v) => addRowField(v as PivotField)}>
+                    <SelectTrigger className="w-full">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Plus className="h-4 w-4" />
+                        إضافة حقل صف
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableFields().map((field) => (
+                        <SelectItem key={field} value={field}>
+                          {pivotFieldLabels[field]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
+              {/* Column Fields */}
               <div className="space-y-2">
-                <Label>الحقل الأفقي (الأعمدة)</Label>
-                <Select value={pivotColField} onValueChange={(v) => setPivotColField(v as PivotField)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(pivotFieldLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key} disabled={key === pivotRowField}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>حقول الأعمدة (أفقيًا)</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {pivotColFields.map((field) => (
+                    <Badge key={field} variant="outline" className="gap-1 py-1">
+                      {pivotFieldLabels[field]}
+                      {pivotColFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeColField(field)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+                {getAvailableFields().length > 0 && (
+                  <Select value="" onValueChange={(v) => addColField(v as PivotField)}>
+                    <SelectTrigger className="w-full">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Plus className="h-4 w-4" />
+                        إضافة حقل عمود
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableFields().map((field) => (
+                        <SelectItem key={field} value={field}>
+                          {pivotFieldLabels[field]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div className="text-xs text-muted-foreground bg-background p-2 rounded border">
-                <strong>مثال:</strong> إذا اخترت "الكلية" كحقل عمودي و"نوع الشهادة" كحقل أفقي، 
-                ستحصل على جدول يوضح عدد الطلاب لكل كلية موزعين حسب نوع الشهادة.
+                <strong>مثال:</strong> يمكنك اختيار "الكلية + الشعبة" كصفوف و"نوع الشهادة + الجنس" كأعمدة 
+                للحصول على جدول تفصيلي يوضح التوزيع المتقاطع للبيانات.
               </div>
             </div>
           )}
