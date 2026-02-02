@@ -25,6 +25,11 @@ export interface BaseCertificate {
   certificate_date: string;
   created_at: string;
   updated_at: string;
+  first_registration_year?: string | null;
+  professional_email?: string | null;
+  phone_number?: string | null;
+  supervisor_ar: string;
+  supervisor_fr?: string | null;
 }
 
 // PhD LMD Certificate
