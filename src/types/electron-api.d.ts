@@ -1,4 +1,4 @@
-export {};
+// Type definitions for Electron API
 
 interface DbOperations {
   getAll: (tableName: string, orderBy?: string, orderDir?: string) => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
@@ -22,37 +22,43 @@ interface DbOperations {
   
   getDropdownOptionsByType: (optionType: string) => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
   
+  deleteOldActivities: (daysOld: number) => Promise<{ success: boolean; data?: { deletedCount: number }; error?: string }>;
+  
   exportAllData: () => Promise<{ success: boolean; data?: unknown; error?: string }>;
   importAllData: (backupData: unknown) => Promise<{ success: boolean; error?: string }>;
   
   getPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
 }
 
+interface ElectronAPI {
+  getVersion: () => string;
+  getPlatform: () => string;
+  isElectron: boolean;
+
+  getPrinters?: () => Promise<
+    Array<{
+      name: string;
+      displayName?: string;
+      description?: string;
+      isDefault?: boolean;
+      status?: number;
+    }>
+  >;
+
+  printPdf?: (
+    pdfArrayBuffer: ArrayBuffer,
+    options?: { deviceName?: string }
+  ) => Promise<{ success: boolean; error?: string }>;
+
+  openPrintersSettings?: () => Promise<boolean>;
+  
+  db: DbOperations;
+}
+
 declare global {
   interface Window {
-    electronAPI?: {
-      getVersion: () => string;
-      getPlatform: () => string;
-      isElectron: boolean;
-
-      getPrinters?: () => Promise<
-        Array<{
-          name: string;
-          displayName?: string;
-          description?: string;
-          isDefault?: boolean;
-          status?: number;
-        }>
-      >;
-
-      printPdf?: (
-        pdfArrayBuffer: ArrayBuffer,
-        options?: { deviceName?: string }
-      ) => Promise<{ success: boolean; error?: string }>;
-
-      openPrintersSettings?: () => Promise<boolean>;
-      
-      db: DbOperations;
-    };
+    electronAPI?: ElectronAPI;
   }
 }
+
+export {};

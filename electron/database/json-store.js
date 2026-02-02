@@ -321,6 +321,27 @@ function getFieldsByTemplateId(templateId) {
 function getDropdownOptionsByType(optionType) {
   const allOptions = readTable('dropdown_options');
   return allOptions
+}
+
+// ============================================
+// عمليات خاصة بسجل الأنشطة
+// ============================================
+
+function deleteOldActivities(daysOld = 30) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+  const cutoffISO = cutoffDate.toISOString();
+  
+  const data = readTable('activity_log');
+  const filtered = data.filter(item => {
+    if (!item.created_at) return true; // Keep items without date
+    return item.created_at >= cutoffISO;
+  });
+  
+  const deletedCount = data.length - filtered.length;
+  writeTable('activity_log', filtered);
+  
+  return { deletedCount };
     .filter(o => o.option_type === optionType)
     .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 }
@@ -424,6 +445,9 @@ module.exports = {
   
   // القوائم المنسدلة
   getDropdownOptionsByType,
+  
+  // سجل الأنشطة
+  deleteOldActivities,
   
   // النسخ الاحتياطي
   exportAllData,

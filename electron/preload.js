@@ -65,6 +65,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getDropdownOptionsByType: (optionType) => 
       ipcRenderer.invoke('db:getDropdownOptionsByType', optionType),
     
+    // سجل الأنشطة
+    deleteOldActivities: (daysOld) => 
+      ipcRenderer.invoke('db:deleteOldActivities', daysOld),
+    
     // النسخ الاحتياطي
     exportAllData: () => 
       ipcRenderer.invoke('db:exportAllData'),

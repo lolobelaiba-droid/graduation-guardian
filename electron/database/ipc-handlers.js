@@ -175,6 +175,19 @@ function registerDatabaseHandlers() {
   });
 
   // ============================================
+  // سجل الأنشطة
+  // ============================================
+
+  ipcMain.handle('db:deleteOldActivities', async (_, daysOld) => {
+    try {
+      const result = db.deleteOldActivities(daysOld);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ============================================
   // النسخ الاحتياطي والاستعادة
   // ============================================
 
