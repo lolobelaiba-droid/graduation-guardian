@@ -282,6 +282,7 @@ export type Database = {
           mention: Database["public"]["Enums"]["mention_type"]
           phone_number: string | null
           professional_email: string | null
+          research_lab_ar: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -309,6 +310,7 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          research_lab_ar?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -336,6 +338,7 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          research_lab_ar?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
@@ -372,6 +375,7 @@ export type Database = {
           mention: Database["public"]["Enums"]["mention_type"]
           phone_number: string | null
           professional_email: string | null
+          research_lab_ar: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -407,6 +411,7 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          research_lab_ar?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -442,6 +447,7 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          research_lab_ar?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
@@ -478,6 +484,7 @@ export type Database = {
           mention: Database["public"]["Enums"]["mention_type"]
           phone_number: string | null
           professional_email: string | null
+          research_lab_ar: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -511,6 +518,7 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          research_lab_ar?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -544,6 +552,7 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          research_lab_ar?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string

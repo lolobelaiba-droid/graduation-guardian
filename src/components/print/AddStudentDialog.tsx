@@ -76,18 +76,20 @@ const baseSchema = z.object({
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
 });
 
-const phdSchema = baseSchema.extend({
+const phdScienceSchema = baseSchema.extend({
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
   thesis_title_fr: z.string().optional().nullable(),
   jury_president_ar: z.string().min(1, "رئيس اللجنة مطلوب"),
   jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
   jury_members_fr: z.string().optional().nullable(),
+  research_lab_ar: z.string().optional().nullable(), // اختياري لدكتوراه علوم
 });
 
-const phdLmdSchema = phdSchema.extend({
+const phdLmdSchema = phdScienceSchema.extend({
   field_ar: z.string().min(1, "الميدان مطلوب"),
   field_fr: z.string().optional().nullable(),
+  research_lab_ar: z.string().min(1, "مخبر البحث مطلوب"), // مطلوب لدكتوراه ل م د
 });
 
 interface AddStudentDialogProps {
@@ -127,7 +129,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   const getSchema = () => {
     switch (selectedType) {
       case 'phd_lmd': return phdLmdSchema;
-      case 'phd_science': return phdSchema;
+      case 'phd_science': return phdScienceSchema;
       case 'master': return baseSchema;
     }
   };
@@ -165,6 +167,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       professional_email: '',
       phone_number: '',
       supervisor_ar: '',
+      research_lab_ar: '',
     },
   });
 
@@ -198,6 +201,8 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   const showThesisFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const showFieldField = selectedType === 'phd_lmd';
   const showJuryFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
+  const showResearchLabField = selectedType === 'phd_lmd' || selectedType === 'phd_science';
+  const isResearchLabRequired = selectedType === 'phd_lmd';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -683,6 +688,33 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                 </FormItem>
               )}
             />
+
+            {/* Research Lab */}
+            {showResearchLabField && (
+              <>
+                <SectionHeader title="مخبر البحث / Laboratoire de recherche" />
+                <div className="grid grid-cols-1 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="research_lab_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>مخبر البحث {isResearchLabRequired ? '*' : ''}</FormLabel>
+                        <FormControl>
+                          <DropdownWithAdd
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            optionType="research_lab"
+                            placeholder="اختر أو أدخل اسم مخبر البحث"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Thesis */}
             {showThesisFields && (
