@@ -15,13 +15,14 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { toWesternNumerals } from "@/lib/numerals";
 
-type ExportType = "students" | "faculty" | "gender" | "certificate_type";
+type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor";
 
 const exportTypeLabels: Record<ExportType, string> = {
   students: "قائمة الطلاب",
   faculty: "توزيع حسب الكليات",
   gender: "توزيع حسب الجنس",
   certificate_type: "توزيع حسب نوع الشهادة",
+  supervisor: "توزيع حسب المشرف (رئيس اللجنة)",
 };
 
 const certificateTypeLabels = {
@@ -177,6 +178,74 @@ export function ExportStatsDialog() {
           ];
           fileName = `توزيع_أنواع_الشهادات_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
           break;
+        }
+
+        case "supervisor": {
+          // Fetch PhD students only (they have jury_president field)
+          const [phdLmd, phdScience] = await Promise.all([
+            supabase.from("phd_lmd_certificates").select("jury_president_ar, full_name_ar, specialty_ar, defense_date"),
+            supabase.from("phd_science_certificates").select("jury_president_ar, full_name_ar, specialty_ar, defense_date"),
+          ]);
+
+          const allStudents = [
+            ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+            ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+          ];
+
+          // Group by supervisor
+          const supervisorData: Record<string, { count: number; students: Array<{ name: string; specialty: string; type: string; date: string }> }> = {};
+          
+          allStudents.forEach((s) => {
+            const supervisor = s.jury_president_ar || "غير محدد";
+            if (!supervisorData[supervisor]) {
+              supervisorData[supervisor] = { count: 0, students: [] };
+            }
+            supervisorData[supervisor].count++;
+            supervisorData[supervisor].students.push({
+              name: s.full_name_ar,
+              specialty: s.specialty_ar,
+              type: s.certificate_type,
+              date: s.defense_date,
+            });
+          });
+
+          // Create summary sheet data
+          const summaryData = Object.entries(supervisorData)
+            .sort((a, b) => b[1].count - a[1].count)
+            .map(([name, data], index) => ({
+              "الترتيب": index + 1,
+              "اسم المشرف (رئيس اللجنة)": name,
+              "عدد الطلاب": data.count,
+            }));
+
+          // Create detailed sheet data
+          const detailedData: any[] = [];
+          Object.entries(supervisorData)
+            .sort((a, b) => b[1].count - a[1].count)
+            .forEach(([supervisor, data]) => {
+              data.students.forEach((student) => {
+                detailedData.push({
+                  "المشرف (رئيس اللجنة)": supervisor,
+                  "اسم الطالب": student.name,
+                  "التخصص": student.specialty,
+                  "نوع الشهادة": student.type,
+                  "تاريخ المناقشة": student.date,
+                });
+              });
+            });
+
+          // Create workbook with two sheets
+          const wb = XLSX.utils.book_new();
+          const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+          const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
+          XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص المشرفين");
+          XLSX.utils.book_append_sheet(wb, wsDetailed, "التفاصيل");
+          XLSX.writeFile(wb, `توزيع_المشرفين_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+
+          toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(supervisorData).length)} مشرف بنجاح`);
+          setOpen(false);
+          setIsExporting(false);
+          return;
         }
       }
 
