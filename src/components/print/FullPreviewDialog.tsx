@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2 } from "lucide-react";
+import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2, MoveHorizontal, MoveVertical, Link, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -42,12 +42,16 @@ interface FullPreviewDialogProps {
     background_offset_x: number;
     background_offset_y: number;
     background_scale: number;
+    background_scale_x?: number;
+    background_scale_y?: number;
   }) => void;
   onFieldMove?: (fieldId: string, newX: number, newY: number) => void;
   onPrint: () => void;
   initialOffsetX?: number;
   initialOffsetY?: number;
   initialScale?: number;
+  initialScaleX?: number;
+  initialScaleY?: number;
 }
 
 export function FullPreviewDialog({
@@ -62,11 +66,16 @@ export function FullPreviewDialog({
   initialOffsetX = 0,
   initialOffsetY = 0,
   initialScale = 100,
+  initialScaleX = 100,
+  initialScaleY = 100,
 }: FullPreviewDialogProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [offsetX, setOffsetX] = useState(initialOffsetX);
   const [offsetY, setOffsetY] = useState(initialOffsetY);
   const [scale, setScale] = useState(initialScale);
+  const [scaleX, setScaleX] = useState(initialScaleX);
+  const [scaleY, setScaleY] = useState(initialScaleY);
+  const [linkedScale, setLinkedScale] = useState(true); // Link X and Y scale by default
   const [hasBackgroundChanges, setHasBackgroundChanges] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [showFieldControls, setShowFieldControls] = useState(true);
@@ -91,6 +100,9 @@ export function FullPreviewDialog({
       setOffsetX(initialOffsetX);
       setOffsetY(initialOffsetY);
       setScale(initialScale);
+      setScaleX(initialScaleX);
+      setScaleY(initialScaleY);
+      setLinkedScale(initialScaleX === initialScaleY);
       setHasBackgroundChanges(false);
       setSelectedFieldId(null);
       setFieldChanges([]);
@@ -101,7 +113,7 @@ export function FullPreviewDialog({
       });
       setLocalFieldPositions(positions);
     }
-  }, [open, initialOffsetX, initialOffsetY, initialScale, fields]);
+  }, [open, initialOffsetX, initialOffsetY, initialScale, initialScaleX, initialScaleY, fields]);
 
   // Load fonts dynamically for preview - version forces re-render when fonts change
   const fontNames = useMemo(() => fields.map(f => f.font_name), [fields]);
@@ -210,7 +222,42 @@ export function FullPreviewDialog({
   };
 
   const handleScaleChange = (value: number[]) => {
-    setScale(value[0]);
+    const newValue = value[0];
+    setScale(newValue);
+    if (linkedScale) {
+      setScaleX(newValue);
+      setScaleY(newValue);
+    }
+    setHasBackgroundChanges(true);
+  };
+
+  const handleScaleXChange = (value: number[]) => {
+    const newValue = value[0];
+    setScaleX(newValue);
+    if (linkedScale) {
+      setScaleY(newValue);
+      setScale(newValue);
+    }
+    setHasBackgroundChanges(true);
+  };
+
+  const handleScaleYChange = (value: number[]) => {
+    const newValue = value[0];
+    setScaleY(newValue);
+    if (linkedScale) {
+      setScaleX(newValue);
+      setScale(newValue);
+    }
+    setHasBackgroundChanges(true);
+  };
+
+  const toggleLinkedScale = () => {
+    if (!linkedScale) {
+      // When linking, set both to X value
+      setScaleY(scaleX);
+      setScale(scaleX);
+    }
+    setLinkedScale(!linkedScale);
     setHasBackgroundChanges(true);
   };
 
@@ -218,6 +265,9 @@ export function FullPreviewDialog({
     setOffsetX(initialOffsetX);
     setOffsetY(initialOffsetY);
     setScale(initialScale);
+    setScaleX(initialScaleX);
+    setScaleY(initialScaleY);
+    setLinkedScale(initialScaleX === initialScaleY);
     setHasBackgroundChanges(false);
   };
 
@@ -254,6 +304,8 @@ export function FullPreviewDialog({
       background_offset_x: offsetX,
       background_offset_y: offsetY,
       background_scale: scale,
+      background_scale_x: scaleX,
+      background_scale_y: scaleY,
     });
     setHasBackgroundChanges(false);
     toast.success("تم حفظ إعدادات الخلفية");
@@ -502,23 +554,67 @@ export function FullPreviewDialog({
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-semibold text-sm">تكبير/تصغير الخلفية</h4>
-              <div className="flex items-center gap-2">
-                <ZoomOut className="h-4 w-4 text-muted-foreground" />
-                <Slider
-                  value={[scale]}
-                  onValueChange={handleScaleChange}
-                  min={50}
-                  max={150}
-                  step={1}
-                  className="flex-1"
-                />
-                <ZoomIn className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm">تكبير/تصغير الخلفية</h4>
+                <Button
+                  variant={linkedScale ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={toggleLinkedScale}
+                  title={linkedScale ? "إلغاء الربط" : "ربط الأبعاد"}
+                >
+                  {linkedScale ? (
+                    <Link className="h-3.5 w-3.5" />
+                  ) : (
+                    <Unlink className="h-3.5 w-3.5" />
+                  )}
+                </Button>
               </div>
-              <div className="text-center">
-                <Badge variant="outline" className="font-mono">
-                  {toWesternNumerals(scale)}%
-                </Badge>
+
+              {/* Horizontal Scale */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <MoveHorizontal className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">أفقي</span>
+                  <Badge variant="outline" className="font-mono text-xs mr-auto">
+                    {toWesternNumerals(scaleX)}%
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ZoomOut className="h-3 w-3 text-muted-foreground" />
+                  <Slider
+                    value={[scaleX]}
+                    onValueChange={handleScaleXChange}
+                    min={50}
+                    max={150}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <ZoomIn className="h-3 w-3 text-muted-foreground" />
+                </div>
+              </div>
+
+              {/* Vertical Scale */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <MoveVertical className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">عمودي</span>
+                  <Badge variant="outline" className="font-mono text-xs mr-auto">
+                    {toWesternNumerals(scaleY)}%
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ZoomOut className="h-3 w-3 text-muted-foreground" />
+                  <Slider
+                    value={[scaleY]}
+                    onValueChange={handleScaleYChange}
+                    min={50}
+                    max={150}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <ZoomIn className="h-3 w-3 text-muted-foreground" />
+                </div>
               </div>
             </div>
 
@@ -569,19 +665,19 @@ export function FullPreviewDialog({
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
             >
-              {/* Background image with offset and scale */}
+              {/* Background image with offset and separate X/Y scale */}
               {template.background_image_url && (
                 <img
                   src={template.background_image_url}
                   alt="خلفية الشهادة"
                   className="absolute pointer-events-none"
                   style={{
-                    width: `${scale}%`,
-                    height: `${scale}%`,
-                    objectFit: 'contain',
+                    width: `${scaleX}%`,
+                    height: `${scaleY}%`,
+                    objectFit: 'fill',
                     transform: `translate(${offsetX * SCALE}px, ${offsetY * SCALE}px)`,
-                    left: `${(100 - scale) / 2}%`,
-                    top: `${(100 - scale) / 2}%`,
+                    left: `${(100 - scaleX) / 2}%`,
+                    top: `${(100 - scaleY) / 2}%`,
                   }}
                 />
               )}
