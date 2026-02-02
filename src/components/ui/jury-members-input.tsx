@@ -62,13 +62,13 @@ const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove }) => {
   const { title, name } = extractTitleAndName(member);
   
   return (
-    <div className="flex items-center gap-0.5 bg-secondary rounded-md overflow-hidden">
+    <div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border">
       {title && (
-        <span className="bg-primary text-primary-foreground px-1.5 py-1 text-sm font-medium">
+        <span className="bg-blue-600 text-white px-2 py-1 text-sm font-medium">
           {title}
         </span>
       )}
-      <span className="px-1.5 py-1 text-sm">
+      <span className="px-2 py-1 text-sm text-foreground bg-amber-100 dark:bg-amber-900/30">
         {name || (title ? "" : member)}
       </span>
       <button
@@ -77,7 +77,7 @@ const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove }) => {
           e.stopPropagation();
           onRemove();
         }}
-        className="hover:bg-muted rounded-full p-0.5 mx-1"
+        className="hover:bg-destructive/20 rounded-full p-0.5 mx-1"
       >
         <X className="h-3 w-3" />
       </button>
@@ -248,8 +248,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
           {/* الرتبة المختارة للعضو الجديد */}
           {selectedTitle && (
             <Badge
-              variant="default"
-              className="gap-1 px-2 py-1 text-sm bg-primary text-primary-foreground"
+              className="gap-1 px-2 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700"
             >
               {selectedTitle}
               <button
@@ -258,7 +257,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
                   e.stopPropagation();
                   removeSelectedTitle();
                 }}
-                className="hover:bg-primary-foreground/20 rounded-full p-0.5"
+                className="hover:bg-white/20 rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />
               </button>

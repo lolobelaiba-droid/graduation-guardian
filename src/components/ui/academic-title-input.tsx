@@ -186,8 +186,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
           {/* الرتبة المختارة */}
           {selectedTitle && (
             <Badge
-              variant="secondary"
-              className="gap-1 px-2 py-1 text-sm shrink-0"
+              className="gap-1 px-2 py-1 text-sm shrink-0 bg-blue-600 text-white hover:bg-blue-700"
             >
               {selectedTitle}
               <button
@@ -196,7 +195,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
                   e.stopPropagation();
                   removeTitle();
                 }}
-                className="hover:bg-muted rounded-full p-0.5"
+                className="hover:bg-white/20 rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />
               </button>
