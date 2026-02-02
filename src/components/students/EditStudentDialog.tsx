@@ -378,51 +378,6 @@ export default function EditStudentDialog({
               </div>
             </div>
 
-            {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-primary">معلومات الاتصال</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name={"professional_email" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>البريد الإلكتروني المهني</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          value={(field.value as string) || ""} 
-                          type="email" 
-                          dir="ltr" 
-                          placeholder="example@university.dz" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={"phone_number" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>رقم الهاتف</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          value={(field.value as string) || ""} 
-                          type="tel" 
-                          dir="ltr" 
-                          placeholder="0XX XXX XXXX" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
             {/* Academic Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-primary">المعلومات الأكاديمية</h3>

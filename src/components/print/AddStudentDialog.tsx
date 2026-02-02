@@ -265,51 +265,6 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
               />
             </div>
 
-            {/* Contact Info */}
-            <SectionHeader title="معلومات الاتصال" />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="professional_email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني المهني</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ''} 
-                        type="email" 
-                        dir="ltr" 
-                        placeholder="example@university.dz" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم الهاتف</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ''} 
-                        type="tel" 
-                        dir="ltr" 
-                        placeholder="0XX XXX XXXX" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             {/* Mention Fields - Separated */}
             <SectionHeader title="التقدير / Mention" />
             
