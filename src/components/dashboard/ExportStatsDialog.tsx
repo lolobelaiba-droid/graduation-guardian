@@ -389,8 +389,8 @@ export function ExportStatsDialog() {
               const { title, name: cleanName } = extractTitleAndName(name);
               return {
                 "الترتيب": index + 1,
-                "الرتبة": title,
                 "اسم الأستاذ": cleanName,
+                "الرتبة": title,
                 "الكليات": Array.from(stats.faculties).join(" | "),
                 "مشرف": stats.asSupervisor,
                 "رئيس لجنة": stats.asPresident,
@@ -407,8 +407,8 @@ export function ExportStatsDialog() {
               const { title, name: cleanName } = extractTitleAndName(professor);
               stats.supervisorDetails.forEach((detail) => {
                 supervisorDetails.push({
-                  "الرتبة": title,
                   "الأستاذ": cleanName,
+                  "الرتبة": title,
                   "الدور": "مشرف",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
@@ -427,8 +427,8 @@ export function ExportStatsDialog() {
               const { title, name: cleanName } = extractTitleAndName(professor);
               stats.presidentDetails.forEach((detail) => {
                 presidentDetails.push({
-                  "الرتبة": title,
                   "الأستاذ": cleanName,
+                  "الرتبة": title,
                   "الدور": "رئيس لجنة",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
@@ -447,8 +447,8 @@ export function ExportStatsDialog() {
               const { title, name: cleanName } = extractTitleAndName(professor);
               stats.memberDetails.forEach((detail) => {
                 memberDetails.push({
-                  "الرتبة": title,
                   "الأستاذ": cleanName,
+                  "الرتبة": title,
                   "الدور": "عضو لجنة",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
