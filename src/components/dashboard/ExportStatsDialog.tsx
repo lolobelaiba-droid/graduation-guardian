@@ -253,10 +253,11 @@ export function ExportStatsDialog() {
         }
 
         case "jury_stats": {
-          // Fetch all jury data (president and members)
-          const [phdLmd, phdScience] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, full_name_ar, specialty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, full_name_ar, specialty_ar, defense_date"),
+          // Fetch all jury data (president, members, and supervisors)
+          const [phdLmd, phdScience, master] = await Promise.all([
+            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+            supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
           ]);
 
           const allRecords = [
@@ -264,21 +265,26 @@ export function ExportStatsDialog() {
             ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
           ];
 
+          const masterRecords = (master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" }));
+
           // Track professor appearances
           const professorStats: Record<string, { 
             asPresident: number; 
             asMember: number; 
+            asSupervisor: number;
             total: number;
             presidentDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
             memberDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
+            supervisorDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
           }> = {};
 
+          // Process PhD records (president, members, supervisor)
           allRecords.forEach((record) => {
             // Process president
             const president = (record as any).jury_president_ar?.trim();
             if (president) {
               if (!professorStats[president]) {
-                professorStats[president] = { asPresident: 0, asMember: 0, total: 0, presidentDetails: [], memberDetails: [] };
+                professorStats[president] = { asPresident: 0, asMember: 0, asSupervisor: 0, total: 0, presidentDetails: [], memberDetails: [], supervisorDetails: [] };
               }
               professorStats[president].asPresident++;
               professorStats[president].total++;
@@ -297,7 +303,7 @@ export function ExportStatsDialog() {
             members.forEach((member: string) => {
               if (!member) return;
               if (!professorStats[member]) {
-                professorStats[member] = { asPresident: 0, asMember: 0, total: 0, presidentDetails: [], memberDetails: [] };
+                professorStats[member] = { asPresident: 0, asMember: 0, asSupervisor: 0, total: 0, presidentDetails: [], memberDetails: [], supervisorDetails: [] };
               }
               professorStats[member].asMember++;
               professorStats[member].total++;
@@ -308,6 +314,40 @@ export function ExportStatsDialog() {
                 date: record.defense_date,
               });
             });
+
+            // Process supervisor from PhD records
+            const supervisor = (record as any).supervisor_ar?.trim();
+            if (supervisor) {
+              if (!professorStats[supervisor]) {
+                professorStats[supervisor] = { asPresident: 0, asMember: 0, asSupervisor: 0, total: 0, presidentDetails: [], memberDetails: [], supervisorDetails: [] };
+              }
+              professorStats[supervisor].asSupervisor++;
+              professorStats[supervisor].total++;
+              professorStats[supervisor].supervisorDetails.push({
+                student: record.full_name_ar,
+                specialty: record.specialty_ar,
+                type: record.certificate_type,
+                date: record.defense_date,
+              });
+            }
+          });
+
+          // Process Master records (supervisor only)
+          masterRecords.forEach((record) => {
+            const supervisor = (record as any).supervisor_ar?.trim();
+            if (supervisor) {
+              if (!professorStats[supervisor]) {
+                professorStats[supervisor] = { asPresident: 0, asMember: 0, asSupervisor: 0, total: 0, presidentDetails: [], memberDetails: [], supervisorDetails: [] };
+              }
+              professorStats[supervisor].asSupervisor++;
+              professorStats[supervisor].total++;
+              professorStats[supervisor].supervisorDetails.push({
+                student: record.full_name_ar,
+                specialty: record.specialty_ar,
+                type: record.certificate_type,
+                date: record.defense_date,
+              });
+            }
           });
 
           // Create summary sheet
@@ -316,10 +356,28 @@ export function ExportStatsDialog() {
             .map(([name, stats], index) => ({
               "الترتيب": index + 1,
               "اسم الأستاذ": name,
+              "مشرف": stats.asSupervisor,
               "رئيس لجنة": stats.asPresident,
               "عضو لجنة": stats.asMember,
               "المجموع": stats.total,
             }));
+
+          // Create supervisor details sheet
+          const supervisorDetails: any[] = [];
+          Object.entries(professorStats)
+            .sort((a, b) => b[1].asSupervisor - a[1].asSupervisor)
+            .forEach(([professor, stats]) => {
+              stats.supervisorDetails.forEach((detail) => {
+                supervisorDetails.push({
+                  "الأستاذ": professor,
+                  "الدور": "مشرف",
+                  "اسم الطالب": detail.student,
+                  "التخصص": detail.specialty,
+                  "نوع الشهادة": detail.type,
+                  "تاريخ المناقشة": detail.date,
+                });
+              });
+            });
 
           // Create president details sheet
           const presidentDetails: any[] = [];
@@ -355,12 +413,14 @@ export function ExportStatsDialog() {
               });
             });
 
-          // Create workbook with three sheets
+          // Create workbook with four sheets
           const wb = XLSX.utils.book_new();
           const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+          const wsSupervisor = XLSX.utils.json_to_sheet(supervisorDetails);
           const wsPresident = XLSX.utils.json_to_sheet(presidentDetails);
           const wsMember = XLSX.utils.json_to_sheet(memberDetails);
           XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص الأساتذة");
+          XLSX.utils.book_append_sheet(wb, wsSupervisor, "تفاصيل الإشراف");
           XLSX.utils.book_append_sheet(wb, wsPresident, "تفاصيل رئاسة اللجان");
           XLSX.utils.book_append_sheet(wb, wsMember, "تفاصيل عضوية اللجان");
           XLSX.writeFile(wb, `إحصائيات_اللجان_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
