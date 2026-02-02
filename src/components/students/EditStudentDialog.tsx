@@ -651,12 +651,12 @@ export default function EditStudentDialog({
                   <FormItem>
                     <FormLabel>اسم ولقب المشرف *</FormLabel>
                     <FormControl>
-                      <AutocompleteInput
+                      <AcademicTitleInput
                         {...field}
                         value={(field.value as string) || ""}
                         suggestions={suggestions?.supervisor_ar || []}
                         dir="auto"
-                        placeholder="الاسم الكامل للمشرف (بالعربية أو الفرنسية)"
+                        placeholder="اختر الرتبة ثم اكتب الاسم"
                       />
                     </FormControl>
                     <FormMessage />
