@@ -10,6 +10,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Loader2,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -40,9 +42,11 @@ import {
   languageLabels,
   type CertificateType,
   type TemplateLanguage,
+  type CertificateTemplate,
 } from "@/types/certificates";
 import { CreateTemplateDialog } from "@/components/print/CreateTemplateDialog";
 import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
+import { EditTemplateDialog } from "@/components/print/EditTemplateDialog";
 
 const typeColors: Record<CertificateType, string> = {
   phd_lmd: "bg-primary/10 text-primary border-primary/20",
@@ -56,6 +60,7 @@ export default function Templates() {
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [editTemplate, setEditTemplate] = useState<CertificateTemplate | null>(null);
 
   const { data: templates = [], isLoading, error } = useCertificateTemplates();
   const updateTemplate = useUpdateTemplate();
@@ -148,11 +153,19 @@ export default function Templates() {
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       className="gap-2"
+                      onClick={() => setEditTemplate(template)}
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      تعديل القالب
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="gap-2"
                       onClick={() => navigate(`/print?template=${template.id}`)}
                     >
                       <Edit className="h-4 w-4" />
-                      تحرير
+                      تحرير الحقول
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="gap-2"
                       onClick={() => handleToggleActive(template.id, template.is_active)}
@@ -239,6 +252,13 @@ export default function Templates() {
       <CreateTemplateDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
+      />
+
+      {/* Edit Template Dialog */}
+      <EditTemplateDialog
+        open={!!editTemplate}
+        onOpenChange={(open) => !open && setEditTemplate(null)}
+        template={editTemplate}
       />
     </div>
   );
