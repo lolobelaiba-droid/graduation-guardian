@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface AcademicTitleInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value: string;
@@ -14,9 +15,15 @@ interface AcademicTitleInputProps extends Omit<React.InputHTMLAttributes<HTMLInp
 
 // الرتب العلمية المعروفة
 const ACADEMIC_TITLES = [
-  "أد", "د", "أ.د", "د.", "أ", "بروفيسور", 
-  "Prof", "Dr", "Pr", "Prof.", "Dr.", "Pr."
+  { label: "أد", value: "أد " },
+  { label: "د", value: "د " },
+  { label: "أ", value: "أ " },
+  { label: "Prof", value: "Prof " },
+  { label: "Dr", value: "Dr " },
+  { label: "Pr", value: "Pr " },
 ];
+
+const TITLE_VALUES = ACADEMIC_TITLES.map(t => t.value.trim());
 
 const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInputProps>(
   ({ value, onChange, suggestions = [], placeholder = "اكتب الرتبة ثم الاسم", className, dir = "auto", ...props }, ref) => {
@@ -49,16 +56,36 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
     // التحقق من أن النص الحالي هو رتبة علمية فقط
     const isJustAcademicTitle = (text: string): boolean => {
       const trimmed = text.trim();
-      return ACADEMIC_TITLES.some(
+      return TITLE_VALUES.some(
         title => trimmed === title || trimmed === title + " "
       );
+    };
+
+    // إضافة رتبة علمية
+    const addTitle = (titleValue: string) => {
+      // إذا كان الحقل فارغاً أو يحتوي على رتبة فقط، استبدلها
+      if (!value.trim() || isJustAcademicTitle(value)) {
+        onChange(titleValue);
+      } else {
+        // إذا كان هناك نص، أضف الرتبة في البداية
+        const cleanValue = value.trim();
+        // تحقق إذا كان النص يبدأ برتبة بالفعل
+        const startsWithTitle = TITLE_VALUES.some(t => cleanValue.startsWith(t));
+        if (startsWithTitle) {
+          // استبدل الرتبة الموجودة
+          const textWithoutTitle = cleanValue.replace(/^(أد|د|أ|Prof|Dr|Pr)\s*/i, '');
+          onChange(titleValue + textWithoutTitle);
+        } else {
+          onChange(titleValue + cleanValue);
+        }
+      }
+      inputRef.current?.focus();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
         e.preventDefault();
         
-        // إذا كان هناك اقتراح مميز، اخترها
         if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
           onChange(filteredSuggestions[highlightedIndex]);
           setShowSuggestions(false);
@@ -66,7 +93,6 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
           return;
         }
         
-        // إذا كان المدخل رتبة علمية فقط، أضف مسافة ولا تنهي الإدخال
         if (isJustAcademicTitle(value)) {
           if (!value.endsWith(" ")) {
             onChange(value + " ");
@@ -74,7 +100,6 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
           return;
         }
         
-        // في الحالات الأخرى، دع النموذج يتعامل مع الـ Enter
         setShowSuggestions(false);
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -150,10 +175,20 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
           </div>
         )}
 
-        {/* Helper text */}
-        <p className="text-xs text-muted-foreground mt-1">
-          اكتب الرتبة (أد، د) ثم اضغط Enter لإضافة مسافة، ثم أكمل الاسم
-        </p>
+        {/* Academic titles badges */}
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          <span className="text-xs text-muted-foreground ml-1">الرتبة:</span>
+          {ACADEMIC_TITLES.map((title) => (
+            <Badge
+              key={title.label}
+              variant="outline"
+              className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs px-2 py-0.5"
+              onClick={() => addTitle(title.value)}
+            >
+              {title.label}
+            </Badge>
+          ))}
+        </div>
       </div>
     );
   }

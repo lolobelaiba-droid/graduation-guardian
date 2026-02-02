@@ -14,7 +14,17 @@ interface JuryMembersInputProps {
   dir?: "auto" | "ltr" | "rtl";
 }
 
-const ACADEMIC_TITLES = ["أد", "د", "أ.د", "د.", "أ", "بروفيسور", "Prof", "Dr", "Pr"];
+// الرتب العلمية المعروفة
+const ACADEMIC_TITLES = [
+  { label: "أد", value: "أد " },
+  { label: "د", value: "د " },
+  { label: "أ", value: "أ " },
+  { label: "Prof", value: "Prof " },
+  { label: "Dr", value: "Dr " },
+  { label: "Pr", value: "Pr " },
+];
+
+const TITLE_VALUES = ACADEMIC_TITLES.map(t => t.value.trim());
 
 const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProps>(
   ({ value, onChange, suggestions = [], placeholder = "اكتب الرتبة ثم الاسم واضغط Enter", className, dir = "auto" }, ref) => {
@@ -62,6 +72,31 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // التحقق من أن النص الحالي هو رتبة علمية فقط
+    const isJustAcademicTitle = (text: string): boolean => {
+      const trimmed = text.trim();
+      return TITLE_VALUES.some(
+        title => trimmed === title || trimmed === title + " "
+      );
+    };
+
+    // إضافة رتبة علمية في حقل الإدخال
+    const addTitleToInput = (titleValue: string) => {
+      if (!inputValue.trim() || isJustAcademicTitle(inputValue)) {
+        setInputValue(titleValue);
+      } else {
+        const cleanValue = inputValue.trim();
+        const startsWithTitle = TITLE_VALUES.some(t => cleanValue.startsWith(t));
+        if (startsWithTitle) {
+          const textWithoutTitle = cleanValue.replace(/^(أد|د|أ|Prof|Dr|Pr)\s*/i, '');
+          setInputValue(titleValue + textWithoutTitle);
+        } else {
+          setInputValue(titleValue + cleanValue);
+        }
+      }
+      inputRef.current?.focus();
+    };
+
     const addMember = (memberName: string) => {
       const trimmed = memberName.trim();
       if (trimmed && !members.includes(trimmed)) {
@@ -87,23 +122,15 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
         if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
           addMember(filteredSuggestions[highlightedIndex]);
         } else if (inputValue.trim()) {
-          // Check if input is just an academic title
-          const isJustTitle = ACADEMIC_TITLES.some(
-            title => inputValue.trim() === title || inputValue.trim() === title + " "
-          );
-          
-          if (isJustTitle) {
-            // Don't add yet, just add a space if not already there
+          if (isJustAcademicTitle(inputValue)) {
             if (!inputValue.endsWith(" ")) {
               setInputValue(inputValue + " ");
             }
           } else {
-            // Full entry, add it
             addMember(inputValue);
           }
         }
       } else if (e.key === "Backspace" && !inputValue && members.length > 0) {
-        // Remove last member when backspace on empty input
         removeMember(members.length - 1);
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -204,10 +231,20 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
           </div>
         )}
 
-        {/* Helper text */}
-        <p className="text-xs text-muted-foreground mt-1">
-          اكتب الرتبة (أد، د) ثم الاسم واضغط Enter لإضافة كل عضو
-        </p>
+        {/* Academic titles badges */}
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          <span className="text-xs text-muted-foreground ml-1">الرتبة:</span>
+          {ACADEMIC_TITLES.map((title) => (
+            <Badge
+              key={title.label}
+              variant="outline"
+              className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs px-2 py-0.5"
+              onClick={() => addTitleToInput(title.value)}
+            >
+              {title.label}
+            </Badge>
+          ))}
+        </div>
       </div>
     );
   }
