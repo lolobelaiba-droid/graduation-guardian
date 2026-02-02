@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { JuryMembersInput } from "@/components/ui/jury-members-input";
+import { AcademicTitleInput } from "@/components/ui/academic-title-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -704,12 +705,12 @@ export default function EditStudentDialog({
                       <FormItem>
                         <FormLabel>رئيس اللجنة *</FormLabel>
                         <FormControl>
-                          <AutocompleteInput
-                            {...field}
+                          <AcademicTitleInput
                             value={(field.value as string) || ""}
+                            onChange={field.onChange}
                             suggestions={suggestions?.jury_president_ar || []}
                             dir="auto"
-                            placeholder="اسم رئيس اللجنة (يمكن الكتابة بالعربية أو الفرنسية)"
+                            placeholder="اكتب الرتبة (أد، د) ثم الاسم"
                           />
                         </FormControl>
                         <FormMessage />
