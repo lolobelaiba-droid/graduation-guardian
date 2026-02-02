@@ -111,15 +111,18 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
       onChange(newValue);
     }, [onChange]);
 
-    // Filter suggestions based on input
+    // Filter suggestions based on input (only name, not title)
     const filteredSuggestions = React.useMemo(() => {
-      const searchText = selectedTitle ? `${selectedTitle} ${inputValue}` : inputValue;
-      if (!searchText.trim()) return [];
-      const lower = searchText.toLowerCase();
+      if (!inputValue.trim()) return [];
+      const lower = inputValue.toLowerCase();
       return suggestions
-        .filter(s => s.toLowerCase().includes(lower) && !members.includes(s))
+        .filter(s => {
+          // استخراج الاسم من الاقتراح للمقارنة
+          const { name } = extractTitleAndName(s);
+          return name.toLowerCase().includes(lower) && !members.includes(s);
+        })
         .slice(0, 8);
-    }, [suggestions, inputValue, selectedTitle, members]);
+    }, [suggestions, inputValue, members]);
 
     // Handle click outside
     React.useEffect(() => {
