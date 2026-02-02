@@ -1,6 +1,6 @@
-# Building Desktop Application (Offline with SQLite)
+# Building Desktop Application (Offline with JSON Storage)
 
-This guide explains how to build and run the application as a standalone desktop app with local SQLite database.
+This guide explains how to build and run the application as a standalone desktop app with local JSON-based storage.
 
 ## Prerequisites
 
@@ -19,18 +19,7 @@ cd <project-folder>
 npm install
 ```
 
-### 2. Install SQLite Dependencies
-
-```bash
-# Install better-sqlite3 for local database
-npm install better-sqlite3 --save
-
-# Rebuild native modules for Electron
-npm install electron-rebuild --save-dev
-npx electron-rebuild
-```
-
-### 3. Run in Development Mode
+### 2. Run in Development Mode
 
 ```bash
 npm run electron:dev
@@ -90,33 +79,46 @@ Output:
 |------|---------|
 | `electron/main.js` | Electron main process |
 | `electron/preload.js` | Preload script (IPC bridge) |
-| `electron/database/schema.sql` | SQLite database schema |
-| `electron/database/database.js` | Database operations |
+| `electron/database/json-store.js` | JSON-based data storage |
 | `electron/database/ipc-handlers.js` | IPC handlers for database |
 | `electron-builder.json` | Build configuration |
 
-## Database Location
+## Data Location
 
-The SQLite database is stored in the user's application data folder:
+Data is stored as JSON files in the user's application data folder:
 
 | OS | Path |
 |----|------|
-| Windows | `%APPDATA%\نظام الشهادات الجامعية\certificates.db` |
-| macOS | `~/Library/Application Support/نظام الشهادات الجامعية/certificates.db` |
-| Linux | `~/.config/نظام الشهادات الجامعية/certificates.db` |
+| Windows | `%APPDATA%\نظام الشهادات الجامعية\data\` |
+| macOS | `~/Library/Application Support/نظام الشهادات الجامعية/data/` |
+| Linux | `~/.config/نظام الشهادات الجامعية/data/` |
 
-### Backup Database
+### Data Files
 
-From the application menu: **قاعدة البيانات** > **نسخ قاعدة البيانات احتياطياً**
+- `phd_lmd_certificates.json` - شهادات دكتوراه ل م د
+- `phd_science_certificates.json` - شهادات دكتوراه علوم
+- `master_certificates.json` - شهادات الماستر
+- `certificate_templates.json` - قوالب الشهادات
+- `certificate_template_fields.json` - حقول القوالب
+- `settings.json` - الإعدادات
+- `user_settings.json` - إعدادات المستخدم
+- `dropdown_options.json` - خيارات القوائم
+- `custom_fonts.json` - الخطوط المخصصة
+- `activity_log.json` - سجل النشاطات
 
-Or manually copy the `certificates.db` file.
+### Backup Data
+
+From the application menu: **قاعدة البيانات** > **نسخ البيانات احتياطياً**
+
+Or manually copy the `data` folder.
 
 ## Offline Functionality
 
 The desktop version works **completely offline**:
 
-✅ All data stored locally in SQLite  
+✅ All data stored locally as JSON files  
 ✅ No internet connection required  
+✅ No native compilation needed (no node-gyp)  
 ✅ PDF generation works offline  
 ✅ Printing to local printers  
 ✅ Backup/restore via JSON files  
@@ -127,52 +129,53 @@ The desktop version works **completely offline**:
 2. Install and run the desktop version
 3. Go to Settings > Backup > Restore from Backup
 4. Select the JSON backup file
-5. All your data is now in the local database
+5. All your data is now in the local storage
 
 ## Troubleshooting
 
-### "Cannot find module 'better-sqlite3'" error
+### App doesn't start
 
-Run:
-```bash
-npx electron-rebuild
-```
-
-### App crashes on startup
-
-1. Delete the database file (see Database Location above)
-2. Restart the app (a new empty database will be created)
-
-### Native module build errors on Windows
-
-Install Visual Studio Build Tools:
-```bash
-npm install --global windows-build-tools
-```
+1. Delete the data folder (see Data Location above)
+2. Restart the app (new empty data files will be created)
 
 ### Blank screen in production
 
 Make sure to run `npm run build` before `npm run electron:build`
 
+### Fonts not loading
+
+Ensure the `public/fonts` folder contains the required Arabic fonts:
+- IBMPlexSansArabic-Light.ttf
+- IBMPlexSansArabic-Regular.ttf
+- IBMPlexSansArabic-Medium.ttf
+- IBMPlexSansArabic-SemiBold.ttf
+- IBMPlexSansArabic-Bold.ttf
+
 ## Development Notes
 
-### How the dual-database system works
+### How the storage system works
 
-The application automatically detects the environment:
+The application uses JSON files for data storage instead of SQLite:
+- No native modules required
+- No compilation dependencies (node-gyp, Python, Visual Studio)
+- Simple to backup and restore
+- Cross-platform compatible
 
-```typescript
-import { isElectron } from "@/lib/database";
+### Architecture
 
-if (isElectron()) {
-  // Use SQLite via IPC
-} else {
-  // Use Supabase
-}
+```
+React App (Renderer Process)
+        ↓
+   IPC Bridge (preload.js)
+        ↓
+  JSON Store (main process)
+        ↓
+   File System (JSON files)
 ```
 
 ### Adding new database operations
 
-1. Add the SQL operation in `electron/database/database.js`
+1. Add the operation in `electron/database/json-store.js`
 2. Add IPC handler in `electron/database/ipc-handlers.js`
 3. Expose in `electron/preload.js`
 4. Add TypeScript types in `src/types/electron-api.d.ts`
@@ -181,6 +184,16 @@ if (isElectron()) {
 ## Security Notes
 
 - The desktop app runs with Node.js integration disabled
-- All database access is through IPC (context isolation)
+- All data access is through IPC (context isolation)
 - No external network calls for core functionality
 - Sensitive data stays on the user's machine
+
+## Build Requirements
+
+Unlike SQLite-based solutions, this build requires:
+- ✅ Node.js only
+- ❌ No Python required
+- ❌ No Visual Studio Build Tools required
+- ❌ No node-gyp compilation
+
+This makes the build process much simpler and more reliable across different systems.

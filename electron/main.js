@@ -5,12 +5,16 @@ const os = require('os');
 const { pathToFileURL } = require('url');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
-if (require('electron-squirrel-startup')) {
-  app.quit();
+try {
+  if (require('electron-squirrel-startup')) {
+    app.quit();
+  }
+} catch (e) {
+  // electron-squirrel-startup not available
 }
 
-// Database imports
-const db = require('./database/database');
+// Database imports - استخدام JSON Store بدلاً من SQLite
+const db = require('./database/json-store');
 const { registerDatabaseHandlers } = require('./database/ipc-handlers');
 
 let mainWindow;
@@ -71,22 +75,26 @@ function createWindow() {
       label: 'قاعدة البيانات',
       submenu: [
         { 
-          label: 'فتح مجلد قاعدة البيانات', 
+          label: 'فتح مجلد البيانات', 
           click: () => {
             const dbPath = db.getDatabasePath();
-            shell.showItemInFolder(dbPath);
+            shell.openPath(dbPath);
           }
         },
         { 
-          label: 'نسخ قاعدة البيانات احتياطياً', 
+          label: 'نسخ البيانات احتياطياً', 
           click: async () => {
             const dbPath = db.getDatabasePath();
             const backupPath = path.join(
               app.getPath('documents'),
-              `certificates_backup_${new Date().toISOString().split('T')[0]}.db`
+              `certificates_backup_${new Date().toISOString().split('T')[0]}`
             );
-            fs.copyFileSync(dbPath, backupPath);
-            shell.showItemInFolder(backupPath);
+            
+            // نسخ مجلد البيانات بالكامل
+            if (fs.existsSync(dbPath)) {
+              fs.cpSync(dbPath, backupPath, { recursive: true });
+              shell.openPath(backupPath);
+            }
           }
         }
       ]
