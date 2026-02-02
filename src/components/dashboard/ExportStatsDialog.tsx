@@ -255,9 +255,9 @@ export function ExportStatsDialog() {
         case "jury_stats": {
           // Fetch all jury data (president, members, and supervisors)
           const [phdLmd, phdScience, master] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-            supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
+            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
+            supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
           ]);
 
           const allRecords = [
@@ -273,9 +273,9 @@ export function ExportStatsDialog() {
             asMember: number; 
             asSupervisor: number;
             total: number;
-            presidentDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
-            memberDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
-            supervisorDetails: Array<{ student: string; specialty: string; type: string; date: string }>;
+            presidentDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
+            memberDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
+            supervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
           }> = {};
 
           // Process PhD records (president, members, supervisor)
@@ -291,6 +291,7 @@ export function ExportStatsDialog() {
               professorStats[president].presidentDetails.push({
                 student: record.full_name_ar,
                 specialty: record.specialty_ar,
+                faculty: record.faculty_ar || "",
                 type: record.certificate_type,
                 date: record.defense_date,
               });
@@ -310,6 +311,7 @@ export function ExportStatsDialog() {
               professorStats[member].memberDetails.push({
                 student: record.full_name_ar,
                 specialty: record.specialty_ar,
+                faculty: record.faculty_ar || "",
                 type: record.certificate_type,
                 date: record.defense_date,
               });
@@ -326,6 +328,7 @@ export function ExportStatsDialog() {
               professorStats[supervisor].supervisorDetails.push({
                 student: record.full_name_ar,
                 specialty: record.specialty_ar,
+                faculty: record.faculty_ar || "",
                 type: record.certificate_type,
                 date: record.defense_date,
               });
@@ -344,6 +347,7 @@ export function ExportStatsDialog() {
               professorStats[supervisor].supervisorDetails.push({
                 student: record.full_name_ar,
                 specialty: record.specialty_ar,
+                faculty: record.faculty_ar || "",
                 type: record.certificate_type,
                 date: record.defense_date,
               });
@@ -372,6 +376,7 @@ export function ExportStatsDialog() {
                   "الأستاذ": professor,
                   "الدور": "مشرف",
                   "اسم الطالب": detail.student,
+                  "الكلية": detail.faculty,
                   "التخصص": detail.specialty,
                   "نوع الشهادة": detail.type,
                   "تاريخ المناقشة": detail.date,
@@ -389,6 +394,7 @@ export function ExportStatsDialog() {
                   "الأستاذ": professor,
                   "الدور": "رئيس لجنة",
                   "اسم الطالب": detail.student,
+                  "الكلية": detail.faculty,
                   "التخصص": detail.specialty,
                   "نوع الشهادة": detail.type,
                   "تاريخ المناقشة": detail.date,
@@ -406,6 +412,7 @@ export function ExportStatsDialog() {
                   "الأستاذ": professor,
                   "الدور": "عضو لجنة",
                   "اسم الطالب": detail.student,
+                  "الكلية": detail.faculty,
                   "التخصص": detail.specialty,
                   "نوع الشهادة": detail.type,
                   "تاريخ المناقشة": detail.date,
