@@ -29,7 +29,7 @@
         "arch": ["x64"]
       }
     ],
-    "icon": null,
+    "icon": "public/app-icon.png",
     "artifactName": "${productName}-${version}-${arch}.${ext}"
   },
   "nsis": {
