@@ -63,6 +63,7 @@ const baseSchema = z.object({
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
+  research_lab_ar: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -146,6 +147,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       university_fr: "Université D'oum El Bouaghi",
       faculty_ar: '',
       faculty_fr: '',
+      research_lab_ar: '',
       branch_ar: '',
       branch_fr: '',
       specialty_ar: '',
@@ -510,9 +512,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
               />
             </div>
 
-            {/* Faculty */}
-            <SectionHeader title="الكلية" />
-            <div className="grid grid-cols-1 gap-4">
+            {/* Faculty & Research Lab */}
+            <SectionHeader title="الكلية ومخبر البحث" />
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="faculty_ar"
@@ -525,6 +527,24 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                         onChange={field.onChange}
                         optionType="faculty"
                         placeholder="اختر أو أدخل الكلية"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="research_lab_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>مخبر البحث</FormLabel>
+                    <FormControl>
+                      <DropdownWithAdd
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        optionType="research_lab"
+                        placeholder="اختر أو أدخل مخبر البحث"
                       />
                     </FormControl>
                     <FormMessage />
