@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,6 +36,7 @@ import {
   type MentionType,
 } from "@/types/certificates";
 import { DropdownWithAdd } from "./DropdownWithAdd";
+import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 
 // توليد السنوات الجامعية من 2000/2001 إلى 2024/2025
 const generateAcademicYears = (): string[] => {
@@ -108,6 +110,12 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   const createPhdLmd = useCreatePhdLmdCertificate();
   const createPhdScience = useCreatePhdScienceCertificate();
   const createMaster = useCreateMasterCertificate();
+  
+  // Fetch suggestions for autocomplete fields
+  const { data: suggestions } = useMultipleFieldSuggestions([
+    'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 
+    'supervisor_ar', 'jury_president_ar'
+  ]);
 
   // Update selected type when prop changes
   useEffect(() => {
@@ -580,7 +588,11 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>الشعبة (عربي) *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="الشعبة" />
+                      <AutocompleteInput
+                        {...field}
+                        suggestions={suggestions?.branch_ar || []}
+                        placeholder="الشعبة"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -594,7 +606,13 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>filière</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Filière" />
+                      <AutocompleteInput
+                        {...field}
+                        value={field.value || ''}
+                        suggestions={suggestions?.branch_fr || []}
+                        dir="ltr"
+                        placeholder="Filière"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -610,7 +628,11 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>التخصص (عربي) *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="التخصص" />
+                      <AutocompleteInput
+                        {...field}
+                        suggestions={suggestions?.specialty_ar || []}
+                        placeholder="التخصص"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -624,7 +646,13 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>spécialité</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Spécialité" />
+                      <AutocompleteInput
+                        {...field}
+                        value={field.value || ''}
+                        suggestions={suggestions?.specialty_fr || []}
+                        dir="ltr"
+                        placeholder="Spécialité"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -642,8 +670,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                 <FormItem>
                   <FormLabel>اسم ولقب المشرف *</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <AutocompleteInput
+                      {...field}
+                      suggestions={suggestions?.supervisor_ar || []}
                       dir="auto"
                       placeholder="الاسم الكامل للمشرف (بالعربية أو الفرنسية)"
                     />
@@ -727,8 +756,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                       <FormItem>
                         <FormLabel>رئيس اللجنة *</FormLabel>
                         <FormControl>
-                          <Input 
-                            {...field} 
+                          <AutocompleteInput
+                            {...field}
+                            suggestions={suggestions?.jury_president_ar || []}
                             placeholder="اسم رئيس اللجنة (يمكن الكتابة بالعربية أو الفرنسية)"
                             dir="auto"
                           />

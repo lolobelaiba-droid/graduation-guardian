@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -36,6 +37,7 @@ import {
   useUpdateMasterCertificate,
 } from "@/hooks/useCertificates";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
+import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 
 // توليد السنوات الجامعية من 2000/2001 إلى 2024/2025
 const generateAcademicYears = (): string[] => {
@@ -161,6 +163,12 @@ export default function EditStudentDialog({
   const updatePhdLmd = useUpdatePhdLmdCertificate();
   const updatePhdScience = useUpdatePhdScienceCertificate();
   const updateMaster = useUpdateMasterCertificate();
+  
+  // Fetch suggestions for autocomplete fields
+  const { data: suggestions } = useMultipleFieldSuggestions([
+    'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 
+    'supervisor_ar', 'jury_president_ar'
+  ]);
 
   const getSchema = () => {
     switch (certificateType) {
@@ -508,7 +516,11 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>الشعبة بالعربية *</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} />
+                        <AutocompleteInput
+                          {...field}
+                          value={field.value || ""}
+                          suggestions={suggestions?.branch_ar || []}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -521,7 +533,13 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>الشعبة بالفرنسية</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} className="text-left" dir="ltr" />
+                        <AutocompleteInput
+                          {...field}
+                          value={field.value || ""}
+                          suggestions={suggestions?.branch_fr || []}
+                          className="text-left"
+                          dir="ltr"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -534,7 +552,11 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>التخصص بالعربية *</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} />
+                        <AutocompleteInput
+                          {...field}
+                          value={field.value || ""}
+                          suggestions={suggestions?.specialty_ar || []}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -547,7 +569,13 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>التخصص بالفرنسية</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} className="text-left" dir="ltr" />
+                        <AutocompleteInput
+                          {...field}
+                          value={field.value || ""}
+                          suggestions={suggestions?.specialty_fr || []}
+                          className="text-left"
+                          dir="ltr"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -621,9 +649,10 @@ export default function EditStudentDialog({
                   <FormItem>
                     <FormLabel>اسم ولقب المشرف *</FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
-                        value={(field.value as string) || ""} 
+                      <AutocompleteInput
+                        {...field}
+                        value={(field.value as string) || ""}
+                        suggestions={suggestions?.supervisor_ar || []}
                         dir="auto"
                         placeholder="الاسم الكامل للمشرف (بالعربية أو الفرنسية)"
                       />
@@ -674,9 +703,10 @@ export default function EditStudentDialog({
                       <FormItem>
                         <FormLabel>رئيس اللجنة *</FormLabel>
                         <FormControl>
-                          <Input 
-                            {...field} 
+                          <AutocompleteInput
+                            {...field}
                             value={(field.value as string) || ""}
+                            suggestions={suggestions?.jury_president_ar || []}
                             dir="auto"
                             placeholder="اسم رئيس اللجنة (يمكن الكتابة بالعربية أو الفرنسية)"
                           />
