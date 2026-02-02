@@ -15,9 +15,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ManageAcademicTitlesDialogProps {
   trigger?: React.ReactNode;
+  onTitlesChange?: () => void;
 }
 
-export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProps> = ({ trigger }) => {
+export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProps> = ({ trigger, onTitlesChange }) => {
   const { titles, isLoading, addTitle, deleteTitle } = useAcademicTitles();
   const [isOpen, setIsOpen] = React.useState(false);
   const [newFullName, setNewFullName] = React.useState("");
@@ -33,13 +34,17 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
     if (result) {
       setNewFullName("");
       setNewAbbreviation("");
+      onTitlesChange?.();
     }
     setIsAdding(false);
   };
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
-    await deleteTitle(id);
+    const success = await deleteTitle(id);
+    if (success) {
+      onTitlesChange?.();
+    }
     setDeletingId(null);
   };
 
