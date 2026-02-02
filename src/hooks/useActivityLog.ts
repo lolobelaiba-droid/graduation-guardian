@@ -64,8 +64,14 @@ export function useDeleteOldActivities() {
       cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
       if (isElectron()) {
-        // For Electron, we would need a custom delete query
-        // For now, just return success
+        const db = getDbClient();
+        if (db && 'deleteOldActivities' in db) {
+          const result = await (db as any).deleteOldActivities(daysOld);
+          if (!result.success) {
+            throw new Error(result.error || 'فشل في حذف السجلات');
+          }
+          return result.data;
+        }
         return;
       }
 
