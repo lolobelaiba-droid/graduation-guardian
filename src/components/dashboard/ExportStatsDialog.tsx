@@ -184,7 +184,7 @@ export function ExportStatsDialog() {
             "تاريخ المناقشة": s.defense_date,
             "التقدير": s.mention === "very_honorable" ? "مشرف جدا" : "مشرف",
           }));
-          fileName = `الطلاب_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          fileName = `الطلاب_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
           break;
         }
 
@@ -200,7 +200,7 @@ export function ExportStatsDialog() {
             "الكلية": name,
             "عدد الطلاب": count,
           }));
-          fileName = `توزيع_الكليات_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          fileName = `توزيع_الكليات_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
           break;
         }
 
@@ -212,7 +212,7 @@ export function ExportStatsDialog() {
             { "الجنس": "ذكور", "العدد": maleCount },
             { "الجنس": "إناث", "العدد": femaleCount },
           ];
-          fileName = `توزيع_الجنس_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          fileName = `توزيع_الجنس_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
           break;
         }
 
@@ -227,7 +227,7 @@ export function ExportStatsDialog() {
             { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
             { "نوع الشهادة": "ماستر", "العدد": master.count || 0 },
           ];
-          fileName = `توزيع_أنواع_الشهادات_${new Date().toLocaleDateString("ar-SA")}.xlsx`;
+          fileName = `توزيع_أنواع_الشهادات_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
           break;
         }
 
@@ -294,7 +294,7 @@ export function ExportStatsDialog() {
           const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
           XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص المشرفين");
           XLSX.utils.book_append_sheet(wb, wsDetailed, "التفاصيل");
-          XLSX.writeFile(wb, `إحصائيات_المشرفين_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_المشرفين_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
 
           toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(supervisorData).length)} مشرف بنجاح`);
           setOpen(false);
@@ -519,7 +519,7 @@ export function ExportStatsDialog() {
           XLSX.utils.book_append_sheet(wb, wsSupervisor, "تفاصيل الإشراف");
           XLSX.utils.book_append_sheet(wb, wsPresident, "تفاصيل رئاسة اللجان");
           XLSX.utils.book_append_sheet(wb, wsMember, "تفاصيل عضوية اللجان");
-          XLSX.writeFile(wb, `إحصائيات_اللجان_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_اللجان_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
 
           toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(professorStats).length)} أستاذ بنجاح`);
           setOpen(false);
@@ -635,7 +635,7 @@ export function ExportStatsDialog() {
           const wb = XLSX.utils.book_new();
           const ws = XLSX.utils.json_to_sheet(pivotExportData);
           XLSX.utils.book_append_sheet(wb, ws, "جدول محوري");
-          XLSX.writeFile(wb, `إحصائيات_مخصصة_${rowFieldNames}_×_${colFieldNames}_${new Date().toLocaleDateString("ar-SA")}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_مخصصة_${rowFieldNames}_×_${colFieldNames}_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
 
           toast.success(`تم تصدير الجدول المحوري: ${toWesternNumerals(sortedRows.length)} صف × ${toWesternNumerals(sortedCols.length)} عمود`);
           setOpen(false);
