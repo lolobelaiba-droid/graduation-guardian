@@ -29,6 +29,18 @@ export interface BaseCertificate {
   professional_email?: string | null;
   phone_number?: string | null;
   supervisor_ar: string;
+  // PhD reference fields (preserved from PhD students database)
+  registration_number?: string | null;
+  co_supervisor_ar?: string | null;
+  supervisor_university?: string | null;
+  co_supervisor_university?: string | null;
+  employment_status?: string | null;
+  registration_type?: string | null;
+  inscription_status?: string | null;
+  current_year?: string | null;
+  registration_count?: number | null;
+  thesis_language?: string | null;
+  notes?: string | null;
 }
 
 // PhD LMD Certificate
