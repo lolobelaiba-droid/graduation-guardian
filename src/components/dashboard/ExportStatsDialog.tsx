@@ -16,7 +16,20 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { toWesternNumerals } from "@/lib/numerals";
 
-type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor" | "jury_stats" | "custom_pivot";
+type DataSource = "phd_candidates" | "defended_students";
+
+const dataSourceLabels: Record<DataSource, string> = {
+  phd_candidates: "قاعدة بيانات طلبة الدكتوراه",
+  defended_students: "قاعدة بيانات الطلبة المناقشين",
+};
+
+type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor" | "jury_stats" | "status_distribution" | "custom_pivot";
+
+// Export types available for each data source
+const exportTypesForSource: Record<DataSource, ExportType[]> = {
+  phd_candidates: ["students", "faculty", "gender", "certificate_type", "supervisor", "status_distribution", "custom_pivot"],
+  defended_students: ["students", "faculty", "gender", "certificate_type", "supervisor", "jury_stats", "custom_pivot"],
+};
 
 const exportTypeLabels: Record<ExportType, string> = {
   students: "قائمة الطلاب",
@@ -25,21 +38,32 @@ const exportTypeLabels: Record<ExportType, string> = {
   certificate_type: "توزيع حسب نوع الشهادة",
   supervisor: "إحصائيات المشرفين",
   jury_stats: "إحصائيات اللجان (مشرف/رئيس/عضو)",
+  status_distribution: "توزيع حسب الحالة",
   custom_pivot: "إحصائيات مخصصة (جدول محوري)",
 };
 
-// Available fields for pivot table
-type PivotField = "certificate_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "mention" | "defense_year" | "first_registration_year";
+// Available fields for pivot table - varies by data source
+type PivotFieldCandidates = "phd_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "status" | "first_registration_year";
+type PivotFieldDefended = "certificate_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "mention" | "defense_year" | "first_registration_year";
+type PivotField = PivotFieldCandidates | PivotFieldDefended;
 
 const pivotFieldLabels: Record<PivotField, string> = {
   certificate_type: "نوع الشهادة",
+  phd_type: "نوع الدكتوراه",
   faculty_ar: "الكلية",
   gender: "الجنس",
   branch_ar: "الشعبة",
   specialty_ar: "التخصص",
   mention: "التقدير",
+  status: "الحالة",
   defense_year: "سنة المناقشة",
   first_registration_year: "سنة أول تسجيل",
+};
+
+// Pivot fields available for each data source
+const pivotFieldsForSource: Record<DataSource, PivotField[]> = {
+  phd_candidates: ["phd_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "status", "first_registration_year"],
+  defended_students: ["certificate_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "mention", "defense_year", "first_registration_year"],
 };
 
 const certificateTypeLabels = {
@@ -47,6 +71,20 @@ const certificateTypeLabels = {
   phd_lmd: "دكتوراه ل م د",
   phd_science: "دكتوراه علوم",
   master: "ماستر",
+};
+
+const phdTypeLabels = {
+  all: "الكل",
+  phd_lmd: "دكتوراه ل م د",
+  phd_science: "دكتوراه علوم",
+};
+
+const statusLabels = {
+  all: "الكل",
+  active: "نشط",
+  suspended: "موقوف",
+  withdrawn: "منسحب",
+  graduated: "متخرج",
 };
 
 const genderLabels = {
@@ -57,6 +95,7 @@ const genderLabels = {
 
 export function ExportStatsDialog() {
   const [open, setOpen] = useState(false);
+  const [dataSource, setDataSource] = useState<DataSource>("defended_students");
   const [exportType, setExportType] = useState<ExportType>("students");
   const [certificateType, setCertificateType] = useState<string>("all");
   const [gender, setGender] = useState<string>("all");
@@ -68,6 +107,13 @@ export function ExportStatsDialog() {
   const [faculties, setFaculties] = useState<string[]>([]);
   
   // Custom pivot states - now support multiple fields
+  const getDefaultPivotFields = (source: DataSource) => {
+    if (source === "phd_candidates") {
+      return { rows: ["faculty_ar"] as PivotField[], cols: ["phd_type"] as PivotField[] };
+    }
+    return { rows: ["faculty_ar"] as PivotField[], cols: ["certificate_type"] as PivotField[] };
+  };
+  
   const [pivotRowFields, setPivotRowFields] = useState<PivotField[]>(["faculty_ar"]);
   const [pivotColFields, setPivotColFields] = useState<PivotField[]>(["certificate_type"]);
 
@@ -95,23 +141,77 @@ export function ExportStatsDialog() {
   // Check if pivot export is valid
   const isPivotValid = pivotRowFields.length > 0 && pivotColFields.length > 0;
 
-  // Get available fields (not already selected)
+  // Get available fields (not already selected) - filtered by data source
   const getAvailableFields = (): PivotField[] => {
     const usedFields = [...pivotRowFields, ...pivotColFields];
-    return (Object.keys(pivotFieldLabels) as PivotField[]).filter(f => !usedFields.includes(f));
+    const allowedFields = pivotFieldsForSource[dataSource];
+    return allowedFields.filter(f => !usedFields.includes(f));
   };
 
-  // Load faculties when dialog opens
-  const loadFaculties = async () => {
-    const [phdLmd, phdScience, master] = await Promise.all([
-      supabase.from("phd_lmd_certificates").select("faculty_ar"),
-      supabase.from("phd_science_certificates").select("faculty_ar"),
-      supabase.from("master_certificates").select("faculty_ar"),
-    ]);
+  // Handle data source change
+  const handleDataSourceChange = (source: DataSource) => {
+    setDataSource(source);
+    // Reset export type if not available for new source
+    const availableTypes = exportTypesForSource[source];
+    if (!availableTypes.includes(exportType)) {
+      setExportType(availableTypes[0]);
+    }
+    // Reset pivot fields
+    const defaults = getDefaultPivotFields(source);
+    setPivotRowFields(defaults.rows);
+    setPivotColFields(defaults.cols);
+    // Reset certificate type filter
+    setCertificateType("all");
+    // Reload faculties for new data source
+    loadFacultiesForSource(source);
+  };
+
+  // Load faculties for a specific source
+  const loadFacultiesForSource = async (source: DataSource) => {
+    let queries;
+    if (source === "phd_candidates") {
+      queries = await Promise.all([
+        supabase.from("phd_lmd_students").select("faculty_ar"),
+        supabase.from("phd_science_students").select("faculty_ar"),
+      ]);
+    } else {
+      queries = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("faculty_ar"),
+        supabase.from("phd_science_certificates").select("faculty_ar"),
+        supabase.from("master_certificates").select("faculty_ar"),
+      ]);
+    }
 
     const allFaculties = new Set<string>();
-    [...(phdLmd.data || []), ...(phdScience.data || []), ...(master.data || [])].forEach((s) => {
-      if (s.faculty_ar) allFaculties.add(s.faculty_ar);
+    queries.forEach((result) => {
+      (result.data || []).forEach((s: any) => {
+        if (s.faculty_ar) allFaculties.add(s.faculty_ar);
+      });
+    });
+    setFaculties(Array.from(allFaculties));
+  };
+
+  // Load faculties when dialog opens - based on data source
+  const loadFaculties = async () => {
+    let queries;
+    if (dataSource === "phd_candidates") {
+      queries = await Promise.all([
+        supabase.from("phd_lmd_students").select("faculty_ar"),
+        supabase.from("phd_science_students").select("faculty_ar"),
+      ]);
+    } else {
+      queries = await Promise.all([
+        supabase.from("phd_lmd_certificates").select("faculty_ar"),
+        supabase.from("phd_science_certificates").select("faculty_ar"),
+        supabase.from("master_certificates").select("faculty_ar"),
+      ]);
+    }
+
+    const allFaculties = new Set<string>();
+    queries.forEach((result) => {
+      (result.data || []).forEach((s: any) => {
+        if (s.faculty_ar) allFaculties.add(s.faculty_ar);
+      });
     });
     setFaculties(Array.from(allFaculties));
   };
@@ -123,38 +223,67 @@ export function ExportStatsDialog() {
     }
   };
 
+  // Fetch data based on data source
   const fetchStudentData = async () => {
-    const tables = certificateType === "all" 
-      ? ["phd_lmd_certificates", "phd_science_certificates", "master_certificates"] as const
-      : [certificateType === "phd_lmd" ? "phd_lmd_certificates" : certificateType === "phd_science" ? "phd_science_certificates" : "master_certificates"] as const;
-
     const results: any[] = [];
 
-    for (const table of tables) {
-      let query = supabase.from(table).select("*");
+    if (dataSource === "phd_candidates") {
+      // PhD candidates database
+      const tables = certificateType === "all" 
+        ? ["phd_lmd_students", "phd_science_students"] as const
+        : [certificateType === "phd_lmd" ? "phd_lmd_students" : "phd_science_students"] as const;
 
-      if (gender !== "all") {
-        query = query.eq("gender", gender);
+      for (const table of tables) {
+        let query = supabase.from(table).select("*");
+
+        if (gender !== "all") {
+          query = query.eq("gender", gender);
+        }
+
+        if (faculty !== "all") {
+          query = query.eq("faculty_ar", faculty);
+        }
+
+        const { data } = await query;
+        if (data) {
+          results.push(...data.map((d: any) => ({
+            ...d,
+            phd_type: table === "phd_lmd_students" ? "دكتوراه ل م د" : "دكتوراه علوم",
+          })));
+        }
       }
+    } else {
+      // Defended students database (certificates)
+      const tables = certificateType === "all" 
+        ? ["phd_lmd_certificates", "phd_science_certificates", "master_certificates"] as const
+        : [certificateType === "phd_lmd" ? "phd_lmd_certificates" : certificateType === "phd_science" ? "phd_science_certificates" : "master_certificates"] as const;
 
-      if (faculty !== "all") {
-        query = query.eq("faculty_ar", faculty);
-      }
+      for (const table of tables) {
+        let query = supabase.from(table).select("*");
 
-      if (useDateFilter && startDate) {
-        query = query.gte("defense_date", startDate.toISOString().split('T')[0]);
-      }
+        if (gender !== "all") {
+          query = query.eq("gender", gender);
+        }
 
-      if (useDateFilter && endDate) {
-        query = query.lte("defense_date", endDate.toISOString().split('T')[0]);
-      }
+        if (faculty !== "all") {
+          query = query.eq("faculty_ar", faculty);
+        }
 
-      const { data } = await query;
-      if (data) {
-        results.push(...data.map((d) => ({
-          ...d,
-          certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماستر",
-        })));
+        if (useDateFilter && startDate) {
+          query = query.gte("defense_date", startDate.toISOString().split('T')[0]);
+        }
+
+        if (useDateFilter && endDate) {
+          query = query.lte("defense_date", endDate.toISOString().split('T')[0]);
+        }
+
+        const { data } = await query;
+        if (data) {
+          results.push(...data.map((d: any) => ({
+            ...d,
+            certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماستر",
+          })));
+        }
       }
     }
 
@@ -171,20 +300,38 @@ export function ExportStatsDialog() {
       switch (exportType) {
         case "students": {
           const students = await fetchStudentData();
-          exportData = students.map((s) => ({
-            "نوع الشهادة": s.certificate_type,
-            "رقم الطالب": s.student_number,
-            "الاسم بالعربية": s.full_name_ar,
-            "الاسم بالفرنسية": s.full_name_fr || "",
-            "الجنس": s.gender === "male" ? "ذكر" : "أنثى",
-            "الكلية": s.faculty_ar || "",
-            "التخصص": s.specialty_ar,
-            "الشعبة": s.branch_ar,
-            "تاريخ الميلاد": s.date_of_birth,
-            "تاريخ المناقشة": s.defense_date,
-            "التقدير": s.mention === "very_honorable" ? "مشرف جدا" : "مشرف",
-          }));
-          fileName = `الطلاب_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          if (dataSource === "phd_candidates") {
+            exportData = students.map((s) => ({
+              "نوع الدكتوراه": s.phd_type,
+              "رقم التسجيل": s.registration_number,
+              "الاسم بالعربية": s.full_name_ar,
+              "الاسم بالفرنسية": s.full_name_fr || "",
+              "الجنس": s.gender === "male" ? "ذكر" : "أنثى",
+              "الكلية": s.faculty_ar || "",
+              "التخصص": s.specialty_ar,
+              "الشعبة": s.branch_ar,
+              "تاريخ الميلاد": s.date_of_birth,
+              "سنة أول تسجيل": s.first_registration_year || "",
+              "الحالة": statusLabels[s.status as keyof typeof statusLabels] || s.status,
+              "المشرف": s.supervisor_ar || "",
+            }));
+            fileName = `طلبة_الدكتوراه_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          } else {
+            exportData = students.map((s) => ({
+              "نوع الشهادة": s.certificate_type,
+              "رقم الطالب": s.student_number,
+              "الاسم بالعربية": s.full_name_ar,
+              "الاسم بالفرنسية": s.full_name_fr || "",
+              "الجنس": s.gender === "male" ? "ذكر" : "أنثى",
+              "الكلية": s.faculty_ar || "",
+              "التخصص": s.specialty_ar,
+              "الشعبة": s.branch_ar,
+              "تاريخ الميلاد": s.date_of_birth,
+              "تاريخ المناقشة": s.defense_date,
+              "التقدير": s.mention === "very_honorable" ? "مشرف جدا" : "مشرف",
+            }));
+            fileName = `الطلاب_المناقشين_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          }
           break;
         }
 
@@ -217,40 +364,63 @@ export function ExportStatsDialog() {
         }
 
         case "certificate_type": {
-          const [phdLmd, phdScience, master] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
-            supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
-            supabase.from("master_certificates").select("*", { count: "exact", head: true }),
-          ]);
-          exportData = [
-            { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
-            { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
-            { "نوع الشهادة": "ماستر", "العدد": master.count || 0 },
-          ];
-          fileName = `توزيع_أنواع_الشهادات_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          if (dataSource === "phd_candidates") {
+            const [phdLmd, phdScience] = await Promise.all([
+              supabase.from("phd_lmd_students").select("*", { count: "exact", head: true }),
+              supabase.from("phd_science_students").select("*", { count: "exact", head: true }),
+            ]);
+            exportData = [
+              { "نوع الدكتوراه": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
+              { "نوع الدكتوراه": "دكتوراه علوم", "العدد": phdScience.count || 0 },
+            ];
+            fileName = `توزيع_أنواع_الدكتوراه_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          } else {
+            const [phdLmd, phdScience, master] = await Promise.all([
+              supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
+              supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
+              supabase.from("master_certificates").select("*", { count: "exact", head: true }),
+            ]);
+            exportData = [
+              { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
+              { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
+              { "نوع الشهادة": "ماستر", "العدد": master.count || 0 },
+            ];
+            fileName = `توزيع_أنواع_الشهادات_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          }
           break;
         }
 
         case "supervisor": {
-          // Fetch all students with supervisor field
-          const [phdLmd, phdScience, master] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-            supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-          ]);
-
-          const allStudents = [
-            ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-            ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-            ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
-          ];
+          let allStudents: any[] = [];
+          
+          if (dataSource === "phd_candidates") {
+            const [phdLmd, phdScience] = await Promise.all([
+              supabase.from("phd_lmd_students").select("supervisor_ar, full_name_ar, specialty_ar, status"),
+              supabase.from("phd_science_students").select("supervisor_ar, full_name_ar, specialty_ar, status"),
+            ]);
+            allStudents = [
+              ...(phdLmd.data || []).map(s => ({ ...s, phd_type: "دكتوراه ل م د" })),
+              ...(phdScience.data || []).map(s => ({ ...s, phd_type: "دكتوراه علوم" })),
+            ];
+          } else {
+            const [phdLmd, phdScience, master] = await Promise.all([
+              supabase.from("phd_lmd_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+              supabase.from("phd_science_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+              supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+            ]);
+            allStudents = [
+              ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+              ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
+            ];
+          }
 
           // Group by supervisor
-          const supervisorData: Record<string, { count: number; students: Array<{ name: string; specialty: string; type: string; date: string }> }> = {};
+          const supervisorData: Record<string, { count: number; students: any[] }> = {};
           
           allStudents.forEach((s) => {
-            const supervisor = (s as any).supervisor_ar || "غير محدد";
-            if (!supervisor.trim()) return; // Skip empty supervisors
+            const supervisor = s.supervisor_ar || "غير محدد";
+            if (!supervisor.trim()) return;
             if (!supervisorData[supervisor]) {
               supervisorData[supervisor] = { count: 0, students: [] };
             }
@@ -258,12 +428,11 @@ export function ExportStatsDialog() {
             supervisorData[supervisor].students.push({
               name: s.full_name_ar,
               specialty: s.specialty_ar,
-              type: s.certificate_type,
-              date: s.defense_date,
+              type: dataSource === "phd_candidates" ? s.phd_type : s.certificate_type,
+              dateOrStatus: dataSource === "phd_candidates" ? (statusLabels[s.status as keyof typeof statusLabels] || s.status) : s.defense_date,
             });
           });
 
-          // Create summary sheet data
           const summaryData = Object.entries(supervisorData)
             .sort((a, b) => b[1].count - a[1].count)
             .map(([name, data], index) => ({
@@ -272,8 +441,8 @@ export function ExportStatsDialog() {
               "عدد الطلاب": data.count,
             }));
 
-          // Create detailed sheet data
           const detailedData: any[] = [];
+          const lastColLabel = dataSource === "phd_candidates" ? "الحالة" : "تاريخ المناقشة";
           Object.entries(supervisorData)
             .sort((a, b) => b[1].count - a[1].count)
             .forEach(([supervisor, data]) => {
@@ -282,24 +451,47 @@ export function ExportStatsDialog() {
                   "المشرف": supervisor,
                   "اسم الطالب": student.name,
                   "التخصص": student.specialty,
-                  "نوع الشهادة": student.type,
-                  "تاريخ المناقشة": student.date,
+                  [dataSource === "phd_candidates" ? "نوع الدكتوراه" : "نوع الشهادة"]: student.type,
+                  [lastColLabel]: student.dateOrStatus,
                 });
               });
             });
 
-          // Create workbook with two sheets
           const wb = XLSX.utils.book_new();
           const wsSummary = XLSX.utils.json_to_sheet(summaryData);
           const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
           XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص المشرفين");
           XLSX.utils.book_append_sheet(wb, wsDetailed, "التفاصيل");
-          XLSX.writeFile(wb, `إحصائيات_المشرفين_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
+          const sourceLabel = dataSource === "phd_candidates" ? "طلبة_الدكتوراه" : "المناقشين";
+          XLSX.writeFile(wb, `إحصائيات_المشرفين_${sourceLabel}_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
 
           toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(supervisorData).length)} مشرف بنجاح`);
           setOpen(false);
           setIsExporting(false);
           return;
+        }
+
+        case "status_distribution": {
+          // Only for phd_candidates
+          const [phdLmd, phdScience] = await Promise.all([
+            supabase.from("phd_lmd_students").select("status"),
+            supabase.from("phd_science_students").select("status"),
+          ]);
+
+          const allStudents = [...(phdLmd.data || []), ...(phdScience.data || [])];
+          const statusCounts: Record<string, number> = {};
+          
+          allStudents.forEach((s: any) => {
+            const status = s.status || "unknown";
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+          });
+
+          exportData = Object.entries(statusCounts).map(([status, count]) => ({
+            "الحالة": statusLabels[status as keyof typeof statusLabels] || status,
+            "العدد": count,
+          }));
+          fileName = `توزيع_حالات_طلبة_الدكتوراه_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          break;
         }
 
         case "jury_stats": {
@@ -528,24 +720,37 @@ export function ExportStatsDialog() {
         }
 
         case "custom_pivot": {
-          // Fetch all student data
-          const [phdLmd, phdScience, master] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("*"),
-            supabase.from("phd_science_certificates").select("*"),
-            supabase.from("master_certificates").select("*"),
-          ]);
-
-          const allStudents = [
-            ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-            ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-            ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
-          ];
+          let allStudents: any[] = [];
+          
+          if (dataSource === "phd_candidates") {
+            const [phdLmd, phdScience] = await Promise.all([
+              supabase.from("phd_lmd_students").select("*"),
+              supabase.from("phd_science_students").select("*"),
+            ]);
+            allStudents = [
+              ...(phdLmd.data || []).map(s => ({ ...s, phd_type: "دكتوراه ل م د" })),
+              ...(phdScience.data || []).map(s => ({ ...s, phd_type: "دكتوراه علوم" })),
+            ];
+          } else {
+            const [phdLmd, phdScience, master] = await Promise.all([
+              supabase.from("phd_lmd_certificates").select("*"),
+              supabase.from("phd_science_certificates").select("*"),
+              supabase.from("master_certificates").select("*"),
+            ]);
+            allStudents = [
+              ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+              ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
+            ];
+          }
 
           // Helper to get field value
           const getFieldValue = (student: any, field: PivotField): string => {
             switch (field) {
               case "certificate_type":
                 return student.certificate_type || "غير محدد";
+              case "phd_type":
+                return student.phd_type || "غير محدد";
               case "faculty_ar":
                 return student.faculty_ar || "غير محدد";
               case "gender":
@@ -556,6 +761,8 @@ export function ExportStatsDialog() {
                 return student.specialty_ar || "غير محدد";
               case "mention":
                 return student.mention === "very_honorable" ? "مشرف جدا" : student.mention === "honorable" ? "مشرف" : "غير محدد";
+              case "status":
+                return statusLabels[student.status as keyof typeof statusLabels] || student.status || "غير محدد";
               case "defense_year":
                 return student.defense_date ? new Date(student.defense_date).getFullYear().toString() : "غير محدد";
               case "first_registration_year":
@@ -681,15 +888,15 @@ export function ExportStatsDialog() {
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Export Type */}
-          <div className="space-y-2">
-            <Label>نوع التصدير</Label>
-            <Select value={exportType} onValueChange={(v) => setExportType(v as ExportType)}>
+          {/* Data Source Selection */}
+          <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
+            <Label className="text-base font-semibold">قاعدة البيانات</Label>
+            <Select value={dataSource} onValueChange={(v) => handleDataSourceChange(v as DataSource)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(exportTypeLabels).map(([key, label]) => (
+                {Object.entries(dataSourceLabels).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
                     {label}
                   </SelectItem>
@@ -698,20 +905,45 @@ export function ExportStatsDialog() {
             </Select>
           </div>
 
-          {/* Certificate Type Filter */}
+          {/* Export Type */}
+          <div className="space-y-2">
+            <Label>نوع التصدير</Label>
+            <Select value={exportType} onValueChange={(v) => setExportType(v as ExportType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {exportTypesForSource[dataSource].map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {exportTypeLabels[key]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Certificate/PhD Type Filter */}
           {exportType === "students" && (
             <div className="space-y-2">
-              <Label>نوع الشهادة</Label>
+              <Label>{dataSource === "phd_candidates" ? "نوع الدكتوراه" : "نوع الشهادة"}</Label>
               <Select value={certificateType} onValueChange={setCertificateType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(certificateTypeLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  {dataSource === "phd_candidates" ? (
+                    Object.entries(phdTypeLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    Object.entries(certificateTypeLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -756,8 +988,8 @@ export function ExportStatsDialog() {
             </div>
           )}
 
-          {/* Date Range Filter */}
-          {exportType === "students" && (
+          {/* Date Range Filter - Only for defended students */}
+          {exportType === "students" && dataSource === "defended_students" && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Checkbox
