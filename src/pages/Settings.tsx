@@ -44,6 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { BackupService, type BackupData } from "@/lib/database/backup-service";
 import { toast } from "sonner";
 
 interface BackupSummary {
@@ -265,87 +266,22 @@ export default function Settings() {
     return () => clearTimeout(timer);
   }, [autoBackup, backupFrequency, backupCount, autoBackupCount, backupHour]);
 
-  const getCurrentBackupData = async () => {
-    const [
-      phdLmd,
-      phdScience,
-      master,
-      templates,
-      templateFields,
-      settings,
-      userSettings,
-      dropdownOptions,
-      customFonts,
-      activityLog,
-      phdLmdStudents,
-      phdScienceStudents,
-      academicTitles,
-      customFields,
-      customFieldValues,
-      customFieldOptions,
-      printHistory,
-    ] = await Promise.all([
-      supabase.from("phd_lmd_certificates").select("*"),
-      supabase.from("phd_science_certificates").select("*"),
-      supabase.from("master_certificates").select("*"),
-      supabase.from("certificate_templates").select("*"),
-      supabase.from("certificate_template_fields").select("*"),
-      supabase.from("settings").select("*"),
-      supabase.from("user_settings").select("*"),
-      supabase.from("dropdown_options").select("*"),
-      supabase.from("custom_fonts").select("*"),
-      supabase.from("activity_log").select("*"),
-      supabase.from("phd_lmd_students").select("*"),
-      supabase.from("phd_science_students").select("*"),
-      supabase.from("academic_titles").select("*"),
-      supabase.from("custom_fields").select("*"),
-      supabase.from("custom_field_values").select("*"),
-      supabase.from("custom_field_options").select("*"),
-      supabase.from("print_history").select("*"),
-    ]);
-
-    return {
-      version: "2.0",
-      created_at: new Date().toISOString(),
-      data: {
-        phd_lmd_certificates: phdLmd.data || [],
-        phd_science_certificates: phdScience.data || [],
-        master_certificates: master.data || [],
-        certificate_templates: templates.data || [],
-        certificate_template_fields: templateFields.data || [],
-        settings: settings.data || [],
-        user_settings: userSettings.data || [],
-        dropdown_options: dropdownOptions.data || [],
-        custom_fonts: customFonts.data || [],
-        activity_log: activityLog.data || [],
-        phd_lmd_students: phdLmdStudents.data || [],
-        phd_science_students: phdScienceStudents.data || [],
-        academic_titles: academicTitles.data || [],
-        custom_fields: customFields.data || [],
-        custom_field_values: customFieldValues.data || [],
-        custom_field_options: customFieldOptions.data || [],
-        print_history: printHistory.data || [],
-      },
-    };
-  };
+  const getBackupSummary = (data: BackupData['data']): BackupSummary => ({
+    phdLmdCount: data.phd_lmd_certificates?.length || 0,
+    phdScienceCount: data.phd_science_certificates?.length || 0,
+    masterCount: data.master_certificates?.length || 0,
+    templatesCount: data.certificate_templates?.length || 0,
+    phdLmdStudentsCount: data.phd_lmd_students?.length || 0,
+    phdScienceStudentsCount: data.phd_science_students?.length || 0,
+  });
 
   const downloadBackup = async () => {
     setIsDownloading(true);
     try {
-      const backupData = await getCurrentBackupData();
+      const { data: backupData, error } = await BackupService.exportAll();
+      if (error || !backupData) throw error || new Error("فشل التصدير");
 
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `backup_${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
+      BackupService.downloadBackupFile(backupData);
       toast.success("تم تنزيل النسخة الاحتياطية بنجاح");
     } catch (error) {
       console.error("Error downloading backup:", error);
@@ -358,7 +294,9 @@ export default function Settings() {
   const saveBackupToStorage = async () => {
     setIsSavingNow(true);
     try {
-      const backupData = await getCurrentBackupData();
+      const { data: backupData, error: exportError } = await BackupService.exportAll();
+      if (exportError || !backupData) throw exportError || new Error("فشل التصدير");
+
       const now = new Date();
       const fileName = `backup_${now.toISOString().replace(/[:.]/g, '-')}.json`;
       const blob = new Blob([JSON.stringify(backupData, null, 2)], {
@@ -414,6 +352,22 @@ export default function Settings() {
     }
   };
 
+  const prepareRestoreConfirmation = async (tableData: BackupData['data'], createdAt?: string) => {
+    const backupSummary: BackupSummary = {
+      ...getBackupSummary(tableData),
+      createdAt,
+    };
+
+    const { data: currentExport } = await BackupService.exportAll();
+    const currentSummary: BackupSummary = currentExport
+      ? getBackupSummary(currentExport.data)
+      : { phdLmdCount: 0, phdScienceCount: 0, masterCount: 0, templatesCount: 0, phdLmdStudentsCount: 0, phdScienceStudentsCount: 0 };
+
+    setPendingBackupData({ data: tableData as unknown as Record<string, unknown[]>, summary: backupSummary });
+    setCurrentDataSummary(currentSummary);
+    return true;
+  };
+
   const restoreFromStorage = async (fileName: string) => {
     try {
       const { data, error } = await supabase.storage
@@ -430,30 +384,7 @@ export default function Settings() {
         return;
       }
 
-      const { data: tableData } = backupData;
-
-      const backupSummary: BackupSummary = {
-        phdLmdCount: tableData.phd_lmd_certificates?.length || 0,
-        phdScienceCount: tableData.phd_science_certificates?.length || 0,
-        masterCount: tableData.master_certificates?.length || 0,
-        templatesCount: tableData.certificate_templates?.length || 0,
-        phdLmdStudentsCount: tableData.phd_lmd_students?.length || 0,
-        phdScienceStudentsCount: tableData.phd_science_students?.length || 0,
-        createdAt: backupData.created_at,
-      };
-
-      const currentBackup = await getCurrentBackupData();
-      const currentSummary: BackupSummary = {
-        phdLmdCount: currentBackup.data.phd_lmd_certificates?.length || 0,
-        phdScienceCount: currentBackup.data.phd_science_certificates?.length || 0,
-        masterCount: currentBackup.data.master_certificates?.length || 0,
-        templatesCount: currentBackup.data.certificate_templates?.length || 0,
-        phdLmdStudentsCount: currentBackup.data.phd_lmd_students?.length || 0,
-        phdScienceStudentsCount: currentBackup.data.phd_science_students?.length || 0,
-      };
-
-      setPendingBackupData({ data: tableData, summary: backupSummary });
-      setCurrentDataSummary(currentSummary);
+      await prepareRestoreConfirmation(backupData.data, backupData.created_at);
       setShowBackupsList(false);
       setShowRestoreConfirm(true);
     } catch (error) {
@@ -478,114 +409,23 @@ export default function Settings() {
     fileInputRef.current?.click();
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const performRestore = async (tableData: Record<string, any[]>) => {
-    // Clear existing data and restore from backup
-    // Note: Order matters due to foreign key constraints
-
-    // First, delete dependent tables
-    await supabase.from("custom_field_values").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("custom_field_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("certificate_template_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("print_history").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    
-    // Then delete parent tables
-    await supabase.from("certificate_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("custom_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-
-    // Delete certificate tables
-    await supabase.from("phd_lmd_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("phd_science_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("master_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("phd_lmd_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("phd_science_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("dropdown_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("custom_fonts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("academic_titles").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("activity_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("user_settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    await supabase.from("settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-
-    // Restore in order - independent tables first
-    const restoreTable = async (tableName: string) => {
-      if (tableData[tableName]?.length > 0) {
-        await supabase.from(tableName as "phd_lmd_certificates").insert(tableData[tableName]);
-      }
-    };
-
-    // Independent tables
-    await Promise.all([
-      restoreTable("phd_lmd_certificates"),
-      restoreTable("phd_science_certificates"),
-      restoreTable("master_certificates"),
-      restoreTable("phd_lmd_students"),
-      restoreTable("phd_science_students"),
-      restoreTable("dropdown_options"),
-      restoreTable("custom_fonts"),
-      restoreTable("academic_titles"),
-      restoreTable("activity_log"),
-      restoreTable("settings"),
-      restoreTable("user_settings"),
-    ]);
-
-    // Parent tables that have dependents
-    await restoreTable("certificate_templates");
-    await restoreTable("custom_fields");
-
-    // Dependent tables
-    await Promise.all([
-      restoreTable("certificate_template_fields"),
-      restoreTable("custom_field_values"),
-      restoreTable("custom_field_options"),
-      restoreTable("print_history"),
-    ]);
-  };
-
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
-      const text = await file.text();
-      const backupData = JSON.parse(text);
-
-      if (!backupData.version || !backupData.data) {
+      const backupData = await BackupService.readBackupFile(file);
+      if (!backupData) {
         toast.error("ملف النسخة الاحتياطية غير صالح");
         return;
       }
 
-      const { data: tableData } = backupData;
-
-      // Get backup summary
-      const backupSummary: BackupSummary = {
-        phdLmdCount: tableData.phd_lmd_certificates?.length || 0,
-        phdScienceCount: tableData.phd_science_certificates?.length || 0,
-        masterCount: tableData.master_certificates?.length || 0,
-        templatesCount: tableData.certificate_templates?.length || 0,
-        phdLmdStudentsCount: tableData.phd_lmd_students?.length || 0,
-        phdScienceStudentsCount: tableData.phd_science_students?.length || 0,
-        createdAt: backupData.created_at,
-      };
-
-      // Get current data summary
-      const currentBackup = await getCurrentBackupData();
-      const currentSummary: BackupSummary = {
-        phdLmdCount: currentBackup.data.phd_lmd_certificates?.length || 0,
-        phdScienceCount: currentBackup.data.phd_science_certificates?.length || 0,
-        masterCount: currentBackup.data.master_certificates?.length || 0,
-        templatesCount: currentBackup.data.certificate_templates?.length || 0,
-        phdLmdStudentsCount: currentBackup.data.phd_lmd_students?.length || 0,
-        phdScienceStudentsCount: currentBackup.data.phd_science_students?.length || 0,
-      };
-
-      setPendingBackupData({ data: tableData, summary: backupSummary });
-      setCurrentDataSummary(currentSummary);
+      await prepareRestoreConfirmation(backupData.data, backupData.created_at);
       setShowRestoreConfirm(true);
     } catch (error) {
       console.error("Error reading backup file:", error);
       toast.error("حدث خطأ أثناء قراءة ملف النسخة الاحتياطية");
     } finally {
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -600,10 +440,19 @@ export default function Settings() {
 
     try {
       // Save current state before restoring
-      const currentBackup = await getCurrentBackupData();
-      setPreviousBackup(JSON.stringify(currentBackup));
+      const { data: currentExport } = await BackupService.exportAll();
+      if (currentExport) {
+        setPreviousBackup(JSON.stringify(currentExport));
+      }
 
-      await performRestore(pendingBackupData.data as Record<string, unknown[]>);
+      const backupToRestore: BackupData = {
+        version: "2.0",
+        created_at: new Date().toISOString(),
+        data: pendingBackupData.data as BackupData['data'],
+      };
+
+      const { error } = await BackupService.importAll(backupToRestore);
+      if (error) throw error;
 
       setCanUndo(true);
       setPendingBackupData(null);
@@ -631,10 +480,9 @@ export default function Settings() {
 
     setIsUndoing(true);
     try {
-      const backupData = JSON.parse(previousBackup);
-      const { data: tableData } = backupData;
-
-      await performRestore(tableData);
+      const backupData = JSON.parse(previousBackup) as BackupData;
+      const { error } = await BackupService.importAll(backupData);
+      if (error) throw error;
 
       setPreviousBackup(null);
       setCanUndo(false);
