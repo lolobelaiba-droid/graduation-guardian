@@ -56,23 +56,6 @@ interface BackupSummary {
   createdAt?: string;
 }
 
-// Paper sizes with dimensions in mm
-const PAPER_SIZES = [
-  { value: "a0", label: "A0", width: 841, height: 1189 },
-  { value: "a1", label: "A1", width: 594, height: 841 },
-  { value: "a2", label: "A2", width: 420, height: 594 },
-  { value: "a3", label: "A3", width: 297, height: 420 },
-  { value: "a4", label: "A4", width: 210, height: 297 },
-  { value: "a5", label: "A5", width: 148, height: 210 },
-  { value: "a6", label: "A6", width: 105, height: 148 },
-  { value: "b4", label: "B4", width: 250, height: 353 },
-  { value: "b5", label: "B5", width: 176, height: 250 },
-  { value: "letter", label: "Letter", width: 216, height: 279 },
-  { value: "legal", label: "Legal", width: 216, height: 356 },
-  { value: "tabloid", label: "Tabloid", width: 279, height: 432 },
-  { value: "executive", label: "Executive", width: 184, height: 267 },
-  { value: "custom", label: "حجم مخصص", width: 0, height: 0 },
-];
 
 export default function Settings() {
   // University Info State
@@ -111,16 +94,6 @@ export default function Settings() {
   const [universityLogo, setUniversityLogo] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
-  // Print Settings State
-  const [paperSize, setPaperSize] = useState("a4");
-  const [customWidth, setCustomWidth] = useState("210");
-  const [customHeight, setCustomHeight] = useState("297");
-  const [orientation, setOrientation] = useState("portrait");
-  const [marginTop, setMarginTop] = useState("20");
-  const [marginBottom, setMarginBottom] = useState("20");
-  const [marginRight, setMarginRight] = useState("15");
-  const [marginLeft, setMarginLeft] = useState("15");
-  const [isSaving, setIsSaving] = useState(false);
 
   // Load all settings from database
   useEffect(() => {
@@ -169,31 +142,6 @@ export default function Settings() {
               break;
             case "backup_hour":
               if (setting.value) setBackupHour(setting.value);
-              break;
-            // Print settings
-            case "print_paper_size":
-              if (setting.value) setPaperSize(setting.value);
-              break;
-            case "print_custom_width":
-              if (setting.value) setCustomWidth(setting.value);
-              break;
-            case "print_custom_height":
-              if (setting.value) setCustomHeight(setting.value);
-              break;
-            case "print_orientation":
-              if (setting.value) setOrientation(setting.value);
-              break;
-            case "print_margin_top":
-              if (setting.value) setMarginTop(setting.value);
-              break;
-            case "print_margin_bottom":
-              if (setting.value) setMarginBottom(setting.value);
-              break;
-            case "print_margin_right":
-              if (setting.value) setMarginRight(setting.value);
-              break;
-            case "print_margin_left":
-              if (setting.value) setMarginLeft(setting.value);
               break;
           }
         });
@@ -710,32 +658,6 @@ export default function Settings() {
     });
   };
 
-  const savePrintSettings = async () => {
-    setIsSaving(true);
-    try {
-      const settings = [
-        { key: "print_paper_size", value: paperSize },
-        { key: "print_custom_width", value: customWidth },
-        { key: "print_custom_height", value: customHeight },
-        { key: "print_orientation", value: orientation },
-        { key: "print_margin_top", value: marginTop },
-        { key: "print_margin_bottom", value: marginBottom },
-        { key: "print_margin_right", value: marginRight },
-        { key: "print_margin_left", value: marginLeft },
-      ];
-
-      for (const setting of settings) {
-        await saveSetting(setting.key, setting.value);
-      }
-
-      toast.success("تم حفظ إعدادات الطباعة بنجاح");
-    } catch (error) {
-      console.error("Error saving print settings:", error);
-      toast.error("حدث خطأ أثناء حفظ الإعدادات");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
