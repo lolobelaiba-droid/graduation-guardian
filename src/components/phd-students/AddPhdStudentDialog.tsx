@@ -34,7 +34,7 @@ import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import type { PhdStudentType } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
-import { calculateRegistrationDetails, getDefaultInscriptionStatus } from "@/lib/registration-calculation";
+import { calculateRegistrationDetails, getDefaultInscriptionStatus, getCurrentYearLabel } from "@/lib/registration-calculation";
 import { toWesternNumerals } from "@/lib/numerals";
 
 // Generate academic years from 2000/2001 to 2024/2025
@@ -127,13 +127,14 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
   const [calculatedCurrentYear, setCalculatedCurrentYear] = useState("");
   const [calculatedRegistrationCount, setCalculatedRegistrationCount] = useState<number | null>(null);
   
-  // Manual override states for editable fields
-  const [manualCurrentYear, setManualCurrentYear] = useState<string | null>(null);
-  const [manualRegistrationCount, setManualRegistrationCount] = useState<number | null>(null);
+  // Check if values have been manually overridden
+  const [isManuallyEdited, setIsManuallyEdited] = useState(false);
   
-  // Check if values match calculated values
-  const currentYearMismatch = manualCurrentYear !== null && manualCurrentYear !== calculatedCurrentYear;
-  const registrationCountMismatch = manualRegistrationCount !== null && manualRegistrationCount !== calculatedRegistrationCount;
+  // Get the displayed current year based on registration count
+  const getDisplayedCurrentYear = (count: number | null): string => {
+    if (!count) return "";
+    return getCurrentYearLabel(count, selectedType);
+  };
   
   const createPhdLmd = useCreatePhdLmdStudent();
   const createPhdScience = useCreatePhdScienceStudent();
@@ -194,8 +195,9 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
     },
   });
 
-  // Watch first_registration_year for auto-calculation
+  // Watch fields for auto-calculation
   const watchedFirstRegistrationYear = form.watch("first_registration_year");
+  const watchedRegistrationCount = form.watch("registration_count");
 
   // Auto-calculate current_year and registration_count when first_registration_year changes
   useEffect(() => {
@@ -209,11 +211,9 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
       setCalculatedCurrentYear(result.currentYear);
       setCalculatedRegistrationCount(result.registrationCount);
       
-      // Only auto-set values if not manually overridden
-      if (manualCurrentYear === null) {
+      // Only auto-set values if not manually edited
+      if (!isManuallyEdited) {
         form.setValue("current_year", result.currentYear);
-      }
-      if (manualRegistrationCount === null) {
         form.setValue("registration_count", result.registrationCount);
       }
       
@@ -223,25 +223,29 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
         setInscriptionStatusAr(newInscriptionStatus);
       }
     }
-  }, [watchedFirstRegistrationYear, currentAcademicYear, selectedType, form, inscriptionStatusAr, manualCurrentYear, manualRegistrationCount]);
+  }, [watchedFirstRegistrationYear, currentAcademicYear, selectedType, form, inscriptionStatusAr, isManuallyEdited]);
   
-  // Handle manual current year change
-  const handleCurrentYearChange = (value: string) => {
-    setManualCurrentYear(value);
-    form.setValue("current_year", value);
-  };
-  
-  // Handle manual registration count change
+  // Handle manual registration count change - sync current_year based on the new count
   const handleRegistrationCountChange = (value: string) => {
     const numValue = parseInt(value, 10);
     if (!isNaN(numValue) && numValue > 0) {
-      setManualRegistrationCount(numValue);
+      setIsManuallyEdited(true);
       form.setValue("registration_count", numValue);
+      // Auto-sync current_year based on the new registration count
+      const newCurrentYear = getDisplayedCurrentYear(numValue);
+      form.setValue("current_year", newCurrentYear);
     } else if (value === '') {
-      setManualRegistrationCount(null);
+      setIsManuallyEdited(false);
       form.setValue("registration_count", calculatedRegistrationCount);
+      form.setValue("current_year", calculatedCurrentYear);
     }
   };
+  
+  // Check if there's a mismatch between entered values and calculated values
+  const hasMismatch = isManuallyEdited && 
+    watchedRegistrationCount !== null && 
+    calculatedRegistrationCount !== null &&
+    watchedRegistrationCount !== calculatedRegistrationCount;
 
   // Reset form when certificate type changes
   useEffect(() => {
@@ -344,68 +348,69 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
               </FormItem>
               
               {/* Current Year and Registration Count - Editable with warning */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="current_year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        الطالب مسجل في
-                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                          <Calculator className="h-3 w-3 ml-1" />
-                          محسوب تلقائياً
-                        </Badge>
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          value={manualCurrentYear ?? (calculatedCurrentYear || field.value || '')} 
-                          onChange={(e) => handleCurrentYearChange(e.target.value)}
-                          className="text-foreground font-medium"
-                          placeholder="يُحسب من سنة أول تسجيل"
-                        />
-                      </FormControl>
-                      {currentYearMismatch && (
-                        <p className="text-xs text-destructive mt-1">
-                          ⚠️ القيمة المدخلة لا تتوافق مع الحساب التلقائي ({calculatedCurrentYear})
-                        </p>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="current_year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          الطالب مسجل في
+                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                            <Calculator className="h-3 w-3 ml-1" />
+                            يتوافق مع عدد التسجيلات
+                          </Badge>
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            value={field.value || ''} 
+                            readOnly
+                            className="bg-muted/50 text-foreground font-medium"
+                            placeholder="يُحسب من عدد التسجيلات"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="registration_count"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          عدد التسجيلات في الدكتوراه
+                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                            <Calculator className="h-3 w-3 ml-1" />
+                            محسوب تلقائياً
+                          </Badge>
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number"
+                            min="1"
+                            value={field.value ?? ''}
+                            onChange={(e) => handleRegistrationCountChange(e.target.value)}
+                            className="text-foreground font-medium"
+                            placeholder="يُحسب من سنة أول تسجيل"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
-                <FormField
-                  control={form.control}
-                  name="registration_count"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        عدد التسجيلات في الدكتوراه
-                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                          <Calculator className="h-3 w-3 ml-1" />
-                          محسوب تلقائياً
-                        </Badge>
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          min="1"
-                          value={manualRegistrationCount ?? calculatedRegistrationCount ?? field.value ?? ''}
-                          onChange={(e) => handleRegistrationCountChange(e.target.value)}
-                          className="text-foreground font-medium"
-                          placeholder="يُحسب من سنة أول تسجيل"
-                        />
-                      </FormControl>
-                      {registrationCountMismatch && (
-                        <p className="text-xs text-destructive mt-1">
-                          ⚠️ القيمة المدخلة لا تتوافق مع الحساب التلقائي ({calculatedRegistrationCount ? toWesternNumerals(calculatedRegistrationCount) : '-'})
-                        </p>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Mismatch warning - shown below both fields */}
+                {hasMismatch && calculatedRegistrationCount && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                    <p className="text-sm text-destructive font-medium">
+                      ⚠️ حسب سنة أول تسجيل، يجب أن يكون عدد التسجيلات <strong>{toWesternNumerals(calculatedRegistrationCount)}</strong> وبالتالي يكون الطالب مسجل في <strong>{calculatedCurrentYear}</strong>
+                    </p>
+                  </div>
+                )}
               </div>
               
               {/* Info note about calculation */}
