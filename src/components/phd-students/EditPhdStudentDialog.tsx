@@ -70,6 +70,7 @@ const baseSchema = z.object({
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
   thesis_title_ar: z.string().optional().nullable(),
   thesis_title_fr: z.string().optional().nullable(),
+  thesis_language: z.string().optional().nullable(),
   research_lab_ar: z.string().optional().nullable(),
   status: z.string(),
   notes: z.string().optional().nullable(),
@@ -156,6 +157,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
       supervisor_ar: '',
       thesis_title_ar: '',
       thesis_title_fr: '',
+      thesis_language: 'arabic',
       research_lab_ar: '',
       field_ar: '',
       field_fr: '',
@@ -196,6 +198,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
         supervisor_ar: student.supervisor_ar,
         thesis_title_ar: student.thesis_title_ar || '',
         thesis_title_fr: student.thesis_title_fr || '',
+        thesis_language: (student as any).thesis_language || 'arabic',
         research_lab_ar: student.research_lab_ar || '',
         field_ar: (student as PhdLmdStudent).field_ar || '',
         field_fr: (student as PhdLmdStudent).field_fr || '',
@@ -756,6 +759,29 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
                   <FormControl>
                     <Textarea {...field} value={field.value || ''} rows={2} dir="auto" />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="thesis_language"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>لغة الأطروحة</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || 'arabic'}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر لغة الأطروحة" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="arabic">عربي</SelectItem>
+                      <SelectItem value="french">فرنسي</SelectItem>
+                      <SelectItem value="english">انجليزي</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

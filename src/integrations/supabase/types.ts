@@ -604,6 +604,7 @@ export type Database = {
           specialty_fr: string | null
           status: string | null
           supervisor_ar: string
+          thesis_language: string | null
           thesis_title_ar: string | null
           thesis_title_fr: string | null
           university_ar: string | null
@@ -635,6 +636,7 @@ export type Database = {
           specialty_fr?: string | null
           status?: string | null
           supervisor_ar: string
+          thesis_language?: string | null
           thesis_title_ar?: string | null
           thesis_title_fr?: string | null
           university_ar?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           specialty_fr?: string | null
           status?: string | null
           supervisor_ar?: string
+          thesis_language?: string | null
           thesis_title_ar?: string | null
           thesis_title_fr?: string | null
           university_ar?: string | null
@@ -803,6 +806,7 @@ export type Database = {
           specialty_fr: string | null
           status: string | null
           supervisor_ar: string
+          thesis_language: string | null
           thesis_title_ar: string | null
           thesis_title_fr: string | null
           university_ar: string | null
@@ -832,6 +836,7 @@ export type Database = {
           specialty_fr?: string | null
           status?: string | null
           supervisor_ar: string
+          thesis_language?: string | null
           thesis_title_ar?: string | null
           thesis_title_fr?: string | null
           university_ar?: string | null
@@ -861,6 +866,7 @@ export type Database = {
           specialty_fr?: string | null
           status?: string | null
           supervisor_ar?: string
+          thesis_language?: string | null
           thesis_title_ar?: string | null
           thesis_title_fr?: string | null
           university_ar?: string | null

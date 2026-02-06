@@ -25,6 +25,7 @@ export interface BasePhdStudent {
   supervisor_ar: string;
   thesis_title_ar: string | null;
   thesis_title_fr: string | null;
+  thesis_language: string | null;
   research_lab_ar: string | null;
   status: string;
   notes: string | null;
