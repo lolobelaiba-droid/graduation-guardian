@@ -7,6 +7,24 @@ import { X, Settings } from "lucide-react";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
 
+// كشف اتجاه النص تلقائياً بناءً على أول حرف ذي معنى
+const detectDirection = (text: string): "rtl" | "ltr" => {
+  const trimmed = text.trim();
+  if (!trimmed) return "rtl"; // default
+  // Check first meaningful character
+  for (const char of trimmed) {
+    // Arabic Unicode range
+    if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char)) {
+      return "rtl";
+    }
+    // Latin characters
+    if (/[A-Za-zÀ-ÿ]/.test(char)) {
+      return "ltr";
+    }
+  }
+  return "rtl";
+};
+
 interface AcademicTitleInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value: string;
   onChange: (value: string) => void;
@@ -237,7 +255,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
         >
           {/* الإدخال المؤكد */}
           {confirmedEntry && (
-            <div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border">
+            <div className={cn("flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border", detectDirection(formatWithTitle(confirmedEntry.title, confirmedEntry.name)) === "ltr" ? "flex-row-reverse" : "")}>
               {confirmedEntry.title && (
                 <span className="bg-blue-600 text-white px-2 py-1 text-sm font-medium">
                   {confirmedEntry.title}
@@ -292,7 +310,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
               onKeyDown={handleKeyDown}
               onFocus={() => setShowSuggestions(true)}
               placeholder={selectedTitle ? "اكتب الاسم واللقب ثم Enter..." : placeholder}
-              dir={dir}
+              dir={detectDirection(selectedTitle || inputValue)}
               className="flex-1 border-0 p-0 h-7 focus-visible:ring-0 focus-visible:ring-offset-0"
               {...props}
             />
@@ -317,7 +335,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
                 onChange("");
               }}
               placeholder="اضغط للتعديل..."
-              dir={dir}
+              dir={confirmedEntry ? detectDirection(formatWithTitle(confirmedEntry.title, confirmedEntry.name)) : "rtl"}
               className="flex-1 border-0 p-0 h-7 focus-visible:ring-0 focus-visible:ring-offset-0 opacity-50"
               {...props}
             />

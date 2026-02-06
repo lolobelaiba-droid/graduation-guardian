@@ -7,6 +7,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
 
+// كشف اتجاه النص تلقائياً بناءً على أول حرف ذي معنى
+const detectDirection = (text: string): "rtl" | "ltr" => {
+  const trimmed = text.trim();
+  if (!trimmed) return "rtl"; // default
+  for (const char of trimmed) {
+    if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char)) {
+      return "rtl";
+    }
+    if (/[A-Za-zÀ-ÿ]/.test(char)) {
+      return "ltr";
+    }
+  }
+  return "rtl";
+};
+
 interface JuryMembersInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -35,9 +50,10 @@ interface MemberBadgeProps {
 
 const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove, extractTitleAndName }) => {
   const { title, name } = extractTitleAndName(member);
+  const memberDir = detectDirection(member);
   
   return (
-    <div className="flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border">
+    <div className={cn("flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border", memberDir === "ltr" ? "flex-row-reverse" : "")}>
       {title && (
         <span className="bg-blue-600 text-white px-2 py-1 text-sm font-medium">
           {title}
@@ -290,7 +306,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
                   ? placeholder 
                   : "أضف عضو آخر..."
             }
-            dir={dir}
+            dir={detectDirection(selectedTitle || inputValue)}
             className="flex-1 min-w-[150px] border-0 p-0 h-7 focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </div>
