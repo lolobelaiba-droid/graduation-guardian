@@ -221,16 +221,16 @@ export function CustomFieldsManager() {
   return (
     <div className="space-y-6">
       <div className="bg-card rounded-2xl shadow-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              إدارة الحقول المخصصة
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              إضافة حقول جديدة لقواعد البيانات دون المساس بالحقول الأساسية
-            </p>
-          </div>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                إدارة حقول قاعدة البيانات
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                إضافة حقول مخصصة لقواعد البيانات دون المساس بالحقول الأساسية
+              </p>
+            </div>
           <Button
             className="gap-2"
             onClick={() => {
@@ -637,11 +637,22 @@ export function CustomFieldsManager() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
-              هل أنت متأكد من حذف الحقل "{selectedField?.field_name_ar}"؟
-              <br />
-              سيتم حذف جميع البيانات المرتبطة بهذا الحقل نهائياً.
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              تأكيد حذف الحقل
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p className="font-medium text-foreground">
+                هل أنت متأكد من حذف الحقل "{selectedField?.field_name_ar}"؟
+              </p>
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm">
+                <p className="font-semibold text-destructive mb-1">⚠️ تحذير:</p>
+                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                  <li>سيتم حذف الحقل نهائياً ولا يمكن التراجع عن هذا الإجراء</li>
+                  <li>سيتم حذف جميع البيانات المخزنة في هذا الحقل لجميع السجلات</li>
+                  <li>لن يظهر هذا الحقل في نماذج الإدخال أو التصدير بعد الحذف</li>
+                </ul>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
@@ -653,7 +664,10 @@ export function CustomFieldsManager() {
               {deleteField.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                "حذف"
+                <>
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  حذف نهائي
+                </>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

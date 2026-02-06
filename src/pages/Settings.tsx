@@ -636,10 +636,6 @@ export default function Settings() {
             <Building2 className="h-4 w-4" />
             معلومات الجامعة
           </TabsTrigger>
-          <TabsTrigger value="customfields" className="gap-2 py-2">
-            <Settings2 className="h-4 w-4" />
-            الحقول المخصصة
-          </TabsTrigger>
           <TabsTrigger value="dateformat" className="gap-2 py-2">
             <Calendar className="h-4 w-4" />
             تنسيق التواريخ
@@ -652,12 +648,11 @@ export default function Settings() {
             <Printer className="h-4 w-4" />
             إعدادات الطباعة
           </TabsTrigger>
+          <TabsTrigger value="customfields" className="gap-2 py-2">
+            <Settings2 className="h-4 w-4" />
+            إدارة حقول قاعدة البيانات
+          </TabsTrigger>
         </TabsList>
-
-        {/* Custom Fields Tab */}
-        <TabsContent value="customfields">
-          <CustomFieldsManager />
-        </TabsContent>
 
         {/* Date Format Tab */}
         <TabsContent value="dateformat">
@@ -914,6 +909,11 @@ export default function Settings() {
         {/* Print Settings Tab */}
         <TabsContent value="print">
           <TemplatePrintSettings />
+        </TabsContent>
+
+        {/* Custom Fields Tab - Last after Print Settings */}
+        <TabsContent value="customfields">
+          <CustomFieldsManager />
         </TabsContent>
 
       </Tabs>
