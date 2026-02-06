@@ -72,7 +72,6 @@ const certificateSchema = z.object({
   university_ar: z.string().optional().nullable(),
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
-  faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -83,16 +82,13 @@ const certificateSchema = z.object({
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
   research_lab_ar: z.string().optional().nullable(),
   
-  // Fields to be filled for certificate
+  // Fields to be filled for certificate (single fields with auto-direction)
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
-  thesis_title_fr: z.string().optional().nullable(),
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
   jury_president_ar: z.string().min(1, "رئيس اللجنة مطلوب"),
-  jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
-  jury_members_fr: z.string().optional().nullable(),
   
   // PhD LMD specific
   field_ar: z.string().optional().nullable(),
@@ -176,7 +172,6 @@ export function CreateCertificateFromPhdDialog({
       university_ar: 'جامعة أم البواقي',
       university_fr: "Université D'oum El Bouaghi",
       faculty_ar: '',
-      faculty_fr: '',
       branch_ar: '',
       branch_fr: '',
       specialty_ar: '',
@@ -185,13 +180,10 @@ export function CreateCertificateFromPhdDialog({
       defense_date: '',
       certificate_date: new Date().toISOString().split('T')[0],
       thesis_title_ar: '',
-      thesis_title_fr: '',
       field_ar: '',
       field_fr: '',
       jury_president_ar: '',
-      jury_president_fr: '',
       jury_members_ar: '',
-      jury_members_fr: '',
       first_registration_year: '',
       professional_email: '',
       phone_number: '',
@@ -224,7 +216,6 @@ export function CreateCertificateFromPhdDialog({
       university_ar: pendingStudent.university_ar || 'جامعة أم البواقي',
       university_fr: pendingStudent.university_fr || "Université D'oum El Bouaghi",
       faculty_ar: pendingStudent.faculty_ar,
-      faculty_fr: pendingStudent.faculty_fr || '',
       branch_ar: pendingStudent.branch_ar,
       branch_fr: pendingStudent.branch_fr || '',
       specialty_ar: pendingStudent.specialty_ar,
@@ -235,16 +226,13 @@ export function CreateCertificateFromPhdDialog({
       supervisor_ar: pendingStudent.supervisor_ar,
       research_lab_ar: pendingStudent.research_lab_ar || '',
       thesis_title_ar: pendingStudent.thesis_title_ar || '',
-      thesis_title_fr: pendingStudent.thesis_title_fr || '',
       field_ar: (pendingStudent as PhdLmdStudent).field_ar || '',
       field_fr: (pendingStudent as PhdLmdStudent).field_fr || '',
       mention: 'honorable' as MentionType,
       defense_date: '',
       certificate_date: new Date().toISOString().split('T')[0],
       jury_president_ar: '',
-      jury_president_fr: '',
       jury_members_ar: '',
-      jury_members_fr: '',
     });
     
     setShowForm(true);
@@ -256,10 +244,19 @@ export function CreateCertificateFromPhdDialog({
 
   const onSubmit = async (data: z.infer<typeof certificateSchema>) => {
     try {
+      // Prepare certificate data with required French fields (empty if not provided)
+      const certificateData = {
+        ...data,
+        faculty_fr: '', // Set empty as field is simplified to Arabic only
+        thesis_title_fr: '', // Single field with auto-direction
+        jury_president_fr: '', // Single field with auto-direction
+        jury_members_fr: '', // Single field with auto-direction
+      };
+
       // Create certificate
       if (selectedType === 'phd_lmd') {
         await createPhdLmd.mutateAsync({
-          ...data,
+          ...certificateData,
           field_ar: data.field_ar || '',
           research_lab_ar: data.research_lab_ar || '',
         } as Parameters<typeof createPhdLmd.mutateAsync>[0]);
@@ -269,7 +266,7 @@ export function CreateCertificateFromPhdDialog({
           await deletePhdLmd.mutateAsync(selectedStudent.id);
         }
       } else if (selectedType === 'phd_science') {
-        await createPhdScience.mutateAsync(data as Parameters<typeof createPhdScience.mutateAsync>[0]);
+        await createPhdScience.mutateAsync(certificateData as Parameters<typeof createPhdScience.mutateAsync>[0]);
         
         // Delete student from PhD database after successful certificate creation
         if (selectedStudent) {
@@ -552,135 +549,69 @@ export function CreateCertificateFromPhdDialog({
                 />
               </div>
 
-              {/* Thesis Title */}
-              <SectionHeader title="عنوان الأطروحة / Titre de la thèse" />
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name="thesis_title_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>عنوان الأطروحة *</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          value={field.value || ''}
-                          rows={2} 
-                          placeholder="عنوان الأطروحة"
-                          dir="auto"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="thesis_title_fr"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Titre de la thèse</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          value={field.value || ''}
-                          rows={2} 
-                          placeholder="Titre de la thèse en français"
-                          dir="ltr"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* Thesis Title - Single field with auto direction */}
+              <SectionHeader title="عنوان الأطروحة" />
+              <FormField
+                control={form.control}
+                name="thesis_title_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>عنوان الأطروحة * (يمكن الكتابة بالعربية أو الفرنسية)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field} 
+                        value={field.value || ''}
+                        rows={3} 
+                        placeholder="عنوان الأطروحة"
+                        dir="auto"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {/* Jury */}
-              <SectionHeader title="لجنة المناقشة / Jury" />
+              {/* Jury - Single fields with auto direction */}
+              <SectionHeader title="لجنة المناقشة" />
               
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="jury_president_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>رئيس اللجنة *</FormLabel>
-                      <FormControl>
-                        <AcademicTitleInput
-                          {...field}
-                          suggestions={suggestions?.jury_president_ar || []}
-                          dir="auto"
-                          placeholder="اختر الرتبة ثم اكتب الاسم"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="jury_president_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رئيس اللجنة *</FormLabel>
+                    <FormControl>
+                      <AcademicTitleInput
+                        {...field}
+                        suggestions={suggestions?.jury_president_ar || []}
+                        dir="auto"
+                        placeholder="اختر الرتبة ثم اكتب الاسم"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="jury_president_fr"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Président du jury</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          value={field.value || ''} 
-                          dir="ltr" 
-                          placeholder="Président du jury"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="jury_members_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>أعضاء اللجنة *</FormLabel>
-                      <FormControl>
-                        <JuryMembersInput
-                          value={field.value || ''}
-                          onChange={field.onChange}
-                          suggestions={suggestions?.jury_members_ar || []}
-                          dir="auto"
-                          placeholder="أضف أعضاء اللجنة"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="jury_members_fr"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Membres du jury</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          value={field.value || ''} 
-                          rows={2}
-                          dir="ltr" 
-                          placeholder="Membres du jury (séparés par des virgules)"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+              <FormField
+                control={form.control}
+                name="jury_members_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>أعضاء اللجنة *</FormLabel>
+                    <FormControl>
+                      <JuryMembersInput
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        suggestions={suggestions?.jury_members_ar || []}
+                        dir="auto"
+                        placeholder="أضف أعضاء اللجنة"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               {/* Personal Info */}
               <SectionHeader title="المعلومات الشخصية / Informations personnelles" />
               
@@ -868,40 +799,24 @@ export function CreateCertificateFromPhdDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="faculty_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الكلية *</FormLabel>
-                      <FormControl>
-                        <DropdownWithAdd
-                          value={field.value}
-                          onChange={field.onChange}
-                          optionType="faculty"
-                          placeholder="اختر أو أدخل الكلية"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="faculty_fr"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Faculté</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom de la faculté" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="faculty_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الكلية *</FormLabel>
+                    <FormControl>
+                      <DropdownWithAdd
+                        value={field.value}
+                        onChange={field.onChange}
+                        optionType="faculty"
+                        placeholder="اختر أو أدخل الكلية"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Field (PhD LMD only) */}
               {showFieldField && (
