@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Loader2 } from "lucide-react";
-import { useFacultyDistribution } from "@/hooks/useDashboardStats";
+import { useFacultyDistribution, useFacultyDistributionCandidates } from "@/hooks/useDashboardStats";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toWesternNumerals } from "@/lib/numerals";
 
@@ -17,14 +17,26 @@ const COLORS = [
   "hsl(15, 85%, 55%)",
 ];
 
-export function FacultyChart() {
-  const { data: distribution = [], isLoading } = useFacultyDistribution();
+interface FacultyChartProps {
+  dataSource?: "candidates" | "defended";
+}
+
+export function FacultyChart({ dataSource = "defended" }: FacultyChartProps) {
+  const candidatesQuery = useFacultyDistributionCandidates();
+  const defendedQuery = useFacultyDistribution();
+  
+  const { data: distribution = [], isLoading } = dataSource === "candidates" 
+    ? candidatesQuery 
+    : defendedQuery;
 
   const totalStudents = distribution.reduce((sum, item) => sum + item.value, 0);
+  const title = dataSource === "candidates" 
+    ? "توزيع طلبة الدكتوراه حسب الكلية" 
+    : "توزيع المناقشين حسب الكلية";
 
   return (
     <div className="bg-card rounded-2xl shadow-card p-6 h-full flex flex-col">
-      <h3 className="text-lg font-semibold mb-4">توزيع الطلاب حسب الكلية</h3>
+      <h3 className="text-lg font-semibold mb-4">{title}</h3>
       
       {isLoading ? (
         <div className="flex items-center justify-center flex-1">

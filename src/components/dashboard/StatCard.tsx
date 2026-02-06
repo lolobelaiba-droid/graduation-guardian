@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import { toWesternNumerals } from "@/lib/numerals";
 
-interface StatCardProps {
+export interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
@@ -14,6 +14,7 @@ interface StatCardProps {
   };
   variant?: "blue" | "green" | "orange" | "purple";
   className?: string;
+  compact?: boolean;
 }
 
 const variantStyles = {
@@ -31,7 +32,33 @@ export function StatCard({
   trend,
   variant = "blue",
   className,
+  compact = false,
 }: StatCardProps) {
+  if (compact) {
+    return (
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-xl p-4 text-white shadow-card transition-transform duration-300 hover:scale-[1.02]",
+          variantStyles[variant],
+          className
+        )}
+      >
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm flex-shrink-0">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium opacity-90 truncate">{title}</p>
+            <p className="text-2xl font-bold">{typeof value === 'number' ? toWesternNumerals(value) : value}</p>
+            {subtitle && (
+              <p className="text-xs opacity-75">{subtitle}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

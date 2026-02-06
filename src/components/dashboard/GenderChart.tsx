@@ -1,20 +1,32 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Loader2 } from "lucide-react";
-import { useGenderDistribution } from "@/hooks/useDashboardStats";
+import { useGenderDistribution, useGenderDistributionCandidates } from "@/hooks/useDashboardStats";
 
 const COLORS = [
   "hsl(217, 91%, 60%)",
   "hsl(340, 82%, 52%)",
 ];
 
-export function GenderChart() {
-  const { data: distribution = [], isLoading } = useGenderDistribution();
+interface GenderChartProps {
+  dataSource?: "candidates" | "defended";
+}
+
+export function GenderChart({ dataSource = "defended" }: GenderChartProps) {
+  const candidatesQuery = useGenderDistributionCandidates();
+  const defendedQuery = useGenderDistribution();
+  
+  const { data: distribution = [], isLoading } = dataSource === "candidates" 
+    ? candidatesQuery 
+    : defendedQuery;
 
   const totalCount = distribution.reduce((sum, item) => sum + item.value, 0);
+  const title = dataSource === "candidates" 
+    ? "توزيع طلبة الدكتوراه حسب الجنس" 
+    : "توزيع المناقشين حسب الجنس";
 
   return (
     <div className="bg-card rounded-2xl shadow-card p-6">
-      <h3 className="text-lg font-semibold mb-6">توزيع الطلاب حسب الجنس</h3>
+      <h3 className="text-lg font-semibold mb-6">{title}</h3>
       
       {isLoading ? (
         <div className="flex items-center justify-center h-[250px]">

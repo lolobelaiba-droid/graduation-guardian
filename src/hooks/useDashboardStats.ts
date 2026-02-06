@@ -8,44 +8,104 @@ export function useDashboardStats() {
     queryFn: async () => {
       if (isElectron()) {
         const db = getDbClient()!;
-        const [phdLmd, phdScience, master] = await Promise.all([
+        // Fetch from both candidates and certificates tables
+        const [phdLmdStudents, phdScienceStudents, phdLmdCerts, phdScienceCerts] = await Promise.all([
+          db.getAll('phd_lmd_students'),
+          db.getAll('phd_science_students'),
           db.getAll('phd_lmd_certificates'),
           db.getAll('phd_science_certificates'),
-          db.getAll('master_certificates'),
         ]);
 
-        const phdLmdCount = phdLmd.success ? (phdLmd.data?.length || 0) : 0;
-        const phdScienceCount = phdScience.success ? (phdScience.data?.length || 0) : 0;
-        const masterCount = master.success ? (master.data?.length || 0) : 0;
+        const phdLmdStudentsCount = phdLmdStudents.success ? (phdLmdStudents.data?.length || 0) : 0;
+        const phdScienceStudentsCount = phdScienceStudents.success ? (phdScienceStudents.data?.length || 0) : 0;
+        const phdLmdCertsCount = phdLmdCerts.success ? (phdLmdCerts.data?.length || 0) : 0;
+        const phdScienceCertsCount = phdScienceCerts.success ? (phdScienceCerts.data?.length || 0) : 0;
 
         return {
-          totalPhdStudents: phdLmdCount + phdScienceCount,
-          masterCount,
-          phdLmdCount,
-          phdScienceCount,
+          // PhD Candidates (pre-defense)
+          totalPhdCandidates: phdLmdStudentsCount + phdScienceStudentsCount,
+          phdLmdCandidatesCount: phdLmdStudentsCount,
+          phdScienceCandidatesCount: phdScienceStudentsCount,
+          // Defended Students (post-defense with certificates)
+          totalDefendedStudents: phdLmdCertsCount + phdScienceCertsCount,
+          phdLmdDefendedCount: phdLmdCertsCount,
+          phdScienceDefendedCount: phdScienceCertsCount,
         };
       }
 
       // Web mode - use Supabase
-      const [phdLmd, phdScience, master] = await Promise.all([
+      const [phdLmdStudents, phdScienceStudents, phdLmdCerts, phdScienceCerts] = await Promise.all([
+        supabase.from("phd_lmd_students").select("*", { count: "exact", head: true }),
+        supabase.from("phd_science_students").select("*", { count: "exact", head: true }),
         supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
         supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
-        supabase.from("master_certificates").select("*", { count: "exact", head: true }),
       ]);
 
-      const totalPhdStudents = (phdLmd.count || 0) + (phdScience.count || 0);
-      const masterCount = master.count || 0;
-
       return {
-        totalPhdStudents,
-        masterCount,
-        phdLmdCount: phdLmd.count || 0,
-        phdScienceCount: phdScience.count || 0,
+        // PhD Candidates (pre-defense)
+        totalPhdCandidates: (phdLmdStudents.count || 0) + (phdScienceStudents.count || 0),
+        phdLmdCandidatesCount: phdLmdStudents.count || 0,
+        phdScienceCandidatesCount: phdScienceStudents.count || 0,
+        // Defended Students (post-defense with certificates)
+        totalDefendedStudents: (phdLmdCerts.count || 0) + (phdScienceCerts.count || 0),
+        phdLmdDefendedCount: phdLmdCerts.count || 0,
+        phdScienceDefendedCount: phdScienceCerts.count || 0,
       };
     },
   });
 }
 
+// Faculty distribution for PhD candidates
+export function useFacultyDistributionCandidates() {
+  return useQuery({
+    queryKey: ["faculty_distribution_candidates"],
+    queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const [phdLmd, phdScience] = await Promise.all([
+          db.getAll('phd_lmd_students'),
+          db.getAll('phd_science_students'),
+        ]);
+
+        const allFaculties = [
+          ...((phdLmd.data as Array<{ faculty_ar: string }>) || []).map(s => s.faculty_ar),
+          ...((phdScience.data as Array<{ faculty_ar: string }>) || []).map(s => s.faculty_ar),
+        ];
+
+        const counts: Record<string, number> = {};
+        allFaculties.forEach(faculty => {
+          if (faculty) {
+            counts[faculty] = (counts[faculty] || 0) + 1;
+          }
+        });
+
+        return Object.entries(counts).map(([name, value]) => ({ name, value }));
+      }
+
+      // Web mode - use Supabase
+      const [phdLmd, phdScience] = await Promise.all([
+        supabase.from("phd_lmd_students").select("faculty_ar"),
+        supabase.from("phd_science_students").select("faculty_ar"),
+      ]);
+
+      const allFaculties = [
+        ...(phdLmd.data || []).map(s => s.faculty_ar),
+        ...(phdScience.data || []).map(s => s.faculty_ar),
+      ];
+
+      const counts: Record<string, number> = {};
+      allFaculties.forEach(faculty => {
+        if (faculty) {
+          counts[faculty] = (counts[faculty] || 0) + 1;
+        }
+      });
+
+      return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    },
+  });
+}
+
+// Faculty distribution for defended students (certificates)
 export function useFacultyDistribution() {
   return useQuery({
     queryKey: ["faculty_distribution"],
@@ -95,6 +155,55 @@ export function useFacultyDistribution() {
   });
 }
 
+// Gender distribution for PhD candidates
+export function useGenderDistributionCandidates() {
+  return useQuery({
+    queryKey: ["gender_distribution_candidates"],
+    queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const [phdLmd, phdScience] = await Promise.all([
+          db.getAll('phd_lmd_students'),
+          db.getAll('phd_science_students'),
+        ]);
+
+        const allGenders = [
+          ...((phdLmd.data as Array<{ gender: string }>) || []).map(s => s.gender),
+          ...((phdScience.data as Array<{ gender: string }>) || []).map(s => s.gender),
+        ];
+
+        const maleCount = allGenders.filter(g => g === 'male').length;
+        const femaleCount = allGenders.filter(g => g === 'female').length;
+
+        return [
+          { name: 'ذكور', value: maleCount },
+          { name: 'إناث', value: femaleCount },
+        ];
+      }
+
+      // Web mode - use Supabase
+      const [phdLmd, phdScience] = await Promise.all([
+        supabase.from("phd_lmd_students").select("gender"),
+        supabase.from("phd_science_students").select("gender"),
+      ]);
+
+      const allGenders = [
+        ...(phdLmd.data || []).map(s => s.gender),
+        ...(phdScience.data || []).map(s => s.gender),
+      ];
+
+      const maleCount = allGenders.filter(g => g === 'male').length;
+      const femaleCount = allGenders.filter(g => g === 'female').length;
+
+      return [
+        { name: 'ذكور', value: maleCount },
+        { name: 'إناث', value: femaleCount },
+      ];
+    },
+  });
+}
+
+// Gender distribution for defended students
 export function useGenderDistribution() {
   return useQuery({
     queryKey: ["gender_distribution"],
@@ -142,6 +251,39 @@ export function useGenderDistribution() {
   });
 }
 
+// PhD type distribution for candidates
+export function usePhdTypeDistributionCandidates() {
+  return useQuery({
+    queryKey: ["phd_type_distribution_candidates"],
+    queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const [phdLmd, phdScience] = await Promise.all([
+          db.getAll('phd_lmd_students'),
+          db.getAll('phd_science_students'),
+        ]);
+
+        return [
+          { name: 'دكتوراه ل م د', value: phdLmd.data?.length || 0 },
+          { name: 'دكتوراه علوم', value: phdScience.data?.length || 0 },
+        ];
+      }
+
+      // Web mode - use Supabase
+      const [phdLmd, phdScience] = await Promise.all([
+        supabase.from("phd_lmd_students").select("*", { count: "exact", head: true }),
+        supabase.from("phd_science_students").select("*", { count: "exact", head: true }),
+      ]);
+
+      return [
+        { name: 'دكتوراه ل م د', value: phdLmd.count || 0 },
+        { name: 'دكتوراه علوم', value: phdScience.count || 0 },
+      ];
+    },
+  });
+}
+
+// Certificate type distribution for defended students
 export function useCertificateTypeDistribution() {
   return useQuery({
     queryKey: ["certificate_type_distribution"],

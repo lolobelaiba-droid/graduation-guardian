@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Loader2 } from "lucide-react";
-import { useCertificateTypeDistribution } from "@/hooks/useDashboardStats";
+import { useCertificateTypeDistribution, usePhdTypeDistributionCandidates } from "@/hooks/useDashboardStats";
 
 const COLORS = [
   "hsl(217, 91%, 60%)",
@@ -8,14 +8,24 @@ const COLORS = [
   "hsl(160, 84%, 39%)",
 ];
 
-export function CertificateTypeChart() {
-  const { data: distribution = [], isLoading } = useCertificateTypeDistribution();
+interface CertificateTypeChartProps {
+  dataSource?: "candidates" | "defended";
+}
+
+export function CertificateTypeChart({ dataSource = "defended" }: CertificateTypeChartProps) {
+  const candidatesQuery = usePhdTypeDistributionCandidates();
+  const defendedQuery = useCertificateTypeDistribution();
+  
+  const { data: distribution = [], isLoading } = dataSource === "candidates" 
+    ? candidatesQuery 
+    : defendedQuery;
 
   const totalCount = distribution.reduce((sum, item) => sum + item.value, 0);
+  const title = dataSource === "candidates" ? "نوع الدكتوراه" : "الشهادات حسب النوع";
 
   return (
     <div className="bg-card rounded-2xl shadow-card p-6">
-      <h3 className="text-lg font-semibold mb-6">الشهادات حسب النوع</h3>
+      <h3 className="text-lg font-semibold mb-6">{title}</h3>
       
       {isLoading ? (
         <div className="flex items-center justify-center h-[250px]">
@@ -55,7 +65,7 @@ export function CertificateTypeChart() {
                       <div className="bg-popover text-popover-foreground rounded-lg shadow-lg p-3 border border-border">
                         <p className="font-medium">{data.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {data.value} شهادة
+                          {data.value} {dataSource === "candidates" ? "طالب" : "شهادة"}
                         </p>
                       </div>
                     );

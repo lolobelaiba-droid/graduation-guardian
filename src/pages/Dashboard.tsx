@@ -1,4 +1,4 @@
-import { Users, GraduationCap, BookOpen } from "lucide-react";
+import { Users, GraduationCap, Award, Database } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { FacultyChart } from "@/components/dashboard/FacultyChart";
 import { CertificateTypeChart } from "@/components/dashboard/CertificateTypeChart";
@@ -9,6 +9,7 @@ import { ExportStatsDialog } from "@/components/dashboard/ExportStatsDialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useDashboardStats();
@@ -34,49 +35,110 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-        <StatCard
-          title="إجمالي طلاب الدكتوراه"
-          value={isLoading ? "..." : stats?.totalPhdStudents || 0}
-          subtitle="دكتوراه ل م د + دكتوراه علوم"
-          icon={Users}
-          variant="blue"
-        />
-        <StatCard
-          title="دكتوراه ل م د"
-          value={isLoading ? "..." : stats?.phdLmdCount || 0}
-          subtitle="طالب"
-          icon={GraduationCap}
-          variant="green"
-        />
-        <StatCard
-          title="دكتوراه علوم"
-          value={isLoading ? "..." : stats?.phdScienceCount || 0}
-          subtitle="طالب"
-          icon={GraduationCap}
-          variant="orange"
-        />
-        <StatCard
-          title="طلاب الماستر"
-          value={isLoading ? "..." : stats?.masterCount || 0}
-          subtitle="طالب ماستر"
-          icon={BookOpen}
-          variant="purple"
-        />
+      {/* Main Stats Grid - Split by Data Source */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* PhD Candidates Stats */}
+        <div className="bg-card rounded-2xl shadow-card p-6 space-y-4">
+          <div className="flex items-center gap-2 text-primary">
+            <Database className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">قاعدة بيانات طلبة الدكتوراه</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard
+              title="إجمالي الطلبة"
+              value={isLoading ? "..." : stats?.totalPhdCandidates || 0}
+              subtitle="طالب دكتوراه"
+              icon={Users}
+              variant="blue"
+              compact
+            />
+            <StatCard
+              title="دكتوراه ل م د"
+              value={isLoading ? "..." : stats?.phdLmdCandidatesCount || 0}
+              subtitle="طالب"
+              icon={GraduationCap}
+              variant="green"
+              compact
+            />
+            <StatCard
+              title="دكتوراه علوم"
+              value={isLoading ? "..." : stats?.phdScienceCandidatesCount || 0}
+              subtitle="طالب"
+              icon={GraduationCap}
+              variant="orange"
+              compact
+            />
+          </div>
+        </div>
+
+        {/* Defended Students Stats */}
+        <div className="bg-card rounded-2xl shadow-card p-6 space-y-4">
+          <div className="flex items-center gap-2 text-primary">
+            <Award className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">قاعدة بيانات الطلبة المناقشين</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard
+              title="إجمالي المناقشين"
+              value={isLoading ? "..." : stats?.totalDefendedStudents || 0}
+              subtitle="طالب ناقش"
+              icon={Award}
+              variant="purple"
+              compact
+            />
+            <StatCard
+              title="دكتوراه ل م د"
+              value={isLoading ? "..." : stats?.phdLmdDefendedCount || 0}
+              subtitle="شهادة"
+              icon={GraduationCap}
+              variant="green"
+              compact
+            />
+            <StatCard
+              title="دكتوراه علوم"
+              value={isLoading ? "..." : stats?.phdScienceDefendedCount || 0}
+              subtitle="شهادة"
+              icon={GraduationCap}
+              variant="orange"
+              compact
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Charts Row 1 - PhD only */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <CertificateTypeChart />
-        <GenderChart />
-        <FacultyChart />
-      </div>
+      {/* Charts with Tabs for Data Source */}
+      <Tabs defaultValue="candidates" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto">
+          <TabsTrigger value="candidates" className="gap-2">
+            <Database className="h-4 w-4" />
+            طلبة الدكتوراه
+          </TabsTrigger>
+          <TabsTrigger value="defended" className="gap-2">
+            <Award className="h-4 w-4" />
+            الطلبة المناقشين
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Stats Row 2 - Average Registration Years */}
-      <div className="grid grid-cols-1 gap-6">
-        <AverageRegistrationYears />
-      </div>
+        <TabsContent value="candidates" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <CertificateTypeChart dataSource="candidates" />
+            <GenderChart dataSource="candidates" />
+            <FacultyChart dataSource="candidates" />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="defended" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <CertificateTypeChart dataSource="defended" />
+            <GenderChart dataSource="defended" />
+            <FacultyChart dataSource="defended" />
+          </div>
+          {/* Average Registration Years - Only for defended students */}
+          <div className="grid grid-cols-1 gap-6 mt-6">
+            <AverageRegistrationYears />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Footer */}
       <footer className="mt-12 pt-6 border-t border-border text-center">
