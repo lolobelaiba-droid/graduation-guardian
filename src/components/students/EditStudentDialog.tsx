@@ -120,7 +120,7 @@ const phdScienceSchema = z.object({
 
 type PhdScienceFormValues = z.infer<typeof phdScienceSchema>;
 
-// Magister schema
+// Magister schema (without supervisor, first_registration_year, email, phone)
 const masterSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
@@ -139,10 +139,6 @@ const masterSchema = z.object({
   mention: z.enum(["honorable", "very_honorable"]),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
-  first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
-  professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
-  phone_number: z.string().optional().nullable(),
-  supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
 });
 
 type MasterFormValues = z.infer<typeof masterSchema>;
@@ -269,6 +265,7 @@ export default function EditStudentDialog({
 
   const isPhdLmd = certificateType === "phd_lmd";
   const isPhdScience = certificateType === "phd_science";
+  const isPhdType = isPhdLmd || isPhdScience;
   const hasThesis = isPhdLmd || isPhdScience;
   const hasJury = isPhdLmd || isPhdScience;
   const hasField = isPhdLmd;
@@ -306,25 +303,27 @@ export default function EditStudentDialog({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name={"first_registration_year" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>سنة أول تسجيل في الدكتوراه *</FormLabel>
-                      <FormControl>
-                        <DropdownWithAdd
-                          value={(field.value as string) || ''}
-                          onChange={field.onChange}
-                          optionType="academic_year"
-                          placeholder="اختر أو أضف السنة الجامعية"
-                          defaultOptions={academicYears}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {isPhdType && (
+                  <FormField
+                    control={form.control}
+                    name={"first_registration_year" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>سنة أول تسجيل في الدكتوراه *</FormLabel>
+                        <FormControl>
+                          <DropdownWithAdd
+                            value={(field.value as string) || ''}
+                            onChange={field.onChange}
+                            optionType="academic_year"
+                            placeholder="اختر أو أضف السنة الجامعية"
+                            defaultOptions={academicYears}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <FormField
                   control={form.control}
                   name="full_name_ar"
@@ -393,7 +392,8 @@ export default function EditStudentDialog({
               </div>
             </div>
 
-            {/* Contact Information */}
+            {/* Contact Information - PhD only */}
+            {isPhdType && (
             <div className="space-y-4">
               <h3 className="font-semibold text-primary">معلومات الاتصال</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -437,6 +437,7 @@ export default function EditStudentDialog({
                 />
               </div>
             </div>
+            )}
 
             {/* Academic Information */}
             <div className="space-y-4">
@@ -641,7 +642,8 @@ export default function EditStudentDialog({
               </div>
             </div>
 
-            {/* Supervisor Information */}
+            {/* Supervisor Information - PhD only */}
+            {isPhdType && (
             <div className="space-y-4">
               <h3 className="font-semibold text-primary">المشرف / Directeur de thèse</h3>
               <FormField
@@ -664,6 +666,7 @@ export default function EditStudentDialog({
                 )}
               />
             </div>
+            )}
 
             {/* Thesis Information */}
             {hasThesis && (

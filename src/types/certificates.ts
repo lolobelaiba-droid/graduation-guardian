@@ -28,7 +28,6 @@ export interface BaseCertificate {
   first_registration_year?: string | null;
   professional_email?: string | null;
   phone_number?: string | null;
-  supervisor_ar: string;
   // PhD reference fields (preserved from PhD students database)
   registration_number?: string | null;
   co_supervisor_ar?: string | null;
@@ -45,6 +44,7 @@ export interface BaseCertificate {
 
 // PhD LMD Certificate
 export interface PhdLmdCertificate extends BaseCertificate {
+  supervisor_ar: string;
   thesis_title_ar: string;
   thesis_title_fr: string | null;
   field_ar: string;
@@ -57,6 +57,7 @@ export interface PhdLmdCertificate extends BaseCertificate {
 
 // PhD Science Certificate
 export interface PhdScienceCertificate extends BaseCertificate {
+  supervisor_ar: string;
   thesis_title_ar: string;
   thesis_title_fr: string | null;
   jury_president_ar: string;
@@ -67,7 +68,7 @@ export interface PhdScienceCertificate extends BaseCertificate {
 
 // Master Certificate
 export interface MasterCertificate extends BaseCertificate {
-  // Master only has the base fields
+  supervisor_ar?: string | null;
 }
 
 // Union type for any certificate
