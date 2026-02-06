@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
 
 export type FieldType = "text" | "number" | "date" | "select";
@@ -45,7 +46,7 @@ export interface CreateCustomFieldInput {
   target_table: TargetTable;
   is_required?: boolean;
   display_order?: number;
-  options?: string[]; // For select type
+  options?: string[];
 }
 
 export interface UpdateCustomFieldInput {
@@ -62,6 +63,19 @@ export function useCustomFields(targetTable?: TargetTable) {
   return useQuery({
     queryKey: ["custom-fields", targetTable],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAll('custom_fields', 'display_order', 'ASC');
+        if (result.success) {
+          let fields = (result.data || []) as CustomField[];
+          if (targetTable) {
+            fields = fields.filter(f => f.target_table === targetTable);
+          }
+          return fields;
+        }
+        return [];
+      }
+
       let query = supabase
         .from("custom_fields")
         .select("*")
@@ -83,6 +97,15 @@ export function useCustomFieldOptions(fieldId: string) {
   return useQuery({
     queryKey: ["custom-field-options", fieldId],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAll('custom_field_options', 'display_order', 'ASC');
+        if (result.success) {
+          return ((result.data || []) as CustomFieldOption[]).filter(o => o.field_id === fieldId);
+        }
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("custom_field_options")
         .select("*")
@@ -101,6 +124,15 @@ export function useAllCustomFieldOptions() {
   return useQuery({
     queryKey: ["custom-field-options-all"],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAll('custom_field_options', 'display_order', 'ASC');
+        if (result.success) {
+          return (result.data || []) as CustomFieldOption[];
+        }
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("custom_field_options")
         .select("*")
@@ -117,6 +149,17 @@ export function useCustomFieldValues(recordId: string, recordType: string) {
   return useQuery({
     queryKey: ["custom-field-values", recordId, recordType],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAll('custom_field_values');
+        if (result.success) {
+          return ((result.data || []) as CustomFieldValue[]).filter(
+            v => v.record_id === recordId && v.record_type === recordType
+          );
+        }
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("custom_field_values")
         .select("*")
@@ -136,7 +179,35 @@ export function useCreateCustomField() {
 
   return useMutation({
     mutationFn: async (input: CreateCustomFieldInput) => {
-      // Create the field
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.insert('custom_fields', {
+          field_key: input.field_key,
+          field_name_ar: input.field_name_ar,
+          field_name_fr: input.field_name_fr || null,
+          field_type: input.field_type,
+          target_table: input.target_table,
+          is_required: input.is_required ?? false,
+          is_active: true,
+          display_order: input.display_order ?? 0,
+        });
+        if (!result.success) throw new Error(result.error);
+
+        const field = result.data as CustomField;
+
+        if (input.field_type === "select" && input.options && input.options.length > 0) {
+          for (let idx = 0; idx < input.options.length; idx++) {
+            await db.insert('custom_field_options', {
+              field_id: field.id,
+              option_value: input.options[idx],
+              display_order: idx,
+            });
+          }
+        }
+
+        return field;
+      }
+
       const { data: field, error: fieldError } = await supabase
         .from("custom_fields")
         .insert({
@@ -153,7 +224,6 @@ export function useCreateCustomField() {
 
       if (fieldError) throw fieldError;
 
-      // If it's a select field, create options
       if (input.field_type === "select" && input.options && input.options.length > 0) {
         const optionsToInsert = input.options.map((opt, idx) => ({
           field_id: field.id,
@@ -193,6 +263,14 @@ export function useUpdateCustomField() {
   return useMutation({
     mutationFn: async (input: UpdateCustomFieldInput) => {
       const { id, ...updates } = input;
+
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.update('custom_fields', id, updates);
+        if (!result.success) throw new Error(result.error);
+        return result.data as CustomField;
+      }
+
       const { data, error } = await supabase
         .from("custom_fields")
         .update(updates)
@@ -220,6 +298,30 @@ export function useDeleteCustomField() {
 
   return useMutation({
     mutationFn: async (fieldId: string) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        // Delete related values and options first
+        const allValues = await db.getAll('custom_field_values');
+        if (allValues.success && allValues.data) {
+          for (const v of (allValues.data as CustomFieldValue[])) {
+            if (v.field_id === fieldId) {
+              await db.delete('custom_field_values', v.id);
+            }
+          }
+        }
+        const allOptions = await db.getAll('custom_field_options');
+        if (allOptions.success && allOptions.data) {
+          for (const o of (allOptions.data as CustomFieldOption[])) {
+            if (o.field_id === fieldId) {
+              await db.delete('custom_field_options', o.id);
+            }
+          }
+        }
+        const result = await db.delete('custom_fields', fieldId);
+        if (!result.success) throw new Error(result.error);
+        return;
+      }
+
       const { error } = await supabase
         .from("custom_fields")
         .delete()
@@ -246,13 +348,33 @@ export function useUpdateFieldOptions() {
 
   return useMutation({
     mutationFn: async ({ fieldId, options }: { fieldId: string; options: string[] }) => {
-      // Delete existing options
+      if (isElectron()) {
+        const db = getDbClient()!;
+        // Delete existing options for this field
+        const allOptions = await db.getAll('custom_field_options');
+        if (allOptions.success && allOptions.data) {
+          for (const o of (allOptions.data as CustomFieldOption[])) {
+            if (o.field_id === fieldId) {
+              await db.delete('custom_field_options', o.id);
+            }
+          }
+        }
+        // Insert new options
+        for (let idx = 0; idx < options.length; idx++) {
+          await db.insert('custom_field_options', {
+            field_id: fieldId,
+            option_value: options[idx],
+            display_order: idx,
+          });
+        }
+        return;
+      }
+
       await supabase
         .from("custom_field_options")
         .delete()
         .eq("field_id", fieldId);
 
-      // Insert new options
       if (options.length > 0) {
         const optionsToInsert = options.map((opt, idx) => ({
           field_id: fieldId,
@@ -295,6 +417,33 @@ export function useSaveCustomFieldValue() {
       recordType: string;
       value: string | null;
     }) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        // Find existing value
+        const allValues = await db.getAll('custom_field_values');
+        let existing: CustomFieldValue | undefined;
+        if (allValues.success && allValues.data) {
+          existing = (allValues.data as CustomFieldValue[]).find(
+            v => v.field_id === fieldId && v.record_id === recordId && v.record_type === recordType
+          );
+        }
+
+        if (existing) {
+          const result = await db.update('custom_field_values', existing.id, { value });
+          if (!result.success) throw new Error(result.error);
+          return result.data;
+        } else {
+          const result = await db.insert('custom_field_values', {
+            field_id: fieldId,
+            record_id: recordId,
+            record_type: recordType,
+            value,
+          });
+          if (!result.success) throw new Error(result.error);
+          return result.data;
+        }
+      }
+
       const { data, error } = await supabase
         .from("custom_field_values")
         .upsert(
@@ -335,6 +484,30 @@ export function useBulkSaveCustomFieldValues() {
       recordType: string;
       value: string | null;
     }>) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const allValues = await db.getAll('custom_field_values');
+        const existingValues = (allValues.success ? allValues.data : []) as CustomFieldValue[];
+
+        for (const v of values) {
+          const existing = existingValues.find(
+            ev => ev.field_id === v.fieldId && ev.record_id === v.recordId && ev.record_type === v.recordType
+          );
+
+          if (existing) {
+            await db.update('custom_field_values', existing.id, { value: v.value });
+          } else {
+            await db.insert('custom_field_values', {
+              field_id: v.fieldId,
+              record_id: v.recordId,
+              record_type: v.recordType,
+              value: v.value,
+            });
+          }
+        }
+        return;
+      }
+
       const valuesToUpsert = values.map((v) => ({
         field_id: v.fieldId,
         record_id: v.recordId,

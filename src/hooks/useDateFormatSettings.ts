@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isElectron, getDbClient } from '@/lib/database/db-client';
 import {
   DateFormatSettings,
   DEFAULT_DATE_FORMAT_SETTINGS,
@@ -27,18 +28,31 @@ export function useDateFormatSettings() {
 
     const loadSettings = async () => {
       try {
-        const { data, error } = await supabase
-          .from('settings')
-          .select('value')
-          .eq('key', SETTINGS_KEY)
-          .single();
+        if (isElectron()) {
+          const db = getDbClient()!;
+          const result = await db.getSetting(SETTINGS_KEY);
+          if (result.success && result.data) {
+            const setting = result.data as { value: string | null };
+            if (setting.value) {
+              const parsed = JSON.parse(setting.value) as DateFormatSettings;
+              const merged = mergeWithDefaults(parsed);
+              cachedSettings = merged;
+              setSettings(merged);
+            }
+          }
+        } else {
+          const { data, error } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('key', SETTINGS_KEY)
+            .single();
 
-        if (!error && data?.value) {
-          const parsed = JSON.parse(data.value) as DateFormatSettings;
-          // Merge with defaults to handle any missing fields
-          const merged = mergeWithDefaults(parsed);
-          cachedSettings = merged;
-          setSettings(merged);
+          if (!error && data?.value) {
+            const parsed = JSON.parse(data.value) as DateFormatSettings;
+            const merged = mergeWithDefaults(parsed);
+            cachedSettings = merged;
+            setSettings(merged);
+          }
         }
       } catch (err) {
         console.error('Error loading date format settings:', err);
@@ -56,20 +70,24 @@ export function useDateFormatSettings() {
     try {
       const jsonValue = JSON.stringify(newSettings);
 
-      // Check if setting exists
-      const { data: existing } = await supabase
-        .from('settings')
-        .select('id')
-        .eq('key', SETTINGS_KEY)
-        .single();
-
-      if (existing) {
-        await supabase
-          .from('settings')
-          .update({ value: jsonValue })
-          .eq('id', existing.id);
+      if (isElectron()) {
+        const db = getDbClient()!;
+        await db.setSetting(SETTINGS_KEY, jsonValue);
       } else {
-        await supabase.from('settings').insert([{ key: SETTINGS_KEY, value: jsonValue }]);
+        const { data: existing } = await supabase
+          .from('settings')
+          .select('id')
+          .eq('key', SETTINGS_KEY)
+          .single();
+
+        if (existing) {
+          await supabase
+            .from('settings')
+            .update({ value: jsonValue })
+            .eq('id', existing.id);
+        } else {
+          await supabase.from('settings').insert([{ key: SETTINGS_KEY, value: jsonValue }]);
+        }
       }
 
       cachedSettings = newSettings;
@@ -97,7 +115,6 @@ export function useDateFormatSettings() {
 function mergeWithDefaults(parsed: any): DateFormatSettings {
   const defaults = DEFAULT_DATE_FORMAT_SETTINGS;
   
-  // If it's the new format (has birthDate.ar), use as-is with defaults
   if (parsed.birthDate?.ar) {
     return {
       birthDate: {
@@ -115,7 +132,6 @@ function mergeWithDefaults(parsed: any): DateFormatSettings {
     };
   }
   
-  // Migration from old format (birthDateFormat, etc.)
   if (parsed.birthDateFormat) {
     return {
       birthDate: {
@@ -138,7 +154,6 @@ function mergeWithDefaults(parsed: any): DateFormatSettings {
 
 /**
  * Fetch date format settings synchronously from cache or return defaults
- * For use in PDF generator and other sync contexts
  */
 export function getCachedDateFormatSettings(): DateFormatSettings {
   return cachedSettings || DEFAULT_DATE_FORMAT_SETTINGS;
@@ -146,22 +161,34 @@ export function getCachedDateFormatSettings(): DateFormatSettings {
 
 /**
  * Fetch date format settings (async)
- * For use when cache may not be populated
  */
 export async function fetchDateFormatSettings(): Promise<DateFormatSettings> {
   if (cachedSettings) return cachedSettings;
 
   try {
-    const { data, error } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'date_format_settings')
-      .single();
+    if (isElectron()) {
+      const db = getDbClient()!;
+      const result = await db.getSetting('date_format_settings');
+      if (result.success && result.data) {
+        const setting = result.data as { value: string | null };
+        if (setting.value) {
+          const parsed = JSON.parse(setting.value);
+          cachedSettings = mergeWithDefaults(parsed);
+          return cachedSettings;
+        }
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'date_format_settings')
+        .single();
 
-    if (!error && data?.value) {
-      const parsed = JSON.parse(data.value);
-      cachedSettings = mergeWithDefaults(parsed);
-      return cachedSettings;
+      if (!error && data?.value) {
+        const parsed = JSON.parse(data.value);
+        cachedSettings = mergeWithDefaults(parsed);
+        return cachedSettings;
+      }
     }
   } catch {
     // Fallback to defaults

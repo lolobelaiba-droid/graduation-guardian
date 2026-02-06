@@ -115,7 +115,13 @@ function initializeDatabase() {
     'custom_fonts',
     'dropdown_options',
     'activity_log',
-    'print_history'
+    'print_history',
+    'phd_lmd_students',
+    'phd_science_students',
+    'academic_titles',
+    'custom_fields',
+    'custom_field_values',
+    'custom_field_options'
   ];
   
   tables.forEach(function(table) {
@@ -433,7 +439,7 @@ function deleteOldActivities(daysOld) {
 
 function exportAllData() {
   return {
-    version: '1.0',
+    version: '2.0',
     created_at: getCurrentDateTime(),
     data: {
       phd_lmd_certificates: readTable('phd_lmd_certificates'),
@@ -445,7 +451,14 @@ function exportAllData() {
       user_settings: readTable('user_settings'),
       dropdown_options: readTable('dropdown_options'),
       custom_fonts: readTable('custom_fonts'),
-      activity_log: readTable('activity_log')
+      activity_log: readTable('activity_log'),
+      phd_lmd_students: readTable('phd_lmd_students'),
+      phd_science_students: readTable('phd_science_students'),
+      academic_titles: readTable('academic_titles'),
+      custom_fields: readTable('custom_fields'),
+      custom_field_values: readTable('custom_field_values'),
+      custom_field_options: readTable('custom_field_options'),
+      print_history: readTable('print_history')
     }
   };
 }
@@ -453,42 +466,32 @@ function exportAllData() {
 function importAllData(backupData) {
   var data = backupData.data;
   
-  // حذف البيانات الحالية وإعادة الكتابة
-  if (data.phd_lmd_certificates) {
-    writeTable('phd_lmd_certificates', data.phd_lmd_certificates);
-  }
+  // قائمة بجميع الجداول القابلة للاستيراد
+  var tableNames = [
+    'phd_lmd_certificates',
+    'phd_science_certificates',
+    'master_certificates',
+    'certificate_templates',
+    'certificate_template_fields',
+    'dropdown_options',
+    'custom_fonts',
+    'settings',
+    'user_settings',
+    'activity_log',
+    'phd_lmd_students',
+    'phd_science_students',
+    'academic_titles',
+    'custom_fields',
+    'custom_field_values',
+    'custom_field_options',
+    'print_history'
+  ];
   
-  if (data.phd_science_certificates) {
-    writeTable('phd_science_certificates', data.phd_science_certificates);
-  }
-  
-  if (data.master_certificates) {
-    writeTable('master_certificates', data.master_certificates);
-  }
-  
-  if (data.certificate_templates) {
-    writeTable('certificate_templates', data.certificate_templates);
-  }
-  
-  if (data.certificate_template_fields) {
-    writeTable('certificate_template_fields', data.certificate_template_fields);
-  }
-  
-  if (data.dropdown_options) {
-    writeTable('dropdown_options', data.dropdown_options);
-  }
-  
-  if (data.custom_fonts) {
-    writeTable('custom_fonts', data.custom_fonts);
-  }
-  
-  if (data.settings) {
-    writeTable('settings', data.settings);
-  }
-  
-  if (data.user_settings) {
-    writeTable('user_settings', data.user_settings);
-  }
+  tableNames.forEach(function(tableName) {
+    if (data[tableName]) {
+      writeTable(tableName, data[tableName]);
+    }
+  });
   
   return { success: true };
 }
