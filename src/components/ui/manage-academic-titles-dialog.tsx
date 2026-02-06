@@ -80,9 +80,9 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
                   value={newFullName}
                   onChange={(e) => setNewFullName(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="استاذ التعليم العالي"
+                  placeholder="مثال: أستاذ التعليم العالي / Professeur"
                   className="text-sm"
-                  dir="rtl"
+                  dir="auto"
                 />
               </div>
               <div className="space-y-1.5">
@@ -92,9 +92,9 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
                   value={newAbbreviation}
                   onChange={(e) => setNewAbbreviation(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="أد"
+                  placeholder="مثال: أد / Pr"
                   className="text-sm"
-                  dir="rtl"
+                  dir="auto"
                 />
               </div>
             </div>

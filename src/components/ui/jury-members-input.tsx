@@ -251,6 +251,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
     return (
       <div ref={containerRef} className="relative w-full">
         <div 
+          dir={selectedTitle ? detectDirection(selectedTitle) : inputValue ? detectDirection(inputValue) : "rtl"}
           className={cn(
             "flex flex-wrap gap-1.5 p-2 min-h-[42px] rounded-md border border-input bg-background",
             "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
@@ -337,27 +338,62 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
 
         {/* Academic titles badges */}
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
-          <span className="text-xs text-muted-foreground ml-1">الرتبة:</span>
           {isLoading ? (
             <span className="text-xs text-muted-foreground">جاري التحميل...</span>
           ) : (
             <>
-              {titles.map((title) => (
-                <Badge
-                  key={title.id}
-                  variant={selectedTitle === title.abbreviation ? "default" : "outline"}
-                  className={cn(
-                    "cursor-pointer transition-colors text-xs px-2 py-0.5",
-                    selectedTitle === title.abbreviation 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-primary hover:text-primary-foreground"
-                  )}
-                  onClick={() => selectTitle(title.abbreviation)}
-                  title={title.full_name}
-                >
-                  {title.abbreviation}
-                </Badge>
-              ))}
+              {/* Arabic titles (RTL) - right side */}
+              {titles.filter(t => /[\u0600-\u06FF]/.test(t.abbreviation)).length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground ml-1">عربي:</span>
+                  {titles.filter(t => /[\u0600-\u06FF]/.test(t.abbreviation)).map((title) => (
+                    <Badge
+                      key={title.id}
+                      variant={selectedTitle === title.abbreviation ? "default" : "outline"}
+                      className={cn(
+                        "cursor-pointer transition-colors text-xs px-2 py-0.5",
+                        selectedTitle === title.abbreviation 
+                          ? "bg-blue-600 text-white" 
+                          : "hover:bg-blue-600 hover:text-white"
+                      )}
+                      onClick={() => selectTitle(title.abbreviation)}
+                      title={title.full_name}
+                    >
+                      {title.abbreviation}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Separator */}
+              {titles.filter(t => /[\u0600-\u06FF]/.test(t.abbreviation)).length > 0 && 
+               titles.filter(t => !/[\u0600-\u06FF]/.test(t.abbreviation)).length > 0 && (
+                <span className="text-muted-foreground/40 mx-1">|</span>
+              )}
+
+              {/* French/Latin titles (LTR) - left side */}
+              {titles.filter(t => !/[\u0600-\u06FF]/.test(t.abbreviation)).length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5" dir="ltr">
+                  <span className="text-xs text-muted-foreground mr-1">Fr:</span>
+                  {titles.filter(t => !/[\u0600-\u06FF]/.test(t.abbreviation)).map((title) => (
+                    <Badge
+                      key={title.id}
+                      variant={selectedTitle === title.abbreviation ? "default" : "outline"}
+                      className={cn(
+                        "cursor-pointer transition-colors text-xs px-2 py-0.5",
+                        selectedTitle === title.abbreviation 
+                          ? "bg-emerald-600 text-white" 
+                          : "hover:bg-emerald-600 hover:text-white"
+                      )}
+                      onClick={() => selectTitle(title.abbreviation)}
+                      title={title.full_name}
+                    >
+                      {title.abbreviation}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               <ManageAcademicTitlesDialog
                 onTitlesChange={refetch}
                 trigger={
