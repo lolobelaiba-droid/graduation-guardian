@@ -319,6 +319,7 @@ export function CertificatePreview({
     if (resizeState) {
       handleResizeEnd();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragState, handleMouseUp, resizeState]);
 
   // Resize handlers
@@ -589,11 +590,10 @@ export function CertificatePreview({
                 <div
                   data-field-id={field.id}
                   className={cn(
-                    "border border-transparent transition-all select-none",
+                    "border border-transparent transition-all select-none relative",
                     isVisible && "hover:border-primary/50",
                     isSelected && "border-primary border-2 bg-primary/5 rounded",
                     isDragging && "border-primary border-2 bg-primary/10 rounded shadow-lg",
-                    hasWidth && "relative"
                   )}
                   style={{
                     fontSize: `${field.font_size * SCALE * 0.35}px`,
@@ -618,19 +618,61 @@ export function CertificatePreview({
                   )}
                   {getFieldValue(field.field_key, field) || `[${field.field_name_ar}]`}
                   
-                  {/* Resize handle for resizable fields */}
-                  {resizable && isSelected && showControls && !isDragging && onFieldResize && (
-                    <div
-                      className="absolute top-0 bottom-0 w-2 cursor-ew-resize bg-primary/30 hover:bg-primary/60 transition-colors rounded-sm"
-                      style={{
-                        [fieldDirection === 'rtl' ? 'left' : 'right']: '-4px',
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        handleResizeStart(e, field);
-                      }}
-                      title="اسحب لتغيير العرض"
-                    />
+                  {/* Word-style resize handles for resizable fields */}
+                  {resizable && (isSelected || hasWidth) && showControls && !isDragging && onFieldResize && (
+                    <>
+                      {/* Border outline like Word text box */}
+                      <div 
+                        className={cn(
+                          "absolute inset-0 pointer-events-none border-2 border-dashed rounded-sm",
+                          isSelected ? "border-primary" : "border-primary/30"
+                        )}
+                      />
+                      {/* Right edge handle */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
+                        style={{
+                          [fieldDirection === 'rtl' ? 'left' : 'right']: '-6px',
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          handleResizeStart(e, field);
+                        }}
+                        title="اسحب لتغيير العرض"
+                      />
+                      {/* Left edge handle */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
+                        style={{
+                          [fieldDirection === 'rtl' ? 'right' : 'left']: '-6px',
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          handleResizeStart(e, field);
+                        }}
+                        title="اسحب لتغيير العرض"
+                      />
+                      {/* Top-right corner handle */}
+                      <div
+                        className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [fieldDirection === 'rtl' ? 'left' : 'right']: '-6px' }}
+                      />
+                      {/* Top-left corner handle */}
+                      <div
+                        className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [fieldDirection === 'rtl' ? 'right' : 'left']: '-6px' }}
+                      />
+                      {/* Bottom-right corner handle */}
+                      <div
+                        className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [fieldDirection === 'rtl' ? 'left' : 'right']: '-6px' }}
+                      />
+                      {/* Bottom-left corner handle */}
+                      <div
+                        className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [fieldDirection === 'rtl' ? 'right' : 'left']: '-6px' }}
+                      />
+                    </>
                   )}
                 </div>
 

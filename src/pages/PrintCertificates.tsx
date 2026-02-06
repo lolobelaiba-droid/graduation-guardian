@@ -1566,6 +1566,13 @@ export default function PrintCertificates() {
               position_y: newY,
             });
           }}
+          onFieldResize={(fieldId, newWidth) => {
+            updateField.mutate({
+              id: fieldId,
+              template_id: selectedTemplateId,
+              field_width: newWidth,
+            });
+          }}
           onPrint={handlePrint}
         />
       )}
