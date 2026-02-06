@@ -23,12 +23,12 @@ const dataSourceLabels: Record<DataSource, string> = {
   defended_students: "قاعدة بيانات الطلبة المناقشين",
 };
 
-type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor" | "jury_stats" | "status_distribution" | "custom_pivot";
+type ExportType = "students" | "faculty" | "gender" | "certificate_type" | "supervisor" | "jury_stats" | "status_distribution" | "custom_pivot" | "branch_distribution" | "specialty_distribution" | "field_distribution" | "research_lab_distribution" | "university_distribution" | "registration_year_distribution" | "thesis_language_distribution" | "mention_distribution" | "employment_status_distribution" | "registration_type_distribution" | "co_supervisor_distribution";
 
 // Export types available for each data source
 const exportTypesForSource: Record<DataSource, ExportType[]> = {
-  phd_candidates: ["students", "faculty", "gender", "certificate_type", "supervisor", "status_distribution", "custom_pivot"],
-  defended_students: ["students", "faculty", "gender", "certificate_type", "supervisor", "jury_stats", "custom_pivot"],
+  phd_candidates: ["students", "faculty", "gender", "certificate_type", "branch_distribution", "specialty_distribution", "field_distribution", "research_lab_distribution", "university_distribution", "supervisor", "co_supervisor_distribution", "registration_year_distribution", "thesis_language_distribution", "employment_status_distribution", "registration_type_distribution", "status_distribution", "custom_pivot"],
+  defended_students: ["students", "faculty", "gender", "certificate_type", "branch_distribution", "specialty_distribution", "field_distribution", "research_lab_distribution", "university_distribution", "supervisor", "jury_stats", "mention_distribution", "registration_year_distribution", "custom_pivot"],
 };
 
 const exportTypeLabels: Record<ExportType, string> = {
@@ -36,9 +36,20 @@ const exportTypeLabels: Record<ExportType, string> = {
   faculty: "توزيع حسب الكليات",
   gender: "توزيع حسب الجنس",
   certificate_type: "توزيع حسب نوع الشهادة",
+  branch_distribution: "توزيع حسب الشعبة",
+  specialty_distribution: "توزيع حسب التخصص",
+  field_distribution: "توزيع حسب الميدان",
+  research_lab_distribution: "توزيع حسب مخبر البحث",
+  university_distribution: "توزيع حسب الجامعة",
   supervisor: "إحصائيات المشرفين",
+  co_supervisor_distribution: "توزيع حسب مساعد المشرف",
   jury_stats: "إحصائيات اللجان (مشرف/رئيس/عضو)",
   status_distribution: "توزيع حسب الحالة",
+  mention_distribution: "توزيع حسب التقدير",
+  registration_year_distribution: "توزيع حسب سنة أول تسجيل",
+  thesis_language_distribution: "توزيع حسب لغة الأطروحة",
+  employment_status_distribution: "توزيع حسب الحالة الوظيفية",
+  registration_type_distribution: "توزيع حسب نوع التسجيل",
   custom_pivot: "إحصائيات مخصصة (جدول محوري)",
 };
 
@@ -498,6 +509,66 @@ export function ExportStatsDialog() {
             "العدد": count,
           }));
           fileName = `توزيع_حالات_طلبة_الدكتوراه_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          break;
+        }
+
+        case "branch_distribution":
+        case "specialty_distribution":
+        case "field_distribution":
+        case "research_lab_distribution":
+        case "university_distribution":
+        case "registration_year_distribution":
+        case "thesis_language_distribution":
+        case "mention_distribution":
+        case "employment_status_distribution":
+        case "registration_type_distribution":
+        case "co_supervisor_distribution": {
+          const students = await fetchStudentData();
+          
+          const fieldConfig: Record<string, { dbKey: string; label: string; transform?: (v: any) => string }> = {
+            branch_distribution: { dbKey: "branch_ar", label: "الشعبة" },
+            specialty_distribution: { dbKey: "specialty_ar", label: "التخصص" },
+            field_distribution: { dbKey: "field_ar", label: "الميدان" },
+            research_lab_distribution: { dbKey: "research_lab_ar", label: "مخبر البحث" },
+            university_distribution: { dbKey: "university_ar", label: "الجامعة" },
+            registration_year_distribution: { dbKey: "first_registration_year", label: "سنة أول تسجيل" },
+            co_supervisor_distribution: { dbKey: "co_supervisor_ar", label: "مساعد المشرف" },
+            thesis_language_distribution: { 
+              dbKey: "thesis_language", 
+              label: "لغة الأطروحة",
+              transform: (v: string) => {
+                const langLabels: Record<string, string> = { arabic: "العربية", french: "الفرنسية", english: "الإنجليزية" };
+                return langLabels[v] || v;
+              }
+            },
+            mention_distribution: { 
+              dbKey: "mention", 
+              label: "التقدير",
+              transform: (v: string) => v === "very_honorable" ? "مشرف جدا" : v === "honorable" ? "مشرف" : v
+            },
+            employment_status_distribution: { dbKey: "employment_status", label: "الحالة الوظيفية" },
+            registration_type_distribution: { dbKey: "registration_type", label: "نوع التسجيل" },
+          };
+
+          const config = fieldConfig[exportType];
+          const counts: Record<string, number> = {};
+          
+          students.forEach((s: any) => {
+            let value = s[config.dbKey] || "غير محدد";
+            if (!String(value).trim()) value = "غير محدد";
+            if (config.transform) value = config.transform(value);
+            counts[value] = (counts[value] || 0) + 1;
+          });
+
+          exportData = Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([value, count]) => ({
+              [config.label]: value,
+              "العدد": count,
+            }));
+          
+          const sourceLabel = dataSource === "phd_candidates" ? "طلبة_الدكتوراه" : "المناقشين";
+          fileName = `توزيع_${config.label}_${sourceLabel}_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
           break;
         }
 
