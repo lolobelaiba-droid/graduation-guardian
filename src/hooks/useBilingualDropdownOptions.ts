@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
 
 export type BilingualOptionType = 'employment_status' | 'registration_type' | 'inscription_status';
@@ -18,6 +19,15 @@ export function useBilingualDropdownOptions(optionType: BilingualOptionType) {
   return useQuery({
     queryKey: ['bilingual_dropdown_options', optionType],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getDropdownOptionsByType(optionType);
+        if (result.success) {
+          return (result.data || []) as BilingualOption[];
+        }
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('dropdown_options')
         .select('*')
@@ -45,6 +55,23 @@ export function useAddBilingualOption() {
       valueAr: string;
       valueFr: string;
     }) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.insert('dropdown_options', {
+          option_type: optionType,
+          option_value: optionValue.trim(),
+          value_ar: valueAr.trim(),
+          value_fr: valueFr.trim(),
+        });
+        if (!result.success) {
+          if (result.error?.includes('UNIQUE constraint failed')) {
+            throw new Error('هذا الخيار موجود مسبقاً');
+          }
+          throw new Error(result.error);
+        }
+        return result.data;
+      }
+
       const { data, error } = await supabase
         .from('dropdown_options')
         .insert({
@@ -79,6 +106,13 @@ export function useDeleteBilingualOption() {
 
   return useMutation({
     mutationFn: async ({ id, optionType }: { id: string; optionType: BilingualOptionType }) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.delete('dropdown_options', id);
+        if (!result.success) throw new Error(result.error);
+        return { id, optionType };
+      }
+
       const { error } = await supabase
         .from('dropdown_options')
         .delete()
@@ -114,6 +148,22 @@ export function useUpdateBilingualOption() {
       valueAr: string;
       valueFr: string;
     }) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.update('dropdown_options', id, { 
+          option_value: optionValue.trim(),
+          value_ar: valueAr.trim(),
+          value_fr: valueFr.trim(),
+        });
+        if (!result.success) {
+          if (result.error?.includes('UNIQUE constraint failed')) {
+            throw new Error('هذا الخيار موجود مسبقاً');
+          }
+          throw new Error(result.error);
+        }
+        return { data: result.data, optionType };
+      }
+
       const { data, error } = await supabase
         .from('dropdown_options')
         .update({ 

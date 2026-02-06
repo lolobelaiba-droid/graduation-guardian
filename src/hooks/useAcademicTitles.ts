@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
 
 export interface AcademicTitle {
@@ -17,6 +18,16 @@ export const useAcademicTitles = () => {
   const fetchTitles = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAll('academic_titles', 'display_order', 'ASC');
+        if (result.success) {
+          setTitles((result.data || []) as AcademicTitle[]);
+        }
+        return;
+      }
+
       const { data, error } = await supabase
         .from("academic_titles")
         .select("*")
@@ -37,6 +48,20 @@ export const useAcademicTitles = () => {
       const maxOrder = titles.length > 0 
         ? Math.max(...titles.map(t => t.display_order)) + 1 
         : 1;
+
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.insert('academic_titles', {
+          full_name: fullName,
+          abbreviation: abbreviation,
+          display_order: maxOrder,
+        });
+        if (!result.success) throw new Error(result.error);
+        const newTitle = result.data as AcademicTitle;
+        setTitles(prev => [...prev, newTitle]);
+        toast.success("تم إضافة الرتبة بنجاح");
+        return newTitle;
+      }
 
       const { data, error } = await supabase
         .from("academic_titles")
@@ -62,6 +87,15 @@ export const useAcademicTitles = () => {
 
   const deleteTitle = useCallback(async (id: string) => {
     try {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.delete('academic_titles', id);
+        if (!result.success) throw new Error(result.error);
+        setTitles(prev => prev.filter(t => t.id !== id));
+        toast.success("تم حذف الرتبة بنجاح");
+        return true;
+      }
+
       const { error } = await supabase
         .from("academic_titles")
         .delete()
