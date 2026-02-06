@@ -46,6 +46,7 @@ interface FullPreviewDialogProps {
     background_scale_y?: number;
   }) => void;
   onFieldMove?: (fieldId: string, newX: number, newY: number) => void;
+  onFieldResize?: (fieldId: string, newWidth: number) => void;
   onPrint: () => void;
   initialOffsetX?: number;
   initialOffsetY?: number;
@@ -62,6 +63,7 @@ export function FullPreviewDialog({
   template,
   onSaveSettings,
   onFieldMove,
+  onFieldResize,
   onPrint,
   initialOffsetX = 0,
   initialOffsetY = 0,
@@ -93,6 +95,13 @@ export function FullPreviewDialog({
     fieldStartY: number;
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
+
+  // Resize state for field width
+  const [resizeState, setResizeState] = useState<{
+    fieldId: string;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
 
   // Initialize local positions from fields
   useEffect(() => {
@@ -408,11 +417,59 @@ export function FullPreviewDialog({
     setDragPreview(null);
   }, [dragState, dragPreview, fields]);
 
+  // Check if a field should be resizable (long text fields)
+  const isResizableField = useCallback((fieldKey: string): boolean => {
+    return fieldKey.startsWith('thesis_title') || 
+           fieldKey.startsWith('static_text_');
+  }, []);
+
+  // Resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent, field: TemplateField) => {
+    if (!onFieldResize) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const currentWidth = field.field_width || 80;
+    setResizeState({
+      fieldId: field.id,
+      startX: e.clientX,
+      startWidth: currentWidth,
+    });
+  }, [onFieldResize]);
+
+  const handleResizeMove = useCallback((e: React.MouseEvent) => {
+    if (!resizeState) return;
+    
+    const deltaX = (e.clientX - resizeState.startX) / SCALE;
+    const newWidth = Math.max(20, Math.round((resizeState.startWidth + deltaX) * 2) / 2);
+    
+    const fieldEl = document.querySelector(`[data-field-id="${resizeState.fieldId}"]`) as HTMLElement;
+    if (fieldEl) {
+      fieldEl.style.width = `${newWidth * SCALE}px`;
+    }
+  }, [resizeState]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (resizeState && onFieldResize) {
+      const fieldEl = document.querySelector(`[data-field-id="${resizeState.fieldId}"]`) as HTMLElement;
+      if (fieldEl) {
+        const newWidth = parseFloat(fieldEl.style.width) / SCALE;
+        if (newWidth !== resizeState.startWidth) {
+          onFieldResize(resizeState.fieldId, Math.round(newWidth * 2) / 2);
+        }
+      }
+    }
+    setResizeState(null);
+  }, [resizeState, onFieldResize]);
+
   const handleMouseLeave = useCallback(() => {
     if (dragState) {
       handleMouseUp();
     }
-  }, [dragState, handleMouseUp]);
+    if (resizeState) {
+      handleResizeEnd();
+    }
+  }, [dragState, handleMouseUp, resizeState, handleResizeEnd]);
 
   // Get field position (use drag preview if dragging, then local, then original)
   const getFieldPosition = (field: TemplateField) => {
@@ -661,8 +718,14 @@ export function FullPreviewDialog({
                 height: `${height * SCALE}px`,
                 direction: template.language.includes('ar') ? 'rtl' : 'ltr',
               }}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
+              onMouseMove={(e) => {
+                handleMouseMove(e);
+                handleResizeMove(e);
+              }}
+              onMouseUp={() => {
+                handleMouseUp();
+                handleResizeEnd();
+              }}
               onMouseLeave={handleMouseLeave}
             >
               {/* Background image with offset and separate X/Y scale */}
@@ -687,9 +750,11 @@ export function FullPreviewDialog({
                 const position = getFieldPosition(field);
                 const isSelected = selectedFieldId === field.id;
                 const isDragging = dragState?.fieldId === field.id;
+                const isResizing = resizeState?.fieldId === field.id;
                 const hasChange = fieldChanges.some(c => c.fieldId === field.id);
                 const value = getFieldValue(field.field_key);
                 const hasWidth = field.field_width != null;
+                const resizable = isResizableField(field.field_key);
                 
                 // Get text direction for date fields from settings
                 const dateDirection = getDateFieldDirection(field.field_key);
@@ -712,12 +777,14 @@ export function FullPreviewDialog({
                     onClick={() => setSelectedFieldId(field.id)}
                   >
                     <div
+                      data-field-id={field.id}
                       className={cn(
                         "border border-transparent transition-all select-none px-1",
                         showFieldControls && "hover:border-primary/50 hover:bg-primary/5",
                         isSelected && "border-primary border-2 bg-primary/10 rounded",
                         isDragging && "border-primary border-2 bg-primary/20 rounded shadow-lg",
-                        hasChange && !isSelected && "border-destructive/50 border bg-destructive/5"
+                        hasChange && !isSelected && "border-destructive/50 border bg-destructive/5",
+                        hasWidth && "relative"
                       )}
                       style={{
                         fontSize: `${field.font_size * SCALE * 0.35}px`,
@@ -737,6 +804,21 @@ export function FullPreviewDialog({
                         <GripVertical className="inline-block h-3 w-3 ml-1 text-primary" />
                       )}
                       {value || `[${field.field_name_ar}]`}
+                      
+                      {/* Resize handle for resizable fields */}
+                      {resizable && isSelected && showFieldControls && !isDragging && onFieldResize && (
+                        <div
+                          className="absolute top-0 bottom-0 w-2 cursor-ew-resize bg-primary/30 hover:bg-primary/60 transition-colors rounded-sm"
+                          style={{
+                            [effectiveDirection === 'rtl' ? 'left' : 'right']: '-4px',
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            handleResizeStart(e, field);
+                          }}
+                          title="اسحب لتغيير العرض"
+                        />
+                      )}
                     </div>
                   </div>
                 );
