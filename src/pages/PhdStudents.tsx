@@ -378,6 +378,7 @@ export default function PhdStudents() {
         onOpenChange={setEditDialogOpen}
         student={studentToEdit}
         studentType={selectedType}
+        currentAcademicYear={currentAcademicYear}
       />
 
       {/* Add Student Dialog */}
@@ -385,6 +386,7 @@ export default function PhdStudents() {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         studentType={selectedType}
+        currentAcademicYear={currentAcademicYear}
       />
 
       {/* Import Excel Dialog */}
