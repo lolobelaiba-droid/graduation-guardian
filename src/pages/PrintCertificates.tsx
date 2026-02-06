@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock, FileType, User, Hash, BookOpen } from "lucide-react";
+import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock, FileType, User, Hash, BookOpen, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -194,6 +194,7 @@ export default function PrintCertificates() {
     specialty_ar: string;
     mention: string;
     created_at?: string | null;
+    notes?: string | null;
     certificateType: CertificateType;
   };
 
@@ -852,6 +853,16 @@ export default function PrintCertificates() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Notes Alert */}
+          {previewStudent?.notes && previewStudent.notes.trim() !== '' && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">ملاحظات هامة</p>
+                <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" dir="auto">{previewStudent.notes}</p>
+              </div>
+            </div>
+          )}
           <Tabs defaultValue="preview">
             <TabsList className="mb-4">
               <TabsTrigger value="preview">المعاينة</TabsTrigger>

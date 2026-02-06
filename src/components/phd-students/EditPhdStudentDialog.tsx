@@ -336,79 +336,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
               />
             </div>
 
-            {/* Employment Status, Registration Type, Inscription Status */}
-            <SectionHeader title="الحالة الوظيفية ونوع التسجيل" />
-            
-            <BilingualDropdown
-              valueAr={employmentStatusAr}
-              valueFr={employmentStatusFr}
-              onChangeAr={setEmploymentStatusAr}
-              onChangeFr={setEmploymentStatusFr}
-              optionType="employment_status"
-              labelAr="الحالة الوظيفية"
-              labelFr="Situation professionnelle"
-              placeholderAr="اختر الحالة الوظيفية"
-              placeholderFr="Choisir la situation"
-            />
-
-            <BilingualDropdown
-              valueAr={registrationTypeAr}
-              valueFr={registrationTypeFr}
-              onChangeAr={setRegistrationTypeAr}
-              onChangeFr={setRegistrationTypeFr}
-              optionType="registration_type"
-              labelAr="نوع التسجيل"
-              labelFr="Type d'inscription"
-              placeholderAr="اختر نوع التسجيل"
-              placeholderFr="Choisir le type"
-            />
-
-            <BilingualDropdown
-              valueAr={inscriptionStatusAr}
-              valueFr={inscriptionStatusFr}
-              onChangeAr={setInscriptionStatusAr}
-              onChangeFr={setInscriptionStatusFr}
-              optionType="inscription_status"
-              labelAr="حالة التسجيل"
-              labelFr="Statut d'inscription"
-              placeholderAr="اختر حالة التسجيل"
-              placeholderFr="Choisir le statut"
-            />
-
-            {/* Contact Info */}
-            <SectionHeader title="معلومات الاتصال" />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="professional_email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} type="email" dir="ltr" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم الهاتف</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} type="tel" dir="ltr" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Name Fields */}
+            {/* Name Fields - moved after Basic Info */}
             <SectionHeader title="الاسم واللقب" />
             
             <div className="grid grid-cols-3 gap-4">
@@ -457,6 +385,39 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
                         <SelectItem value="female">أنثى</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Contact Info */}
+            <SectionHeader title="معلومات الاتصال" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="professional_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} type="email" dir="ltr" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رقم الهاتف</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} type="tel" dir="ltr" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -775,6 +736,45 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
                   <FormMessage />
                 </FormItem>
               )}
+            />
+
+            {/* Employment Status, Registration Type, Inscription Status - moved after Thesis */}
+            <SectionHeader title="الحالة الوظيفية ونوع التسجيل" />
+            
+            <BilingualDropdown
+              valueAr={employmentStatusAr}
+              valueFr={employmentStatusFr}
+              onChangeAr={setEmploymentStatusAr}
+              onChangeFr={setEmploymentStatusFr}
+              optionType="employment_status"
+              labelAr="الحالة الوظيفية"
+              labelFr="Situation professionnelle"
+              placeholderAr="اختر الحالة الوظيفية"
+              placeholderFr="Choisir la situation"
+            />
+
+            <BilingualDropdown
+              valueAr={registrationTypeAr}
+              valueFr={registrationTypeFr}
+              onChangeAr={setRegistrationTypeAr}
+              onChangeFr={setRegistrationTypeFr}
+              optionType="registration_type"
+              labelAr="نوع التسجيل"
+              labelFr="Type d'inscription"
+              placeholderAr="اختر نوع التسجيل"
+              placeholderFr="Choisir le type"
+            />
+
+            <BilingualDropdown
+              valueAr={inscriptionStatusAr}
+              valueFr={inscriptionStatusFr}
+              onChangeAr={setInscriptionStatusAr}
+              onChangeFr={setInscriptionStatusFr}
+              optionType="inscription_status"
+              labelAr="حالة التسجيل"
+              labelFr="Statut d'inscription"
+              placeholderAr="اختر حالة التسجيل"
+              placeholderFr="Choisir le statut"
             />
 
             {/* Notes */}
