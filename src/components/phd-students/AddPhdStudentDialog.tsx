@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calculator } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,8 @@ import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import type { PhdStudentType } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
+import { calculateRegistrationDetails, getDefaultInscriptionStatus } from "@/lib/registration-calculation";
+import { toWesternNumerals } from "@/lib/numerals";
 
 // Generate academic years from 2000/2001 to 2024/2025
 const generateAcademicYears = (): string[] => {
@@ -79,8 +81,8 @@ const baseSchema = z.object({
   employment_status: z.string().optional().nullable(),
   registration_type: z.string().optional().nullable(),
   inscription_status: z.string().optional().nullable(),
-  current_year: z.string().min(1, "الطالب مسجل في مطلوب"),
-  registration_count: z.number().min(1, "عدد التسجيلات مطلوب").optional().nullable(),
+  current_year: z.string().optional().nullable(), // Auto-calculated
+  registration_count: z.number().optional().nullable(), // Auto-calculated
 });
 
 // PhD LMD schema (includes field)
@@ -97,6 +99,7 @@ interface AddPhdStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   studentType: PhdStudentType;
+  currentAcademicYear: string;
 }
 
 function SectionHeader({ title }: { title: string }) {
@@ -109,7 +112,7 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialStudentType }: AddPhdStudentDialogProps) {
+export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialStudentType, currentAcademicYear }: AddPhdStudentDialogProps) {
   const [selectedType, setSelectedType] = useState<PhdStudentType>(initialStudentType);
   
   // Bilingual dropdown states
@@ -119,6 +122,10 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
   const [registrationTypeFr, setRegistrationTypeFr] = useState("");
   const [inscriptionStatusAr, setInscriptionStatusAr] = useState("");
   const [inscriptionStatusFr, setInscriptionStatusFr] = useState("");
+  
+  // Calculated registration fields
+  const [calculatedCurrentYear, setCalculatedCurrentYear] = useState("");
+  const [calculatedRegistrationCount, setCalculatedRegistrationCount] = useState<number | null>(null);
   
   const createPhdLmd = useCreatePhdLmdStudent();
   const createPhdScience = useCreatePhdScienceStudent();
@@ -178,6 +185,33 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
       inscription_status: '',
     },
   });
+
+  // Watch first_registration_year for auto-calculation
+  const watchedFirstRegistrationYear = form.watch("first_registration_year");
+
+  // Auto-calculate current_year and registration_count when first_registration_year changes
+  useEffect(() => {
+    if (watchedFirstRegistrationYear && currentAcademicYear) {
+      const result = calculateRegistrationDetails(
+        currentAcademicYear,
+        watchedFirstRegistrationYear,
+        selectedType
+      );
+      
+      setCalculatedCurrentYear(result.currentYear);
+      setCalculatedRegistrationCount(result.registrationCount);
+      
+      // Update form values
+      form.setValue("current_year", result.currentYear);
+      form.setValue("registration_count", result.registrationCount);
+      
+      // Auto-update inscription_status if late
+      if (result.isLate) {
+        const newInscriptionStatus = getDefaultInscriptionStatus(result.currentYear, inscriptionStatusAr);
+        setInscriptionStatusAr(newInscriptionStatus);
+      }
+    }
+  }, [watchedFirstRegistrationYear, currentAcademicYear, selectedType, form, inscriptionStatusAr]);
 
   // Reset form when certificate type changes
   useEffect(() => {
@@ -279,43 +313,29 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                 </Select>
               </FormItem>
               
-              {/* Current Year and Registration Count */}
+              {/* Current Year and Registration Count - Auto-calculated */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="current_year"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>الطالب مسجل في *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="اختر السنة" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {selectedType === 'phd_lmd' ? (
-                            <>
-                              <SelectItem value="السنة الأولى">السنة الأولى</SelectItem>
-                              <SelectItem value="السنة الثانية">السنة الثانية</SelectItem>
-                              <SelectItem value="السنة الثالثة">السنة الثالثة</SelectItem>
-                              <SelectItem value="تمديد أول">تمديد أول</SelectItem>
-                              <SelectItem value="تمديد ثان">تمديد ثان</SelectItem>
-                              <SelectItem value="متأخر">متأخر</SelectItem>
-                            </>
-                          ) : (
-                            <>
-                              <SelectItem value="السنة الأولى">السنة الأولى</SelectItem>
-                              <SelectItem value="السنة الثانية">السنة الثانية</SelectItem>
-                              <SelectItem value="السنة الثالثة">السنة الثالثة</SelectItem>
-                              <SelectItem value="السنة الرابعة">السنة الرابعة</SelectItem>
-                              <SelectItem value="السنة الخامسة">السنة الخامسة</SelectItem>
-                              <SelectItem value="السنة السادسة">السنة السادسة</SelectItem>
-                              <SelectItem value="متأخر">متأخر</SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel className="flex items-center gap-2">
+                        الطالب مسجل في
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                          <Calculator className="h-3 w-3 ml-1" />
+                          محسوب تلقائياً
+                        </Badge>
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          value={calculatedCurrentYear || field.value || ''} 
+                          readOnly
+                          disabled
+                          className="bg-muted/50 text-foreground font-medium"
+                          placeholder="يُحسب من سنة أول تسجيل"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -326,14 +346,20 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                   name="registration_count"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>عدد التسجيلات في الدكتوراه</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        عدد التسجيلات في الدكتوراه
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                          <Calculator className="h-3 w-3 ml-1" />
+                          محسوب تلقائياً
+                        </Badge>
+                      </FormLabel>
                       <FormControl>
                         <Input 
-                          type="number" 
-                          min={1}
-                          placeholder="عدد التسجيلات"
-                          value={field.value ?? ''}
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                          value={calculatedRegistrationCount ? toWesternNumerals(calculatedRegistrationCount) : (field.value ? toWesternNumerals(field.value) : '')}
+                          readOnly
+                          disabled
+                          className="bg-muted/50 text-foreground font-medium"
+                          placeholder="يُحسب من سنة أول تسجيل"
                         />
                       </FormControl>
                       <FormMessage />
@@ -341,6 +367,11 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                   )}
                 />
               </div>
+              
+              {/* Info note about calculation */}
+              <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-md">
+                💡 يتم حساب "الطالب مسجل في" و "عدد التسجيلات" تلقائياً بناءً على الفرق بين السنة الجامعية الحالية وسنة أول تسجيل في الدكتوراه
+              </p>
             </div>
 
             {/* Basic Info */}
