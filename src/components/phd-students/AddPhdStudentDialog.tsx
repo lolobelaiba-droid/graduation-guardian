@@ -36,17 +36,7 @@ import type { PhdStudentType } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
 import { calculateRegistrationDetails, getDefaultInscriptionStatus, getCurrentYearLabel } from "@/lib/registration-calculation";
 import { toWesternNumerals } from "@/lib/numerals";
-
-// Generate academic years from 2000/2001 to 2024/2025
-const generateAcademicYears = (): string[] => {
-  const years: string[] = [];
-  for (let year = 2000; year <= 2024; year++) {
-    years.push(`${year}/${year + 1}`);
-  }
-  return years;
-};
-
-const academicYears = generateAcademicYears();
+import { academicYears } from "@/components/print/AddStudentDialog";
 
 // Base schema for PhD students
 const baseSchema = z.object({

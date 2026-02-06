@@ -40,17 +40,7 @@ import {
 } from "@/hooks/useCertificates";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
-
-// توليد السنوات الجامعية من 2000/2001 إلى 2024/2025
-const generateAcademicYears = (): string[] => {
-  const years: string[] = [];
-  for (let year = 2000; year <= 2024; year++) {
-    years.push(`${year}/${year + 1}`);
-  }
-  return years;
-};
-
-const academicYears = generateAcademicYears();
+import { academicYears } from "@/components/print/AddStudentDialog";
 
 // PhD LMD schema
 const phdLmdSchema = z.object({
@@ -195,8 +185,8 @@ export default function EditStudentDialog({
         date_of_birth: student.date_of_birth,
         birthplace_ar: student.birthplace_ar,
         birthplace_fr: student.birthplace_fr || "",
-        university_ar: student.university_ar || "جامعة محمد خيضر بسكرة",
-        university_fr: student.university_fr || "Université Mohamed Khider Biskra",
+        university_ar: student.university_ar || "جامعة أم البواقي",
+        university_fr: student.university_fr || "Université D'oum El Bouaghi",
         faculty_ar: student.faculty_ar || "",
         faculty_fr: student.faculty_fr || "",
         branch_ar: student.branch_ar,

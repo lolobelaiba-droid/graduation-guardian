@@ -248,16 +248,16 @@ export function CreateCertificateFromPhdDialog({
       // Include PhD reference data from selected student
       const phdReferenceData = selectedStudent ? {
         registration_number: selectedStudent.registration_number || null,
-        co_supervisor_ar: (selectedStudent as any).co_supervisor_ar || null,
-        supervisor_university: (selectedStudent as any).supervisor_university || null,
-        co_supervisor_university: (selectedStudent as any).co_supervisor_university || null,
-        employment_status: (selectedStudent as any).employment_status || null,
-        registration_type: (selectedStudent as any).registration_type || null,
-        inscription_status: (selectedStudent as any).inscription_status || null,
-        current_year: (selectedStudent as any).current_year || null,
-        registration_count: (selectedStudent as any).registration_count || null,
-        thesis_language: (selectedStudent as any).thesis_language || null,
-        notes: (selectedStudent as any).notes || null,
+        co_supervisor_ar: selectedStudent.co_supervisor_ar || null,
+        supervisor_university: selectedStudent.supervisor_university || null,
+        co_supervisor_university: selectedStudent.co_supervisor_university || null,
+        employment_status: selectedStudent.employment_status || null,
+        registration_type: selectedStudent.registration_type || null,
+        inscription_status: selectedStudent.inscription_status || null,
+        current_year: selectedStudent.current_year || null,
+        registration_count: selectedStudent.registration_count || null,
+        thesis_language: selectedStudent.thesis_language || null,
+        notes: selectedStudent.notes || null,
       } : {};
 
       const certificateData = {
