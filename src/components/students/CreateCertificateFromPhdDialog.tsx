@@ -498,6 +498,47 @@ export function CreateCertificateFromPhdDialog({
                 
                 <FormField
                   control={form.control}
+                  name="mention"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mention</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choisir la mention" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(mentionLabels).map(([key, labels]) => (
+                            <SelectItem key={key} value={key}>
+                              {labels.fr}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="defense_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>تاريخ المناقشة *</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="certificate_date"
                   render={({ field }) => (
                     <FormItem>
@@ -512,7 +553,7 @@ export function CreateCertificateFromPhdDialog({
               </div>
 
               {/* Thesis Title */}
-              <SectionHeader title="عنوان الأطروحة" />
+              <SectionHeader title="عنوان الأطروحة / Titre de la thèse" />
               <div className="grid grid-cols-1 gap-4">
                 <FormField
                   control={form.control}
@@ -533,49 +574,112 @@ export function CreateCertificateFromPhdDialog({
                     </FormItem>
                   )}
                 />
+                
+                <FormField
+                  control={form.control}
+                  name="thesis_title_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Titre de la thèse</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          value={field.value || ''}
+                          rows={2} 
+                          placeholder="Titre de la thèse en français"
+                          dir="ltr"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Jury */}
-              <SectionHeader title="لجنة المناقشة" />
+              <SectionHeader title="لجنة المناقشة / Jury" />
               
-              <FormField
-                control={form.control}
-                name="jury_president_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رئيس اللجنة *</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        suggestions={suggestions?.jury_president_ar || []}
-                        dir="auto"
-                        placeholder="اختر الرتبة ثم اكتب الاسم"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="jury_president_ar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>رئيس اللجنة *</FormLabel>
+                      <FormControl>
+                        <AcademicTitleInput
+                          {...field}
+                          suggestions={suggestions?.jury_president_ar || []}
+                          dir="auto"
+                          placeholder="اختر الرتبة ثم اكتب الاسم"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="jury_members_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>أعضاء اللجنة *</FormLabel>
-                    <FormControl>
-                      <JuryMembersInput
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        suggestions={suggestions?.jury_members_ar || []}
-                        dir="auto"
-                        placeholder="أضف أعضاء اللجنة"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="jury_president_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Président du jury</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          value={field.value || ''} 
+                          dir="ltr" 
+                          placeholder="Président du jury"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="jury_members_ar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>أعضاء اللجنة *</FormLabel>
+                      <FormControl>
+                        <JuryMembersInput
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          suggestions={suggestions?.jury_members_ar || []}
+                          dir="auto"
+                          placeholder="أضف أعضاء اللجنة"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="jury_members_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Membres du jury</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          value={field.value || ''} 
+                          rows={2}
+                          dir="ltr" 
+                          placeholder="Membres du jury (séparés par des virgules)"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Pre-filled fields (editable) */}
               <SectionHeader title="البيانات المنقولة من قاعدة البيانات (قابلة للتعديل)" />
