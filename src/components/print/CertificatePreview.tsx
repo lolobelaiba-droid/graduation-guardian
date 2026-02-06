@@ -52,6 +52,8 @@ interface CertificatePreviewProps {
   // Background offset controls
   backgroundOffsetX?: number;
   backgroundOffsetY?: number;
+  backgroundScaleX?: number;
+  backgroundScaleY?: number;
   onBackgroundOffsetChange?: (offsetX: number, offsetY: number) => void;
   showBackgroundControls?: boolean;
   onToggleBackgroundControls?: () => void;
@@ -80,6 +82,8 @@ export function CertificatePreview({
   isMoving = false,
   backgroundOffsetX = 0,
   backgroundOffsetY = 0,
+  backgroundScaleX = 100,
+  backgroundScaleY = 100,
   onBackgroundOffsetChange,
   showBackgroundControls = false,
   onToggleBackgroundControls,
@@ -529,14 +533,19 @@ export function CertificatePreview({
           }}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Background image with offset */}
+          {/* Background image with offset and separate X/Y scale - matches FullPreviewDialog */}
           {template.background_image_url && (
             <img
               src={template.background_image_url}
               alt="خلفية الشهادة"
-              className="absolute w-full h-full object-contain pointer-events-none"
+              className="absolute pointer-events-none"
               style={{
+                width: `${backgroundScaleX}%`,
+                height: `${backgroundScaleY}%`,
+                objectFit: 'fill',
                 transform: `translate(${backgroundOffsetX * SCALE}px, ${backgroundOffsetY * SCALE}px)`,
+                left: `${(100 - backgroundScaleX) / 2}%`,
+                top: `${(100 - backgroundScaleY) / 2}%`,
               }}
             />
           )}
