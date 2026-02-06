@@ -383,31 +383,37 @@ export function CreateCertificateFromPhdDialog({
                     <p className="text-sm">جرب البحث باسم آخر أو رقم تسجيل</p>
                   </div>
                 ) : (
-                  <div className="divide-y">
-                    {filteredStudents.map((student) => (
-                      <div
-                        key={student.id}
-                        className="p-4 hover:bg-primary/5 cursor-pointer transition-colors border-r-2 border-transparent hover:border-primary"
-                        onClick={() => handleStudentClick(student)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold">{student.full_name_ar}</h4>
-                            {student.full_name_fr && (
-                              <p className="text-sm text-muted-foreground">{student.full_name_fr}</p>
-                            )}
-                          </div>
-                          <Badge variant="outline">{student.registration_number}</Badge>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-sm text-muted-foreground">
-                          <span className="bg-muted px-2 py-0.5 rounded">{student.specialty_ar}</span>
-                          <span className="bg-muted px-2 py-0.5 rounded">{student.faculty_ar}</span>
-                        </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          المشرف: {student.supervisor_ar}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
+                        <tr className="border-b">
+                          <th className="text-right font-semibold p-2.5">الاسم بالعربية</th>
+                          <th className="text-right font-semibold p-2.5">الاسم بالفرنسية</th>
+                          <th className="text-right font-semibold p-2.5">رقم التسجيل</th>
+                          <th className="text-right font-semibold p-2.5">التخصص</th>
+                          <th className="text-right font-semibold p-2.5">الكلية</th>
+                          <th className="text-right font-semibold p-2.5">المشرف</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredStudents.map((student) => (
+                          <tr
+                            key={student.id}
+                            className="hover:bg-primary/5 cursor-pointer transition-colors"
+                            onClick={() => handleStudentClick(student)}
+                          >
+                            <td className="p-2.5 font-medium">{student.full_name_ar}</td>
+                            <td className="p-2.5 text-muted-foreground">{student.full_name_fr || "-"}</td>
+                            <td className="p-2.5">
+                              <Badge variant="outline">{student.registration_number}</Badge>
+                            </td>
+                            <td className="p-2.5">{student.specialty_ar}</td>
+                            <td className="p-2.5">{student.faculty_ar}</td>
+                            <td className="p-2.5 text-muted-foreground">{student.supervisor_ar}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </ScrollArea>
