@@ -8,14 +8,12 @@ import {
   Save,
   RefreshCw,
   Loader2,
-  Check,
   AlertTriangle,
   Image,
   X,
   Calendar,
   Settings2,
   FolderOpen,
-  Clock,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
@@ -23,7 +21,7 @@ import { CustomFieldsManager } from "@/components/settings/CustomFieldsManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Select,
   SelectContent,
@@ -69,11 +67,7 @@ export default function Settings() {
   const [isSavingUniversity, setIsSavingUniversity] = useState(false);
 
   // Backup State
-  const [autoBackup, setAutoBackup] = useState(true);
-  const [backupFrequency, setBackupFrequency] = useState("daily");
   const [backupCount, setBackupCount] = useState("10");
-  const [autoBackupCount, setAutoBackupCount] = useState("1");
-  const [backupHour, setBackupHour] = useState("02");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSavingNow, setIsSavingNow] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -129,20 +123,8 @@ export default function Settings() {
               if (setting.value) setUniversityLogo(setting.value);
               break;
             // Backup settings
-            case "auto_backup":
-              setAutoBackup(setting.value === "true");
-              break;
-            case "backup_frequency":
-              if (setting.value) setBackupFrequency(setting.value);
-              break;
             case "backup_count":
               if (setting.value) setBackupCount(setting.value);
-              break;
-            case "auto_backup_count":
-              if (setting.value) setAutoBackupCount(setting.value);
-              break;
-            case "backup_hour":
-              if (setting.value) setBackupHour(setting.value);
               break;
           }
         });
@@ -244,27 +226,6 @@ export default function Settings() {
     }
   };
 
-  const saveBackupSettings = async () => {
-    try {
-      await Promise.all([
-        saveSetting("auto_backup", autoBackup.toString()),
-        saveSetting("backup_frequency", backupFrequency),
-        saveSetting("backup_count", backupCount),
-        saveSetting("auto_backup_count", autoBackupCount),
-        saveSetting("backup_hour", backupHour),
-      ]);
-    } catch (error) {
-      console.error("Error saving backup settings:", error);
-    }
-  };
-
-  // Save backup settings when they change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      saveBackupSettings();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [autoBackup, backupFrequency, backupCount, autoBackupCount, backupHour]);
 
   const getBackupSummary = (data: BackupData['data']): BackupSummary => ({
     phdLmdCount: data.phd_lmd_certificates?.length || 0,
@@ -803,112 +764,15 @@ export default function Settings() {
         {/* Backup Tab */}
         <TabsContent value="backup">
           <div className="space-y-6">
-            <div className="bg-card rounded-2xl shadow-card p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold">النسخ الاحتياطي التلقائي</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    إنشاء نسخ احتياطية تلقائية للبيانات
-                  </p>
-                </div>
-                <Switch checked={autoBackup} onCheckedChange={setAutoBackup} />
+            {/* تنبيه بضرورة الحفظ اليدوي */}
+            <div className="bg-accent/50 border border-accent rounded-lg p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-accent-foreground mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-accent-foreground">تنبيه: لا تنسَ حفظ نسخة احتياطية من بياناتك بشكل دوري</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  احرص على تنزيل أو حفظ نسخة احتياطية بانتظام لتجنب فقدان البيانات
+                </p>
               </div>
-
-              {autoBackup && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <Label>تكرار النسخ</Label>
-                    <Select value={backupFrequency} onValueChange={setBackupFrequency}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hourly">كل ساعة</SelectItem>
-                        <SelectItem value="daily">يومياً</SelectItem>
-                        <SelectItem value="weekly">أسبوعياً</SelectItem>
-                        <SelectItem value="monthly">شهرياً</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>عدد النسخ التلقائية يومياً</Label>
-                    <Select value={autoBackupCount} onValueChange={setAutoBackupCount}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">01 نسخة</SelectItem>
-                        <SelectItem value="2">02 نسختان</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      ساعة الحفظ التلقائي
-                    </Label>
-                    <Select value={backupHour} onValueChange={setBackupHour}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 24 }, (_, i) => {
-                          const hour = i.toString().padStart(2, "0");
-                          return (
-                            <SelectItem key={hour} value={hour}>
-                              {hour}:00
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                    {autoBackupCount === "2" && (
-                      <p className="text-xs text-muted-foreground">
-                        النسخة الثانية ستكون الساعة {((parseInt(backupHour) + 12) % 24).toString().padStart(2, "0")}:00
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>عدد النسخ المحفوظة (الأقصى)</Label>
-                    <Select value={backupCount} onValueChange={setBackupCount}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5 نسخ</SelectItem>
-                        <SelectItem value="10">10 نسخ</SelectItem>
-                        <SelectItem value="20">20 نسخة</SelectItem>
-                        <SelectItem value="30">30 نسخة</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              {autoBackup && (
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">
-                      تم تفعيل النسخ الاحتياطي التلقائي - يتم الحفظ {backupFrequency === "hourly" ? "كل ساعة" : backupFrequency === "daily" ? "يومياً" : backupFrequency === "weekly" ? "أسبوعياً" : "شهرياً"} الساعة {backupHour}:00 ({autoBackupCount === "2" ? "نسختان يومياً" : "نسخة واحدة يومياً"})
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-2 shrink-0"
-                    onClick={saveBackupToStorage}
-                    disabled={isSavingNow}
-                  >
-                    {isSavingNow ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    حفظ الآن
-                  </Button>
-                </div>
-              )}
             </div>
 
             <div className="bg-card rounded-2xl shadow-card p-6">
@@ -928,6 +792,19 @@ export default function Settings() {
                     <Download className="h-4 w-4" />
                   )}
                   تنزيل نسخة احتياطية
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={saveBackupToStorage}
+                  disabled={isSavingNow}
+                >
+                  {isSavingNow ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  حفظ في المجلد
                 </Button>
                 <Button
                   variant="outline"
