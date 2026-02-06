@@ -16,8 +16,14 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// التحقق من بيئة Electron
+const isElectronEnv = typeof window !== 'undefined' && !!(window as any).electronAPI;
+
 const App = () => {
   useEffect(() => {
+    // في بيئة Electron، لا نحتاج لـ beforeunload لأن Electron يتعامل مع الإغلاق
+    if (isElectronEnv) return;
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "هل أنت متأكد من إغلاق التطبيق؟ تأكد من حفظ نسخة احتياطية من بياناتك قبل الإغلاق.";
