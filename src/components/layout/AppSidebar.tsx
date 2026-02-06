@@ -12,11 +12,13 @@ import {
   GraduationCap,
   Menu,
   X,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { title: "لوحة التحكم", icon: LayoutDashboard, path: "/" },
+  { title: "قاعدة بيانات طلبة الدكتوراه", icon: Database, path: "/phd-students" },
   { title: "إدارة الطلاب", icon: Users, path: "/students" },
   { title: "إدارة القوالب", icon: FileText, path: "/templates" },
   { title: "طباعة الشهادات", icon: Printer, path: "/print" },
