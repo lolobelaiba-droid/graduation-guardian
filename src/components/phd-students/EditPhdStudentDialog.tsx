@@ -68,11 +68,10 @@ const baseSchema = z.object({
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
-  thesis_title_ar: z.string().optional().nullable(),
+  thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
   thesis_title_fr: z.string().optional().nullable(),
-  thesis_language: z.string().optional().nullable(),
+  thesis_language: z.string().min(1, "لغة الأطروحة مطلوبة"),
   research_lab_ar: z.string().optional().nullable(),
-  status: z.string(),
   notes: z.string().optional().nullable(),
   // New fields
   co_supervisor_ar: z.string().optional().nullable(),
@@ -334,34 +333,6 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
               />
             </div>
 
-            {/* Status */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>الحالة *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(studentStatusLabels).map(([key, labels]) => (
-                          <SelectItem key={key} value={key}>
-                            {labels.ar}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             {/* Name Fields - moved after Basic Info */}
             <SectionHeader title="الاسم واللقب" />
             
@@ -417,43 +388,8 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
               />
             </div>
 
-            {/* Contact Info */}
-            <SectionHeader title="معلومات الاتصال" />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="professional_email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} type="email" dir="ltr" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم الهاتف</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} type="tel" dir="ltr" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Birth Info */}
-            <SectionHeader title="معلومات الميلاد" />
-            
-            <div className="grid grid-cols-3 gap-4">
+            {/* Birth Info - moved under Name section */}
+            <div className="grid grid-cols-3 gap-4 mt-4">
               <FormField
                 control={form.control}
                 name="date_of_birth"
@@ -490,6 +426,39 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
                     <FormLabel>Lieu de naissance</FormLabel>
                     <FormControl>
                       <Input {...field} value={field.value || ''} dir="ltr" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Contact Info */}
+            <SectionHeader title="معلومات الاتصال" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="professional_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} type="email" dir="ltr" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رقم الهاتف</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} type="tel" dir="ltr" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -755,7 +724,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
               name="thesis_title_ar"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>عنوان الأطروحة</FormLabel>
+                  <FormLabel>عنوان الأطروحة *</FormLabel>
                   <FormControl>
                     <Textarea {...field} value={field.value || ''} rows={2} dir="auto" />
                   </FormControl>
@@ -769,7 +738,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
               name="thesis_language"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>لغة الأطروحة</FormLabel>
+                  <FormLabel>لغة الأطروحة *</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || 'arabic'}>
                     <FormControl>
                       <SelectTrigger>

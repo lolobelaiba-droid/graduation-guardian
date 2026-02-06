@@ -67,11 +67,10 @@ const baseSchema = z.object({
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
-  thesis_title_ar: z.string().optional().nullable(),
+  thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
   thesis_title_fr: z.string().optional().nullable(),
-  thesis_language: z.string().optional().nullable(),
+  thesis_language: z.string().min(1, "لغة الأطروحة مطلوبة"),
   research_lab_ar: z.string().optional().nullable(),
-  status: z.string().default('active'),
   notes: z.string().optional().nullable(),
   // New fields
   co_supervisor_ar: z.string().optional().nullable(),
@@ -316,34 +315,6 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
               />
             </div>
 
-            {/* Status */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>الحالة *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر الحالة" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(studentStatusLabels).map(([key, labels]) => (
-                          <SelectItem key={key} value={key}>
-                            {labels.ar}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             {/* Name Fields - moved after Basic Info */}
             <SectionHeader title="الاسم واللقب / Nom et Prénom" />
             
@@ -399,6 +370,51 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
               />
             </div>
 
+            {/* Birth Info - moved under Name section */}
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <FormField
+                control={form.control}
+                name="date_of_birth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>تاريخ الميلاد *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="birthplace_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>مكان الميلاد (عربي) *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="مكان الميلاد" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="birthplace_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lieu de naissance</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Lieu de naissance" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {/* Contact Info */}
             <SectionHeader title="معلومات الاتصال" />
             
@@ -437,53 +453,6 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                         dir="ltr" 
                         placeholder="0XX XXX XXXX" 
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Birth Info */}
-            <SectionHeader title="معلومات الميلاد / Naissance" />
-            
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="date_of_birth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>تاريخ الميلاد *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="birthplace_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>مكان الميلاد (عربي) *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="مكان الميلاد" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="birthplace_fr"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lieu de naissance</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} dir="ltr" placeholder="Lieu de naissance" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -761,7 +730,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                 name="thesis_title_ar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>عنوان الأطروحة</FormLabel>
+                    <FormLabel>عنوان الأطروحة *</FormLabel>
                     <FormControl>
                       <Textarea 
                         {...field} 
@@ -782,7 +751,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                 name="thesis_language"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>لغة الأطروحة</FormLabel>
+                    <FormLabel>لغة الأطروحة *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || 'arabic'}>
                       <FormControl>
                         <SelectTrigger>
