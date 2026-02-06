@@ -79,6 +79,8 @@ const baseSchema = z.object({
   employment_status: z.string().optional().nullable(),
   registration_type: z.string().optional().nullable(),
   inscription_status: z.string().optional().nullable(),
+  current_year: z.string().min(1, "الطالب مسجل في مطلوب"),
+  registration_count: z.number().min(1, "عدد التسجيلات مطلوب").optional().nullable(),
 });
 
 // PhD LMD schema (includes field)
@@ -171,6 +173,8 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
       co_supervisor_university: '',
       employment_status: '',
       registration_type: '',
+      current_year: '',
+      registration_count: null,
       inscription_status: '',
     },
   });
@@ -253,7 +257,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* Student Type Selection */}
-            <div className="p-4 bg-muted/50 rounded-lg border">
+            <div className="p-4 bg-muted/50 rounded-lg border space-y-4">
               <FormItem>
                 <FormLabel className="text-base font-semibold">نوع الدكتوراه *</FormLabel>
                 <Select value={selectedType} onValueChange={(v) => setSelectedType(v as PhdStudentType)}>
@@ -274,6 +278,69 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                   </SelectContent>
                 </Select>
               </FormItem>
+              
+              {/* Current Year and Registration Count */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="current_year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الطالب مسجل في *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر السنة" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {selectedType === 'phd_lmd' ? (
+                            <>
+                              <SelectItem value="السنة الأولى">السنة الأولى</SelectItem>
+                              <SelectItem value="السنة الثانية">السنة الثانية</SelectItem>
+                              <SelectItem value="السنة الثالثة">السنة الثالثة</SelectItem>
+                              <SelectItem value="تمديد أول">تمديد أول</SelectItem>
+                              <SelectItem value="تمديد ثان">تمديد ثان</SelectItem>
+                              <SelectItem value="متأخر">متأخر</SelectItem>
+                            </>
+                          ) : (
+                            <>
+                              <SelectItem value="السنة الأولى">السنة الأولى</SelectItem>
+                              <SelectItem value="السنة الثانية">السنة الثانية</SelectItem>
+                              <SelectItem value="السنة الثالثة">السنة الثالثة</SelectItem>
+                              <SelectItem value="السنة الرابعة">السنة الرابعة</SelectItem>
+                              <SelectItem value="السنة الخامسة">السنة الخامسة</SelectItem>
+                              <SelectItem value="السنة السادسة">السنة السادسة</SelectItem>
+                              <SelectItem value="متأخر">متأخر</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="registration_count"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>عدد التسجيلات في الدكتوراه</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min={1}
+                          placeholder="عدد التسجيلات"
+                          value={field.value ?? ''}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Basic Info */}

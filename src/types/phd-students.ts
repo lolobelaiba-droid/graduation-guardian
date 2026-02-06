@@ -38,6 +38,8 @@ export interface BasePhdStudent {
   employment_status: string | null;
   registration_type: string | null;
   inscription_status: string | null;
+  current_year: string | null;
+  registration_count: number | null;
 }
 
 // PhD LMD Student (has field_ar/field_fr)
