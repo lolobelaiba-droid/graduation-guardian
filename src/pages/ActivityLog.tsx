@@ -80,6 +80,7 @@ export default function ActivityLog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<typeof activities[0] | null>(null);
 
   const { data: activities = [], isLoading, refetch } = useActivityLog();
   const deleteOldActivities = useDeleteOldActivities();
@@ -233,7 +234,7 @@ export default function ActivityLog() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
-                              <DropdownMenuItem className="gap-2">
+                            <DropdownMenuItem className="gap-2" onClick={() => setSelectedActivity(activity)}>
                                 <Eye className="h-4 w-4" />
                                 عرض التفاصيل
                               </DropdownMenuItem>
@@ -275,6 +276,72 @@ export default function ActivityLog() {
             >
               {deleteOldActivities.isPending ? "جاري الحذف..." : "حذف السجلات"}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Activity Details Dialog */}
+      <AlertDialog open={!!selectedActivity} onOpenChange={(open) => !open && setSelectedActivity(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              تفاصيل النشاط
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 pt-2 text-right">
+                {selectedActivity && (() => {
+                  const iconType = activityTypeToIcon[selectedActivity.activity_type];
+                  const Icon = typeIcons[iconType];
+                  return (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">النوع:</span>
+                        <Badge variant="outline" className={cn("gap-1", typeColors[iconType])}>
+                          <Icon className="h-3 w-3" />
+                          {activityTypeLabels[selectedActivity.activity_type]}
+                        </Badge>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-foreground">الوصف:</span>
+                        <p className="text-sm text-muted-foreground mt-1">{selectedActivity.description}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-sm font-medium text-foreground">المعرّف:</span>
+                          <p className="text-sm text-muted-foreground font-mono mt-1">
+                            {selectedActivity.entity_id ? toWesternNumerals(selectedActivity.entity_id) : "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-foreground">نوع الكيان:</span>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {selectedActivity.entity_type || "-"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-sm font-medium text-foreground">التاريخ:</span>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {selectedActivity.created_at ? formatDate(selectedActivity.created_at) : "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-foreground">المستخدم:</span>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {selectedActivity.created_by || "-"}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إغلاق</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
