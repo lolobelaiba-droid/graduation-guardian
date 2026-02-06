@@ -57,7 +57,7 @@ const phdLmdSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
-  gender: z.string().optional().nullable(),
+  gender: z.enum(['male', 'female']).optional().nullable(),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
@@ -94,7 +94,7 @@ const phdScienceSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
-  gender: z.string().optional().nullable(),
+  gender: z.enum(['male', 'female']).optional().nullable(),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
@@ -129,7 +129,7 @@ const masterSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
-  gender: z.string().optional().nullable(),
+  gender: z.enum(['male', 'female']).optional().nullable(),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
@@ -372,8 +372,8 @@ export default function EditStudentDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="ذكر">ذكر</SelectItem>
-                          <SelectItem value="أنثى">أنثى</SelectItem>
+                          <SelectItem value="male">ذكر</SelectItem>
+                          <SelectItem value="female">أنثى</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
