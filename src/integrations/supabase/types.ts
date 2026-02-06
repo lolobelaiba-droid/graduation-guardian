@@ -407,7 +407,7 @@ export type Database = {
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
-          supervisor_ar: string
+          supervisor_ar: string | null
           university_ar: string | null
           university_fr: string | null
           updated_at: string | null
@@ -435,7 +435,7 @@ export type Database = {
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
-          supervisor_ar: string
+          supervisor_ar?: string | null
           university_ar?: string | null
           university_fr?: string | null
           updated_at?: string | null
@@ -463,7 +463,7 @@ export type Database = {
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
-          supervisor_ar?: string
+          supervisor_ar?: string | null
           university_ar?: string | null
           university_fr?: string | null
           updated_at?: string | null
