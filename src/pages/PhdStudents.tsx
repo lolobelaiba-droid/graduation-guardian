@@ -4,6 +4,7 @@ import {
   Search,
   Plus,
   Download,
+  Upload,
   MoreHorizontal,
   Edit,
   Trash2,
@@ -50,6 +51,7 @@ import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students"
 import { AddPhdStudentDialog } from "@/components/phd-students/AddPhdStudentDialog";
 import { ViewPhdStudentDialog } from "@/components/phd-students/ViewPhdStudentDialog";
 import { EditPhdStudentDialog } from "@/components/phd-students/EditPhdStudentDialog";
+import { ImportPhdExcelDialog } from "@/components/phd-students/import";
 import { toast } from "sonner";
 import { toWesternNumerals } from "@/lib/numerals";
 
@@ -69,6 +71,9 @@ export default function PhdStudents() {
 
   // Add student dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Import dialog state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdStudents();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceStudents();
@@ -181,6 +186,10 @@ export default function PhdStudents() {
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4" />
+            استيراد Excel
+          </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
             <Download className="h-4 w-4" />
             تصدير Excel
@@ -334,6 +343,13 @@ export default function PhdStudents() {
       <AddPhdStudentDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
+        studentType={selectedType}
+      />
+
+      {/* Import Excel Dialog */}
+      <ImportPhdExcelDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
         studentType={selectedType}
       />
 

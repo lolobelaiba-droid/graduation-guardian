@@ -2,14 +2,13 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import {
   Search,
-  Plus,
   Download,
-  Upload,
   MoreHorizontal,
   Edit,
   Trash2,
   Eye,
   Loader2,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,8 +50,7 @@ import type { CertificateType, MentionType, Certificate } from "@/types/certific
 import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
 import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
 import EditStudentDialog from "@/components/students/EditStudentDialog";
-import { AddStudentDialog } from "@/components/print/AddStudentDialog";
-import { ImportExcelDialog } from "@/components/print/import";
+import { CreateCertificateFromPhdDialog } from "@/components/students/CreateCertificateFromPhdDialog";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 
@@ -70,11 +68,8 @@ export default function Students() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Certificate | null>(null);
 
-  // Add student dialog state
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-
-  // Import dialog state
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  // Create certificate from PhD dialog state
+  const [createCertDialogOpen, setCreateCertDialogOpen] = useState(false);
 
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceCertificates();
@@ -177,29 +172,30 @@ export default function Students() {
     toast.success(`تم تصدير ${toWesternNumerals(currentData.length)} طالب`);
   };
 
+  // Check if the current type is PhD (not master) to show the create from database button
+  const isPhdType = selectedCertType === 'phd_lmd' || selectedCertType === 'phd_science';
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">إدارة الطلاب</h1>
+          <h1 className="text-3xl font-bold text-foreground">إدارة الطلبة المناقشين</h1>
           <p className="text-muted-foreground mt-1">
-            إدارة بيانات الطلاب المسجلين في النظام
+            إدارة بيانات الطلاب الذين ناقشوا وحصلوا على شهاداتهم
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4" />
-            استيراد Excel
-          </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
             <Download className="h-4 w-4" />
             تصدير Excel
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-            إضافة طالب
-          </Button>
+          {isPhdType && (
+            <Button size="sm" className="gap-2" onClick={() => setCreateCertDialogOpen(true)}>
+              <Printer className="h-4 w-4" />
+              طباعة شهادة جديدة
+            </Button>
+          )}
         </div>
       </div>
 
@@ -331,19 +327,13 @@ export default function Students() {
         certificateType={selectedCertType}
       />
 
-      {/* Add Student Dialog */}
-      <AddStudentDialog
-        open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
+      {/* Create Certificate from PhD Database Dialog */}
+      <CreateCertificateFromPhdDialog
+        open={createCertDialogOpen}
+        onOpenChange={setCreateCertDialogOpen}
         certificateType={selectedCertType}
       />
 
-      {/* Import Excel Dialog */}
-      <ImportExcelDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        certificateType={selectedCertType}
-      />
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
