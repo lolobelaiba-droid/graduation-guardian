@@ -681,8 +681,8 @@ export function CreateCertificateFromPhdDialog({
                 />
               </div>
 
-              {/* Pre-filled fields (editable) */}
-              <SectionHeader title="البيانات المنقولة من قاعدة البيانات (قابلة للتعديل)" />
+              {/* Personal Info */}
+              <SectionHeader title="المعلومات الشخصية / Informations personnelles" />
               
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -704,7 +704,7 @@ export function CreateCertificateFromPhdDialog({
                   name="full_name_fr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>الاسم بالفرنسية</FormLabel>
+                      <FormLabel>Nom et Prénom</FormLabel>
                       <FormControl>
                         <Input {...field} value={field.value || ''} dir="ltr" />
                       </FormControl>
@@ -715,34 +715,6 @@ export function CreateCertificateFromPhdDialog({
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="date_of_birth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>تاريخ الميلاد *</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="birthplace_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>مكان الميلاد *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="gender"
@@ -760,6 +732,136 @@ export function CreateCertificateFromPhdDialog({
                           <SelectItem value="female">أنثى</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="date_of_birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>تاريخ الميلاد *</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="first_registration_year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>سنة أول تسجيل *</FormLabel>
+                      <FormControl>
+                        <DropdownWithAdd
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          optionType="academic_year"
+                          placeholder="السنة الجامعية"
+                          defaultOptions={academicYears}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="birthplace_ar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>مكان الميلاد *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="مكان الميلاد بالعربية" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="birthplace_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lieu de naissance</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ''} dir="ltr" placeholder="Lieu de naissance" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Contact Info */}
+              <SectionHeader title="معلومات الاتصال / Contact" />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="professional_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>البريد الإلكتروني</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ''} type="email" dir="ltr" placeholder="example@university.dz" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="phone_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>رقم الهاتف</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ''} type="tel" dir="ltr" placeholder="0XX XXX XXXX" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* University Info */}
+              <SectionHeader title="المعلومات الجامعية / Informations universitaires" />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="university_ar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الجامعة</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ''} placeholder="اسم الجامعة بالعربية" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="university_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Université</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom de l'université" />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -788,16 +890,12 @@ export function CreateCertificateFromPhdDialog({
                 
                 <FormField
                   control={form.control}
-                  name="supervisor_ar"
+                  name="faculty_fr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>المشرف *</FormLabel>
+                      <FormLabel>Faculté</FormLabel>
                       <FormControl>
-                        <AcademicTitleInput
-                          {...field}
-                          suggestions={suggestions?.supervisor_ar || []}
-                          placeholder="اسم المشرف"
-                        />
+                        <Input {...field} value={field.value || ''} dir="ltr" placeholder="Nom de la faculté" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -805,44 +903,7 @@ export function CreateCertificateFromPhdDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="branch_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الشعبة *</FormLabel>
-                      <FormControl>
-                        <AutocompleteInput
-                          {...field}
-                          suggestions={suggestions?.branch_ar || []}
-                          placeholder="الشعبة"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="specialty_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>التخصص *</FormLabel>
-                      <FormControl>
-                        <AutocompleteInput
-                          {...field}
-                          suggestions={suggestions?.specialty_ar || []}
-                          placeholder="التخصص"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+              {/* Field (PhD LMD only) */}
               {showFieldField && (
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -866,16 +927,17 @@ export function CreateCertificateFromPhdDialog({
                   
                   <FormField
                     control={form.control}
-                    name="research_lab_ar"
+                    name="field_fr"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>مخبر البحث {isResearchLabRequired ? '*' : ''}</FormLabel>
+                        <FormLabel>Domaine</FormLabel>
                         <FormControl>
                           <DropdownWithAdd
                             value={field.value || ''}
                             onChange={field.onChange}
-                            optionType="research_lab"
-                            placeholder="مخبر البحث"
+                            optionType="field_fr"
+                            placeholder="Domaine"
+                            dir="ltr"
                           />
                         </FormControl>
                         <FormMessage />
@@ -885,6 +947,128 @@ export function CreateCertificateFromPhdDialog({
                 </div>
               )}
 
+              {/* Branch & Specialty */}
+              <SectionHeader title="الشعبة والتخصص / Filière et Spécialité" />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="branch_ar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الشعبة *</FormLabel>
+                      <FormControl>
+                        <AutocompleteInput
+                          {...field}
+                          suggestions={suggestions?.branch_ar || []}
+                          placeholder="الشعبة"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="branch_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Filière</FormLabel>
+                      <FormControl>
+                        <AutocompleteInput
+                          {...field}
+                          value={field.value || ''}
+                          suggestions={suggestions?.branch_fr || []}
+                          placeholder="Filière"
+                          dir="ltr"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="specialty_ar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>التخصص *</FormLabel>
+                      <FormControl>
+                        <AutocompleteInput
+                          {...field}
+                          suggestions={suggestions?.specialty_ar || []}
+                          placeholder="التخصص"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="specialty_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Spécialité</FormLabel>
+                      <FormControl>
+                        <AutocompleteInput
+                          {...field}
+                          value={field.value || ''}
+                          suggestions={suggestions?.specialty_fr || []}
+                          placeholder="Spécialité"
+                          dir="ltr"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Supervisor & Research Lab */}
+              <SectionHeader title="المشرف ومخبر البحث / Directeur et Laboratoire" />
+              
+              <FormField
+                control={form.control}
+                name="supervisor_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المشرف *</FormLabel>
+                    <FormControl>
+                      <AcademicTitleInput
+                        {...field}
+                        suggestions={suggestions?.supervisor_ar || []}
+                        placeholder="اختر الرتبة ثم اكتب اسم المشرف"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="research_lab_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>مخبر البحث {isResearchLabRequired ? '*' : ''}</FormLabel>
+                    <FormControl>
+                      <DropdownWithAdd
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        optionType="research_lab"
+                        placeholder="مخبر البحث"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setSelectedStudent(null); }}>
                   إلغاء
