@@ -357,6 +357,8 @@ export type Database = {
           id: string
           option_type: string
           option_value: string
+          value_ar: string | null
+          value_fr: string | null
         }
         Insert: {
           created_at?: string
@@ -364,6 +366,8 @@ export type Database = {
           id?: string
           option_type: string
           option_value: string
+          value_ar?: string | null
+          value_fr?: string | null
         }
         Update: {
           created_at?: string
@@ -371,6 +375,8 @@ export type Database = {
           id?: string
           option_type?: string
           option_value?: string
+          value_ar?: string | null
+          value_fr?: string | null
         }
         Relationships: []
       }

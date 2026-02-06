@@ -30,6 +30,13 @@ export interface BasePhdStudent {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // New fields
+  co_supervisor_ar: string | null;
+  supervisor_university: string | null;
+  co_supervisor_university: string | null;
+  employment_status: string | null;
+  registration_type: string | null;
+  inscription_status: string | null;
 }
 
 // PhD LMD Student (has field_ar/field_fr)

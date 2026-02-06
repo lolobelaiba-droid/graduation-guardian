@@ -25,12 +25,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
 import {
   useUpdatePhdLmdStudent,
   useUpdatePhdScienceStudent,
 } from "@/hooks/usePhdStudents";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
+import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 import type { PhdStudentType, PhdStudent, PhdLmdStudent } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
 
@@ -71,6 +73,13 @@ const baseSchema = z.object({
   research_lab_ar: z.string().optional().nullable(),
   status: z.string(),
   notes: z.string().optional().nullable(),
+  // New fields
+  co_supervisor_ar: z.string().optional().nullable(),
+  supervisor_university: z.string().optional().nullable(),
+  co_supervisor_university: z.string().optional().nullable(),
+  employment_status: z.string().optional().nullable(),
+  registration_type: z.string().optional().nullable(),
+  inscription_status: z.string().optional().nullable(),
 });
 
 const phdLmdSchema = baseSchema.extend({
@@ -101,6 +110,19 @@ function SectionHeader({ title }: { title: string }) {
 export function EditPhdStudentDialog({ open, onOpenChange, student, studentType }: EditPhdStudentDialogProps) {
   const updatePhdLmd = useUpdatePhdLmdStudent();
   const updatePhdScience = useUpdatePhdScienceStudent();
+  
+  // Bilingual dropdown states
+  const [employmentStatusAr, setEmploymentStatusAr] = useState("");
+  const [employmentStatusFr, setEmploymentStatusFr] = useState("");
+  const [registrationTypeAr, setRegistrationTypeAr] = useState("");
+  const [registrationTypeFr, setRegistrationTypeFr] = useState("");
+  const [inscriptionStatusAr, setInscriptionStatusAr] = useState("");
+  const [inscriptionStatusFr, setInscriptionStatusFr] = useState("");
+  
+  // Fetch bilingual options to get French translations
+  const { data: employmentOptions = [] } = useBilingualDropdownOptions("employment_status");
+  const { data: registrationOptions = [] } = useBilingualDropdownOptions("registration_type");
+  const { data: inscriptionOptions = [] } = useBilingualDropdownOptions("inscription_status");
   
   const { data: suggestions } = useMultipleFieldSuggestions([
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar'
@@ -139,6 +161,13 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
       field_fr: '',
       status: 'active',
       notes: '',
+      // New fields
+      co_supervisor_ar: '',
+      supervisor_university: '',
+      co_supervisor_university: '',
+      employment_status: '',
+      registration_type: '',
+      inscription_status: '',
     },
   });
 
@@ -172,9 +201,29 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
         field_fr: (student as PhdLmdStudent).field_fr || '',
         status: student.status,
         notes: student.notes || '',
+        // New fields
+        co_supervisor_ar: student.co_supervisor_ar || '',
+        supervisor_university: student.supervisor_university || '',
+        co_supervisor_university: student.co_supervisor_university || '',
       });
+
+      // Set bilingual dropdown states
+      const empStatusAr = student.employment_status || '';
+      setEmploymentStatusAr(empStatusAr);
+      const empOption = employmentOptions.find(opt => opt.value_ar === empStatusAr);
+      setEmploymentStatusFr(empOption?.value_fr || '');
+
+      const regTypeAr = student.registration_type || '';
+      setRegistrationTypeAr(regTypeAr);
+      const regOption = registrationOptions.find(opt => opt.value_ar === regTypeAr);
+      setRegistrationTypeFr(regOption?.value_fr || '');
+
+      const inscStatusAr = student.inscription_status || '';
+      setInscriptionStatusAr(inscStatusAr);
+      const inscOption = inscriptionOptions.find(opt => opt.value_ar === inscStatusAr);
+      setInscriptionStatusFr(inscOption?.value_fr || '');
     }
-  }, [student, form]);
+  }, [student, form, employmentOptions, registrationOptions, inscriptionOptions]);
 
   const isLoading = updatePhdLmd.isPending || updatePhdScience.isPending;
 
@@ -182,12 +231,19 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
     if (!student) return;
     
     try {
+      const submitData = {
+        ...data,
+        employment_status: employmentStatusAr || null,
+        registration_type: registrationTypeAr || null,
+        inscription_status: inscriptionStatusAr || null,
+      };
+
       switch (studentType) {
         case 'phd_lmd':
-          await updatePhdLmd.mutateAsync({ id: student.id, ...data });
+          await updatePhdLmd.mutateAsync({ id: student.id, ...submitData });
           break;
         case 'phd_science':
-          await updatePhdScience.mutateAsync({ id: student.id, ...data });
+          await updatePhdScience.mutateAsync({ id: student.id, ...submitData });
           break;
       }
       onOpenChange(false);
@@ -203,7 +259,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             تعديل بيانات الطالب
@@ -279,6 +335,45 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
                 )}
               />
             </div>
+
+            {/* Employment Status, Registration Type, Inscription Status */}
+            <SectionHeader title="الحالة الوظيفية ونوع التسجيل" />
+            
+            <BilingualDropdown
+              valueAr={employmentStatusAr}
+              valueFr={employmentStatusFr}
+              onChangeAr={setEmploymentStatusAr}
+              onChangeFr={setEmploymentStatusFr}
+              optionType="employment_status"
+              labelAr="الحالة الوظيفية"
+              labelFr="Situation professionnelle"
+              placeholderAr="اختر الحالة الوظيفية"
+              placeholderFr="Choisir la situation"
+            />
+
+            <BilingualDropdown
+              valueAr={registrationTypeAr}
+              valueFr={registrationTypeFr}
+              onChangeAr={setRegistrationTypeAr}
+              onChangeFr={setRegistrationTypeFr}
+              optionType="registration_type"
+              labelAr="نوع التسجيل"
+              labelFr="Type d'inscription"
+              placeholderAr="اختر نوع التسجيل"
+              placeholderFr="Choisir le type"
+            />
+
+            <BilingualDropdown
+              valueAr={inscriptionStatusAr}
+              valueFr={inscriptionStatusFr}
+              onChangeAr={setInscriptionStatusAr}
+              onChangeFr={setInscriptionStatusFr}
+              optionType="inscription_status"
+              labelAr="حالة التسجيل"
+              labelFr="Statut d'inscription"
+              placeholderAr="اختر حالة التسجيل"
+              placeholderFr="Choisir le statut"
+            />
 
             {/* Contact Info */}
             <SectionHeader title="معلومات الاتصال" />
@@ -584,23 +679,87 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
 
             {/* Supervisor */}
             <SectionHeader title="المشرف" />
-            <FormField
-              control={form.control}
-              name="supervisor_ar"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>المشرف *</FormLabel>
-                  <FormControl>
-                    <AcademicTitleInput
-                      {...field}
-                      suggestions={suggestions?.supervisor_ar || []}
-                      dir="auto"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="supervisor_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المشرف *</FormLabel>
+                    <FormControl>
+                      <AcademicTitleInput
+                        {...field}
+                        suggestions={suggestions?.supervisor_ar || []}
+                        dir="auto"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="supervisor_university"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>جامعة انتماء المشرف</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        placeholder="جامعة انتماء المشرف"
+                        dir="auto"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Co-Supervisor */}
+            <SectionHeader title="مساعد المشرف (اختياري)" />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="co_supervisor_ar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>اسم ولقب مساعد المشرف</FormLabel>
+                    <FormControl>
+                      <AcademicTitleInput
+                        {...field}
+                        value={field.value || ''}
+                        suggestions={suggestions?.supervisor_ar || []}
+                        dir="auto"
+                        placeholder="اختياري"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="co_supervisor_university"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        placeholder="جامعة انتماء مساعد المشرف"
+                        dir="auto"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {/* Thesis */}
             <SectionHeader title="الأطروحة" />
