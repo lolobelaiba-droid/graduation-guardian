@@ -6,6 +6,7 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Students from "@/pages/Students";
+import PhdStudents from "@/pages/PhdStudents";
 import Templates from "@/pages/Templates";
 import PrintCertificates from "@/pages/PrintCertificates";
 import ActivityLog from "@/pages/ActivityLog";
@@ -23,6 +24,7 @@ const App = () => (
         <MainLayout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/phd-students" element={<PhdStudents />} />
             <Route path="/students" element={<Students />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/print" element={<PrintCertificates />} />

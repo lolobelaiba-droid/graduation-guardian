@@ -460,6 +460,102 @@ export type Database = {
         }
         Relationships: []
       }
+      phd_lmd_students: {
+        Row: {
+          birthplace_ar: string
+          birthplace_fr: string | null
+          branch_ar: string
+          branch_fr: string | null
+          created_at: string | null
+          date_of_birth: string
+          faculty_ar: string
+          faculty_fr: string | null
+          field_ar: string
+          field_fr: string | null
+          first_registration_year: string | null
+          full_name_ar: string
+          full_name_fr: string | null
+          gender: string | null
+          id: string
+          notes: string | null
+          phone_number: string | null
+          professional_email: string | null
+          registration_number: string
+          research_lab_ar: string | null
+          specialty_ar: string
+          specialty_fr: string | null
+          status: string | null
+          supervisor_ar: string
+          thesis_title_ar: string | null
+          thesis_title_fr: string | null
+          university_ar: string | null
+          university_fr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birthplace_ar: string
+          birthplace_fr?: string | null
+          branch_ar: string
+          branch_fr?: string | null
+          created_at?: string | null
+          date_of_birth: string
+          faculty_ar?: string
+          faculty_fr?: string | null
+          field_ar: string
+          field_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          registration_number: string
+          research_lab_ar?: string | null
+          specialty_ar: string
+          specialty_fr?: string | null
+          status?: string | null
+          supervisor_ar: string
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birthplace_ar?: string
+          birthplace_fr?: string | null
+          branch_ar?: string
+          branch_fr?: string | null
+          created_at?: string | null
+          date_of_birth?: string
+          faculty_ar?: string
+          faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar?: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          registration_number?: string
+          research_lab_ar?: string | null
+          specialty_ar?: string
+          specialty_fr?: string | null
+          status?: string | null
+          supervisor_ar?: string
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       phd_science_certificates: {
         Row: {
           birthplace_ar: string
@@ -565,6 +661,96 @@ export type Database = {
         }
         Relationships: []
       }
+      phd_science_students: {
+        Row: {
+          birthplace_ar: string
+          birthplace_fr: string | null
+          branch_ar: string
+          branch_fr: string | null
+          created_at: string | null
+          date_of_birth: string
+          faculty_ar: string
+          faculty_fr: string | null
+          first_registration_year: string | null
+          full_name_ar: string
+          full_name_fr: string | null
+          gender: string | null
+          id: string
+          notes: string | null
+          phone_number: string | null
+          professional_email: string | null
+          registration_number: string
+          research_lab_ar: string | null
+          specialty_ar: string
+          specialty_fr: string | null
+          status: string | null
+          supervisor_ar: string
+          thesis_title_ar: string | null
+          thesis_title_fr: string | null
+          university_ar: string | null
+          university_fr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birthplace_ar: string
+          birthplace_fr?: string | null
+          branch_ar: string
+          branch_fr?: string | null
+          created_at?: string | null
+          date_of_birth: string
+          faculty_ar?: string
+          faculty_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          registration_number: string
+          research_lab_ar?: string | null
+          specialty_ar: string
+          specialty_fr?: string | null
+          status?: string | null
+          supervisor_ar: string
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birthplace_ar?: string
+          birthplace_fr?: string | null
+          branch_ar?: string
+          branch_fr?: string | null
+          created_at?: string | null
+          date_of_birth?: string
+          faculty_ar?: string
+          faculty_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar?: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          registration_number?: string
+          research_lab_ar?: string | null
+          specialty_ar?: string
+          specialty_fr?: string | null
+          status?: string | null
+          supervisor_ar?: string
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       print_history: {
         Row: {
           certificate_type: Database["public"]["Enums"]["certificate_type"]
@@ -662,6 +848,7 @@ export type Database = {
         | "backup_created"
       certificate_type: "phd_lmd" | "phd_science" | "master"
       mention_type: "honorable" | "very_honorable"
+      phd_student_type: "phd_lmd" | "phd_science"
       template_language:
         | "ar"
         | "fr"
@@ -810,6 +997,7 @@ export const Constants = {
       ],
       certificate_type: ["phd_lmd", "phd_science", "master"],
       mention_type: ["honorable", "very_honorable"],
+      phd_student_type: ["phd_lmd", "phd_science"],
       template_language: [
         "ar",
         "fr",
