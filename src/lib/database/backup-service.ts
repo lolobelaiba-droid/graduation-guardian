@@ -20,6 +20,13 @@ export interface BackupData {
     dropdown_options: TablesInsert<'dropdown_options'>[];
     custom_fonts: TablesInsert<'custom_fonts'>[];
     activity_log: TablesInsert<'activity_log'>[];
+    phd_lmd_students?: TablesInsert<'phd_lmd_students'>[];
+    phd_science_students?: TablesInsert<'phd_science_students'>[];
+    academic_titles?: TablesInsert<'academic_titles'>[];
+    custom_fields?: TablesInsert<'custom_fields'>[];
+    custom_field_values?: TablesInsert<'custom_field_values'>[];
+    custom_field_options?: TablesInsert<'custom_field_options'>[];
+    print_history?: TablesInsert<'print_history'>[];
   };
 }
 
@@ -51,6 +58,13 @@ export class BackupService {
         dropdownOptions,
         customFonts,
         activityLog,
+        phdLmdStudents,
+        phdScienceStudents,
+        academicTitles,
+        customFields,
+        customFieldValues,
+        customFieldOptions,
+        printHistory,
       ] = await Promise.all([
         supabase.from("phd_lmd_certificates").select("*"),
         supabase.from("phd_science_certificates").select("*"),
@@ -62,10 +76,17 @@ export class BackupService {
         supabase.from("dropdown_options").select("*"),
         supabase.from("custom_fonts").select("*"),
         supabase.from("activity_log").select("*"),
+        supabase.from("phd_lmd_students").select("*"),
+        supabase.from("phd_science_students").select("*"),
+        supabase.from("academic_titles").select("*"),
+        supabase.from("custom_fields").select("*"),
+        supabase.from("custom_field_values").select("*"),
+        supabase.from("custom_field_options").select("*"),
+        supabase.from("print_history").select("*"),
       ]);
 
       const backupData: BackupData = {
-        version: "1.0",
+        version: "2.0",
         created_at: new Date().toISOString(),
         data: {
           phd_lmd_certificates: (phdLmd.data || []) as TablesInsert<'phd_lmd_certificates'>[],
@@ -78,6 +99,13 @@ export class BackupService {
           dropdown_options: (dropdownOptions.data || []) as TablesInsert<'dropdown_options'>[],
           custom_fonts: (customFonts.data || []) as TablesInsert<'custom_fonts'>[],
           activity_log: (activityLog.data || []) as TablesInsert<'activity_log'>[],
+          phd_lmd_students: (phdLmdStudents.data || []) as TablesInsert<'phd_lmd_students'>[],
+          phd_science_students: (phdScienceStudents.data || []) as TablesInsert<'phd_science_students'>[],
+          academic_titles: (academicTitles.data || []) as TablesInsert<'academic_titles'>[],
+          custom_fields: (customFields.data || []) as TablesInsert<'custom_fields'>[],
+          custom_field_values: (customFieldValues.data || []) as TablesInsert<'custom_field_values'>[],
+          custom_field_options: (customFieldOptions.data || []) as TablesInsert<'custom_field_options'>[],
+          print_history: (printHistory.data || []) as TablesInsert<'print_history'>[],
         },
       };
 
@@ -106,42 +134,57 @@ export class BackupService {
       const { data: tableData } = backupData;
       
       // Delete existing data (order matters for foreign keys)
+      await supabase.from("custom_field_values").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("custom_field_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("certificate_template_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("print_history").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("certificate_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("custom_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("phd_lmd_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("phd_science_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("master_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("phd_lmd_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("phd_science_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("dropdown_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("custom_fonts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("academic_titles").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("activity_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("user_settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
-      // Restore in order
-      if (tableData.phd_lmd_certificates?.length > 0) {
-        await supabase.from("phd_lmd_certificates").insert(tableData.phd_lmd_certificates);
-      }
+      // Helper to restore a table
+      const restoreTable = async (tableName: string, data: unknown[] | undefined) => {
+        if (data && data.length > 0) {
+          await supabase.from(tableName as 'phd_lmd_certificates').insert(data as TablesInsert<'phd_lmd_certificates'>[]);
+        }
+      };
 
-      if (tableData.phd_science_certificates?.length > 0) {
-        await supabase.from("phd_science_certificates").insert(tableData.phd_science_certificates);
-      }
+      // Independent tables first
+      await Promise.all([
+        restoreTable("phd_lmd_certificates", tableData.phd_lmd_certificates),
+        restoreTable("phd_science_certificates", tableData.phd_science_certificates),
+        restoreTable("master_certificates", tableData.master_certificates),
+        restoreTable("phd_lmd_students", tableData.phd_lmd_students),
+        restoreTable("phd_science_students", tableData.phd_science_students),
+        restoreTable("dropdown_options", tableData.dropdown_options),
+        restoreTable("custom_fonts", tableData.custom_fonts),
+        restoreTable("academic_titles", tableData.academic_titles),
+        restoreTable("activity_log", tableData.activity_log),
+        restoreTable("settings", tableData.settings),
+        restoreTable("user_settings", tableData.user_settings),
+      ]);
 
-      if (tableData.master_certificates?.length > 0) {
-        await supabase.from("master_certificates").insert(tableData.master_certificates);
-      }
+      // Parent tables with dependents
+      await restoreTable("certificate_templates", tableData.certificate_templates);
+      await restoreTable("custom_fields", tableData.custom_fields);
 
-      if (tableData.certificate_templates?.length > 0) {
-        await supabase.from("certificate_templates").insert(tableData.certificate_templates);
-      }
-
-      if (tableData.certificate_template_fields?.length > 0) {
-        await supabase.from("certificate_template_fields").insert(tableData.certificate_template_fields);
-      }
-
-      if (tableData.dropdown_options?.length > 0) {
-        await supabase.from("dropdown_options").insert(tableData.dropdown_options);
-      }
-
-      if (tableData.custom_fonts?.length > 0) {
-        await supabase.from("custom_fonts").insert(tableData.custom_fonts);
-      }
+      // Dependent tables
+      await Promise.all([
+        restoreTable("certificate_template_fields", tableData.certificate_template_fields),
+        restoreTable("custom_field_values", tableData.custom_field_values),
+        restoreTable("custom_field_options", tableData.custom_field_options),
+        restoreTable("print_history", tableData.print_history),
+      ]);
 
       return { success: true, error: null };
     } catch (error) {
