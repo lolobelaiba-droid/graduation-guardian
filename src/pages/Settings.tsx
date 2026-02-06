@@ -14,6 +14,8 @@ import {
   X,
   Calendar,
   Settings2,
+  FolderOpen,
+  Clock,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
@@ -49,6 +51,8 @@ interface BackupSummary {
   phdScienceCount: number;
   masterCount: number;
   templatesCount: number;
+  phdLmdStudentsCount: number;
+  phdScienceStudentsCount: number;
   createdAt?: string;
 }
 
@@ -84,6 +88,8 @@ export default function Settings() {
   const [autoBackup, setAutoBackup] = useState(true);
   const [backupFrequency, setBackupFrequency] = useState("daily");
   const [backupCount, setBackupCount] = useState("10");
+  const [autoBackupCount, setAutoBackupCount] = useState("1");
+  const [backupHour, setBackupHour] = useState("02");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
@@ -154,6 +160,12 @@ export default function Settings() {
               break;
             case "backup_count":
               if (setting.value) setBackupCount(setting.value);
+              break;
+            case "auto_backup_count":
+              if (setting.value) setAutoBackupCount(setting.value);
+              break;
+            case "backup_hour":
+              if (setting.value) setBackupHour(setting.value);
               break;
             // Print settings
             case "print_paper_size":
@@ -286,6 +298,8 @@ export default function Settings() {
         saveSetting("auto_backup", autoBackup.toString()),
         saveSetting("backup_frequency", backupFrequency),
         saveSetting("backup_count", backupCount),
+        saveSetting("auto_backup_count", autoBackupCount),
+        saveSetting("backup_hour", backupHour),
       ]);
     } catch (error) {
       console.error("Error saving backup settings:", error);
@@ -298,7 +312,7 @@ export default function Settings() {
       saveBackupSettings();
     }, 500);
     return () => clearTimeout(timer);
-  }, [autoBackup, backupFrequency, backupCount]);
+  }, [autoBackup, backupFrequency, backupCount, autoBackupCount, backupHour]);
 
   const getCurrentBackupData = async () => {
     const [
@@ -308,9 +322,17 @@ export default function Settings() {
       templates,
       templateFields,
       settings,
+      userSettings,
       dropdownOptions,
       customFonts,
       activityLog,
+      phdLmdStudents,
+      phdScienceStudents,
+      academicTitles,
+      customFields,
+      customFieldValues,
+      customFieldOptions,
+      printHistory,
     ] = await Promise.all([
       supabase.from("phd_lmd_certificates").select("*"),
       supabase.from("phd_science_certificates").select("*"),
@@ -318,13 +340,21 @@ export default function Settings() {
       supabase.from("certificate_templates").select("*"),
       supabase.from("certificate_template_fields").select("*"),
       supabase.from("settings").select("*"),
+      supabase.from("user_settings").select("*"),
       supabase.from("dropdown_options").select("*"),
       supabase.from("custom_fonts").select("*"),
       supabase.from("activity_log").select("*"),
+      supabase.from("phd_lmd_students").select("*"),
+      supabase.from("phd_science_students").select("*"),
+      supabase.from("academic_titles").select("*"),
+      supabase.from("custom_fields").select("*"),
+      supabase.from("custom_field_values").select("*"),
+      supabase.from("custom_field_options").select("*"),
+      supabase.from("print_history").select("*"),
     ]);
 
     return {
-      version: "1.0",
+      version: "2.0",
       created_at: new Date().toISOString(),
       data: {
         phd_lmd_certificates: phdLmd.data || [],
@@ -333,9 +363,17 @@ export default function Settings() {
         certificate_templates: templates.data || [],
         certificate_template_fields: templateFields.data || [],
         settings: settings.data || [],
+        user_settings: userSettings.data || [],
         dropdown_options: dropdownOptions.data || [],
         custom_fonts: customFonts.data || [],
         activity_log: activityLog.data || [],
+        phd_lmd_students: phdLmdStudents.data || [],
+        phd_science_students: phdScienceStudents.data || [],
+        academic_titles: academicTitles.data || [],
+        custom_fields: customFields.data || [],
+        custom_field_values: customFieldValues.data || [],
+        custom_field_options: customFieldOptions.data || [],
+        print_history: printHistory.data || [],
       },
     };
   };
@@ -376,46 +414,61 @@ export default function Settings() {
     // Note: Order matters due to foreign key constraints
 
     // First, delete dependent tables
+    await supabase.from("custom_field_values").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("custom_field_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     await supabase.from("certificate_template_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("print_history").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     
     // Then delete parent tables
     await supabase.from("certificate_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("custom_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
     // Delete certificate tables
     await supabase.from("phd_lmd_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     await supabase.from("phd_science_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     await supabase.from("master_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("phd_lmd_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("phd_science_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     await supabase.from("dropdown_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     await supabase.from("custom_fonts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("academic_titles").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("activity_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("user_settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await supabase.from("settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
-    // Restore in order
-    if (tableData.phd_lmd_certificates?.length > 0) {
-      await supabase.from("phd_lmd_certificates").insert(tableData.phd_lmd_certificates);
-    }
+    // Restore in order - independent tables first
+    const restoreTable = async (tableName: string) => {
+      if (tableData[tableName]?.length > 0) {
+        await supabase.from(tableName as "phd_lmd_certificates").insert(tableData[tableName]);
+      }
+    };
 
-    if (tableData.phd_science_certificates?.length > 0) {
-      await supabase.from("phd_science_certificates").insert(tableData.phd_science_certificates);
-    }
+    // Independent tables
+    await Promise.all([
+      restoreTable("phd_lmd_certificates"),
+      restoreTable("phd_science_certificates"),
+      restoreTable("master_certificates"),
+      restoreTable("phd_lmd_students"),
+      restoreTable("phd_science_students"),
+      restoreTable("dropdown_options"),
+      restoreTable("custom_fonts"),
+      restoreTable("academic_titles"),
+      restoreTable("activity_log"),
+      restoreTable("settings"),
+      restoreTable("user_settings"),
+    ]);
 
-    if (tableData.master_certificates?.length > 0) {
-      await supabase.from("master_certificates").insert(tableData.master_certificates);
-    }
+    // Parent tables that have dependents
+    await restoreTable("certificate_templates");
+    await restoreTable("custom_fields");
 
-    if (tableData.certificate_templates?.length > 0) {
-      await supabase.from("certificate_templates").insert(tableData.certificate_templates);
-    }
-
-    if (tableData.certificate_template_fields?.length > 0) {
-      await supabase.from("certificate_template_fields").insert(tableData.certificate_template_fields);
-    }
-
-    if (tableData.dropdown_options?.length > 0) {
-      await supabase.from("dropdown_options").insert(tableData.dropdown_options);
-    }
-
-    if (tableData.custom_fonts?.length > 0) {
-      await supabase.from("custom_fonts").insert(tableData.custom_fonts);
-    }
+    // Dependent tables
+    await Promise.all([
+      restoreTable("certificate_template_fields"),
+      restoreTable("custom_field_values"),
+      restoreTable("custom_field_options"),
+      restoreTable("print_history"),
+    ]);
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -439,6 +492,8 @@ export default function Settings() {
         phdScienceCount: tableData.phd_science_certificates?.length || 0,
         masterCount: tableData.master_certificates?.length || 0,
         templatesCount: tableData.certificate_templates?.length || 0,
+        phdLmdStudentsCount: tableData.phd_lmd_students?.length || 0,
+        phdScienceStudentsCount: tableData.phd_science_students?.length || 0,
         createdAt: backupData.created_at,
       };
 
@@ -449,6 +504,8 @@ export default function Settings() {
         phdScienceCount: currentBackup.data.phd_science_certificates?.length || 0,
         masterCount: currentBackup.data.master_certificates?.length || 0,
         templatesCount: currentBackup.data.certificate_templates?.length || 0,
+        phdLmdStudentsCount: currentBackup.data.phd_lmd_students?.length || 0,
+        phdScienceStudentsCount: currentBackup.data.phd_science_students?.length || 0,
       };
 
       setPendingBackupData({ data: tableData, summary: backupSummary });
@@ -565,30 +622,34 @@ export default function Settings() {
         <AlertDialogContent className="max-w-lg" dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-right">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               تأكيد الاستعادة
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right space-y-4">
               <p>سيتم استبدال جميع البيانات الحالية بالبيانات من النسخة الاحتياطية.</p>
               
               <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                  <h4 className="font-semibold text-red-600 dark:text-red-400 mb-2">البيانات الحالية (ستُحذف)</h4>
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <h4 className="font-semibold text-destructive mb-2">البيانات الحالية (ستُحذف)</h4>
                   <ul className="text-sm space-y-1 text-foreground">
-                    <li>• دكتوراه ل م د: {currentDataSummary?.phdLmdCount || 0} طالب</li>
-                    <li>• دكتوراه علوم: {currentDataSummary?.phdScienceCount || 0} طالب</li>
-                    <li>• ماستر: {currentDataSummary?.masterCount || 0} طالب</li>
-                    <li>• القوالب: {currentDataSummary?.templatesCount || 0} قالب</li>
+                    <li>• شهادات دكتوراه ل م د: {currentDataSummary?.phdLmdCount || 0}</li>
+                    <li>• شهادات دكتوراه علوم: {currentDataSummary?.phdScienceCount || 0}</li>
+                    <li>• شهادات ماستر: {currentDataSummary?.masterCount || 0}</li>
+                    <li>• طلبة دكتوراه ل م د: {currentDataSummary?.phdLmdStudentsCount || 0}</li>
+                    <li>• طلبة دكتوراه علوم: {currentDataSummary?.phdScienceStudentsCount || 0}</li>
+                    <li>• القوالب: {currentDataSummary?.templatesCount || 0}</li>
                   </ul>
                 </div>
                 
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                  <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2">النسخة الاحتياطية (ستُستعاد)</h4>
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+                  <h4 className="font-semibold text-primary mb-2">النسخة الاحتياطية (ستُستعاد)</h4>
                   <ul className="text-sm space-y-1 text-foreground">
-                    <li>• دكتوراه ل م د: {pendingBackupData?.summary.phdLmdCount || 0} طالب</li>
-                    <li>• دكتوراه علوم: {pendingBackupData?.summary.phdScienceCount || 0} طالب</li>
-                    <li>• ماستر: {pendingBackupData?.summary.masterCount || 0} طالب</li>
-                    <li>• القوالب: {pendingBackupData?.summary.templatesCount || 0} قالب</li>
+                    <li>• شهادات دكتوراه ل م د: {pendingBackupData?.summary.phdLmdCount || 0}</li>
+                    <li>• شهادات دكتوراه علوم: {pendingBackupData?.summary.phdScienceCount || 0}</li>
+                    <li>• شهادات ماستر: {pendingBackupData?.summary.masterCount || 0}</li>
+                    <li>• طلبة دكتوراه ل م د: {pendingBackupData?.summary.phdLmdStudentsCount || 0}</li>
+                    <li>• طلبة دكتوراه علوم: {pendingBackupData?.summary.phdScienceStudentsCount || 0}</li>
+                    <li>• القوالب: {pendingBackupData?.summary.templatesCount || 0}</li>
                   </ul>
                   {pendingBackupData?.summary.createdAt && (
                     <p className="text-xs text-muted-foreground mt-2">
@@ -598,7 +659,7 @@ export default function Settings() {
                 </div>
               </div>
               
-              <p className="text-yellow-600 dark:text-yellow-400 text-sm">
+              <p className="text-destructive text-sm">
                 ⚠️ يمكنك التراجع عن هذا الإجراء خلال نفس الجلسة فقط
               </p>
             </AlertDialogDescription>
@@ -805,7 +866,7 @@ export default function Settings() {
               </div>
 
               {autoBackup && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label>تكرار النسخ</Label>
                     <Select value={backupFrequency} onValueChange={setBackupFrequency}>
@@ -821,7 +882,45 @@ export default function Settings() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>عدد النسخ المحفوظة</Label>
+                    <Label>عدد النسخ التلقائية يومياً</Label>
+                    <Select value={autoBackupCount} onValueChange={setAutoBackupCount}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">01 نسخة</SelectItem>
+                        <SelectItem value="2">02 نسختان</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      ساعة الحفظ التلقائي
+                    </Label>
+                    <Select value={backupHour} onValueChange={setBackupHour}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 24 }, (_, i) => {
+                          const hour = i.toString().padStart(2, "0");
+                          return (
+                            <SelectItem key={hour} value={hour}>
+                              {hour}:00
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {autoBackupCount === "2" && (
+                      <p className="text-xs text-muted-foreground">
+                        النسخة الثانية ستكون الساعة {((parseInt(backupHour) + 12) % 24).toString().padStart(2, "0")}:00
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>عدد النسخ المحفوظة (الأقصى)</Label>
                     <Select value={backupCount} onValueChange={setBackupCount}>
                       <SelectTrigger>
                         <SelectValue />
@@ -839,16 +938,19 @@ export default function Settings() {
 
               {autoBackup && (
                 <div className="mt-4 p-3 bg-muted/50 rounded-lg flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
+                  <Check className="h-4 w-4 text-primary" />
                   <span className="text-sm text-muted-foreground">
-                    تم تفعيل النسخ الاحتياطي التلقائي - يتم الحفظ {backupFrequency === "hourly" ? "كل ساعة" : backupFrequency === "daily" ? "يومياً" : backupFrequency === "weekly" ? "أسبوعياً" : "شهرياً"}
+                    تم تفعيل النسخ الاحتياطي التلقائي - يتم الحفظ {backupFrequency === "hourly" ? "كل ساعة" : backupFrequency === "daily" ? "يومياً" : backupFrequency === "weekly" ? "أسبوعياً" : "شهرياً"} الساعة {backupHour}:00 ({autoBackupCount === "2" ? "نسختان يومياً" : "نسخة واحدة يومياً"})
                   </span>
                 </div>
               )}
             </div>
 
             <div className="bg-card rounded-2xl shadow-card p-6">
-              <h3 className="text-lg font-semibold mb-4">النسخ الاحتياطي اليدوي</h3>
+              <h3 className="text-lg font-semibold mb-2">النسخ الاحتياطي اليدوي</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                تنزيل ملف JSON يحتوي على جميع بيانات النظام: الشهادات، طلبة الدكتوراه، القوالب، الإعدادات، الألقاب الأكاديمية، الحقول المخصصة، وسجل الأنشطة
+              </p>
               <div className="flex flex-wrap gap-4">
                 <Button
                   className="gap-2"
@@ -875,6 +977,16 @@ export default function Settings() {
                   )}
                   استعادة من نسخة
                 </Button>
+                <Button
+                  variant="secondary"
+                  className="gap-2"
+                  onClick={() => {
+                    toast.info("مجلد النسخ الاحتياطية التلقائية متاح فقط في النسخة المكتبية من التطبيق");
+                  }}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  فتح مجلد النسخ الاحتياطية
+                </Button>
                 {canUndo && (
                   <Button
                     variant="destructive"
@@ -891,13 +1003,10 @@ export default function Settings() {
                   </Button>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground mt-4">
-                سيتم تنزيل ملف JSON يحتوي على جميع بيانات النظام بما في ذلك الطلاب والقوالب والإعدادات
-              </p>
               {canUndo && (
-                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm text-yellow-700 dark:text-yellow-400">
+                <div className="mt-4 p-3 bg-accent/50 border border-accent rounded-lg flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-accent-foreground" />
+                  <span className="text-sm text-accent-foreground">
                     يمكنك التراجع عن الاستعادة الأخيرة - هذا الخيار متاح فقط خلال هذه الجلسة
                   </span>
                 </div>
