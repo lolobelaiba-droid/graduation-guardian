@@ -493,3 +493,50 @@ html.theme-slate {
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
+
+/* ============================================
+   Print Styles - CSS-based native printing
+   ============================================ */
+
+/* Base print reset - hide everything by default */
+@media print {
+  /* Hide sidebar, buttons, scrollbars, and all UI chrome */
+  .no-print,
+  nav,
+  aside,
+  header,
+  footer,
+  button,
+  [role="dialog"],
+  [data-sonner-toaster],
+  .toaster,
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Reset page margins and backgrounds */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Ensure the printable certificate container is rendered correctly */
+  .printable-certificate-container {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure fonts are embedded in print */
+  .printable-certificate-container * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

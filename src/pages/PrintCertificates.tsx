@@ -37,10 +37,14 @@ import { ImportExcelDialog } from "@/components/print/import";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
 import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
 import { FontManagement } from "@/components/print/FontManagement";
+import { PrintableCSS } from "@/components/print/PrintableCSS";
 import { getFontOptions, setCustomFonts, type FontConfig } from "@/lib/arabicFonts";
 import { toWesternNumerals } from "@/lib/numerals";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useCssPrint } from "@/hooks/useCssPrint";
+import { usePrintSettings, getPaperDimensions, PAPER_SIZES, DEFAULT_PRINT_SETTINGS } from "@/hooks/usePrintSettings";
+import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 
 export default function PrintCertificates() {
   const [selectedType, setSelectedType] = useState<CertificateType>("phd_lmd");
@@ -85,8 +89,10 @@ export default function PrintCertificates() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // Desktop printing (Electron) state
-  const isDesktop = typeof window !== 'undefined' && !!window.electronAPI?.getPrinters;
+  // Desktop printing (Electron) state - detect via isElectron flag or getPrinters
+  const isDesktop = typeof window !== 'undefined' && (
+    window.electronAPI?.isElectron === true || !!window.electronAPI?.getPrinters
+  );
   const [printers, setPrinters] = useState<Array<{ name: string; displayName?: string; isDefault?: boolean }>>([]);
   const [selectedPrinterName, setSelectedPrinterName] = useState<string>('');
   const [loadingPrinters, setLoadingPrinters] = useState(false);
@@ -99,6 +105,11 @@ export default function PrintCertificates() {
   const { data: phdLmdData = [] } = usePhdLmdCertificates();
   const { data: phdScienceData = [] } = usePhdScienceCertificates();
   const { data: masterData = [] } = useMasterCertificates();
+  
+  // CSS print hook for native printing
+  const { print: cssPrint } = useCssPrint();
+  const { data: printSettings } = usePrintSettings();
+  const { settings: dateFormatSettings } = useDateFormatSettings();
   const { data: savedSettings } = useUserSettings();
 
   // Load custom fonts from database
@@ -480,6 +491,38 @@ export default function PrintCertificates() {
     setPreviewStudentId(null);
   };
 
+  // Helper: Get template paper dimensions in mm
+  const getTemplatePaperDimensions = (tmpl: typeof templates[0]) => {
+    // First try template-specific print settings
+    const paperSize = tmpl.print_paper_size || tmpl.page_size || 'a4';
+    let width: number;
+    let height: number;
+
+    if (paperSize === 'custom') {
+      width = tmpl.print_custom_width || 210;
+      height = tmpl.print_custom_height || 297;
+    } else {
+      const size = PAPER_SIZES[paperSize];
+      if (size) {
+        width = size.width;
+        height = size.height;
+      } else {
+        // Fall back to global print settings
+        const globalSettings = printSettings || DEFAULT_PRINT_SETTINGS;
+        const dims = getPaperDimensions(globalSettings);
+        width = dims.width;
+        height = dims.height;
+      }
+    }
+
+    // Apply orientation
+    const isLandscape = tmpl.page_orientation === 'landscape';
+    if (isLandscape) {
+      return { width: height, height: width };
+    }
+    return { width, height };
+  };
+
   const handlePrint = async () => {
     if (updateField.isPending || isApplyingToAll) {
       toast.error("يرجى الانتظار حتى يتم حفظ تغييرات الحقول/الخطوط قبل الطباعة");
@@ -504,27 +547,39 @@ export default function PrintCertificates() {
 
     try {
       setIsPrinting(true);
-      // Desktop app: print directly with native print dialog + printer selection.
-      if (isDesktop && window.electronAPI?.printPdf) {
-        const blob = await generatePDFBlob(
-          selectedStudents as unknown as Record<string, unknown>[],
-          templateFields,
-          template,
-          selectedType
-        );
-        const buf = await blob.arrayBuffer();
-        const result = await window.electronAPI.printPdf(buf, {
-          deviceName: selectedPrinterName || undefined,
+
+      // Desktop app: Use CSS-based native print with window.print()
+      // This provides full print preview and correct paper dimensions
+      if (isDesktop) {
+        const dims = getTemplatePaperDimensions(template);
+        await cssPrint({
+          widthMm: dims.width,
+          heightMm: dims.height,
+          orientation: template.page_orientation === 'landscape' ? 'landscape' : 'portrait',
         });
-        if (result?.success) {
-          toast.success(`تم إرسال ${selectedStudents.length} شهادة إلى الطباعة`);
-        } else {
-          toast.error(result?.error || 'فشل في الطباعة');
-        }
+        toast.success(`تم إرسال الشهادة إلى الطباعة`);
         return;
       }
 
       // Web: download PDF (user can print via system dialog from the PDF viewer)
+      await generatePDF(selectedStudents as unknown as Record<string, unknown>[], templateFields, template, selectedType);
+      toast.success(`تم إنشاء PDF لـ ${selectedStudents.length} طالب`);
+    } catch (error) {
+      toast.error("فشل في الطباعة: " + (error as Error).message);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  // Handle PDF download (separate from CSS print)
+  const handleDownloadPdf = async () => {
+    if (selectedStudentIds.length === 0 || !selectedTemplateId) return;
+    const selectedStudents = allStudents.filter(s => selectedStudentIds.includes(s.id));
+    const template = templates.find(t => t.id === selectedTemplateId);
+    if (!template) return;
+    
+    try {
+      setIsPrinting(true);
       await generatePDF(selectedStudents as unknown as Record<string, unknown>[], templateFields, template, selectedType);
       toast.success(`تم إنشاء PDF لـ ${selectedStudents.length} طالب`);
     } catch (error) {
@@ -589,6 +644,18 @@ export default function PrintCertificates() {
             <Fullscreen className="h-4 w-4" />
             معاينة كاملة
           </Button>
+          {isDesktop && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={handleDownloadPdf}
+              disabled={selectedStudentIds.length === 0 || updateField.isPending || isApplyingToAll || isPrinting}
+            >
+              <FileType className="h-4 w-4" />
+              تحميل PDF
+            </Button>
+          )}
           <Button
             size="sm"
             className="gap-2"
@@ -1578,6 +1645,44 @@ export default function PrintCertificates() {
           onPrint={handlePrint}
         />
       )}
+
+      {/* Hidden Printable Certificate for CSS-based native printing.
+          Hidden on screen via overflow:hidden + zero size, but the
+          #printable-certificate inside uses position:fixed in print CSS
+          so it becomes visible and fills the page. */}
+      {isDesktop && selectedTemplateId && previewStudent && (() => {
+        const currentTemplate = templates.find(t => t.id === selectedTemplateId);
+        if (!currentTemplate) return null;
+        const dims = getTemplatePaperDimensions(currentTemplate);
+        return (
+          <div 
+            aria-hidden="true"
+            style={{ 
+              position: 'absolute', 
+              width: '1px',
+              height: '1px',
+              overflow: 'hidden',
+              clip: 'rect(0, 0, 0, 0)',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+            }}
+          >
+            <PrintableCSS
+              student={previewStudent as unknown as Record<string, unknown>}
+              fields={templateFields}
+              template={currentTemplate}
+              certificateType={selectedType}
+              pageWidthMm={dims.width}
+              pageHeightMm={dims.height}
+              backgroundOffsetX={backgroundOffsetX}
+              backgroundOffsetY={backgroundOffsetY}
+              backgroundScaleX={backgroundScaleX}
+              backgroundScaleY={backgroundScaleY}
+              dateFormatSettings={dateFormatSettings}
+            />
+          </div>
+        );
+      })()}
     </div>
   );
 }
