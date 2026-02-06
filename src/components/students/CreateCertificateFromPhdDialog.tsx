@@ -272,8 +272,8 @@ export function CreateCertificateFromPhdDialog({
           <div className="space-y-4">
             {/* Certificate Type Selection */}
             <div className="p-4 bg-muted/50 rounded-lg border">
-              <FormItem>
-                <FormLabel className="text-base font-semibold">نوع الشهادة *</FormLabel>
+              <div className="space-y-2">
+                <label className="text-base font-semibold">نوع الشهادة *</label>
                 <Select value={selectedType} onValueChange={(v) => setSelectedType(v as CertificateType)}>
                   <SelectTrigger className="mt-2">
                     <SelectValue />
@@ -289,7 +289,7 @@ export function CreateCertificateFromPhdDialog({
                     ))}
                   </SelectContent>
                 </Select>
-              </FormItem>
+              </div>
             </div>
 
             {/* Search */}
