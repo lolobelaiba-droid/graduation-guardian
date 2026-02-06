@@ -94,6 +94,7 @@ export default function StudentDetailsDialog({
             )}
             <DetailRow label="الاسم بالعربية" value={student.full_name_ar} />
             <DetailRow label="الاسم بالفرنسية" value={student.full_name_fr} isRtl={false} />
+            <DetailRow label="الجنس" value={(student as any).gender === 'male' ? 'ذكر' : (student as any).gender === 'female' ? 'أنثى' : (student as any).gender} />
             <DetailRow label="تاريخ الميلاد" value={formatBirthDate(student.date_of_birth)} />
             <DetailRow label="مكان الميلاد بالعربية" value={student.birthplace_ar} />
             <DetailRow label="مكان الميلاد بالفرنسية" value={student.birthplace_fr} isRtl={false} />
