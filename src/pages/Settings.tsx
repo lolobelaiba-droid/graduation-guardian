@@ -13,9 +13,11 @@ import {
   Image,
   X,
   Calendar,
+  Settings2,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
+import { CustomFieldsManager } from "@/components/settings/CustomFieldsManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -634,6 +636,10 @@ export default function Settings() {
             <Building2 className="h-4 w-4" />
             معلومات الجامعة
           </TabsTrigger>
+          <TabsTrigger value="customfields" className="gap-2 py-2">
+            <Settings2 className="h-4 w-4" />
+            الحقول المخصصة
+          </TabsTrigger>
           <TabsTrigger value="dateformat" className="gap-2 py-2">
             <Calendar className="h-4 w-4" />
             تنسيق التواريخ
@@ -647,6 +653,11 @@ export default function Settings() {
             إعدادات الطباعة
           </TabsTrigger>
         </TabsList>
+
+        {/* Custom Fields Tab */}
+        <TabsContent value="customfields">
+          <CustomFieldsManager />
+        </TabsContent>
 
         {/* Date Format Tab */}
         <TabsContent value="dateformat">

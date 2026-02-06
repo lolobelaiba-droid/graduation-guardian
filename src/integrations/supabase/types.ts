@@ -205,6 +205,118 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_field_options: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          field_id: string
+          id: string
+          option_value: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          field_id: string
+          id?: string
+          option_value: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          field_id?: string
+          id?: string
+          option_value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_field_options_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "custom_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_field_values: {
+        Row: {
+          created_at: string | null
+          field_id: string
+          id: string
+          record_id: string
+          record_type: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_id: string
+          id?: string
+          record_id: string
+          record_type: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_id?: string
+          id?: string
+          record_id?: string
+          record_type?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "custom_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_fields: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          field_key: string
+          field_name_ar: string
+          field_name_fr: string | null
+          field_type: string
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          target_table: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          field_key: string
+          field_name_ar: string
+          field_name_fr?: string | null
+          field_type?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          target_table: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          field_key?: string
+          field_name_ar?: string
+          field_name_fr?: string | null
+          field_type?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          target_table?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       custom_fonts: {
         Row: {
           created_at: string
