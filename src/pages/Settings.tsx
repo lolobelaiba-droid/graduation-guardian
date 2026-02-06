@@ -78,6 +78,7 @@ export default function Settings() {
   const [canUndo, setCanUndo] = useState(false);
   const [previousBackup, setPreviousBackup] = useState<string | null>(null);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [showRestoreOptions, setShowRestoreOptions] = useState(false);
   const [pendingBackupData, setPendingBackupData] = useState<{
     data: Record<string, unknown[]>;
     summary: BackupSummary;
@@ -368,7 +369,17 @@ export default function Settings() {
   };
 
   const handleRestoreClick = () => {
+    setShowRestoreOptions(true);
+  };
+
+  const handleRestoreFromComputer = () => {
+    setShowRestoreOptions(false);
     fileInputRef.current?.click();
+  };
+
+  const handleRestoreFromFolder = async () => {
+    setShowRestoreOptions(false);
+    await loadSavedBackups();
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -581,6 +592,48 @@ export default function Settings() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>إغلاق</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Options Dialog */}
+      <AlertDialog open={showRestoreOptions} onOpenChange={setShowRestoreOptions}>
+        <AlertDialogContent className="max-w-md" dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-right">
+              <Upload className="h-5 w-5 text-primary" />
+              اختر مصدر الاستعادة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              حدد من أين تريد استعادة النسخة الاحتياطية
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-4 py-4">
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center gap-2"
+              onClick={handleRestoreFromFolder}
+            >
+              <FolderOpen className="h-8 w-8 text-primary" />
+              <span className="font-semibold">من مجلد النسخ الاحتياطية</span>
+              <span className="text-xs text-muted-foreground">
+                عرض النسخ المحفوظة مسبقاً مرتبة حسب التاريخ
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center gap-2"
+              onClick={handleRestoreFromComputer}
+            >
+              <Upload className="h-8 w-8 text-secondary-foreground" />
+              <span className="font-semibold">من ملف على الكمبيوتر</span>
+              <span className="text-xs text-muted-foreground">
+                اختيار ملف JSON من جهازك
+              </span>
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -820,14 +873,6 @@ export default function Settings() {
                     <Upload className="h-4 w-4" />
                   )}
                   استعادة من نسخة
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="gap-2"
-                  onClick={loadSavedBackups}
-                >
-                  <FolderOpen className="h-4 w-4" />
-                  فتح مجلد النسخ الاحتياطية
                 </Button>
                 {canUndo && (
                   <Button
