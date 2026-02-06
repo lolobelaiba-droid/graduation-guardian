@@ -114,7 +114,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
     // Parse initial value into members array
     React.useEffect(() => {
       if (value) {
-        const parsed = value.split(/[،,]/).map(m => m.trim()).filter(Boolean);
+        const parsed = value.split(/[-،,]/).map(m => m.trim()).filter(Boolean);
         setMembers(parsed);
       } else {
         setMembers([]);
@@ -123,7 +123,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
 
     // Update parent value when members change
     const updateValue = React.useCallback((newMembers: string[]) => {
-      const newValue = newMembers.join("، ");
+      const newValue = newMembers.join(" - ");
       onChange(newValue);
     }, [onChange]);
 
