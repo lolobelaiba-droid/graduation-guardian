@@ -710,11 +710,11 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                   <FormItem>
                     <FormLabel>جامعة انتماء المشرف</FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ''} 
-                        placeholder="جامعة انتماء المشرف"
-                        dir="auto"
+                      <DropdownWithAdd
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        optionType="university"
+                        placeholder="اختر أو أضف جامعة المشرف"
                       />
                     </FormControl>
                     <FormMessage />
@@ -754,11 +754,11 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                   <FormItem>
                     <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ''} 
-                        placeholder="جامعة انتماء مساعد المشرف"
-                        dir="auto"
+                      <DropdownWithAdd
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        optionType="university"
+                        placeholder="اختر أو أضف جامعة مساعد المشرف"
                       />
                     </FormControl>
                     <FormMessage />
