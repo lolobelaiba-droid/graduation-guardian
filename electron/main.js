@@ -142,7 +142,8 @@ function createWindow() {
       }).then((result) => {
         if (result.response === 0) {
           forceClose = true;
-          mainWindow.close();
+          // استخدام destroy() بدلاً من close() لتجنب التعارض مع beforeunload
+          mainWindow.destroy();
         }
       });
     }
