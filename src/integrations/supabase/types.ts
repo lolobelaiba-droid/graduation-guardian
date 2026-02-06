@@ -585,6 +585,7 @@ export type Database = {
           branch_ar: string
           branch_fr: string | null
           created_at: string | null
+          current_year: string | null
           date_of_birth: string
           faculty_ar: string
           faculty_fr: string | null
@@ -598,6 +599,7 @@ export type Database = {
           notes: string | null
           phone_number: string | null
           professional_email: string | null
+          registration_count: number | null
           registration_number: string
           research_lab_ar: string | null
           specialty_ar: string
@@ -617,6 +619,7 @@ export type Database = {
           branch_ar: string
           branch_fr?: string | null
           created_at?: string | null
+          current_year?: string | null
           date_of_birth: string
           faculty_ar?: string
           faculty_fr?: string | null
@@ -630,6 +633,7 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          registration_count?: number | null
           registration_number: string
           research_lab_ar?: string | null
           specialty_ar: string
@@ -649,6 +653,7 @@ export type Database = {
           branch_ar?: string
           branch_fr?: string | null
           created_at?: string | null
+          current_year?: string | null
           date_of_birth?: string
           faculty_ar?: string
           faculty_fr?: string | null
@@ -662,6 +667,7 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          registration_count?: number | null
           registration_number?: string
           research_lab_ar?: string | null
           specialty_ar?: string
@@ -789,6 +795,7 @@ export type Database = {
           branch_ar: string
           branch_fr: string | null
           created_at: string | null
+          current_year: string | null
           date_of_birth: string
           faculty_ar: string
           faculty_fr: string | null
@@ -800,6 +807,7 @@ export type Database = {
           notes: string | null
           phone_number: string | null
           professional_email: string | null
+          registration_count: number | null
           registration_number: string
           research_lab_ar: string | null
           specialty_ar: string
@@ -819,6 +827,7 @@ export type Database = {
           branch_ar: string
           branch_fr?: string | null
           created_at?: string | null
+          current_year?: string | null
           date_of_birth: string
           faculty_ar?: string
           faculty_fr?: string | null
@@ -830,6 +839,7 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          registration_count?: number | null
           registration_number: string
           research_lab_ar?: string | null
           specialty_ar: string
@@ -849,6 +859,7 @@ export type Database = {
           branch_ar?: string
           branch_fr?: string | null
           created_at?: string | null
+          current_year?: string | null
           date_of_birth?: string
           faculty_ar?: string
           faculty_fr?: string | null
@@ -860,6 +871,7 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          registration_count?: number | null
           registration_number?: string
           research_lab_ar?: string | null
           specialty_ar?: string
