@@ -128,6 +128,14 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
   const [calculatedCurrentYear, setCalculatedCurrentYear] = useState("");
   const [calculatedRegistrationCount, setCalculatedRegistrationCount] = useState<number | null>(null);
   
+  // Manual override states for editable fields
+  const [manualCurrentYear, setManualCurrentYear] = useState<string | null>(null);
+  const [manualRegistrationCount, setManualRegistrationCount] = useState<number | null>(null);
+  
+  // Check if values match calculated values
+  const currentYearMismatch = manualCurrentYear !== null && manualCurrentYear !== calculatedCurrentYear;
+  const registrationCountMismatch = manualRegistrationCount !== null && manualRegistrationCount !== calculatedRegistrationCount;
+  
   // Fetch bilingual options to get French translations
   const { data: employmentOptions = [] } = useBilingualDropdownOptions("employment_status");
   const { data: registrationOptions = [] } = useBilingualDropdownOptions("registration_type");
@@ -198,9 +206,13 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
       setCalculatedCurrentYear(result.currentYear);
       setCalculatedRegistrationCount(result.registrationCount);
       
-      // Update form values
-      form.setValue("current_year", result.currentYear);
-      form.setValue("registration_count", result.registrationCount);
+      // Only auto-set values if not manually overridden
+      if (manualCurrentYear === null) {
+        form.setValue("current_year", result.currentYear);
+      }
+      if (manualRegistrationCount === null) {
+        form.setValue("registration_count", result.registrationCount);
+      }
       
       // Auto-update inscription_status if late
       if (result.isLate) {
@@ -212,7 +224,25 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
         }
       }
     }
-  }, [watchedFirstRegistrationYear, currentAcademicYear, studentType, form, inscriptionStatusAr, inscriptionOptions]);
+  }, [watchedFirstRegistrationYear, currentAcademicYear, studentType, form, inscriptionStatusAr, inscriptionOptions, manualCurrentYear, manualRegistrationCount]);
+  
+  // Handle manual current year change
+  const handleCurrentYearChange = (value: string) => {
+    setManualCurrentYear(value);
+    form.setValue("current_year", value);
+  };
+  
+  // Handle manual registration count change
+  const handleRegistrationCountChange = (value: string) => {
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue > 0) {
+      setManualRegistrationCount(numValue);
+      form.setValue("registration_count", numValue);
+    } else if (value === '') {
+      setManualRegistrationCount(null);
+      form.setValue("registration_count", calculatedRegistrationCount);
+    }
+  };
 
   // Reset form when student changes
   useEffect(() => {
@@ -278,6 +308,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
         );
         setCalculatedCurrentYear(result.currentYear);
         setCalculatedRegistrationCount(result.registrationCount);
+        
+        // Reset manual overrides when student changes
+        setManualCurrentYear(null);
+        setManualRegistrationCount(null);
       }
     }
   }, [student, form, employmentOptions, registrationOptions, inscriptionOptions, currentAcademicYear, studentType]);
@@ -356,7 +390,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                 <Badge variant="secondary">{phdStudentTypeLabels[studentType].ar}</Badge>
               </div>
               
-              {/* Current Year and Registration Count - Auto-calculated */}
+              {/* Current Year and Registration Count - Editable with warning */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -372,13 +406,17 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                       </FormLabel>
                       <FormControl>
                         <Input 
-                          value={calculatedCurrentYear || field.value || ''} 
-                          readOnly
-                          disabled
-                          className="bg-muted/50 text-foreground font-medium"
+                          value={manualCurrentYear ?? (calculatedCurrentYear || field.value || '')} 
+                          onChange={(e) => handleCurrentYearChange(e.target.value)}
+                          className="text-foreground font-medium"
                           placeholder="يُحسب من سنة أول تسجيل"
                         />
                       </FormControl>
+                      {currentYearMismatch && (
+                        <p className="text-xs text-destructive mt-1">
+                          ⚠️ القيمة المدخلة لا تتوافق مع الحساب التلقائي ({calculatedCurrentYear})
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -398,13 +436,19 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                       </FormLabel>
                       <FormControl>
                         <Input 
-                          value={calculatedRegistrationCount ? toWesternNumerals(calculatedRegistrationCount) : (field.value ? toWesternNumerals(field.value) : '')}
-                          readOnly
-                          disabled
-                          className="bg-muted/50 text-foreground font-medium"
+                          type="number"
+                          min="1"
+                          value={manualRegistrationCount ?? calculatedRegistrationCount ?? field.value ?? ''}
+                          onChange={(e) => handleRegistrationCountChange(e.target.value)}
+                          className="text-foreground font-medium"
                           placeholder="يُحسب من سنة أول تسجيل"
                         />
                       </FormControl>
+                      {registrationCountMismatch && (
+                        <p className="text-xs text-destructive mt-1">
+                          ⚠️ القيمة المدخلة لا تتوافق مع الحساب التلقائي ({calculatedRegistrationCount ? toWesternNumerals(calculatedRegistrationCount) : '-'})
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

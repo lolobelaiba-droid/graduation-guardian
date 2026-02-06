@@ -83,6 +83,26 @@ export default function PhdStudents() {
     return `${year}/${year + 1}`;
   });
   
+  // Academic year change confirmation dialog
+  const [yearChangeDialogOpen, setYearChangeDialogOpen] = useState(false);
+  const [pendingAcademicYear, setPendingAcademicYear] = useState<string>("");
+  
+  // Handle academic year change with confirmation
+  const handleAcademicYearChange = (newYear: string) => {
+    if (newYear !== currentAcademicYear && (phdLmdData.length > 0 || phdScienceData.length > 0)) {
+      setPendingAcademicYear(newYear);
+      setYearChangeDialogOpen(true);
+    } else {
+      setCurrentAcademicYear(newYear);
+    }
+  };
+  
+  const confirmAcademicYearChange = () => {
+    setCurrentAcademicYear(pendingAcademicYear);
+    setYearChangeDialogOpen(false);
+    setPendingAcademicYear("");
+  };
+  
   // Details dialog state
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<PhdStudent | null>(null);
@@ -217,7 +237,7 @@ export default function PhdStudents() {
           <div className="w-48">
             <DropdownWithAdd
               value={currentAcademicYear}
-              onChange={setCurrentAcademicYear}
+              onChange={handleAcademicYearChange}
               optionType="academic_year"
               placeholder="اختر السنة الجامعية"
               defaultOptions={academicYears}
@@ -412,6 +432,36 @@ export default function PhdStudents() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Academic Year Change Confirmation Dialog */}
+      <AlertDialog open={yearChangeDialogOpen} onOpenChange={setYearChangeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              ⚠️ تنبيه هام
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              <p className="mb-3">
+                سيؤدي تغيير السنة الجامعية الحالية إلى <strong className="text-foreground">{pendingAcademicYear}</strong> إلى:
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                <li>تغيير <strong className="text-foreground">سنة التسجيل</strong> (السنة الأولى، الثانية...) لجميع طلبة الدكتوراه تلقائياً</li>
+                <li>تحديث <strong className="text-foreground">عدد التسجيلات</strong> لكل طالب بناءً على سنة أول تسجيل</li>
+                <li>قد يتغير بعض الطلبة إلى حالة <strong className="text-destructive">متأخر</strong> إذا تجاوزوا المدة القانونية</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => setPendingAcademicYear("")}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmAcademicYearChange}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              تأكيد التغيير
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
