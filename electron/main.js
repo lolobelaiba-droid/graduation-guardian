@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -126,7 +126,28 @@ function createWindow() {
     mainWindow.show();
   });
 
-  // Handle window close
+  // Handle window close with confirmation
+  let forceClose = false;
+  mainWindow.on('close', (e) => {
+    if (!forceClose) {
+      e.preventDefault();
+      dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        buttons: ['إغلاق', 'إلغاء'],
+        defaultId: 1,
+        cancelId: 1,
+        title: 'تأكيد الإغلاق',
+        message: 'هل أنت متأكد من إغلاق التطبيق؟',
+        detail: 'تأكد من حفظ نسخة احتياطية من بياناتك قبل الإغلاق.',
+      }).then((result) => {
+        if (result.response === 0) {
+          forceClose = true;
+          mainWindow.close();
+        }
+      });
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
