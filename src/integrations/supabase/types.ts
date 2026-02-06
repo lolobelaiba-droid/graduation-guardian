@@ -644,7 +644,7 @@ export type Database = {
           phone_number?: string | null
           professional_email?: string | null
           registration_count?: number | null
-          registration_number: string
+          registration_number?: string
           registration_type?: string | null
           research_lab_ar?: string | null
           specialty_ar: string
@@ -868,7 +868,7 @@ export type Database = {
           phone_number?: string | null
           professional_email?: string | null
           registration_count?: number | null
-          registration_number: string
+          registration_number?: string
           registration_type?: string | null
           research_lab_ar?: string | null
           specialty_ar: string
