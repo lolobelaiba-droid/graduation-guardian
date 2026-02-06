@@ -227,8 +227,30 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
 
   const isLoading = updatePhdLmd.isPending || updatePhdScience.isPending;
 
+  // Validation errors for bilingual dropdowns
+  const [bilingualErrors, setBilingualErrors] = useState<{ employment_status?: string; registration_type?: string }>({});
+
+  const validateBilingualFields = () => {
+    const errors: { employment_status?: string; registration_type?: string } = {};
+    
+    if (!employmentStatusAr.trim()) {
+      errors.employment_status = "الحالة الوظيفية مطلوبة";
+    }
+    if (!registrationTypeAr.trim()) {
+      errors.registration_type = "نوع التسجيل مطلوب";
+    }
+    
+    setBilingualErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
     if (!student) return;
+    
+    // Validate bilingual dropdown fields
+    if (!validateBilingualFields()) {
+      return;
+    }
     
     try {
       const submitData = {
@@ -246,6 +268,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
           await updatePhdScience.mutateAsync({ id: student.id, ...submitData });
           break;
       }
+      setBilingualErrors({});
       onOpenChange(false);
     } catch (error) {
       // Error handled by hook
@@ -741,29 +764,41 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType 
             {/* Employment Status, Registration Type, Inscription Status - moved after Thesis */}
             <SectionHeader title="الحالة الوظيفية ونوع التسجيل" />
             
-            <BilingualDropdown
-              valueAr={employmentStatusAr}
-              valueFr={employmentStatusFr}
-              onChangeAr={setEmploymentStatusAr}
-              onChangeFr={setEmploymentStatusFr}
-              optionType="employment_status"
-              labelAr="الحالة الوظيفية"
-              labelFr="Situation professionnelle"
-              placeholderAr="اختر الحالة الوظيفية"
-              placeholderFr="Choisir la situation"
-            />
+            <div className="space-y-1">
+              <BilingualDropdown
+                valueAr={employmentStatusAr}
+                valueFr={employmentStatusFr}
+                onChangeAr={(v) => { setEmploymentStatusAr(v); setBilingualErrors(prev => ({ ...prev, employment_status: undefined })); }}
+                onChangeFr={setEmploymentStatusFr}
+                optionType="employment_status"
+                labelAr="الحالة الوظيفية"
+                labelFr="Situation professionnelle"
+                placeholderAr="اختر الحالة الوظيفية"
+                placeholderFr="Choisir la situation"
+                required
+              />
+              {bilingualErrors.employment_status && (
+                <p className="text-sm font-medium text-destructive">{bilingualErrors.employment_status}</p>
+              )}
+            </div>
 
-            <BilingualDropdown
-              valueAr={registrationTypeAr}
-              valueFr={registrationTypeFr}
-              onChangeAr={setRegistrationTypeAr}
-              onChangeFr={setRegistrationTypeFr}
-              optionType="registration_type"
-              labelAr="نوع التسجيل"
-              labelFr="Type d'inscription"
-              placeholderAr="اختر نوع التسجيل"
-              placeholderFr="Choisir le type"
-            />
+            <div className="space-y-1">
+              <BilingualDropdown
+                valueAr={registrationTypeAr}
+                valueFr={registrationTypeFr}
+                onChangeAr={(v) => { setRegistrationTypeAr(v); setBilingualErrors(prev => ({ ...prev, registration_type: undefined })); }}
+                onChangeFr={setRegistrationTypeFr}
+                optionType="registration_type"
+                labelAr="نوع التسجيل"
+                labelFr="Type d'inscription"
+                placeholderAr="اختر نوع التسجيل"
+                placeholderFr="Choisir le type"
+                required
+              />
+              {bilingualErrors.registration_type && (
+                <p className="text-sm font-medium text-destructive">{bilingualErrors.registration_type}</p>
+              )}
+            </div>
 
             <BilingualDropdown
               valueAr={inscriptionStatusAr}
