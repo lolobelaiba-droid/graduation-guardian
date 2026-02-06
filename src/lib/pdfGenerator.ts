@@ -604,14 +604,28 @@ function renderField(
   if (field.field_width && field.field_width > 0) {
     const maxWidth = field.field_width;
     const lines = doc.splitTextToSize(processed.text, maxWidth);
-    const lineHeight = field.font_size * 0.5; // approximate line height in mm
+    // Line height matching preview's CSS lineHeight: 1.4
+    // jsPDF font size is in points, 1pt ≈ 0.353mm
+    const lineHeight = field.font_size * 0.353 * 1.4;
+    
+    // In the preview, position_x is the LEFT edge of the text box.
+    // In jsPDF, doc.text(x) alignment anchor differs:
+    //   - align 'left': x = left edge ✓
+    //   - align 'right': x = right edge (need position_x + field_width)
+    //   - align 'center': x = center (need position_x + field_width/2)
+    let textX = field.position_x;
+    if (align === 'right') {
+      textX = field.position_x + field.field_width;
+    } else if (align === 'center') {
+      textX = field.position_x + field.field_width / 2;
+    }
     
     lines.forEach((line: string, lineIndex: number) => {
       const yPos = field.position_y + (lineIndex * lineHeight);
-      doc.text(line, field.position_x, yPos, { align });
+      doc.text(line, textX, yPos, { align });
     });
     
-    logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}, Width: ${field.field_width}mm, Lines: ${lines.length}`);
+    logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}, Width: ${field.field_width}mm, Lines: ${lines.length}, X: ${textX}`);
   } else {
     // Render text as single line
     doc.text(processed.text, field.position_x, field.position_y, { align });
