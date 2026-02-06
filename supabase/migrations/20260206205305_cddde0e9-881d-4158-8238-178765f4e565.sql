@@ -1,0 +1,1 @@
+ALTER TABLE public.master_certificates ALTER COLUMN supervisor_ar DROP NOT NULL;
