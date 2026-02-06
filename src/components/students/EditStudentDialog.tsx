@@ -187,20 +187,11 @@ export default function EditStudentDialog({
 
   useEffect(() => {
     if (student && open) {
-      const studentWithExtras = student as Certificate & {
-        first_registration_year?: string;
-        professional_email?: string;
-        phone_number?: string;
-        supervisor_ar?: string;
-        research_lab_ar?: string;
-        gender?: string;
-      };
-      
       const baseValues = {
         student_number: student.student_number,
         full_name_ar: student.full_name_ar,
         full_name_fr: student.full_name_fr || "",
-        gender: studentWithExtras.gender || "",
+        gender: student.gender || "",
         date_of_birth: student.date_of_birth,
         birthplace_ar: student.birthplace_ar,
         birthplace_fr: student.birthplace_fr || "",
@@ -215,11 +206,11 @@ export default function EditStudentDialog({
         mention: student.mention as "honorable" | "very_honorable",
         defense_date: student.defense_date,
         certificate_date: student.certificate_date,
-        first_registration_year: studentWithExtras.first_registration_year || "",
-        professional_email: studentWithExtras.professional_email || "",
-        phone_number: studentWithExtras.phone_number || "",
-        supervisor_ar: studentWithExtras.supervisor_ar || "",
-        research_lab_ar: studentWithExtras.research_lab_ar || "",
+        first_registration_year: student.first_registration_year || "",
+        professional_email: student.professional_email || "",
+        phone_number: student.phone_number || "",
+        supervisor_ar: ('supervisor_ar' in student ? student.supervisor_ar : "") || "",
+        research_lab_ar: student.research_lab_ar || "",
       };
 
       if (certificateType === "phd_lmd" && "field_ar" in student) {

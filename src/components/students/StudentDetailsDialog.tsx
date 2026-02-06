@@ -89,12 +89,12 @@ export default function StudentDetailsDialog({
           <SectionTitle>المعلومات الشخصية</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
             <DetailRow label="رقم الشهادة" value={student.student_number} />
-            {isPhd && (student as any).registration_number && (
-              <DetailRow label="رقم التسجيل" value={(student as any).registration_number} />
+            {isPhd && student.registration_number && (
+              <DetailRow label="رقم التسجيل" value={student.registration_number} />
             )}
             <DetailRow label="الاسم بالعربية" value={student.full_name_ar} />
             <DetailRow label="الاسم بالفرنسية" value={student.full_name_fr} isRtl={false} />
-            <DetailRow label="الجنس" value={(student as any).gender === 'male' ? 'ذكر' : (student as any).gender === 'female' ? 'أنثى' : (student as any).gender} />
+            <DetailRow label="الجنس" value={student.gender === 'male' ? 'ذكر' : student.gender === 'female' ? 'أنثى' : student.gender} />
             <DetailRow label="تاريخ الميلاد" value={formatBirthDate(student.date_of_birth)} />
             <DetailRow label="مكان الميلاد بالعربية" value={student.birthplace_ar} />
             <DetailRow label="مكان الميلاد بالفرنسية" value={student.birthplace_fr} isRtl={false} />
@@ -132,10 +132,10 @@ export default function StudentDetailsDialog({
               <SectionTitle>عنوان الأطروحة</SectionTitle>
               <div className="space-y-2">
                 <DetailRow label="عنوان الأطروحة" value={student.thesis_title_ar} />
-                {isPhd && (student as any).thesis_language && (
+                {isPhd && student.thesis_language && (
                   <DetailRow 
                     label="لغة الأطروحة" 
-                    value={thesisLanguageLabels[(student as any).thesis_language] || (student as any).thesis_language} 
+                    value={thesisLanguageLabels[student.thesis_language] || student.thesis_language} 
                   />
                 )}
               </div>
@@ -161,17 +161,17 @@ export default function StudentDetailsDialog({
                 {'supervisor_ar' in student && (
                   <DetailRow label="المشرف" value={student.supervisor_ar} />
                 )}
-                {(student as any).supervisor_university && (
-                  <DetailRow label="جامعة انتماء المشرف" value={(student as any).supervisor_university} />
+                {student.supervisor_university && (
+                  <DetailRow label="جامعة انتماء المشرف" value={student.supervisor_university} />
                 )}
-                {(student as any).co_supervisor_ar && (
-                  <DetailRow label="مساعد المشرف" value={(student as any).co_supervisor_ar} />
+                {student.co_supervisor_ar && (
+                  <DetailRow label="مساعد المشرف" value={student.co_supervisor_ar} />
                 )}
-                {(student as any).co_supervisor_university && (
-                  <DetailRow label="جامعة انتماء مساعد المشرف" value={(student as any).co_supervisor_university} />
+                {student.co_supervisor_university && (
+                  <DetailRow label="جامعة انتماء مساعد المشرف" value={student.co_supervisor_university} />
                 )}
-                {(student as any).research_lab_ar && (
-                  <DetailRow label="مخبر البحث" value={(student as any).research_lab_ar} />
+                {student.research_lab_ar && (
+                  <DetailRow label="مخبر البحث" value={student.research_lab_ar} />
                 )}
               </div>
             </>
@@ -182,20 +182,20 @@ export default function StudentDetailsDialog({
             <>
               <SectionTitle>بيانات إضافية</SectionTitle>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                {(student as any).employment_status && (
-                  <DetailRow label="الحالة الوظيفية" value={(student as any).employment_status} />
+                {student.employment_status && (
+                  <DetailRow label="الحالة الوظيفية" value={student.employment_status} />
                 )}
-                {(student as any).registration_type && (
-                  <DetailRow label="نوع التسجيل" value={(student as any).registration_type} />
+                {student.registration_type && (
+                  <DetailRow label="نوع التسجيل" value={student.registration_type} />
                 )}
-                {(student as any).inscription_status && (
-                  <DetailRow label="حالة التسجيل" value={(student as any).inscription_status} />
+                {student.inscription_status && (
+                  <DetailRow label="حالة التسجيل" value={student.inscription_status} />
                 )}
-                {(student as any).current_year && (
-                  <DetailRow label="سنة التسجيل" value={(student as any).current_year} />
+                {student.current_year && (
+                  <DetailRow label="سنة التسجيل" value={student.current_year} />
                 )}
-                {(student as any).registration_count && (
-                  <DetailRow label="عدد التسجيلات" value={String((student as any).registration_count)} />
+                {student.registration_count && (
+                  <DetailRow label="عدد التسجيلات" value={String(student.registration_count)} />
                 )}
                 {student.professional_email && (
                   <DetailRow label="البريد الإلكتروني" value={student.professional_email} isRtl={false} />
@@ -204,8 +204,8 @@ export default function StudentDetailsDialog({
                   <DetailRow label="رقم الهاتف" value={student.phone_number} isRtl={false} />
                 )}
               </div>
-              {(student as any).notes && (
-                <DetailRow label="ملاحظات" value={(student as any).notes} />
+              {student.notes && (
+                <DetailRow label="ملاحظات" value={student.notes} />
               )}
             </>
           )}
