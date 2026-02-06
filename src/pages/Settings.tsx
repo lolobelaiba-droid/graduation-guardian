@@ -756,7 +756,7 @@ export default function Settings() {
                   <ul className="text-sm space-y-1 text-foreground">
                     <li>• شهادات دكتوراه ل م د: {currentDataSummary?.phdLmdCount || 0}</li>
                     <li>• شهادات دكتوراه علوم: {currentDataSummary?.phdScienceCount || 0}</li>
-                    <li>• شهادات ماستر: {currentDataSummary?.masterCount || 0}</li>
+                    <li>• شهادات ماجستير: {currentDataSummary?.masterCount || 0}</li>
                     <li>• طلبة دكتوراه ل م د: {currentDataSummary?.phdLmdStudentsCount || 0}</li>
                     <li>• طلبة دكتوراه علوم: {currentDataSummary?.phdScienceStudentsCount || 0}</li>
                     <li>• القوالب: {currentDataSummary?.templatesCount || 0}</li>
@@ -768,7 +768,7 @@ export default function Settings() {
                   <ul className="text-sm space-y-1 text-foreground">
                     <li>• شهادات دكتوراه ل م د: {pendingBackupData?.summary.phdLmdCount || 0}</li>
                     <li>• شهادات دكتوراه علوم: {pendingBackupData?.summary.phdScienceCount || 0}</li>
-                    <li>• شهادات ماستر: {pendingBackupData?.summary.masterCount || 0}</li>
+                    <li>• شهادات ماجستير: {pendingBackupData?.summary.masterCount || 0}</li>
                     <li>• طلبة دكتوراه ل م د: {pendingBackupData?.summary.phdLmdStudentsCount || 0}</li>
                     <li>• طلبة دكتوراه علوم: {pendingBackupData?.summary.phdScienceStudentsCount || 0}</li>
                     <li>• القوالب: {pendingBackupData?.summary.templatesCount || 0}</li>

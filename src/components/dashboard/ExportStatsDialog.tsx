@@ -88,7 +88,7 @@ const certificateTypeLabels = {
   all: "الكل",
   phd_lmd: "دكتوراه ل م د",
   phd_science: "دكتوراه علوم",
-  master: "ماستر",
+  master: "ماجستير",
 };
 
 const phdTypeLabels = {
@@ -299,7 +299,7 @@ export function ExportStatsDialog() {
         if (data) {
           results.push(...data.map((d: any) => ({
             ...d,
-            certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماستر",
+            certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماجستير",
           })));
         }
       }
@@ -401,7 +401,7 @@ export function ExportStatsDialog() {
             exportData = [
               { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
               { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
-              { "نوع الشهادة": "ماستر", "العدد": master.count || 0 },
+              { "نوع الشهادة": "ماجستير", "العدد": master.count || 0 },
             ];
             fileName = `توزيع_أنواع_الشهادات_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
           }
@@ -429,7 +429,7 @@ export function ExportStatsDialog() {
             allStudents = [
               ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
               ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
+              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" })),
             ];
           }
 
@@ -818,7 +818,7 @@ export function ExportStatsDialog() {
             allStudents = [
               ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
               ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماستر" })),
+              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" })),
             ];
           }
 
