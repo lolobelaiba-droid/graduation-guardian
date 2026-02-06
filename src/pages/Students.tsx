@@ -36,23 +36,15 @@ import {
   useDeletePhdScienceCertificate,
   useDeleteMasterCertificate,
 } from "@/hooks/useCertificates";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CertificateType, MentionType, Certificate } from "@/types/certificates";
 import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
 import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
 import EditStudentDialog from "@/components/students/EditStudentDialog";
 import { CreateCertificateFromPhdDialog } from "@/components/students/CreateCertificateFromPhdDialog";
+import { DeleteStudentDialog } from "@/components/students/DeleteStudentDialog";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
+import { useRestoreStudentToPhd } from "@/hooks/useRestoreStudent";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 
@@ -60,7 +52,8 @@ export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCertType, setSelectedCertType] = useState<CertificateType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState<{ id: string; type: CertificateType } | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<Certificate | null>(null);
+  const [deleteType, setDeleteType] = useState<CertificateType>("phd_lmd");
   
   // Details dialog state
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -83,6 +76,7 @@ export default function Students() {
   const deletePhdLmd = useDeletePhdLmdCertificate();
   const deletePhdScience = useDeletePhdScienceCertificate();
   const deleteMaster = useDeleteMasterCertificate();
+  const restoreStudent = useRestoreStudentToPhd();
 
   const getCurrentData = (): Certificate[] => {
     switch (selectedCertType) {
@@ -104,14 +98,15 @@ export default function Students() {
     return matchesSearch;
   });
 
-  const handleDeleteClick = (id: string, type: CertificateType) => {
-    setStudentToDelete({ id, type });
+  const handleDeleteClick = (student: Certificate, type: CertificateType) => {
+    setStudentToDelete(student);
+    setDeleteType(type);
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeletePermanently = () => {
     if (studentToDelete) {
-      switch (studentToDelete.type) {
+      switch (deleteType) {
         case "phd_lmd":
           deletePhdLmd.mutate(studentToDelete.id);
           break;
@@ -124,6 +119,20 @@ export default function Students() {
       }
       setDeleteDialogOpen(false);
       setStudentToDelete(null);
+    }
+  };
+
+  const handleRestoreToDatabase = () => {
+    if (studentToDelete && (deleteType === "phd_lmd" || deleteType === "phd_science")) {
+      restoreStudent.mutate(
+        { student: studentToDelete, certificateType: deleteType },
+        {
+          onSuccess: () => {
+            setDeleteDialogOpen(false);
+            setStudentToDelete(null);
+          },
+        }
+      );
     }
   };
 
@@ -297,7 +306,7 @@ export default function Students() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="gap-2 text-destructive"
-                                  onClick={() => handleDeleteClick(student.id, selectedCertType)}
+                                  onClick={() => handleDeleteClick(student, selectedCertType)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                   حذف
@@ -353,25 +362,16 @@ export default function Students() {
         certificateType="master"
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
-            <AlertDialogDescription>
-              سيتم حذف هذا الطالب نهائياً ولا يمكن التراجع عن هذا الإجراء.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              حذف
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteStudentDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        student={studentToDelete}
+        certificateType={deleteType}
+        onDeletePermanently={handleDeletePermanently}
+        onRestoreToDatabase={handleRestoreToDatabase}
+        isDeleting={deletePhdLmd.isPending || deletePhdScience.isPending || deleteMaster.isPending}
+        isRestoring={restoreStudent.isPending}
+      />
     </div>
   );
 }

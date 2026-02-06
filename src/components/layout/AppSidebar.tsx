@@ -67,8 +67,8 @@ export function AppSidebar() {
             </div>
             {!isCollapsed && (
               <div className="animate-fade-in">
-                <h1 className="text-lg font-bold">نظام الشهادات</h1>
-                <p className="text-xs text-sidebar-foreground/60">الجامعية الذكي</p>
+                <h1 className="text-lg font-bold">نظام إدارة</h1>
+                <p className="text-xs text-sidebar-foreground/60">طلبة الدكتوراه</p>
               </div>
             )}
           </div>
