@@ -20,11 +20,13 @@ export interface BaseCertificate {
   specialty_fr: string | null;
   branch_ar: string;
   branch_fr: string | null;
+  gender?: string | null;
   mention: MentionType;
   defense_date: string;
   certificate_date: string;
   created_at: string;
   updated_at: string;
+  research_lab_ar?: string | null;
   first_registration_year?: string | null;
   professional_email?: string | null;
   phone_number?: string | null;
