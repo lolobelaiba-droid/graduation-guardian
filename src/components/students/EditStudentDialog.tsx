@@ -57,6 +57,7 @@ const phdLmdSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
@@ -64,6 +65,7 @@ const phdLmdSchema = z.object({
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
+  research_lab_ar: z.string().min(1, "مخبر البحث مطلوب"),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -92,6 +94,7 @@ const phdScienceSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
@@ -99,6 +102,7 @@ const phdScienceSchema = z.object({
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
   faculty_fr: z.string().optional().nullable(),
+  research_lab_ar: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -120,11 +124,12 @@ const phdScienceSchema = z.object({
 
 type PhdScienceFormValues = z.infer<typeof phdScienceSchema>;
 
-// Magister schema (without supervisor, first_registration_year, email, phone)
+// Magister schema (without supervisor, research_lab, first_registration_year, email, phone)
 const masterSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
   date_of_birth: z.string().min(1, "تاريخ الميلاد مطلوب"),
   birthplace_ar: z.string().min(1, "مكان الميلاد مطلوب"),
   birthplace_fr: z.string().optional().nullable(),
@@ -187,12 +192,15 @@ export default function EditStudentDialog({
         professional_email?: string;
         phone_number?: string;
         supervisor_ar?: string;
+        research_lab_ar?: string;
+        gender?: string;
       };
       
       const baseValues = {
         student_number: student.student_number,
         full_name_ar: student.full_name_ar,
         full_name_fr: student.full_name_fr || "",
+        gender: studentWithExtras.gender || "",
         date_of_birth: student.date_of_birth,
         birthplace_ar: student.birthplace_ar,
         birthplace_fr: student.birthplace_fr || "",
@@ -211,6 +219,7 @@ export default function EditStudentDialog({
         professional_email: studentWithExtras.professional_email || "",
         phone_number: studentWithExtras.phone_number || "",
         supervisor_ar: studentWithExtras.supervisor_ar || "",
+        research_lab_ar: studentWithExtras.research_lab_ar || "",
       };
 
       if (certificateType === "phd_lmd" && "field_ar" in student) {
@@ -352,6 +361,27 @@ export default function EditStudentDialog({
                 />
                 <FormField
                   control={form.control}
+                  name={"gender" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الجنس</FormLabel>
+                      <Select onValueChange={field.onChange} value={(field.value as string) || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر الجنس" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ذكر">ذكر</SelectItem>
+                          <SelectItem value="أنثى">أنثى</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="date_of_birth"
                   render={({ field }) => (
                     <FormItem>
@@ -482,6 +512,26 @@ export default function EditStudentDialog({
                     </FormItem>
                   )}
                 />
+                {isPhdType && (
+                  <FormField
+                    control={form.control}
+                    name={"research_lab_ar" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>مخبر البحث {isPhdLmd ? '*' : ''}</FormLabel>
+                        <FormControl>
+                          <DropdownWithAdd
+                            value={(field.value as string) || ''}
+                            onChange={field.onChange}
+                            optionType="research_lab"
+                            placeholder="اختر أو أضف مخبر البحث"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 {hasField && (
                   <>
                     <FormField
