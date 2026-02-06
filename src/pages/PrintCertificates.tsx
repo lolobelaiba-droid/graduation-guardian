@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock, FileType, User, Hash, BookOpen, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -78,9 +78,7 @@ export default function PrintCertificates() {
     newY: number;
   }>>([]);
 
-  // Per-student temporary field width overrides (studentId -> fieldId -> width)
-  const [perStudentFieldWidths, setPerStudentFieldWidths] = useState<Record<string, Record<string, number>>>({});
-
+  // Student search
   // Student search with suggestions
   const [studentSearch, setStudentSearch] = useState('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -544,20 +542,6 @@ export default function PrintCertificates() {
 
   const previewStudent = findStudentById(previewStudentId || '');
 
-  // Compute effective fields with per-student width overrides
-  const effectiveFields = useMemo(() => {
-    if (!previewStudentId) return templateFields;
-    const studentWidths = perStudentFieldWidths[previewStudentId];
-    if (!studentWidths || Object.keys(studentWidths).length === 0) return templateFields;
-    return templateFields.map(field => {
-      const overrideWidth = studentWidths[field.id];
-      if (overrideWidth !== undefined) {
-        return { ...field, field_width: overrideWidth };
-      }
-      return field;
-    });
-  }, [templateFields, previewStudentId, perStudentFieldWidths]);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -933,7 +917,7 @@ export default function PrintCertificates() {
               ) : (
                 <CertificatePreview
                   student={(previewStudent || {}) as unknown as Record<string, unknown>}
-                  fields={effectiveFields}
+                  fields={templateFields}
                   template={templates.find(t => t.id === selectedTemplateId)!}
                   certificateType={selectedType}
                   selectedFieldId={selectedFieldId}
@@ -1014,14 +998,12 @@ export default function PrintCertificates() {
                   }}
                   onAddField={() => setIsAddFieldOpen(true)}
                   onFieldResize={(fieldId, newWidth) => {
-                    if (!previewStudentId) return;
-                    setPerStudentFieldWidths(prev => ({
-                      ...prev,
-                      [previewStudentId]: {
-                        ...(prev[previewStudentId] || {}),
-                        [fieldId]: newWidth,
-                      },
-                    }));
+                    if (!selectedTemplateId) return;
+                    updateField.mutate({
+                      id: fieldId,
+                      template_id: selectedTemplateId,
+                      field_width: newWidth,
+                    });
                   }}
                   stepSize={stepSize}
                   isMoving={updateField.isPending}
@@ -1061,7 +1043,7 @@ export default function PrintCertificates() {
                   <div className="space-y-4">
                     <h4 className="font-semibold">الحقول المتاحة</h4>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {effectiveFields.map((field) => (
+                      {templateFields.map((field) => (
                         <div
                           key={field.id}
                           className={`p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -1202,7 +1184,7 @@ export default function PrintCertificates() {
 
                         {/* Field Width for resizable fields */}
                         {(() => {
-                          const selectedF = effectiveFields.find(f => f.id === selectedFieldId);
+                          const selectedF = templateFields.find(f => f.id === selectedFieldId);
                           const isResizable = selectedF && (
                             selectedF.field_key.startsWith('thesis_title') || 
                             selectedF.field_key.startsWith('static_text_')
@@ -1220,26 +1202,14 @@ export default function PrintCertificates() {
                                   value={selectedF?.field_width ?? ''}
                                   placeholder="تلقائي"
                                   onChange={(e) => {
-                                    if (!previewStudentId) return;
                                     const val = e.target.value;
                                     const width = val ? parseFloat(val) : null;
                                     if (width !== null && (width < 20 || width > 200)) return;
-                                    if (width !== null) {
-                                      setPerStudentFieldWidths(prev => ({
-                                        ...prev,
-                                        [previewStudentId]: {
-                                          ...(prev[previewStudentId] || {}),
-                                          [selectedFieldId!]: width,
-                                        },
-                                      }));
-                                    } else {
-                                      // Remove override
-                                      setPerStudentFieldWidths(prev => {
-                                        const studentWidths = { ...(prev[previewStudentId] || {}) };
-                                        delete studentWidths[selectedFieldId!];
-                                        return { ...prev, [previewStudentId]: studentWidths };
-                                      });
-                                    }
+                                    updateField.mutate({
+                                      id: selectedFieldId,
+                                      template_id: selectedTemplateId,
+                                      field_width: width,
+                                    });
                                   }}
                                   className="w-24 font-mono"
                                 />
@@ -1248,11 +1218,10 @@ export default function PrintCertificates() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      if (!previewStudentId) return;
-                                      setPerStudentFieldWidths(prev => {
-                                        const studentWidths = { ...(prev[previewStudentId] || {}) };
-                                        delete studentWidths[selectedFieldId!];
-                                        return { ...prev, [previewStudentId]: studentWidths };
+                                      updateField.mutate({
+                                        id: selectedFieldId,
+                                        template_id: selectedTemplateId,
+                                        field_width: null,
                                       });
                                     }}
                                   >
@@ -1567,7 +1536,7 @@ export default function PrintCertificates() {
           open={isFullPreviewOpen}
           onOpenChange={setIsFullPreviewOpen}
           student={previewStudent as unknown as Record<string, unknown>}
-          fields={effectiveFields}
+          fields={templateFields}
           template={templates.find(t => t.id === selectedTemplateId)!}
           initialOffsetX={backgroundOffsetX}
           initialOffsetY={backgroundOffsetY}
@@ -1596,16 +1565,6 @@ export default function PrintCertificates() {
               position_x: newX,
               position_y: newY,
             });
-          }}
-          onFieldResize={(fieldId, newWidth) => {
-            if (!previewStudentId) return;
-            setPerStudentFieldWidths(prev => ({
-              ...prev,
-              [previewStudentId]: {
-                ...(prev[previewStudentId] || {}),
-                [fieldId]: newWidth,
-              },
-            }));
           }}
           onPrint={handlePrint}
         />
