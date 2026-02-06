@@ -91,7 +91,10 @@ export default function Settings() {
   const [autoBackupCount, setAutoBackupCount] = useState("1");
   const [backupHour, setBackupHour] = useState("02");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSavingNow, setIsSavingNow] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [savedBackups, setSavedBackups] = useState<{ name: string; created_at: string }[]>([]);
+  const [showBackupsList, setShowBackupsList] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [previousBackup, setPreviousBackup] = useState<string | null>(null);
@@ -404,6 +407,125 @@ export default function Settings() {
     }
   };
 
+  const saveBackupToStorage = async () => {
+    setIsSavingNow(true);
+    try {
+      const backupData = await getCurrentBackupData();
+      const now = new Date();
+      const fileName = `backup_${now.toISOString().replace(/[:.]/g, '-')}.json`;
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+        type: "application/json",
+      });
+
+      const { error } = await supabase.storage
+        .from("backups")
+        .upload(fileName, blob, {
+          contentType: "application/json",
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      // Clean up old backups if exceeding max count
+      const maxCount = parseInt(backupCount) || 10;
+      const { data: files } = await supabase.storage
+        .from("backups")
+        .list("", { sortBy: { column: "created_at", order: "desc" } });
+
+      if (files && files.length > maxCount) {
+        const toDelete = files.slice(maxCount).map((f) => f.name);
+        await supabase.storage.from("backups").remove(toDelete);
+      }
+
+      toast.success("تم حفظ النسخة الاحتياطية بنجاح في المجلد");
+    } catch (error) {
+      console.error("Error saving backup to storage:", error);
+      toast.error("حدث خطأ أثناء حفظ النسخة الاحتياطية");
+    } finally {
+      setIsSavingNow(false);
+    }
+  };
+
+  const loadSavedBackups = async () => {
+    try {
+      const { data: files, error } = await supabase.storage
+        .from("backups")
+        .list("", { sortBy: { column: "created_at", order: "desc" } });
+
+      if (error) throw error;
+
+      setSavedBackups(
+        (files || [])
+          .filter((f) => f.name.endsWith(".json"))
+          .map((f) => ({ name: f.name, created_at: f.created_at || "" }))
+      );
+      setShowBackupsList(true);
+    } catch (error) {
+      console.error("Error loading backups:", error);
+      toast.error("حدث خطأ أثناء تحميل قائمة النسخ الاحتياطية");
+    }
+  };
+
+  const restoreFromStorage = async (fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("backups")
+        .download(fileName);
+
+      if (error) throw error;
+
+      const text = await data.text();
+      const backupData = JSON.parse(text);
+
+      if (!backupData.version || !backupData.data) {
+        toast.error("ملف النسخة الاحتياطية غير صالح");
+        return;
+      }
+
+      const { data: tableData } = backupData;
+
+      const backupSummary: BackupSummary = {
+        phdLmdCount: tableData.phd_lmd_certificates?.length || 0,
+        phdScienceCount: tableData.phd_science_certificates?.length || 0,
+        masterCount: tableData.master_certificates?.length || 0,
+        templatesCount: tableData.certificate_templates?.length || 0,
+        phdLmdStudentsCount: tableData.phd_lmd_students?.length || 0,
+        phdScienceStudentsCount: tableData.phd_science_students?.length || 0,
+        createdAt: backupData.created_at,
+      };
+
+      const currentBackup = await getCurrentBackupData();
+      const currentSummary: BackupSummary = {
+        phdLmdCount: currentBackup.data.phd_lmd_certificates?.length || 0,
+        phdScienceCount: currentBackup.data.phd_science_certificates?.length || 0,
+        masterCount: currentBackup.data.master_certificates?.length || 0,
+        templatesCount: currentBackup.data.certificate_templates?.length || 0,
+        phdLmdStudentsCount: currentBackup.data.phd_lmd_students?.length || 0,
+        phdScienceStudentsCount: currentBackup.data.phd_science_students?.length || 0,
+      };
+
+      setPendingBackupData({ data: tableData, summary: backupSummary });
+      setCurrentDataSummary(currentSummary);
+      setShowBackupsList(false);
+      setShowRestoreConfirm(true);
+    } catch (error) {
+      console.error("Error restoring from storage:", error);
+      toast.error("حدث خطأ أثناء قراءة النسخة الاحتياطية");
+    }
+  };
+
+  const deleteBackupFromStorage = async (fileName: string) => {
+    try {
+      const { error } = await supabase.storage.from("backups").remove([fileName]);
+      if (error) throw error;
+      setSavedBackups((prev) => prev.filter((b) => b.name !== fileName));
+      toast.success("تم حذف النسخة الاحتياطية");
+    } catch (error) {
+      console.error("Error deleting backup:", error);
+      toast.error("حدث خطأ أثناء حذف النسخة الاحتياطية");
+    }
+  };
+
   const handleRestoreClick = () => {
     fileInputRef.current?.click();
   };
@@ -669,6 +791,63 @@ export default function Settings() {
             <AlertDialogAction onClick={confirmRestore} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               تأكيد الاستعادة
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Saved Backups List Dialog */}
+      <AlertDialog open={showBackupsList} onOpenChange={setShowBackupsList}>
+        <AlertDialogContent className="max-w-lg" dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-right">
+              <FolderOpen className="h-5 w-5 text-primary" />
+              النسخ الاحتياطية المحفوظة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {savedBackups.length === 0 ? (
+                <p className="py-4 text-center text-muted-foreground">لا توجد نسخ احتياطية محفوظة بعد</p>
+              ) : (
+                <div className="space-y-2 mt-3 max-h-80 overflow-y-auto">
+                  {savedBackups.map((backup) => (
+                    <div
+                      key={backup.name}
+                      className="flex items-center justify-between bg-muted/50 rounded-lg p-3 gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {backup.name.replace('.json', '').replace(/backup_/g, '').replace(/-/g, ' ').slice(0, 19)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {backup.created_at ? new Date(backup.created_at).toLocaleString("ar-SA") : ""}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-xs"
+                          onClick={() => restoreFromStorage(backup.name)}
+                        >
+                          <Upload className="h-3 w-3" />
+                          استعادة
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive gap-1 text-xs"
+                          onClick={() => deleteBackupFromStorage(backup.name)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إغلاق</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -948,10 +1127,10 @@ export default function Settings() {
                     size="sm"
                     variant="outline"
                     className="gap-2 shrink-0"
-                    onClick={downloadBackup}
-                    disabled={isDownloading}
+                    onClick={saveBackupToStorage}
+                    disabled={isSavingNow}
                   >
-                    {isDownloading ? (
+                    {isSavingNow ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Save className="h-4 w-4" />
@@ -996,9 +1175,7 @@ export default function Settings() {
                 <Button
                   variant="secondary"
                   className="gap-2"
-                  onClick={() => {
-                    toast.info("مجلد النسخ الاحتياطية التلقائية متاح فقط في النسخة المكتبية من التطبيق");
-                  }}
+                  onClick={loadSavedBackups}
                 >
                   <FolderOpen className="h-4 w-4" />
                   فتح مجلد النسخ الاحتياطية
