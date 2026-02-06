@@ -50,7 +50,6 @@ const academicYears = generateAcademicYears();
 
 // Base schema for PhD students
 const baseSchema = z.object({
-  registration_number: z.string().min(1, "رقم التسجيل مطلوب"),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
   gender: z.enum(['male', 'female']),
@@ -156,7 +155,6 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
   const form = useForm({
     resolver: zodResolver(getSchema()),
     defaultValues: {
-      registration_number: '',
       full_name_ar: '',
       full_name_fr: '',
       gender: 'male' as 'male' | 'female',
@@ -356,7 +354,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
-                          الطالب مسجل في
+                          سنة التسجيل
                           <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
                             <Calculator className="h-3 w-3 ml-1" />
                             يتوافق مع عدد التسجيلات
@@ -422,21 +420,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
             {/* Basic Info */}
             <SectionHeader title="المعلومات الأساسية" />
             
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="registration_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم التسجيل *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="رقم التسجيل" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="first_registration_year"
