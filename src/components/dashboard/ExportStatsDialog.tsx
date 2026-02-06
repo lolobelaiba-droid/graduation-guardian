@@ -43,8 +43,8 @@ const exportTypeLabels: Record<ExportType, string> = {
 };
 
 // Available fields for pivot table - varies by data source
-type PivotFieldCandidates = "phd_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "status" | "first_registration_year";
-type PivotFieldDefended = "certificate_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "mention" | "defense_year" | "first_registration_year";
+type PivotFieldCandidates = "phd_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "status" | "first_registration_year" | "current_year" | "registration_count" | "thesis_language" | "field_ar" | "research_lab_ar" | "university_ar" | "supervisor_ar";
+type PivotFieldDefended = "certificate_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "mention" | "defense_year" | "first_registration_year" | "field_ar" | "research_lab_ar" | "university_ar" | "supervisor_ar";
 type PivotField = PivotFieldCandidates | PivotFieldDefended;
 
 const pivotFieldLabels: Record<PivotField, string> = {
@@ -58,12 +58,19 @@ const pivotFieldLabels: Record<PivotField, string> = {
   status: "الحالة",
   defense_year: "سنة المناقشة",
   first_registration_year: "سنة أول تسجيل",
+  current_year: "سنة التسجيل",
+  registration_count: "عدد التسجيلات",
+  thesis_language: "لغة الأطروحة",
+  field_ar: "الميدان",
+  research_lab_ar: "مخبر البحث",
+  university_ar: "الجامعة",
+  supervisor_ar: "المشرف",
 };
 
 // Pivot fields available for each data source
 const pivotFieldsForSource: Record<DataSource, PivotField[]> = {
-  phd_candidates: ["phd_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "status", "first_registration_year"],
-  defended_students: ["certificate_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "mention", "defense_year", "first_registration_year"],
+  phd_candidates: ["phd_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "field_ar", "status", "first_registration_year", "current_year", "registration_count", "thesis_language", "research_lab_ar", "university_ar", "supervisor_ar"],
+  defended_students: ["certificate_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "field_ar", "mention", "defense_year", "first_registration_year", "research_lab_ar", "university_ar", "supervisor_ar"],
 };
 
 const certificateTypeLabels = {
@@ -746,6 +753,12 @@ export function ExportStatsDialog() {
 
           // Helper to get field value
           const getFieldValue = (student: any, field: PivotField): string => {
+            const thesisLanguageLabels: Record<string, string> = {
+              arabic: "العربية",
+              french: "الفرنسية",
+              english: "الإنجليزية",
+            };
+            
             switch (field) {
               case "certificate_type":
                 return student.certificate_type || "غير محدد";
@@ -767,6 +780,20 @@ export function ExportStatsDialog() {
                 return student.defense_date ? new Date(student.defense_date).getFullYear().toString() : "غير محدد";
               case "first_registration_year":
                 return student.first_registration_year || "غير محدد";
+              case "current_year":
+                return student.current_year || "غير محدد";
+              case "registration_count":
+                return student.registration_count ? student.registration_count.toString() : "غير محدد";
+              case "thesis_language":
+                return thesisLanguageLabels[student.thesis_language] || student.thesis_language || "غير محدد";
+              case "field_ar":
+                return student.field_ar || "غير محدد";
+              case "research_lab_ar":
+                return student.research_lab_ar || "غير محدد";
+              case "university_ar":
+                return student.university_ar || "غير محدد";
+              case "supervisor_ar":
+                return student.supervisor_ar || "غير محدد";
               default:
                 return "غير محدد";
             }
