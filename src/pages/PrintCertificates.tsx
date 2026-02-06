@@ -1007,8 +1007,10 @@ export default function PrintCertificates() {
                   }}
                   stepSize={stepSize}
                   isMoving={updateField.isPending}
-                  backgroundOffsetX={backgroundOffsetX}
-                  backgroundOffsetY={backgroundOffsetY}
+                   backgroundOffsetX={backgroundOffsetX}
+                   backgroundOffsetY={backgroundOffsetY}
+                   backgroundScaleX={backgroundScaleX}
+                   backgroundScaleY={backgroundScaleY}
                   onBackgroundOffsetChange={(x, y) => {
                     setBackgroundOffsetX(x);
                     setBackgroundOffsetY(y);
