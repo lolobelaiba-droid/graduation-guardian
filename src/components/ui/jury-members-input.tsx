@@ -53,13 +53,13 @@ const MemberBadge: React.FC<MemberBadgeProps> = ({ member, onRemove, extractTitl
   const memberDir = detectDirection(member);
   
   return (
-    <div className={cn("flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border", memberDir === "ltr" ? "flex-row-reverse" : "")}>
+    <div dir={memberDir} className="flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border">
       {title && (
         <span className="bg-blue-600 text-white px-2 py-1 text-sm font-medium">
           {title}
         </span>
       )}
-      <span className="px-2 py-1 text-sm text-foreground bg-amber-100 dark:bg-amber-900/30">
+      <span dir={memberDir} className="px-2 py-1 text-sm text-foreground bg-amber-100 dark:bg-amber-900/30">
         {name || (title ? "" : member)}
       </span>
       <button
@@ -301,7 +301,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
             onFocus={() => setShowSuggestions(true)}
             placeholder={
               selectedTitle 
-                ? "اكتب الاسم واللقب ثم Enter..." 
+                ? (detectDirection(selectedTitle) === "ltr" ? "Type name then press Enter..." : "اكتب الاسم واللقب ثم Enter...")
                 : members.length === 0 
                   ? placeholder 
                   : "أضف عضو آخر..."
