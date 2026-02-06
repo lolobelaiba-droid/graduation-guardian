@@ -46,6 +46,7 @@ interface FullPreviewDialogProps {
     background_scale_y?: number;
   }) => void;
   onFieldMove?: (fieldId: string, newX: number, newY: number) => void;
+  onFieldResize?: (fieldId: string, newWidth: number) => void;
   onPrint: () => void;
   initialOffsetX?: number;
   initialOffsetY?: number;
@@ -62,6 +63,7 @@ export function FullPreviewDialog({
   template,
   onSaveSettings,
   onFieldMove,
+  onFieldResize,
   onPrint,
   initialOffsetX = 0,
   initialOffsetY = 0,
@@ -93,6 +95,14 @@ export function FullPreviewDialog({
     fieldStartY: number;
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
+
+  // Resize state for field width
+  const [resizeState, setResizeState] = useState<{
+    fieldId: string;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+  const [localFieldWidths, setLocalFieldWidths] = useState<Record<string, number>>({});
 
   // Initialize local positions from fields
   useEffect(() => {
@@ -412,7 +422,52 @@ export function FullPreviewDialog({
     if (dragState) {
       handleMouseUp();
     }
-  }, [dragState, handleMouseUp]);
+    if (resizeState) {
+      handleResizeEnd();
+    }
+  }, [dragState, handleMouseUp, resizeState]);
+
+  // Check if a field should be resizable (long text fields)
+  const isResizableField = useCallback((fieldKey: string): boolean => {
+    return fieldKey.startsWith('thesis_title') || 
+           fieldKey.startsWith('static_text_');
+  }, []);
+
+  // Resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent, field: TemplateField) => {
+    if (!onFieldResize) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const currentWidth = localFieldWidths[field.id] ?? field.field_width ?? 80;
+    setResizeState({
+      fieldId: field.id,
+      startX: e.clientX,
+      startWidth: currentWidth,
+    });
+  }, [onFieldResize, localFieldWidths]);
+
+  const handleResizeMove = useCallback((e: React.MouseEvent) => {
+    if (!resizeState) return;
+    
+    const deltaX = (e.clientX - resizeState.startX) / SCALE;
+    const newWidth = Math.max(20, Math.round((resizeState.startWidth + deltaX) * 2) / 2);
+    
+    setLocalFieldWidths(prev => ({
+      ...prev,
+      [resizeState.fieldId]: newWidth,
+    }));
+  }, [resizeState]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (resizeState && onFieldResize) {
+      const newWidth = localFieldWidths[resizeState.fieldId] ?? resizeState.startWidth;
+      if (newWidth !== resizeState.startWidth) {
+        onFieldResize(resizeState.fieldId, newWidth);
+      }
+    }
+    setResizeState(null);
+  }, [resizeState, onFieldResize, localFieldWidths]);
 
   // Get field position (use drag preview if dragging, then local, then original)
   const getFieldPosition = (field: TemplateField) => {
@@ -661,8 +716,14 @@ export function FullPreviewDialog({
                 height: `${height * SCALE}px`,
                 direction: template.language.includes('ar') ? 'rtl' : 'ltr',
               }}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
+              onMouseMove={(e) => {
+                handleMouseMove(e);
+                handleResizeMove(e);
+              }}
+              onMouseUp={() => {
+                handleMouseUp();
+                handleResizeEnd();
+              }}
               onMouseLeave={handleMouseLeave}
             >
               {/* Background image with offset and separate X/Y scale */}
@@ -687,9 +748,12 @@ export function FullPreviewDialog({
                 const position = getFieldPosition(field);
                 const isSelected = selectedFieldId === field.id;
                 const isDragging = dragState?.fieldId === field.id;
+                const isResizing = resizeState?.fieldId === field.id;
                 const hasChange = fieldChanges.some(c => c.fieldId === field.id);
                 const value = getFieldValue(field.field_key);
-                const hasWidth = field.field_width != null;
+                const resizable = isResizableField(field.field_key);
+                const effectiveWidth = localFieldWidths[field.id] ?? field.field_width;
+                const hasWidth = effectiveWidth != null;
                 
                 // Get text direction for date fields from settings
                 const dateDirection = getDateFieldDirection(field.field_key);
@@ -713,7 +777,7 @@ export function FullPreviewDialog({
                   >
                     <div
                       className={cn(
-                        "border border-transparent transition-all select-none px-1",
+                        "border border-transparent transition-all select-none px-1 relative",
                         showFieldControls && "hover:border-primary/50 hover:bg-primary/5",
                         isSelected && "border-primary border-2 bg-primary/10 rounded",
                         isDragging && "border-primary border-2 bg-primary/20 rounded shadow-lg",
@@ -727,16 +791,62 @@ export function FullPreviewDialog({
                         direction: effectiveDirection,
                         whiteSpace: hasWidth ? 'normal' : 'nowrap',
                         wordWrap: hasWidth ? 'break-word' : undefined,
-                        width: hasWidth ? `${field.field_width! * SCALE}px` : undefined,
+                        width: hasWidth ? `${effectiveWidth! * SCALE}px` : undefined,
                         lineHeight: hasWidth ? '1.4' : undefined,
                       }}
                       onMouseDown={(e) => showFieldControls && handleFieldMouseDown(e, field)}
-                      title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${field.field_width}مم` : ''}`}
+                      title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${effectiveWidth}مم` : ''}`}
                     >
                       {isSelected && showFieldControls && !isDragging && (
                         <GripVertical className="inline-block h-3 w-3 ml-1 text-primary" />
                       )}
                       {value || `[${field.field_name_ar}]`}
+
+                      {/* Word-style resize handles for resizable fields */}
+                      {resizable && (isSelected || hasWidth) && showFieldControls && !isDragging && onFieldResize && (
+                        <>
+                          {/* Border outline like Word text box */}
+                          <div 
+                            className={cn(
+                              "absolute inset-0 pointer-events-none border-2 border-dashed rounded-sm",
+                              isSelected ? "border-primary" : "border-primary/30"
+                            )}
+                          />
+                          {/* Right edge handle */}
+                          <div
+                            className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
+                            style={{
+                              [effectiveDirection === 'rtl' ? 'left' : 'right']: '-6px',
+                            }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeStart(e, field);
+                            }}
+                            title="اسحب لتغيير العرض"
+                          />
+                          {/* Left edge handle */}
+                          <div
+                            className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
+                            style={{
+                              [effectiveDirection === 'rtl' ? 'right' : 'left']: '-6px',
+                            }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleResizeStart(e, field);
+                            }}
+                            title="اسحب لتغيير العرض"
+                          />
+                          {/* Corner handles */}
+                          <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                            style={{ [effectiveDirection === 'rtl' ? 'left' : 'right']: '-6px' }} />
+                          <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                            style={{ [effectiveDirection === 'rtl' ? 'right' : 'left']: '-6px' }} />
+                          <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                            style={{ [effectiveDirection === 'rtl' ? 'left' : 'right']: '-6px' }} />
+                          <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                            style={{ [effectiveDirection === 'rtl' ? 'right' : 'left']: '-6px' }} />
+                        </>
+                      )}
                     </div>
                   </div>
                 );
