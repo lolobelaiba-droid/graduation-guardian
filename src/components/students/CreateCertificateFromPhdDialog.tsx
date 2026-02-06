@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Search, UserPlus } from "lucide-react";
+import { Loader2, Search, UserPlus, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Form,
   FormControl,
@@ -35,6 +45,8 @@ import {
 import {
   usePhdLmdStudents,
   usePhdScienceStudents,
+  useDeletePhdLmdStudent,
+  useDeletePhdScienceStudent,
 } from "@/hooks/usePhdStudents";
 import {
   certificateTypeLabels,
@@ -111,10 +123,14 @@ export function CreateCertificateFromPhdDialog({
   const [selectedType, setSelectedType] = useState<CertificateType>(initialCertificateType);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<PhdStudent | null>(null);
+  const [pendingStudent, setPendingStudent] = useState<PhdStudent | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showForm, setShowForm] = useState(false);
   
   const createPhdLmd = useCreatePhdLmdCertificate();
   const createPhdScience = useCreatePhdScienceCertificate();
+  const deletePhdLmd = useDeletePhdLmdStudent();
+  const deletePhdScience = useDeletePhdScienceStudent();
   
   const { data: phdLmdStudents = [], isLoading: loadingLmd } = usePhdLmdStudents();
   const { data: phdScienceStudents = [], isLoading: loadingScience } = usePhdScienceStudents();
@@ -129,8 +145,10 @@ export function CreateCertificateFromPhdDialog({
   useEffect(() => {
     setSelectedType(initialCertificateType);
     setSelectedStudent(null);
+    setPendingStudent(null);
     setShowForm(false);
     setSearchQuery("");
+    setShowConfirmDialog(false);
   }, [initialCertificateType, open]);
 
   // Filter students based on type and search
@@ -182,35 +200,44 @@ export function CreateCertificateFromPhdDialog({
     },
   });
 
-  const handleSelectStudent = (student: PhdStudent) => {
-    setSelectedStudent(student);
+  // Show confirmation dialog before selecting student
+  const handleStudentClick = (student: PhdStudent) => {
+    setPendingStudent(student);
+    setShowConfirmDialog(true);
+  };
+
+  // Confirm student selection
+  const handleConfirmSelection = () => {
+    if (!pendingStudent) return;
+    
+    setSelectedStudent(pendingStudent);
     
     // Pre-fill form with student data
     form.reset({
       student_number: '', // Certificate number should be new
-      full_name_ar: student.full_name_ar,
-      full_name_fr: student.full_name_fr || '',
-      gender: student.gender as 'male' | 'female',
-      date_of_birth: student.date_of_birth,
-      birthplace_ar: student.birthplace_ar,
-      birthplace_fr: student.birthplace_fr || '',
-      university_ar: student.university_ar || 'جامعة أم البواقي',
-      university_fr: student.university_fr || "Université D'oum El Bouaghi",
-      faculty_ar: student.faculty_ar,
-      faculty_fr: student.faculty_fr || '',
-      branch_ar: student.branch_ar,
-      branch_fr: student.branch_fr || '',
-      specialty_ar: student.specialty_ar,
-      specialty_fr: student.specialty_fr || '',
-      first_registration_year: student.first_registration_year || '',
-      professional_email: student.professional_email || '',
-      phone_number: student.phone_number || '',
-      supervisor_ar: student.supervisor_ar,
-      research_lab_ar: student.research_lab_ar || '',
-      thesis_title_ar: student.thesis_title_ar || '',
-      thesis_title_fr: student.thesis_title_fr || '',
-      field_ar: (student as PhdLmdStudent).field_ar || '',
-      field_fr: (student as PhdLmdStudent).field_fr || '',
+      full_name_ar: pendingStudent.full_name_ar,
+      full_name_fr: pendingStudent.full_name_fr || '',
+      gender: pendingStudent.gender as 'male' | 'female',
+      date_of_birth: pendingStudent.date_of_birth,
+      birthplace_ar: pendingStudent.birthplace_ar,
+      birthplace_fr: pendingStudent.birthplace_fr || '',
+      university_ar: pendingStudent.university_ar || 'جامعة أم البواقي',
+      university_fr: pendingStudent.university_fr || "Université D'oum El Bouaghi",
+      faculty_ar: pendingStudent.faculty_ar,
+      faculty_fr: pendingStudent.faculty_fr || '',
+      branch_ar: pendingStudent.branch_ar,
+      branch_fr: pendingStudent.branch_fr || '',
+      specialty_ar: pendingStudent.specialty_ar,
+      specialty_fr: pendingStudent.specialty_fr || '',
+      first_registration_year: pendingStudent.first_registration_year || '',
+      professional_email: pendingStudent.professional_email || '',
+      phone_number: pendingStudent.phone_number || '',
+      supervisor_ar: pendingStudent.supervisor_ar,
+      research_lab_ar: pendingStudent.research_lab_ar || '',
+      thesis_title_ar: pendingStudent.thesis_title_ar || '',
+      thesis_title_fr: pendingStudent.thesis_title_fr || '',
+      field_ar: (pendingStudent as PhdLmdStudent).field_ar || '',
+      field_fr: (pendingStudent as PhdLmdStudent).field_fr || '',
       mention: 'honorable' as MentionType,
       defense_date: '',
       certificate_date: new Date().toISOString().split('T')[0],
@@ -221,21 +248,35 @@ export function CreateCertificateFromPhdDialog({
     });
     
     setShowForm(true);
+    setShowConfirmDialog(false);
+    setPendingStudent(null);
   };
 
   const isLoading = createPhdLmd.isPending || createPhdScience.isPending;
 
   const onSubmit = async (data: z.infer<typeof certificateSchema>) => {
     try {
+      // Create certificate
       if (selectedType === 'phd_lmd') {
         await createPhdLmd.mutateAsync({
           ...data,
           field_ar: data.field_ar || '',
           research_lab_ar: data.research_lab_ar || '',
         } as Parameters<typeof createPhdLmd.mutateAsync>[0]);
+        
+        // Delete student from PhD database after successful certificate creation
+        if (selectedStudent) {
+          await deletePhdLmd.mutateAsync(selectedStudent.id);
+        }
       } else if (selectedType === 'phd_science') {
         await createPhdScience.mutateAsync(data as Parameters<typeof createPhdScience.mutateAsync>[0]);
+        
+        // Delete student from PhD database after successful certificate creation
+        if (selectedStudent) {
+          await deletePhdScience.mutateAsync(selectedStudent.id);
+        }
       }
+      
       form.reset();
       setSelectedStudent(null);
       setShowForm(false);
@@ -350,7 +391,7 @@ export function CreateCertificateFromPhdDialog({
                       <div
                         key={student.id}
                         className="p-4 hover:bg-primary/5 cursor-pointer transition-colors border-r-2 border-transparent hover:border-primary"
-                        onClick={() => handleSelectStudent(student)}
+                        onClick={() => handleStudentClick(student)}
                       >
                         <div className="flex justify-between items-start">
                           <div>
@@ -753,6 +794,36 @@ export function CreateCertificateFromPhdDialog({
           </Form>
         )}
       </DialogContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              تأكيد اختيار الطالب
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              <div className="space-y-2">
+                <p>هل أنت متأكد من اختيار الطالب:</p>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="font-semibold text-foreground">{pendingStudent?.full_name_ar}</p>
+                  <p className="text-sm">{pendingStudent?.specialty_ar} - {pendingStudent?.faculty_ar}</p>
+                </div>
+                <p className="text-amber-600 text-sm font-medium mt-2">
+                  ⚠️ سيتم حذف الطالب من قاعدة بيانات طلبة الدكتوراه ونقله إلى قاعدة بيانات الطلبة المناقشين بعد إتمام إصدار الشهادة.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSelection}>
+              نعم، اختيار الطالب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
