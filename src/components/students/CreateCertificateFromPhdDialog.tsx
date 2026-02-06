@@ -245,8 +245,24 @@ export function CreateCertificateFromPhdDialog({
   const onSubmit = async (data: z.infer<typeof certificateSchema>) => {
     try {
       // Prepare certificate data with required French fields (empty if not provided)
+      // Include PhD reference data from selected student
+      const phdReferenceData = selectedStudent ? {
+        registration_number: selectedStudent.registration_number || null,
+        co_supervisor_ar: (selectedStudent as any).co_supervisor_ar || null,
+        supervisor_university: (selectedStudent as any).supervisor_university || null,
+        co_supervisor_university: (selectedStudent as any).co_supervisor_university || null,
+        employment_status: (selectedStudent as any).employment_status || null,
+        registration_type: (selectedStudent as any).registration_type || null,
+        inscription_status: (selectedStudent as any).inscription_status || null,
+        current_year: (selectedStudent as any).current_year || null,
+        registration_count: (selectedStudent as any).registration_count || null,
+        thesis_language: (selectedStudent as any).thesis_language || null,
+        notes: (selectedStudent as any).notes || null,
+      } : {};
+
       const certificateData = {
         ...data,
+        ...phdReferenceData,
         faculty_fr: '', // Set empty as field is simplified to Arabic only
         thesis_title_fr: '', // Single field with auto-direction
         jury_president_fr: '', // Single field with auto-direction
@@ -259,14 +275,14 @@ export function CreateCertificateFromPhdDialog({
           ...certificateData,
           field_ar: data.field_ar || '',
           research_lab_ar: data.research_lab_ar || '',
-        } as Parameters<typeof createPhdLmd.mutateAsync>[0]);
+        } as any);
         
         // Delete student from PhD database after successful certificate creation
         if (selectedStudent) {
           await deletePhdLmd.mutateAsync(selectedStudent.id);
         }
       } else if (selectedType === 'phd_science') {
-        await createPhdScience.mutateAsync(certificateData as Parameters<typeof createPhdScience.mutateAsync>[0]);
+        await createPhdScience.mutateAsync(certificateData as any);
         
         // Delete student from PhD database after successful certificate creation
         if (selectedStudent) {

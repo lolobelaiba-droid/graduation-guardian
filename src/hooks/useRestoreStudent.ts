@@ -15,7 +15,7 @@ export function useRestoreStudentToPhd() {
     mutationFn: async ({ student, certificateType }: RestoreStudentParams) => {
       // Prepare the data for the PhD students table
       const phdStudentData = {
-        registration_number: student.student_number,
+        registration_number: (student as any).registration_number || student.student_number,
         full_name_ar: student.full_name_ar,
         full_name_fr: student.full_name_fr || null,
         gender: (student as any).gender || "male",
@@ -37,8 +37,17 @@ export function useRestoreStudentToPhd() {
         thesis_title_ar: (student as any).thesis_title_ar || null,
         thesis_title_fr: (student as any).thesis_title_fr || null,
         research_lab_ar: (student as any).research_lab_ar || null,
-        status: "graduated", // Mark as graduated since they defended
-        notes: `تم إرجاعه من قاعدة بيانات الطلبة المناقشين - تاريخ المناقشة: ${student.defense_date}`,
+        co_supervisor_ar: (student as any).co_supervisor_ar || null,
+        supervisor_university: (student as any).supervisor_university || null,
+        co_supervisor_university: (student as any).co_supervisor_university || null,
+        employment_status: (student as any).employment_status || null,
+        registration_type: (student as any).registration_type || null,
+        inscription_status: (student as any).inscription_status || null,
+        current_year: (student as any).current_year || null,
+        registration_count: (student as any).registration_count || null,
+        thesis_language: (student as any).thesis_language || null,
+        status: "graduated",
+        notes: (student as any).notes || `تم إرجاعه من قاعدة بيانات الطلبة المناقشين - تاريخ المناقشة: ${student.defense_date}`,
       };
 
       // Insert into the appropriate PhD students table
