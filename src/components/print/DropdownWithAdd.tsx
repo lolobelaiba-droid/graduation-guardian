@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, Check, X, Pencil, Settings } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, Trash2, Check, X, Pencil, Settings, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +26,7 @@ import {
   type OptionType,
 } from "@/hooks/useDropdownOptions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface DropdownWithAddProps {
   value: string;
@@ -45,9 +46,13 @@ export function DropdownWithAdd({
   defaultOptions = [],
 }: DropdownWithAddProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [filterText, setFilterText] = useState("");
   const [newValue, setNewValue] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { data: dbOptions = [], isLoading } = useDropdownOptions(optionType);
   const addOption = useAddDropdownOption();
@@ -70,6 +75,28 @@ export function DropdownWithAdd({
   
   // Sort options
   allOptions.sort((a, b) => a.option_value.localeCompare(b.option_value));
+
+  // Filter options based on input text
+  const filteredOptions = allOptions.filter((opt) =>
+    opt.option_value.toLowerCase().includes((filterText || value).toLowerCase())
+  );
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+        setFilterText("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleAdd = async () => {
     if (!newValue.trim()) return;
@@ -128,24 +155,82 @@ export function DropdownWithAdd({
 
   const handleSelectOption = (optionValue: string) => {
     onChange(optionValue);
-    setIsOpen(false);
+    setIsDropdownOpen(false);
+    setFilterText("");
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    onChange(val);
+    setFilterText(val);
+    if (!isDropdownOpen) {
+      setIsDropdownOpen(true);
+    }
+  };
+
+  const handleInputFocus = () => {
+    setIsDropdownOpen(true);
+  };
+
+  const displayOptions = filterText ? filteredOptions : allOptions;
 
   return (
     <div className="flex gap-2">
       <div className="flex-1 relative">
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          dir={dir}
-          list={`${optionType}-options`}
-        />
-        <datalist id={`${optionType}-options`}>
-          {allOptions.map((opt) => (
-            <option key={opt.id} value={opt.option_value} />
-          ))}
-        </datalist>
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            value={value}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            placeholder={placeholder}
+            dir={dir}
+            className="pl-8"
+          />
+          <button
+            type="button"
+            tabIndex={-1}
+            className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => {
+              setIsDropdownOpen(!isDropdownOpen);
+              inputRef.current?.focus();
+            }}
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isDropdownOpen && "rotate-180")} />
+          </button>
+        </div>
+
+        {/* Custom dropdown list */}
+        {isDropdownOpen && displayOptions.length > 0 && (
+          <div
+            ref={dropdownRef}
+            className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95"
+          >
+            <div className="p-1">
+              {displayOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={cn(
+                    "relative flex w-full cursor-default select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors",
+                    "hover:bg-muted hover:text-foreground",
+                    value === opt.option_value
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-foreground"
+                  )}
+                  onClick={() => handleSelectOption(opt.option_value)}
+                >
+                  <span className="truncate" dir={dir}>
+                    {opt.option_value}
+                  </span>
+                  {value === opt.option_value && (
+                    <Check className="h-4 w-4 mr-auto shrink-0 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <Popover open={isOpen} onOpenChange={setIsOpen}>
