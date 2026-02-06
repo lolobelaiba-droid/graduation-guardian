@@ -21,6 +21,7 @@ import { CustomFieldsManager } from "@/components/settings/CustomFieldsManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toWesternNumerals } from "@/lib/numerals";
 
 import {
   Select,
@@ -458,13 +459,14 @@ export default function Settings() {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "غير معروف";
-    return new Date(dateString).toLocaleString("ar-SA", {
+    const formatted = new Date(dateString).toLocaleString("ar-EG-u-nu-latn", {
       year: "numeric",
       month: "long",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
+    return formatted;
   };
 
 
@@ -485,24 +487,24 @@ export default function Settings() {
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
                   <h4 className="font-semibold text-destructive mb-2">البيانات الحالية (ستُحذف)</h4>
                   <ul className="text-sm space-y-1 text-foreground">
-                    <li>• شهادات دكتوراه ل م د: {currentDataSummary?.phdLmdCount || 0}</li>
-                    <li>• شهادات دكتوراه علوم: {currentDataSummary?.phdScienceCount || 0}</li>
-                    <li>• شهادات ماجستير: {currentDataSummary?.masterCount || 0}</li>
-                    <li>• طلبة دكتوراه ل م د: {currentDataSummary?.phdLmdStudentsCount || 0}</li>
-                    <li>• طلبة دكتوراه علوم: {currentDataSummary?.phdScienceStudentsCount || 0}</li>
-                    <li>• القوالب: {currentDataSummary?.templatesCount || 0}</li>
+                    <li>• شهادات دكتوراه ل م د: {toWesternNumerals(currentDataSummary?.phdLmdCount || 0)}</li>
+                    <li>• شهادات دكتوراه علوم: {toWesternNumerals(currentDataSummary?.phdScienceCount || 0)}</li>
+                    <li>• شهادات ماجستير: {toWesternNumerals(currentDataSummary?.masterCount || 0)}</li>
+                    <li>• طلبة دكتوراه ل م د: {toWesternNumerals(currentDataSummary?.phdLmdStudentsCount || 0)}</li>
+                    <li>• طلبة دكتوراه علوم: {toWesternNumerals(currentDataSummary?.phdScienceStudentsCount || 0)}</li>
+                    <li>• القوالب: {toWesternNumerals(currentDataSummary?.templatesCount || 0)}</li>
                   </ul>
                 </div>
                 
                 <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
                   <h4 className="font-semibold text-primary mb-2">النسخة الاحتياطية (ستُستعاد)</h4>
                   <ul className="text-sm space-y-1 text-foreground">
-                    <li>• شهادات دكتوراه ل م د: {pendingBackupData?.summary.phdLmdCount || 0}</li>
-                    <li>• شهادات دكتوراه علوم: {pendingBackupData?.summary.phdScienceCount || 0}</li>
-                    <li>• شهادات ماجستير: {pendingBackupData?.summary.masterCount || 0}</li>
-                    <li>• طلبة دكتوراه ل م د: {pendingBackupData?.summary.phdLmdStudentsCount || 0}</li>
-                    <li>• طلبة دكتوراه علوم: {pendingBackupData?.summary.phdScienceStudentsCount || 0}</li>
-                    <li>• القوالب: {pendingBackupData?.summary.templatesCount || 0}</li>
+                    <li>• شهادات دكتوراه ل م د: {toWesternNumerals(pendingBackupData?.summary.phdLmdCount || 0)}</li>
+                    <li>• شهادات دكتوراه علوم: {toWesternNumerals(pendingBackupData?.summary.phdScienceCount || 0)}</li>
+                    <li>• شهادات ماجستير: {toWesternNumerals(pendingBackupData?.summary.masterCount || 0)}</li>
+                    <li>• طلبة دكتوراه ل م د: {toWesternNumerals(pendingBackupData?.summary.phdLmdStudentsCount || 0)}</li>
+                    <li>• طلبة دكتوراه علوم: {toWesternNumerals(pendingBackupData?.summary.phdScienceStudentsCount || 0)}</li>
+                    <li>• القوالب: {toWesternNumerals(pendingBackupData?.summary.templatesCount || 0)}</li>
                   </ul>
                   {pendingBackupData?.summary.createdAt && (
                     <p className="text-xs text-muted-foreground mt-2">
@@ -549,7 +551,7 @@ export default function Settings() {
                           {backup.name.replace('.json', '').replace(/backup_/g, '').replace(/-/g, ' ').slice(0, 19)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {backup.created_at ? new Date(backup.created_at).toLocaleString("ar-SA") : ""}
+                          {backup.created_at ? new Date(backup.created_at).toLocaleString("ar-EG-u-nu-latn") : ""}
                         </p>
                       </div>
                       <div className="flex gap-1 shrink-0">

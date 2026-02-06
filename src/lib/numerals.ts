@@ -38,7 +38,7 @@ export function toWesternNumerals(input: string | number): string {
  */
 export function formatDateWithWesternNumerals(
   date: Date | string,
-  locale: string = 'ar-SA',
+  locale: string = 'ar-EG-u-nu-latn',
   options?: Intl.DateTimeFormatOptions
 ): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;

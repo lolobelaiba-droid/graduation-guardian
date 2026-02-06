@@ -63,7 +63,7 @@ export default function StudentDetailsDialog({
   const formatBirthDate = (dateStr: string) => formatCertificateDate(dateStr, true, dateFormatSettings);
   const formatDefenseDateValue = (dateStr: string) => formatDefenseDate(dateStr, true, dateFormatSettings);
   const formatCertificateDateValue = (dateStr: string) => formatCertificateIssueDate(dateStr, true, dateFormatSettings);
-  const formatSystemDate = (dateStr: string) => new Date(dateStr).toLocaleDateString("ar-SA");
+  const formatSystemDate = (dateStr: string) => new Date(dateStr).toLocaleDateString("ar-EG-u-nu-latn");
 
   const isPhdLmd = certificateType === "phd_lmd";
   const isPhdScience = certificateType === "phd_science";
