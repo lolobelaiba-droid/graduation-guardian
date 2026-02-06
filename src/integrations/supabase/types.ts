@@ -75,6 +75,7 @@ export type Database = {
           field_name_ar: string
           field_name_fr: string | null
           field_order: number | null
+          field_width: number | null
           font_color: string | null
           font_name: string | null
           font_size: number
@@ -92,6 +93,7 @@ export type Database = {
           field_name_ar: string
           field_name_fr?: string | null
           field_order?: number | null
+          field_width?: number | null
           font_color?: string | null
           font_name?: string | null
           font_size?: number
@@ -109,6 +111,7 @@ export type Database = {
           field_name_ar?: string
           field_name_fr?: string | null
           field_order?: number | null
+          field_width?: number | null
           font_color?: string | null
           font_name?: string | null
           font_size?: number

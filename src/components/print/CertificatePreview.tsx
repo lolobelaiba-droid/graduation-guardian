@@ -46,6 +46,7 @@ interface CertificatePreviewProps {
   onToggleFieldVisibility?: (fieldId: string, visible: boolean) => void;
   onDeleteField?: (fieldId: string) => void;
   onAddField?: () => void;
+  onFieldResize?: (fieldId: string, newWidth: number) => void;
   stepSize?: number;
   isMoving?: boolean;
   // Background offset controls
@@ -74,6 +75,7 @@ export function CertificatePreview({
   onToggleFieldVisibility,
   onDeleteField,
   onAddField,
+  onFieldResize,
   stepSize = 1,
   isMoving = false,
   backgroundOffsetX = 0,
@@ -97,6 +99,13 @@ export function CertificatePreview({
     fieldStartY: number;
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
+  
+  // Resize state for field width
+  const [resizeState, setResizeState] = useState<{
+    fieldId: string;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
 
   // Load fonts dynamically for preview - version forces re-render when fonts load
   const fontNames = useMemo(() => fields.map(f => f.font_name), [fields]);
@@ -129,6 +138,12 @@ export function CertificatePreview({
   // Check if a field is a static text field
   const isStaticTextField = useCallback((fieldKey: string): boolean => {
     return fieldKey.startsWith('static_text_');
+  }, []);
+
+  // Check if a field should be resizable (long text fields)
+  const isResizableField = useCallback((fieldKey: string): boolean => {
+    return fieldKey.startsWith('thesis_title') || 
+           fieldKey.startsWith('static_text_');
   }, []);
 
   const getFieldValue = useCallback((fieldKey: string, field?: TemplateField): string => {
@@ -301,7 +316,50 @@ export function CertificatePreview({
     if (dragState) {
       handleMouseUp();
     }
-  }, [dragState, handleMouseUp]);
+    if (resizeState) {
+      handleResizeEnd();
+    }
+  }, [dragState, handleMouseUp, resizeState]);
+
+  // Resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent, field: TemplateField) => {
+    if (!onFieldResize) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const currentWidth = field.field_width || 80; // default 80mm
+    setResizeState({
+      fieldId: field.id,
+      startX: e.clientX,
+      startWidth: currentWidth,
+    });
+  }, [onFieldResize]);
+
+  const handleResizeMove = useCallback((e: React.MouseEvent) => {
+    if (!resizeState) return;
+    
+    const deltaX = (e.clientX - resizeState.startX) / SCALE;
+    const newWidth = Math.max(20, Math.round((resizeState.startWidth + deltaX) * 2) / 2);
+    
+    // Update locally by finding the field element and setting its width
+    const fieldEl = document.querySelector(`[data-field-id="${resizeState.fieldId}"]`) as HTMLElement;
+    if (fieldEl) {
+      fieldEl.style.width = `${newWidth * SCALE}px`;
+    }
+  }, [resizeState]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (resizeState && onFieldResize) {
+      const fieldEl = document.querySelector(`[data-field-id="${resizeState.fieldId}"]`) as HTMLElement;
+      if (fieldEl) {
+        const newWidth = parseFloat(fieldEl.style.width) / SCALE;
+        if (newWidth !== resizeState.startWidth) {
+          onFieldResize(resizeState.fieldId, Math.round(newWidth * 2) / 2);
+        }
+      }
+    }
+    setResizeState(null);
+  }, [resizeState, onFieldResize]);
 
   // Get field position (use drag preview if dragging)
   const getFieldPosition = (field: TemplateField) => {
@@ -460,8 +518,14 @@ export function CertificatePreview({
             height: `${height * SCALE}px`,
             direction: isRtlLanguage ? 'rtl' : 'ltr',
           }}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+          onMouseMove={(e) => {
+            handleMouseMove(e);
+            handleResizeMove(e);
+          }}
+          onMouseUp={() => {
+            handleMouseUp();
+            handleResizeEnd();
+          }}
           onMouseLeave={handleMouseLeave}
         >
           {/* Background image with offset */}
@@ -495,7 +559,10 @@ export function CertificatePreview({
             const isSelected = selectedFieldId === field.id;
             const isVisible = field.is_visible;
             const isDragging = dragState?.fieldId === field.id;
+            const isResizing = resizeState?.fieldId === field.id;
             const position = getFieldPosition(field);
+            const resizable = isResizableField(field.field_key);
+            const hasWidth = field.field_width != null;
             
             // Determine field direction - use date settings for Arabic date fields
             const dateDirection = getDateFieldDirection(field.field_key);
@@ -520,11 +587,13 @@ export function CertificatePreview({
               >
                 {/* Field content */}
                 <div
+                  data-field-id={field.id}
                   className={cn(
                     "border border-transparent transition-all select-none",
                     isVisible && "hover:border-primary/50",
                     isSelected && "border-primary border-2 bg-primary/5 rounded",
-                    isDragging && "border-primary border-2 bg-primary/10 rounded shadow-lg"
+                    isDragging && "border-primary border-2 bg-primary/10 rounded shadow-lg",
+                    hasWidth && "relative"
                   )}
                   style={{
                     fontSize: `${field.font_size * SCALE * 0.35}px`,
@@ -532,19 +601,37 @@ export function CertificatePreview({
                     color: isVisible ? field.font_color : '#999',
                     textAlign: field.text_align as 'left' | 'right' | 'center',
                     direction: fieldDirection,
-                    whiteSpace: 'nowrap',
+                    whiteSpace: hasWidth ? 'normal' : 'nowrap',
+                    wordWrap: hasWidth ? 'break-word' : undefined,
+                    width: hasWidth ? `${field.field_width! * SCALE}px` : undefined,
                     padding: '2px 4px',
                     textDecoration: !isVisible ? 'line-through' : 'none',
+                    lineHeight: hasWidth ? '1.4' : undefined,
                   }}
                   onMouseDown={(e) => isVisible && handleMouseDown(e, field)}
                   onClick={() => !dragState && onFieldClick(field.id)}
-                  title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم - اسحب لتحريك الحقل`}
+                  title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${field.field_width}مم` : ''} - اسحب لتحريك الحقل`}
                 >
                   {/* Drag handle indicator */}
                   {isSelected && showControls && !isDragging && (
                     <GripVertical className="inline-block h-3 w-3 ml-1 text-muted-foreground" />
                   )}
                   {getFieldValue(field.field_key, field) || `[${field.field_name_ar}]`}
+                  
+                  {/* Resize handle for resizable fields */}
+                  {resizable && isSelected && showControls && !isDragging && onFieldResize && (
+                    <div
+                      className="absolute top-0 bottom-0 w-2 cursor-ew-resize bg-primary/30 hover:bg-primary/60 transition-colors rounded-sm"
+                      style={{
+                        [fieldDirection === 'rtl' ? 'left' : 'right']: '-4px',
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        handleResizeStart(e, field);
+                      }}
+                      title="اسحب لتغيير العرض"
+                    />
+                  )}
                 </div>
 
                 {/* Movement controls - show when field is selected, controls enabled, and not dragging */}

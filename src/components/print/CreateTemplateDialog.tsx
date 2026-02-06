@@ -95,6 +95,7 @@ export function CreateTemplateDialog({
         is_rtl: data.language.includes('ar'),
         is_visible: true,
         field_order: index,
+        field_width: null,
       }));
 
       await createFields.mutateAsync(fieldData);
