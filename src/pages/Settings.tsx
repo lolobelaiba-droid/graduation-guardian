@@ -937,11 +937,27 @@ export default function Settings() {
               )}
 
               {autoBackup && (
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  <span className="text-sm text-muted-foreground">
-                    تم تفعيل النسخ الاحتياطي التلقائي - يتم الحفظ {backupFrequency === "hourly" ? "كل ساعة" : backupFrequency === "daily" ? "يومياً" : backupFrequency === "weekly" ? "أسبوعياً" : "شهرياً"} الساعة {backupHour}:00 ({autoBackupCount === "2" ? "نسختان يومياً" : "نسخة واحدة يومياً"})
-                  </span>
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      تم تفعيل النسخ الاحتياطي التلقائي - يتم الحفظ {backupFrequency === "hourly" ? "كل ساعة" : backupFrequency === "daily" ? "يومياً" : backupFrequency === "weekly" ? "أسبوعياً" : "شهرياً"} الساعة {backupHour}:00 ({autoBackupCount === "2" ? "نسختان يومياً" : "نسخة واحدة يومياً"})
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 shrink-0"
+                    onClick={downloadBackup}
+                    disabled={isDownloading}
+                  >
+                    {isDownloading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    حفظ الآن
+                  </Button>
                 </div>
               )}
             </div>
