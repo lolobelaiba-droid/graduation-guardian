@@ -99,6 +99,7 @@ export interface TemplateField {
   is_rtl: boolean;
   is_visible: boolean;
   field_order: number;
+  field_width: number | null;
   created_at: string;
 }
 

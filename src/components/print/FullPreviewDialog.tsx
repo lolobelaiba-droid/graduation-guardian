@@ -689,6 +689,7 @@ export function FullPreviewDialog({
                 const isDragging = dragState?.fieldId === field.id;
                 const hasChange = fieldChanges.some(c => c.fieldId === field.id);
                 const value = getFieldValue(field.field_key);
+                const hasWidth = field.field_width != null;
                 
                 // Get text direction for date fields from settings
                 const dateDirection = getDateFieldDirection(field.field_key);
@@ -724,10 +725,13 @@ export function FullPreviewDialog({
                         color: field.font_color,
                         textAlign: field.text_align as 'left' | 'right' | 'center',
                         direction: effectiveDirection,
-                        whiteSpace: 'nowrap',
+                        whiteSpace: hasWidth ? 'normal' : 'nowrap',
+                        wordWrap: hasWidth ? 'break-word' : undefined,
+                        width: hasWidth ? `${field.field_width! * SCALE}px` : undefined,
+                        lineHeight: hasWidth ? '1.4' : undefined,
                       }}
                       onMouseDown={(e) => showFieldControls && handleFieldMouseDown(e, field)}
-                      title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم - اسحب لتحريك الحقل`}
+                      title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${field.field_width}مم` : ''}`}
                     >
                       {isSelected && showFieldControls && !isDragging && (
                         <GripVertical className="inline-block h-3 w-3 ml-1 text-primary" />

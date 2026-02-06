@@ -997,6 +997,14 @@ export default function PrintCertificates() {
                     );
                   }}
                   onAddField={() => setIsAddFieldOpen(true)}
+                  onFieldResize={(fieldId, newWidth) => {
+                    if (!selectedTemplateId) return;
+                    updateField.mutate({
+                      id: fieldId,
+                      template_id: selectedTemplateId,
+                      field_width: newWidth,
+                    });
+                  }}
                   stepSize={stepSize}
                   isMoving={updateField.isPending}
                   backgroundOffsetX={backgroundOffsetX}
@@ -1049,6 +1057,7 @@ export default function PrintCertificates() {
                             <span className="font-medium">{field.field_name_ar}</span>
                             <Badge variant="outline" className="text-xs">
                               X: {toWesternNumerals(field.position_x)} | Y: {toWesternNumerals(field.position_y)}
+                              {field.field_width != null && ` | W: ${toWesternNumerals(field.field_width)}`}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -1172,6 +1181,60 @@ export default function PrintCertificates() {
                             />
                           </div>
                         </div>
+
+                        {/* Field Width for resizable fields */}
+                        {(() => {
+                          const selectedF = templateFields.find(f => f.id === selectedFieldId);
+                          const isResizable = selectedF && (
+                            selectedF.field_key.startsWith('thesis_title') || 
+                            selectedF.field_key.startsWith('static_text_')
+                          );
+                          if (!isResizable) return null;
+                          return (
+                            <div>
+                              <Label>عرض الحقل (مم)</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Input
+                                  type="number"
+                                  min="20"
+                                  max="200"
+                                  step="1"
+                                  value={selectedF?.field_width ?? ''}
+                                  placeholder="تلقائي"
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const width = val ? parseFloat(val) : null;
+                                    if (width !== null && (width < 20 || width > 200)) return;
+                                    updateField.mutate({
+                                      id: selectedFieldId,
+                                      template_id: selectedTemplateId,
+                                      field_width: width,
+                                    });
+                                  }}
+                                  className="w-24 font-mono"
+                                />
+                                {selectedF?.field_width != null && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      updateField.mutate({
+                                        id: selectedFieldId,
+                                        template_id: selectedTemplateId,
+                                        field_width: null,
+                                      });
+                                    }}
+                                  >
+                                    إزالة
+                                  </Button>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                حدد عرضاً لتفعيل التفاف النص تلقائياً أو اسحب حافة الحقل في المعاينة
+                              </p>
+                            </div>
+                          );
+                        })()}
 
                         {/* Step Size for Movement */}
                         <div>

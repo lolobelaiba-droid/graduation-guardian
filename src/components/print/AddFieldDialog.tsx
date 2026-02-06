@@ -113,6 +113,7 @@ export function AddFieldDialog({
         text_align: isRtlField ? "right" : "left",
         is_rtl: isRtlField,
         is_visible: true,
+        field_width: null,
         field_order: existingFieldKeys.length + 1,
         // Store static text in field_name_fr if it's a static text field (workaround)
         ...(activeTab === "static" && { 

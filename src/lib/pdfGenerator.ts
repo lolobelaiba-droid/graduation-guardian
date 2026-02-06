@@ -600,11 +600,23 @@ function renderField(
   else if (field.text_align === 'center') align = 'center';
   else align = processed.align; // Use recommended alignment
   
-  // Render text
-  // IMPORTANT: Always use the processed text, never raw Arabic strings
-  doc.text(processed.text, field.position_x, field.position_y, { align });
-  
-  logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}`);
+  // If field has a width, use text wrapping with splitTextToSize
+  if (field.field_width && field.field_width > 0) {
+    const maxWidth = field.field_width;
+    const lines = doc.splitTextToSize(processed.text, maxWidth);
+    const lineHeight = field.font_size * 0.5; // approximate line height in mm
+    
+    lines.forEach((line: string, lineIndex: number) => {
+      const yPos = field.position_y + (lineIndex * lineHeight);
+      doc.text(line, field.position_x, yPos, { align });
+    });
+    
+    logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}, Width: ${field.field_width}mm, Lines: ${lines.length}`);
+  } else {
+    // Render text as single line
+    doc.text(processed.text, field.position_x, field.position_y, { align });
+    logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}`);
+  }
 }
 
 // ============================================================================
