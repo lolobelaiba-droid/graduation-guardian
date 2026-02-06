@@ -116,8 +116,10 @@ export function CreateCertificateFromPhdDialog({
   const createPhdLmd = useCreatePhdLmdCertificate();
   const createPhdScience = useCreatePhdScienceCertificate();
   
-  const { data: phdLmdStudents = [] } = usePhdLmdStudents();
-  const { data: phdScienceStudents = [] } = usePhdScienceStudents();
+  const { data: phdLmdStudents = [], isLoading: loadingLmd } = usePhdLmdStudents();
+  const { data: phdScienceStudents = [], isLoading: loadingScience } = usePhdScienceStudents();
+  
+  const isLoadingStudents = loadingLmd || loadingScience;
   
   const { data: suggestions } = useMultipleFieldSuggestions([
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 
@@ -304,40 +306,74 @@ export function CreateCertificateFromPhdDialog({
             </div>
 
             {/* Students List */}
-            <ScrollArea className="h-[400px] border rounded-lg">
-              {filteredStudents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
-                  <Search className="h-12 w-12 mb-4 opacity-50" />
-                  <p>لا يوجد طلاب في قاعدة البيانات</p>
-                  <p className="text-sm">أضف طلاباً من صفحة قاعدة بيانات طلبة الدكتوراه أولاً</p>
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {filteredStudents.map((student) => (
-                    <div
-                      key={student.id}
-                      className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => handleSelectStudent(student)}
+            <div className="border rounded-lg">
+              <div className="p-2 bg-muted/30 border-b flex justify-between items-center">
+                <span className="text-sm font-medium">
+                  قائمة طلبة الدكتوراه ({selectedType === 'phd_lmd' ? 'ل م د' : 'علوم'})
+                </span>
+                <Badge variant="secondary">
+                  {availableStudents.length} طالب
+                </Badge>
+              </div>
+              <ScrollArea className="h-[350px]">
+                {isLoadingStudents ? (
+                  <div className="flex flex-col items-center justify-center h-full py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                    <p className="text-muted-foreground">جاري تحميل البيانات...</p>
+                  </div>
+                ) : availableStudents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
+                    <Search className="h-12 w-12 mb-4 opacity-50" />
+                    <p className="font-medium">لا يوجد طلاب في قاعدة البيانات</p>
+                    <p className="text-sm mt-2">أضف طلاباً من صفحة قاعدة بيانات طلبة الدكتوراه أولاً</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4"
+                      onClick={() => {
+                        onOpenChange(false);
+                        window.location.hash = '/phd-students';
+                      }}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{student.full_name_ar}</h4>
-                          <p className="text-sm text-muted-foreground">{student.full_name_fr}</p>
+                      الذهاب إلى قاعدة بيانات طلبة الدكتوراه
+                    </Button>
+                  </div>
+                ) : filteredStudents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
+                    <Search className="h-12 w-12 mb-4 opacity-50" />
+                    <p>لا توجد نتائج للبحث</p>
+                    <p className="text-sm">جرب البحث باسم آخر أو رقم تسجيل</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {filteredStudents.map((student) => (
+                      <div
+                        key={student.id}
+                        className="p-4 hover:bg-primary/5 cursor-pointer transition-colors border-r-2 border-transparent hover:border-primary"
+                        onClick={() => handleSelectStudent(student)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold">{student.full_name_ar}</h4>
+                            {student.full_name_fr && (
+                              <p className="text-sm text-muted-foreground">{student.full_name_fr}</p>
+                            )}
+                          </div>
+                          <Badge variant="outline">{student.registration_number}</Badge>
                         </div>
-                        <Badge variant="outline">{student.registration_number}</Badge>
+                        <div className="mt-2 flex flex-wrap gap-2 text-sm text-muted-foreground">
+                          <span className="bg-muted px-2 py-0.5 rounded">{student.specialty_ar}</span>
+                          <span className="bg-muted px-2 py-0.5 rounded">{student.faculty_ar}</span>
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          المشرف: {student.supervisor_ar}
+                        </div>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-2 text-sm text-muted-foreground">
-                        <span>{student.specialty_ar}</span>
-                        <span>•</span>
-                        <span>{student.faculty_ar}</span>
-                        <span>•</span>
-                        <span>{student.supervisor_ar}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           </div>
         ) : (
           <Form {...form}>
