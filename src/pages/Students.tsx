@@ -153,12 +153,17 @@ export default function Students() {
     }
 
     const exportData = currentData.map((student) => ({
-      "رقم الطالب": student.student_number,
+      "رقم الشهادة": student.student_number,
       "الاسم بالعربية": student.full_name_ar,
       "الاسم بالفرنسية": student.full_name_fr || "",
+      "الجنس": (student as any).gender === 'male' ? 'ذكر' : (student as any).gender === 'female' ? 'أنثى' : (student as any).gender || "",
       "تاريخ الميلاد": student.date_of_birth,
       "مكان الميلاد بالعربية": student.birthplace_ar,
       "مكان الميلاد بالفرنسية": student.birthplace_fr || "",
+      "الكلية": student.faculty_ar || "",
+      ...((selectedCertType === "phd_lmd" || selectedCertType === "phd_science") && {
+        "مخبر البحث": (student as any).research_lab_ar || "",
+      }),
       "الشعبة بالعربية": student.branch_ar,
       "الشعبة بالفرنسية": student.branch_fr || "",
       "التخصص بالعربية": student.specialty_ar,
@@ -166,6 +171,8 @@ export default function Students() {
       "تاريخ المناقشة": student.defense_date,
       "التقدير": mentionLabels[student.mention as MentionType]?.ar || student.mention,
       ...((selectedCertType === "phd_lmd" || selectedCertType === "phd_science") && {
+        "المشرف": (student as any).supervisor_ar || "",
+        "سنة أول تسجيل": (student as any).first_registration_year || "",
         "عنوان الأطروحة": (student as any).thesis_title_ar || "",
         "رئيس اللجنة": (student as any).jury_president_ar || "",
         "أعضاء اللجنة": (student as any).jury_members_ar || "",
