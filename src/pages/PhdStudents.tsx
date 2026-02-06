@@ -11,6 +11,7 @@ import {
   Eye,
   Loader2,
   GraduationCap,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,14 +53,35 @@ import { AddPhdStudentDialog } from "@/components/phd-students/AddPhdStudentDial
 import { ViewPhdStudentDialog } from "@/components/phd-students/ViewPhdStudentDialog";
 import { EditPhdStudentDialog } from "@/components/phd-students/EditPhdStudentDialog";
 import { ImportPhdExcelDialog } from "@/components/phd-students/import";
+import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { toast } from "sonner";
 import { toWesternNumerals } from "@/lib/numerals";
+
+// Generate academic years from 2000/2001 to current+1
+const generateAcademicYears = (): string[] => {
+  const years: string[] = [];
+  const currentYear = new Date().getFullYear();
+  for (let year = 2000; year <= currentYear + 1; year++) {
+    years.push(`${year}/${year + 1}`);
+  }
+  return years;
+};
+
+const academicYears = generateAcademicYears();
 
 export default function PhdStudents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<PhdStudentType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<{ id: string; type: PhdStudentType } | null>(null);
+  
+  // Current academic year state
+  const [currentAcademicYear, setCurrentAcademicYear] = useState<string>(() => {
+    // Default to current academic year
+    const now = new Date();
+    const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+    return `${year}/${year + 1}`;
+  });
   
   // Details dialog state
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -168,7 +190,7 @@ export default function PhdStudents() {
     toast.success(`تم تصدير ${toWesternNumerals(currentData.length)} طالب`);
   };
 
-  return (
+    return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -185,20 +207,39 @@ export default function PhdStudents() {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4" />
-            استيراد Excel
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
-            <Download className="h-4 w-4" />
-            تصدير Excel
-          </Button>
-          <Button size="sm" className="gap-2" onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-            إضافة طالب
-          </Button>
+        
+        {/* Current Academic Year Selector */}
+        <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/20">
+          <div className="flex items-center gap-2 text-primary">
+            <Calendar className="h-5 w-5" />
+            <span className="font-semibold text-base">السنة الجامعية الحالية:</span>
+          </div>
+          <div className="w-48">
+            <DropdownWithAdd
+              value={currentAcademicYear}
+              onChange={setCurrentAcademicYear}
+              optionType="academic_year"
+              placeholder="اختر السنة الجامعية"
+              defaultOptions={academicYears}
+            />
+          </div>
         </div>
+      </div>
+      
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3 justify-end">
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
+          <Upload className="h-4 w-4" />
+          استيراد Excel
+        </Button>
+        <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
+          <Download className="h-4 w-4" />
+          تصدير Excel
+        </Button>
+        <Button size="sm" className="gap-2" onClick={() => setAddDialogOpen(true)}>
+          <Plus className="h-4 w-4" />
+          إضافة طالب
+        </Button>
       </div>
 
       {/* PhD Type Tabs */}
