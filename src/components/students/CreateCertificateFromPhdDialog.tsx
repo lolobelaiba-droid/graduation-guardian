@@ -984,6 +984,128 @@ export function CreateCertificateFromPhdDialog({
                   </FormItem>
                 )}
               />
+              {/* PhD Student Reference Data - All pre-filled fields from database */}
+              {selectedStudent && (
+                <>
+                  <SectionHeader title="بيانات إضافية من قاعدة بيانات طلبة الدكتوراه (للاطلاع)" />
+                  
+                  <div className="p-4 bg-muted/30 rounded-lg border space-y-3">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                      {selectedStudent.registration_number && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">رقم التسجيل:</span>
+                          <span className="text-sm font-medium">{selectedStudent.registration_number}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).current_year && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">سنة التسجيل:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).current_year}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).registration_count && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">عدد التسجيلات:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).registration_count}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).co_supervisor_ar && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">مساعد المشرف:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).co_supervisor_ar}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).supervisor_university && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">جامعة انتماء المشرف:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).supervisor_university}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).co_supervisor_university && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">جامعة انتماء مساعد المشرف:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).co_supervisor_university}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).employment_status && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">الحالة الوظيفية:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).employment_status}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).registration_type && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">نوع التسجيل:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).registration_type}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).inscription_status && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">حالة التسجيل:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).inscription_status}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).thesis_language && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">لغة الأطروحة:</span>
+                          <span className="text-sm font-medium">
+                            {(selectedStudent as any).thesis_language === 'arabic' ? 'العربية' :
+                             (selectedStudent as any).thesis_language === 'french' ? 'الفرنسية' :
+                             (selectedStudent as any).thesis_language === 'english' ? 'الإنجليزية' :
+                             (selectedStudent as any).thesis_language}
+                          </span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).thesis_title_fr && (
+                        <div className="flex items-center gap-2 col-span-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">عنوان الأطروحة (فرنسي):</span>
+                          <span className="text-sm font-medium" dir="ltr">{(selectedStudent as any).thesis_title_fr}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).faculty_fr && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">الكلية (فرنسي):</span>
+                          <span className="text-sm font-medium" dir="ltr">{(selectedStudent as any).faculty_fr}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).status && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">الحالة:</span>
+                          <span className="text-sm font-medium">
+                            {(selectedStudent as any).status === 'active' ? 'نشط' :
+                             (selectedStudent as any).status === 'graduated' ? 'تخرج' :
+                             (selectedStudent as any).status === 'suspended' ? 'معلق' :
+                             (selectedStudent as any).status === 'withdrawn' ? 'منسحب' :
+                             (selectedStudent as any).status}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedStudent.notes && (
+                      <div className="mt-2 pt-2 border-t">
+                        <span className="text-sm text-muted-foreground">ملاحظات:</span>
+                        <p className="text-sm font-medium mt-1 bg-destructive/10 text-destructive p-2 rounded-md border border-destructive/20">
+                          {selectedStudent.notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setSelectedStudent(null); }}>
                   إلغاء
@@ -1003,7 +1125,7 @@ export function CreateCertificateFromPhdDialog({
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-warning" />
               تأكيد اختيار الطالب
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right">
@@ -1013,7 +1135,7 @@ export function CreateCertificateFromPhdDialog({
                   <p className="font-semibold text-foreground">{pendingStudent?.full_name_ar}</p>
                   <p className="text-sm">{pendingStudent?.specialty_ar} - {pendingStudent?.faculty_ar}</p>
                 </div>
-                <p className="text-amber-600 text-sm font-medium mt-2">
+                <p className="text-warning text-sm font-medium mt-2">
                   ⚠️ سيتم حذف الطالب من قاعدة بيانات طلبة الدكتوراه ونقله إلى قاعدة بيانات الطلبة المناقشين بعد إتمام إصدار الشهادة.
                 </p>
               </div>
