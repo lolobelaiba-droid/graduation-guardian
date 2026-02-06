@@ -254,28 +254,32 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
           onClick={() => inputRef.current?.focus()}
         >
           {/* الإدخال المؤكد */}
-          {confirmedEntry && (
-            <div className={cn("flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border", detectDirection(formatWithTitle(confirmedEntry.title, confirmedEntry.name)) === "ltr" ? "flex-row-reverse" : "")}>
-              {confirmedEntry.title && (
-                <span className="bg-blue-600 text-white px-2 py-1 text-sm font-medium">
-                  {confirmedEntry.title}
+          {confirmedEntry && (() => {
+            const entryDir = detectDirection(formatWithTitle(confirmedEntry.title, confirmedEntry.name));
+            const isLtr = entryDir === "ltr";
+            return (
+              <div dir={entryDir} className={cn("flex items-center gap-0 bg-muted rounded-md overflow-hidden border border-border")}>
+                {confirmedEntry.title && (
+                  <span className="bg-blue-600 text-white px-2 py-1 text-sm font-medium">
+                    {confirmedEntry.title}
+                  </span>
+                )}
+                <span dir={entryDir} className="px-2 py-1 text-sm text-foreground bg-amber-100 dark:bg-amber-900/30">
+                  {confirmedEntry.name}
                 </span>
-              )}
-              <span className="px-2 py-1 text-sm text-foreground bg-amber-100 dark:bg-amber-900/30">
-                {confirmedEntry.name}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeConfirmedEntry();
-                }}
-                className="hover:bg-destructive/20 rounded-full p-0.5 mx-1"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeConfirmedEntry();
+                  }}
+                  className="hover:bg-destructive/20 rounded-full p-0.5 mx-1"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            );
+          })()}
 
           {/* الرتبة المختارة */}
           {!confirmedEntry && selectedTitle && (
@@ -309,7 +313,7 @@ const AcademicTitleInput = React.forwardRef<HTMLInputElement, AcademicTitleInput
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               onFocus={() => setShowSuggestions(true)}
-              placeholder={selectedTitle ? "اكتب الاسم واللقب ثم Enter..." : placeholder}
+              placeholder={selectedTitle ? (detectDirection(selectedTitle) === "ltr" ? "Type name then press Enter..." : "اكتب الاسم واللقب ثم Enter...") : placeholder}
               dir={detectDirection(selectedTitle || inputValue)}
               className="flex-1 border-0 p-0 h-7 focus-visible:ring-0 focus-visible:ring-offset-0"
               {...props}
