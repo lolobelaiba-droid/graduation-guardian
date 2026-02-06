@@ -9,6 +9,7 @@ import {
   Eye,
   Loader2,
   Printer,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
 import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
 import EditStudentDialog from "@/components/students/EditStudentDialog";
 import { CreateCertificateFromPhdDialog } from "@/components/students/CreateCertificateFromPhdDialog";
+import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 
@@ -70,6 +72,9 @@ export default function Students() {
 
   // Create certificate from PhD dialog state
   const [createCertDialogOpen, setCreateCertDialogOpen] = useState(false);
+  
+  // Add Master student dialog state
+  const [addMasterDialogOpen, setAddMasterDialogOpen] = useState(false);
 
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceCertificates();
@@ -174,6 +179,7 @@ export default function Students() {
 
   // Check if the current type is PhD (not master) to show the create from database button
   const isPhdType = selectedCertType === 'phd_lmd' || selectedCertType === 'phd_science';
+  const isMasterType = selectedCertType === 'master';
 
   return (
     <div className="space-y-6">
@@ -194,6 +200,12 @@ export default function Students() {
             <Button size="sm" className="gap-2" onClick={() => setCreateCertDialogOpen(true)}>
               <Printer className="h-4 w-4" />
               طباعة شهادة جديدة
+            </Button>
+          )}
+          {isMasterType && (
+            <Button size="sm" className="gap-2" onClick={() => setAddMasterDialogOpen(true)}>
+              <UserPlus className="h-4 w-4" />
+              إضافة طالب ماجستير
             </Button>
           )}
         </div>
@@ -332,6 +344,13 @@ export default function Students() {
         open={createCertDialogOpen}
         onOpenChange={setCreateCertDialogOpen}
         certificateType={selectedCertType}
+      />
+
+      {/* Add Master Student Dialog */}
+      <AddStudentDialog
+        open={addMasterDialogOpen}
+        onOpenChange={setAddMasterDialogOpen}
+        certificateType="master"
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
