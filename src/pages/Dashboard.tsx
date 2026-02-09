@@ -21,31 +21,48 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* University Header */}
-      <div className="bg-card rounded-2xl shadow-card p-6 border border-border">
-        <div className="flex items-center justify-center gap-6">
-          {universitySettings?.universityLogo && (
-            <img 
-              src={universitySettings.universityLogo} 
-              alt="شعار الجامعة" 
-              className="w-20 h-20 object-contain"
-            />
-          )}
-          <div className="text-center">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">
-              {universityName}
-            </h1>
-            <p className="text-lg text-muted-foreground mt-1">
-              {subTitle}
-            </p>
+      {/* University Header - Modern Design */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border border-primary/20 shadow-lg">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full -translate-x-16 -translate-y-16 blur-2xl" />
+        <div className="absolute bottom-0 right-0 w-24 h-24 bg-primary/15 rounded-full translate-x-12 translate-y-12 blur-xl" />
+        
+        <div className="relative p-6 md:p-8">
+          <div className="flex items-center gap-6">
+            {/* Logo Container */}
+            {universitySettings?.universityLogo ? (
+              <div className="relative flex-shrink-0">
+                <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-md scale-110" />
+                <div className="relative w-20 h-20 md:w-24 md:h-24 bg-card rounded-2xl shadow-lg border border-primary/20 p-3 flex items-center justify-center">
+                  <img 
+                    src={universitySettings.universityLogo} 
+                    alt="شعار الجامعة" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="relative flex-shrink-0">
+                <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-md scale-110" />
+                <div className="relative w-20 h-20 md:w-24 md:h-24 bg-card rounded-2xl shadow-lg border border-primary/20 p-3 flex items-center justify-center">
+                  <GraduationCap className="w-12 h-12 md:w-14 md:h-14 text-primary" />
+                </div>
+              </div>
+            )}
+            
+            {/* Text Content */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground leading-tight">
+                {universityName}
+              </h1>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="h-1 w-12 bg-gradient-to-l from-primary to-primary/50 rounded-full" />
+                <p className="text-sm md:text-base text-muted-foreground font-medium">
+                  {subTitle}
+                </p>
+              </div>
+            </div>
           </div>
-          {universitySettings?.universityLogo && (
-            <img 
-              src={universitySettings.universityLogo} 
-              alt="شعار الجامعة" 
-              className="w-20 h-20 object-contain opacity-0 md:opacity-100"
-            />
-          )}
         </div>
       </div>
 
