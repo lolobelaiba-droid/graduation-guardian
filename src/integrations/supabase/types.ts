@@ -477,6 +477,7 @@ export type Database = {
           created_at: string
           id: string
           is_pinned: boolean | null
+          is_read: boolean | null
           title: string | null
           updated_at: string
         }
@@ -486,6 +487,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean | null
+          is_read?: boolean | null
           title?: string | null
           updated_at?: string
         }
@@ -495,6 +497,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean | null
+          is_read?: boolean | null
           title?: string | null
           updated_at?: string
         }

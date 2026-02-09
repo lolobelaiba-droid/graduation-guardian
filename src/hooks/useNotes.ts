@@ -8,6 +8,7 @@ export interface Note {
   content: string;
   color: string;
   is_pinned: boolean;
+  is_read: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +29,41 @@ export const useNotes = () => {
   });
 };
 
+export const useUnreadNotesCount = () => {
+  return useQuery({
+    queryKey: ['notes-unread-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('notes')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+};
+
+export const useMarkAllNotesAsRead = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('notes')
+        .update({ is_read: true })
+        .eq('is_read', false);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['notes-unread-count'] });
+    },
+  });
+};
+
 export const useAddNote = () => {
   const queryClient = useQueryClient();
   
@@ -35,7 +71,7 @@ export const useAddNote = () => {
     mutationFn: async (note: { title?: string; content: string; color?: string }) => {
       const { data, error } = await supabase
         .from('notes')
-        .insert([note])
+        .insert([{ ...note, is_read: false }])
         .select()
         .single();
       
@@ -44,6 +80,7 @@ export const useAddNote = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['notes-unread-count'] });
       toast.success('تم إضافة الملاحظة بنجاح');
     },
     onError: (error) => {
@@ -70,6 +107,7 @@ export const useUpdateNote = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['notes-unread-count'] });
       toast.success('تم تحديث الملاحظة');
     },
     onError: (error) => {
@@ -93,6 +131,7 @@ export const useDeleteNote = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['notes-unread-count'] });
       toast.success('تم حذف الملاحظة');
     },
     onError: (error) => {
