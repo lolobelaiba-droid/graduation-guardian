@@ -10,14 +10,16 @@ import {
   Check,
   X,
   Loader2,
-  Eye
+  Eye,
+  EyeOff,
+  Circle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useNotes, useAddNote, useUpdateNote, useDeleteNote, useTogglePinNote, useMarkAllNotesAsRead, type Note } from "@/hooks/useNotes";
+import { useNotes, useAddNote, useUpdateNote, useDeleteNote, useTogglePinNote, useMarkAllNotesAsRead, useToggleReadNote, type Note } from "@/hooks/useNotes";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -40,6 +42,7 @@ export default function Notes() {
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
   const togglePin = useTogglePinNote();
+  const toggleRead = useToggleReadNote();
   const markAllAsRead = useMarkAllNotesAsRead();
 
   const [isAdding, setIsAdding] = useState(false);
@@ -230,6 +233,7 @@ export default function Notes() {
                 onCancel={() => setEditingId(null)}
                 onDelete={() => deleteNote.mutate(note.id)}
                 onTogglePin={() => togglePin.mutate({ id: note.id, is_pinned: note.is_pinned })}
+                onToggleRead={() => toggleRead.mutate({ id: note.id, is_read: note.is_read })}
                 isPending={updateNote.isPending}
               />
             ))}
@@ -260,6 +264,7 @@ export default function Notes() {
                 onCancel={() => setEditingId(null)}
                 onDelete={() => deleteNote.mutate(note.id)}
                 onTogglePin={() => togglePin.mutate({ id: note.id, is_pinned: note.is_pinned })}
+                onToggleRead={() => toggleRead.mutate({ id: note.id, is_read: note.is_read })}
                 isPending={updateNote.isPending}
               />
             ))}
@@ -281,6 +286,7 @@ interface NoteCardProps {
   onCancel: () => void;
   onDelete: () => void;
   onTogglePin: () => void;
+  onToggleRead: () => void;
   isPending: boolean;
 }
 
@@ -295,6 +301,7 @@ function NoteCard({
   onCancel, 
   onDelete, 
   onTogglePin,
+  onToggleRead,
   isPending
 }: NoteCardProps) {
   const colorClasses = getColorClasses(note.color);
@@ -302,13 +309,21 @@ function NoteCard({
   return (
     <div
       className={cn(
-        "group rounded-xl border p-4 transition-all duration-300 hover:shadow-elevated animate-fade-in",
+        "group rounded-xl border p-4 transition-all duration-300 hover:shadow-elevated animate-fade-in relative",
         colorClasses.bg,
         colorClasses.border,
-        note.is_pinned && "ring-2 ring-primary/20"
+        note.is_pinned && "ring-2 ring-primary/20",
+        !note.is_read && "ring-2 ring-warning/40"
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
+      {/* Unread indicator */}
+      {!note.is_read && (
+        <div className="absolute top-2 left-2">
+          <Circle className="h-3 w-3 fill-warning text-warning animate-pulse" />
+        </div>
+      )}
+      
       {isEditing ? (
         <div className="space-y-3">
           <Input
@@ -334,10 +349,25 @@ function NoteCard({
       ) : (
         <>
           <div className="flex items-start justify-between mb-2">
-            {note.title && (
-              <h3 className="font-semibold text-foreground line-clamp-1">{note.title}</h3>
-            )}
+            <div className="flex items-center gap-2">
+              {note.title && (
+                <h3 className="font-semibold text-foreground line-clamp-1">{note.title}</h3>
+              )}
+            </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-7 w-7"
+                onClick={onToggleRead}
+                title={note.is_read ? "تحديد كغير مقروءة" : "تحديد كمقروءة"}
+              >
+                {note.is_read ? (
+                  <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-3.5 w-3.5 text-warning" />
+                )}
+              </Button>
               <Button 
                 size="icon" 
                 variant="ghost" 
