@@ -162,3 +162,26 @@ export const useTogglePinNote = () => {
     },
   });
 };
+
+export const useToggleReadNote = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, is_read }: { id: string; is_read: boolean }) => {
+      const { error } = await supabase
+        .from('notes')
+        .update({ is_read: !is_read })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['notes-unread-count'] });
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ');
+      console.error(error);
+    },
+  });
+};
