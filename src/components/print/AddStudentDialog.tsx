@@ -240,32 +240,43 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Certificate Type Selection */}
-            <div className="p-4 bg-muted/50 rounded-lg border">
-              <FormItem>
-                <FormLabel className="text-base font-semibold">نوع الشهادة *</FormLabel>
-                <Select value={selectedType} onValueChange={(v) => setSelectedType(v as CertificateType)}>
-                  <FormControl>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(certificateTypeLabels).map(([key, labels]) => (
-                      <SelectItem key={key} value={key}>
-                        <span className="flex items-center gap-2">
-                          {labels.ar}
-                          <span className="text-muted-foreground text-sm">({labels.fr})</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  اختر نوع الشهادة المناسب للطالب - سيتم حفظ الطالب في الجدول المخصص لهذا النوع
-                </p>
-              </FormItem>
-            </div>
+            {/* Certificate Type Selection - Only show for non-master types */}
+            {initialCertificateType !== 'master' ? (
+              <div className="p-4 bg-muted/50 rounded-lg border">
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">نوع الشهادة *</FormLabel>
+                  <Select value={selectedType} onValueChange={(v) => setSelectedType(v as CertificateType)}>
+                    <FormControl>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(certificateTypeLabels)
+                        .filter(([key]) => key !== 'master')
+                        .map(([key, labels]) => (
+                          <SelectItem key={key} value={key}>
+                            <span className="flex items-center gap-2">
+                              {labels.ar}
+                              <span className="text-muted-foreground text-sm">({labels.fr})</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    اختر نوع الشهادة المناسب للطالب - سيتم حفظ الطالب في الجدول المخصص لهذا النوع
+                  </p>
+                </FormItem>
+              </div>
+            ) : (
+              <div className="p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-semibold">نوع الشهادة:</span>
+                  <Badge variant="secondary" className="text-base">{certificateTypeLabels.master.ar}</Badge>
+                </div>
+              </div>
+            )}
 
             {/* Basic Info */}
             <SectionHeader title="المعلومات الأساسية" />
