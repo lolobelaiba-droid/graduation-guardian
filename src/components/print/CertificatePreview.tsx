@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
-import { usePrintSettings, getPaperDimensions, DEFAULT_PRINT_SETTINGS } from "@/hooks/usePrintSettings";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -115,10 +114,6 @@ export function CertificatePreview({
   const fontNames = useMemo(() => fields.map(f => f.font_name), [fields]);
   const { version: fontVersion } = useFontLoader(fontNames);
   
-  // Load print settings from database
-  const { data: printSettings } = usePrintSettings();
-  const settings = printSettings || DEFAULT_PRINT_SETTINGS;
-  
   // Load date format settings from database
   const { settings: dateFormatSettings } = useDateFormatSettings();
   
@@ -130,14 +125,52 @@ export function CertificatePreview({
     }, {} as Record<string, string>);
   }, [fields, fontVersion]);
 
-  // Use template orientation, fall back to settings if template doesn't specify
-  const isLandscape = template.page_orientation === 'landscape' || 
-    (!template.page_orientation && settings.orientation === 'landscape');
+  // Use template-specific paper dimensions
+  const getTemplatePaperDimensions = useMemo(() => {
+    const paperSize = (template as any).print_paper_size || template.page_size || 'a4';
+    let width: number;
+    let height: number;
+
+    if (paperSize === 'custom') {
+      width = (template as any).print_custom_width || 210;
+      height = (template as any).print_custom_height || 297;
+    } else {
+      // Map common paper sizes
+      const PAPER_SIZES: Record<string, { width: number; height: number }> = {
+        a0: { width: 841, height: 1189 },
+        a1: { width: 594, height: 841 },
+        a2: { width: 420, height: 594 },
+        a3: { width: 297, height: 420 },
+        a4: { width: 210, height: 297 },
+        a5: { width: 148, height: 210 },
+        a6: { width: 105, height: 148 },
+        b4: { width: 250, height: 353 },
+        b5: { width: 176, height: 250 },
+        letter: { width: 216, height: 279 },
+        legal: { width: 216, height: 356 },
+        tabloid: { width: 279, height: 432 },
+        executive: { width: 184, height: 267 },
+      };
+      const size = PAPER_SIZES[paperSize];
+      if (size) {
+        width = size.width;
+        height = size.height;
+      } else {
+        // Default to A4
+        width = 210;
+        height = 297;
+      }
+    }
+
+    return { width, height };
+  }, [template]);
+
+  // Use template orientation
+  const isLandscape = template.page_orientation === 'landscape';
   
-  // Get paper dimensions from settings
-  const paperDimensions = getPaperDimensions(settings);
-  const width = isLandscape ? paperDimensions.height : paperDimensions.width;
-  const height = isLandscape ? paperDimensions.width : paperDimensions.height;
+  // Get paper dimensions from template
+  const width = isLandscape ? getTemplatePaperDimensions.height : getTemplatePaperDimensions.width;
+  const height = isLandscape ? getTemplatePaperDimensions.width : getTemplatePaperDimensions.height;
 
   // Check if a field is a static text field
   const isStaticTextField = useCallback((fieldKey: string): boolean => {
