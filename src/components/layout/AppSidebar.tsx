@@ -20,8 +20,8 @@ const menuItems = [
   { title: "لوحة التحكم", icon: LayoutDashboard, path: "/" },
   { title: "قاعدة بيانات طلبة الدكتوراه", icon: Database, path: "/phd-students" },
   { title: "إدارة الطلبة المناقشين", icon: Users, path: "/students" },
-  { title: "إدارة القوالب", icon: FileText, path: "/templates" },
   { title: "طباعة الشهادات", icon: Printer, path: "/print" },
+  { title: "إدارة القوالب", icon: FileText, path: "/templates" },
   { title: "سجل الأنشطة", icon: Activity, path: "/activity" },
   { title: "الإعدادات", icon: Settings, path: "/settings" },
 ];
