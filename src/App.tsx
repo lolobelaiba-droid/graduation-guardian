@@ -12,6 +12,7 @@ import Templates from "@/pages/Templates";
 import PrintCertificates from "@/pages/PrintCertificates";
 import ActivityLog from "@/pages/ActivityLog";
 import Settings from "@/pages/Settings";
+import Notes from "@/pages/Notes";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => {
             <Route path="/print" element={<PrintCertificates />} />
             <Route path="/activity" element={<ActivityLog />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/notes" element={<Notes />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </MainLayout>

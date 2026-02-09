@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Database,
+  StickyNote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +25,7 @@ const menuItems = [
   { title: "إدارة القوالب", icon: FileText, path: "/templates" },
   { title: "الإعدادات", icon: Settings, path: "/settings" },
   { title: "سجل الأنشطة", icon: Activity, path: "/activity" },
+  { title: "سجل الملاحظات", icon: StickyNote, path: "/notes" },
 ];
 
 export function AppSidebar() {
