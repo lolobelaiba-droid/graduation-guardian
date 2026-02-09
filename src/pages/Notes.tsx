@@ -50,18 +50,8 @@ export default function Notes() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ title: "", content: "" });
 
-  // Mark all notes as read when visiting this page
+  // Count unread notes for display
   const unreadCount = notes.filter(n => !n.is_read).length;
-  
-  useEffect(() => {
-    if (unreadCount > 0 && !isLoading) {
-      // Small delay to let the user see the unread indicator first
-      const timer = setTimeout(() => {
-        markAllAsRead.mutate();
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [unreadCount, isLoading]);
 
 
   const handleAddNote = () => {
@@ -234,6 +224,7 @@ export default function Notes() {
                 onDelete={() => deleteNote.mutate(note.id)}
                 onTogglePin={() => togglePin.mutate({ id: note.id, is_pinned: note.is_pinned })}
                 onToggleRead={() => toggleRead.mutate({ id: note.id, is_read: note.is_read })}
+                onMarkAsRead={() => !note.is_read && toggleRead.mutate({ id: note.id, is_read: note.is_read })}
                 isPending={updateNote.isPending}
               />
             ))}
@@ -265,6 +256,7 @@ export default function Notes() {
                 onDelete={() => deleteNote.mutate(note.id)}
                 onTogglePin={() => togglePin.mutate({ id: note.id, is_pinned: note.is_pinned })}
                 onToggleRead={() => toggleRead.mutate({ id: note.id, is_read: note.is_read })}
+                onMarkAsRead={() => !note.is_read && toggleRead.mutate({ id: note.id, is_read: note.is_read })}
                 isPending={updateNote.isPending}
               />
             ))}
@@ -287,6 +279,7 @@ interface NoteCardProps {
   onDelete: () => void;
   onTogglePin: () => void;
   onToggleRead: () => void;
+  onMarkAsRead: () => void;
   isPending: boolean;
 }
 
@@ -302,14 +295,25 @@ function NoteCard({
   onDelete, 
   onTogglePin,
   onToggleRead,
+  onMarkAsRead,
   isPending
 }: NoteCardProps) {
   const colorClasses = getColorClasses(note.color);
   
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on buttons
+    if ((e.target as HTMLElement).closest('button')) return;
+    // Mark as read when clicking on card
+    if (!note.is_read) {
+      onMarkAsRead();
+    }
+  };
+  
   return (
     <div
+      onClick={handleCardClick}
       className={cn(
-        "group rounded-xl border p-4 transition-all duration-300 hover:shadow-elevated animate-fade-in relative",
+        "group rounded-xl border p-4 transition-all duration-300 hover:shadow-elevated animate-fade-in relative cursor-pointer",
         colorClasses.bg,
         colorClasses.border,
         note.is_pinned && "ring-2 ring-primary/20",
