@@ -9,17 +9,50 @@ import { ExportStatsDialog } from "@/components/dashboard/ExportStatsDialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useDashboardStats();
+  const { data: universitySettings } = useUniversitySettings();
+
+  const universityName = universitySettings?.universityName || "جامعة العربي بن مهيدي أم البواقي";
+  const subTitle = "نيابة المديرية للدراسات العليا والبحث العلمي";
 
   return (
     <div className="space-y-8">
+      {/* University Header */}
+      <div className="bg-card rounded-2xl shadow-card p-6 border border-border">
+        <div className="flex items-center justify-center gap-6">
+          {universitySettings?.universityLogo && (
+            <img 
+              src={universitySettings.universityLogo} 
+              alt="شعار الجامعة" 
+              className="w-20 h-20 object-contain"
+            />
+          )}
+          <div className="text-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">
+              {universityName}
+            </h1>
+            <p className="text-lg text-muted-foreground mt-1">
+              {subTitle}
+            </p>
+          </div>
+          {universitySettings?.universityLogo && (
+            <img 
+              src={universitySettings.universityLogo} 
+              alt="شعار الجامعة" 
+              className="w-20 h-20 object-contain opacity-0 md:opacity-100"
+            />
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">لوحة التحكم</h1>
+          <h2 className="text-2xl font-bold text-foreground">لوحة التحكم</h2>
           <p className="text-muted-foreground mt-1">
             مرحباً بك في نظام إدارة شهادات الدكتوراه
           </p>
