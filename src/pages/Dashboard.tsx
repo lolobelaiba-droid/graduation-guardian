@@ -22,6 +22,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* University Header - Modern Design */}
+      <div className="max-w-4xl mx-auto">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border border-primary/20 shadow-lg">
         {/* Decorative Elements */}
         <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full -translate-x-16 -translate-y-16 blur-2xl" />
@@ -64,6 +65,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Header */}
