@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Plus, 
   Trash2, 
@@ -9,13 +9,15 @@ import {
   Edit3,
   Check,
   X,
-  Loader2
+  Loader2,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useNotes, useAddNote, useUpdateNote, useDeleteNote, useTogglePinNote, type Note } from "@/hooks/useNotes";
+import { useNotes, useAddNote, useUpdateNote, useDeleteNote, useTogglePinNote, useMarkAllNotesAsRead, type Note } from "@/hooks/useNotes";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -38,11 +40,26 @@ export default function Notes() {
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
   const togglePin = useTogglePinNote();
+  const markAllAsRead = useMarkAllNotesAsRead();
 
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState({ title: "", content: "", color: "default" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ title: "", content: "" });
+
+  // Mark all notes as read when visiting this page
+  const unreadCount = notes.filter(n => !n.is_read).length;
+  
+  useEffect(() => {
+    if (unreadCount > 0 && !isLoading) {
+      // Small delay to let the user see the unread indicator first
+      const timer = setTimeout(() => {
+        markAllAsRead.mutate();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [unreadCount, isLoading]);
+
 
   const handleAddNote = () => {
     if (!newNote.content.trim()) return;
@@ -86,6 +103,12 @@ export default function Notes() {
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 سجل الملاحظات
                 <span className="text-lg animate-bounce">✨</span>
+                {unreadCount > 0 && (
+                  <Badge className="bg-white/30 text-white animate-pulse gap-1">
+                    <Eye className="h-3 w-3" />
+                    {unreadCount} جديدة
+                  </Badge>
+                )}
               </h1>
               <p className="text-primary-foreground/80 mt-1">
                 دوّن أفكارك وملاحظاتك المهمة لتتذكرها دائماً

@@ -16,6 +16,7 @@ import {
   StickyNote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUnreadNotesCount } from "@/hooks/useNotes";
 
 const menuItems = [
   { title: "لوحة التحكم", icon: LayoutDashboard, path: "/" },
@@ -32,6 +33,7 @@ export function AppSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
+  const { data: unreadCount = 0 } = useUnreadNotesCount();
 
   return (
     <>
@@ -80,23 +82,36 @@ export function AppSidebar() {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
+            const isNotesItem = item.path === "/notes";
+            const showBadge = isNotesItem && unreadCount > 0;
+            
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
                   isActive
                     ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg"
                     : "hover:bg-sidebar-accent text-sidebar-foreground/80 hover:text-sidebar-foreground"
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "animate-pulse-subtle")} />
+                <div className="relative">
+                  <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "animate-pulse-subtle")} />
+                  {showBadge && isCollapsed && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-ping" />
+                  )}
+                </div>
                 {!isCollapsed && (
                   <>
                     <span className="flex-1 font-medium">{item.title}</span>
+                    {showBadge && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-destructive text-destructive-foreground rounded-full animate-pulse">
+                        {unreadCount}
+                      </span>
+                    )}
                     <ChevronRight
                       className={cn(
                         "h-4 w-4 transition-transform duration-200 rotate-180",
