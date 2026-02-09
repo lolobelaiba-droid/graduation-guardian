@@ -22,8 +22,8 @@ const menuItems = [
   { title: "إدارة الطلبة المناقشين", icon: Users, path: "/students" },
   { title: "طباعة الشهادات", icon: Printer, path: "/print" },
   { title: "إدارة القوالب", icon: FileText, path: "/templates" },
-  { title: "سجل الأنشطة", icon: Activity, path: "/activity" },
   { title: "الإعدادات", icon: Settings, path: "/settings" },
+  { title: "سجل الأنشطة", icon: Activity, path: "/activity" },
 ];
 
 export function AppSidebar() {
