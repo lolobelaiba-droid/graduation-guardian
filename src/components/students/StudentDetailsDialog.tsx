@@ -69,7 +69,7 @@ export default function StudentDetailsDialog({
   const isPhdScience = certificateType === "phd_science";
   const hasThesis = isPhdLmd || isPhdScience;
   const hasJury = isPhdLmd || isPhdScience;
-  const hasField = isPhdLmd;
+  const hasField = isPhdLmd || isPhdScience;
   const isPhd = isPhdLmd || isPhdScience;
 
   return (

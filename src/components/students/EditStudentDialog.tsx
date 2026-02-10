@@ -45,6 +45,7 @@ import { academicYears } from "@/components/print/AddStudentDialog";
 // PhD LMD schema
 const phdLmdSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
+  registration_number: z.string().optional().nullable(),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
   gender: z.enum(['male', 'female']).optional().nullable(),
@@ -67,6 +68,7 @@ const phdLmdSchema = z.object({
   field_fr: z.string().optional().nullable(),
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
   thesis_title_fr: z.string().optional().nullable(),
+  thesis_language: z.string().optional().nullable(),
   jury_president_ar: z.string().min(1, "رئيس اللجنة مطلوب"),
   jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
@@ -75,6 +77,15 @@ const phdLmdSchema = z.object({
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
+  co_supervisor_ar: z.string().optional().nullable(),
+  supervisor_university: z.string().optional().nullable(),
+  co_supervisor_university: z.string().optional().nullable(),
+  employment_status: z.string().optional().nullable(),
+  registration_type: z.string().optional().nullable(),
+  inscription_status: z.string().optional().nullable(),
+  current_year: z.string().optional().nullable(),
+  registration_count: z.number().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 type PhdLmdFormValues = z.infer<typeof phdLmdSchema>;
@@ -82,6 +93,7 @@ type PhdLmdFormValues = z.infer<typeof phdLmdSchema>;
 // PhD Science schema
 const phdScienceSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
+  registration_number: z.string().optional().nullable(),
   full_name_ar: z.string().min(1, "الاسم بالعربية مطلوب"),
   full_name_fr: z.string().optional().nullable(),
   gender: z.enum(['male', 'female']).optional().nullable(),
@@ -100,8 +112,11 @@ const phdScienceSchema = z.object({
   mention: z.enum(["honorable", "very_honorable"]),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
+  field_ar: z.string().min(1, "الميدان مطلوب"),
+  field_fr: z.string().optional().nullable(),
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
   thesis_title_fr: z.string().optional().nullable(),
+  thesis_language: z.string().optional().nullable(),
   jury_president_ar: z.string().min(1, "رئيس اللجنة مطلوب"),
   jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
@@ -110,6 +125,15 @@ const phdScienceSchema = z.object({
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
+  co_supervisor_ar: z.string().optional().nullable(),
+  supervisor_university: z.string().optional().nullable(),
+  co_supervisor_university: z.string().optional().nullable(),
+  employment_status: z.string().optional().nullable(),
+  registration_type: z.string().optional().nullable(),
+  inscription_status: z.string().optional().nullable(),
+  current_year: z.string().optional().nullable(),
+  registration_count: z.number().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 type PhdScienceFormValues = z.infer<typeof phdScienceSchema>;
@@ -201,6 +225,16 @@ export default function EditStudentDialog({
         phone_number: student.phone_number || "",
         supervisor_ar: ('supervisor_ar' in student ? student.supervisor_ar : "") || "",
         research_lab_ar: student.research_lab_ar || "",
+        registration_number: student.registration_number || "",
+        co_supervisor_ar: student.co_supervisor_ar || "",
+        supervisor_university: student.supervisor_university || "",
+        co_supervisor_university: student.co_supervisor_university || "",
+        employment_status: student.employment_status || "",
+        registration_type: student.registration_type || "",
+        inscription_status: student.inscription_status || "",
+        current_year: student.current_year || "",
+        registration_count: student.registration_count || null,
+        notes: student.notes || "",
       };
 
       if (certificateType === "phd_lmd" && "field_ar" in student) {
@@ -210,6 +244,7 @@ export default function EditStudentDialog({
           field_fr: student.field_fr || "",
           thesis_title_ar: student.thesis_title_ar,
           thesis_title_fr: student.thesis_title_fr || "",
+          thesis_language: student.thesis_language || "",
           jury_president_ar: student.jury_president_ar,
           jury_president_fr: student.jury_president_fr || "",
           jury_members_ar: student.jury_members_ar,
@@ -218,8 +253,11 @@ export default function EditStudentDialog({
       } else if (certificateType === "phd_science" && "thesis_title_ar" in student) {
         form.reset({
           ...baseValues,
+          field_ar: ('field_ar' in student ? student.field_ar : "") || "",
+          field_fr: ('field_fr' in student ? student.field_fr : "") || "",
           thesis_title_ar: student.thesis_title_ar,
           thesis_title_fr: student.thesis_title_fr || "",
+          thesis_language: student.thesis_language || "",
           jury_president_ar: student.jury_president_ar,
           jury_president_fr: student.jury_president_fr || "",
           jury_members_ar: student.jury_members_ar,
@@ -258,7 +296,7 @@ export default function EditStudentDialog({
   const isPhdType = isPhdLmd || isPhdScience;
   const hasThesis = isPhdLmd || isPhdScience;
   const hasJury = isPhdLmd || isPhdScience;
-  const hasField = isPhdLmd;
+  const hasField = isPhdLmd || isPhdScience;
 
   if (!student) return null;
 
@@ -676,26 +714,73 @@ export default function EditStudentDialog({
             {/* Supervisor Information - PhD only */}
             {isPhdType && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-primary">المشرف / Directeur de thèse</h3>
-              <FormField
-                control={form.control}
-                name={"supervisor_ar" as keyof FormValues}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>اسم ولقب المشرف *</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        value={(field.value as string) || ""}
-                        suggestions={suggestions?.supervisor_ar || []}
-                        dir="auto"
-                        placeholder="اختر الرتبة ثم اكتب الاسم"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <h3 className="font-semibold text-primary">المشرف ومخبر البحث</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={"supervisor_ar" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>اسم ولقب المشرف *</FormLabel>
+                      <FormControl>
+                        <AcademicTitleInput
+                          {...field}
+                          value={(field.value as string) || ""}
+                          suggestions={suggestions?.supervisor_ar || []}
+                          dir="auto"
+                          placeholder="اختر الرتبة ثم اكتب الاسم"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"supervisor_university" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>جامعة انتماء المشرف</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || ""} placeholder="جامعة انتماء المشرف" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"co_supervisor_ar" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>مساعد المشرف</FormLabel>
+                      <FormControl>
+                        <AcademicTitleInput
+                          value={(field.value as string) || ""}
+                          onChange={field.onChange}
+                          suggestions={suggestions?.supervisor_ar || []}
+                          dir="auto"
+                          placeholder="اختر الرتبة ثم اكتب الاسم"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"co_supervisor_university" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || ""} placeholder="جامعة انتماء مساعد المشرف" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
             )}
 
@@ -719,6 +804,28 @@ export default function EditStudentDialog({
                             placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"thesis_language" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>لغة الأطروحة</FormLabel>
+                        <Select onValueChange={field.onChange} value={(field.value as string) || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="اختر لغة الأطروحة" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="arabic">العربية</SelectItem>
+                            <SelectItem value="french">الفرنسية</SelectItem>
+                            <SelectItem value="english">الإنجليزية</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -764,6 +871,110 @@ export default function EditStudentDialog({
                             suggestions={suggestions?.jury_members_ar || []}
                             dir="auto"
                           />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Additional PhD Data */}
+            {isPhdType && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-primary">بيانات إضافية</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name={"registration_number" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رقم التسجيل</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={(field.value as string) || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"employment_status" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الحالة الوظيفية</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={(field.value as string) || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"registration_type" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>نوع التسجيل</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={(field.value as string) || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"inscription_status" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>حالة التسجيل</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={(field.value as string) || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"current_year" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>سنة التسجيل</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={(field.value as string) || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"registration_count" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>عدد التسجيلات</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            value={field.value != null ? String(field.value) : ""} 
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"notes" as keyof FormValues}
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>ملاحظات</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} value={(field.value as string) || ""} rows={2} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
