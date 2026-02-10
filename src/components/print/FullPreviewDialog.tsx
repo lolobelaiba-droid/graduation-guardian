@@ -15,6 +15,7 @@ import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCert
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
+import { getFontByName } from "@/lib/arabicFonts";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 
 // Default A4 dimensions in mm (fallback)
@@ -959,6 +960,7 @@ export function FullPreviewDialog({
                       style={{
                         fontSize: `${field.font_size * SCALE * 0.353}px`,
                         fontFamily: fieldFontStyles[field.id] || getFontFamilyCSS(field.font_name),
+                        fontWeight: (() => { const fc = field.font_name ? getFontByName(field.font_name) : undefined; return fc?.style === 'bold' ? 'bold' : 'normal'; })(),
                         color: field.font_color,
                         textAlign: field.text_align as 'left' | 'right' | 'center',
                         direction: effectiveDirection,

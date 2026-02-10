@@ -17,6 +17,7 @@ import { mentionLabels } from "@/types/certificates";
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { getFontFamilyCSS } from "@/hooks/useFontLoader";
+import { getFontByName } from "@/lib/arabicFonts";
 import type { DateFormatSettings } from "@/lib/dateFormats";
 
 interface PrintableCSSProps {
@@ -177,6 +178,7 @@ export function PrintableCSS({
               top: `${field.position_y}mm`,
               fontSize: `${field.font_size}pt`,
               fontFamily: getFontFamilyCSS(field.font_name),
+              fontWeight: (() => { const fc = field.font_name ? getFontByName(field.font_name) : undefined; return fc?.style === 'bold' ? 'bold' : 'normal'; })(),
               color: field.font_color || '#000000',
               textAlign: (field.text_align as 'left' | 'right' | 'center') || 'right',
               direction: fieldDirection,
