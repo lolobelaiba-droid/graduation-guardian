@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   usePhdLmdCertificates,
@@ -19,8 +20,9 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AnnualReport() {
-  const currentYear = new Date().getFullYear().toString();
-  const [selectedYear, setSelectedYear] = useState<string>(currentYear);
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
 
   const { data: phdLmdData = [], isLoading: l1 } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: l2 } = usePhdScienceCertificates();
@@ -42,13 +44,24 @@ export default function AnnualReport() {
     return [...years].sort().reverse();
   }, [allData]);
 
-  // Filter by year
-  const yearData = useMemo(() => 
-    selectedYear === "all" 
-      ? allData 
-      : allData.filter(s => s.defense_date?.startsWith(selectedYear)),
-    [allData, selectedYear]
-  );
+  // Filter by year and date range
+  const yearData = useMemo(() => {
+    let filtered = allData;
+    
+    if (selectedYear !== "all") {
+      filtered = filtered.filter(s => s.defense_date?.startsWith(selectedYear));
+    }
+    
+    if (dateFrom) {
+      filtered = filtered.filter(s => s.defense_date && s.defense_date >= dateFrom);
+    }
+    
+    if (dateTo) {
+      filtered = filtered.filter(s => s.defense_date && s.defense_date <= dateTo);
+    }
+    
+    return filtered;
+  }, [allData, selectedYear, dateFrom, dateTo]);
 
   // Stats by certificate type
   const byType = useMemo(() => ({
@@ -151,20 +164,46 @@ export default function AnnualReport() {
           <h1 className="text-3xl font-bold text-foreground">التقرير السنوي</h1>
           <p className="text-muted-foreground mt-1">ملخص المناقشات والشهادات الصادرة حسب الكلية والتخصص</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-40">
-              <Calendar className="h-4 w-4 ml-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل السنوات</SelectItem>
-              {availableYears.map(y => (
-                <SelectItem key={y} value={y}>{toWesternNumerals(y)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportReport}>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">السنة</label>
+            <Select value={selectedYear} onValueChange={(v) => { setSelectedYear(v); if (v !== "all") { setDateFrom(""); setDateTo(""); } }}>
+              <SelectTrigger className="w-36 h-9">
+                <Calendar className="h-4 w-4 ml-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل السنوات</SelectItem>
+                {availableYears.map(y => (
+                  <SelectItem key={y} value={y}>{toWesternNumerals(y)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">من تاريخ</label>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); if (e.target.value) setSelectedYear("all"); }}
+              className="w-40 h-9"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">إلى تاريخ</label>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); if (e.target.value) setSelectedYear("all"); }}
+              className="w-40 h-9"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <Button variant="ghost" size="sm" className="h-9 text-destructive" onClick={() => { setDateFrom(""); setDateTo(""); }}>
+              مسح الفترة
+            </Button>
+          )}
+          <Button variant="outline" size="sm" className="gap-2 h-9" onClick={handleExportReport}>
             <Download className="h-4 w-4" />
             تصدير التقرير
           </Button>
