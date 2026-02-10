@@ -50,6 +50,11 @@ export function useCssPrint() {
           box-shadow: none !important;
         }
 
+        /* Suppress browser header/footer (URL, date, page title) */
+        @page :first { margin-top: 0; }
+        @page :left { margin-left: 0; }
+        @page :right { margin-right: 0; }
+
         /* Show printable wrapper and all its descendants */
         #printable-certificate-wrapper,
         #printable-certificate-wrapper * {
@@ -113,12 +118,14 @@ export function useCssPrint() {
 
       // Small delay to ensure styles are applied
       requestAnimationFrame(() => {
+        // Temporarily change document title to avoid URL/title in print headers
+        const originalTitle = document.title;
+        document.title = ' ';
+
         const isElectronEnv = !!(window as unknown as { electronAPI?: { printNative?: unknown } }).electronAPI?.printNative;
 
         if (isElectronEnv) {
-          // Use Electron's webContents.print() via IPC for proper print dialog
           const electronAPI = (window as unknown as { electronAPI: { printNative: (opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
-          // Convert mm to microns (1mm = 1000 microns) for Electron's pageSize
           electronAPI.printNative({
             pageSize: {
               width: options.widthMm * 1000,
@@ -126,6 +133,7 @@ export function useCssPrint() {
             },
             landscape: options.orientation === 'landscape',
           }).then((result) => {
+            document.title = originalTitle;
             removePrintStyles();
             if (result.success) {
               resolve();
@@ -133,12 +141,14 @@ export function useCssPrint() {
               reject(new Error(result.error || 'Print failed'));
             }
           }).catch((err) => {
+            document.title = originalTitle;
             removePrintStyles();
             reject(err);
           });
         } else {
           // Web: use window.print() with afterprint cleanup
           const cleanup = () => {
+            document.title = originalTitle;
             removePrintStyles();
             window.removeEventListener('afterprint', cleanup);
             resolve();

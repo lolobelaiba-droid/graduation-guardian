@@ -149,7 +149,7 @@ export function FullPreviewDialog({
 
   // Use template-specific paper dimensions
   const getTemplatePaperDimensions = useMemo(() => {
-    const paperSize = (template as any).print_paper_size || template.page_size || 'a4';
+    const paperSize = ((template as any).print_paper_size || template.page_size || 'a4').toLowerCase();
     let width: number;
     let height: number;
 
