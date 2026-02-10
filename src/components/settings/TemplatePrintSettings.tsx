@@ -77,10 +77,10 @@ export default function TemplatePrintSettings() {
           paperSize: (template as any).print_paper_size || "a4",
           customWidth: String((template as any).print_custom_width || 210),
           customHeight: String((template as any).print_custom_height || 297),
-          marginTop: String((template as any).print_margin_top || 20),
-          marginBottom: String((template as any).print_margin_bottom || 20),
-          marginRight: String((template as any).print_margin_right || 15),
-          marginLeft: String((template as any).print_margin_left || 15),
+          marginTop: String((template as any).print_margin_top ?? 0),
+          marginBottom: String((template as any).print_margin_bottom ?? 0),
+          marginRight: String((template as any).print_margin_right ?? 0),
+          marginLeft: String((template as any).print_margin_left ?? 0),
         };
       });
       setLocalSettings(initial);
@@ -125,10 +125,10 @@ export default function TemplatePrintSettings() {
         print_paper_size: settings.paperSize,
         print_custom_width: parseFloat(settings.customWidth) || 210,
         print_custom_height: parseFloat(settings.customHeight) || 297,
-        print_margin_top: parseFloat(settings.marginTop) || 20,
-        print_margin_bottom: parseFloat(settings.marginBottom) || 20,
-        print_margin_right: parseFloat(settings.marginRight) || 15,
-        print_margin_left: parseFloat(settings.marginLeft) || 15,
+        print_margin_top: isNaN(parseFloat(settings.marginTop)) ? 0 : parseFloat(settings.marginTop),
+        print_margin_bottom: isNaN(parseFloat(settings.marginBottom)) ? 0 : parseFloat(settings.marginBottom),
+        print_margin_right: isNaN(parseFloat(settings.marginRight)) ? 0 : parseFloat(settings.marginRight),
+        print_margin_left: isNaN(parseFloat(settings.marginLeft)) ? 0 : parseFloat(settings.marginLeft),
       } as any);
 
       toast.success("تم حفظ إعدادات الطباعة");
