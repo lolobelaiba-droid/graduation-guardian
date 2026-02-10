@@ -20,7 +20,7 @@ import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 // Default A4 dimensions in mm (fallback)
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
-const SCALE = 2.5;
+const SCALE = 3.2;
 
 interface FieldChange {
   fieldId: string;
@@ -550,7 +550,7 @@ export function FullPreviewDialog({
 
         <div className="flex flex-1 overflow-hidden">
           {/* Controls Sidebar */}
-          <div className="w-72 border-l bg-muted/20 p-4 space-y-6 overflow-y-auto">
+          <div className="w-64 border-l bg-muted/20 p-3 space-y-5 overflow-y-auto flex-shrink-0">
             {/* Field Controls Toggle */}
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-sm">تحريك الحقول</h4>
