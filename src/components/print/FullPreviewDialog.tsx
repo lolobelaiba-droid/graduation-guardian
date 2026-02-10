@@ -796,7 +796,7 @@ export function FullPreviewDialog({
                   className="absolute inset-0 pointer-events-none"
                   width={width * SCALE}
                   height={height * SCALE}
-                  style={{ zIndex: 1 }}
+                  style={{ zIndex: 1, direction: 'ltr' }}
                 >
                   {/* Grid lines every 10mm */}
                   {Array.from({ length: Math.floor(width / 10) }, (_, i) => (i + 1) * 10).map(x => (
