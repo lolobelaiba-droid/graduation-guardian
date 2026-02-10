@@ -12,7 +12,8 @@ export function usePhdLmdStudents() {
     queryKey: ["phd_lmd_students"],
     queryFn: async () => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.getAll('phd_lmd_students', 'created_at', 'DESC');
         if (result.success) {
           return result.data as PhdLmdStudent[];
@@ -37,7 +38,8 @@ export function useCreatePhdLmdStudent() {
   return useMutation({
     mutationFn: async (data: Omit<PhdLmdStudent, 'id' | 'created_at' | 'updated_at'>) => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.insert('phd_lmd_students', data);
         if (!result.success) throw new Error(result.error);
         
@@ -85,7 +87,8 @@ export function useUpdatePhdLmdStudent() {
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<PhdLmdStudent> & { id: string }) => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.update('phd_lmd_students', id, data);
         if (!result.success) throw new Error(result.error);
         return result.data;
@@ -117,7 +120,8 @@ export function useDeletePhdLmdStudent() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.delete('phd_lmd_students', id);
         if (!result.success) throw new Error(result.error);
         return;
@@ -144,7 +148,8 @@ export function usePhdScienceStudents() {
     queryKey: ["phd_science_students"],
     queryFn: async () => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.getAll('phd_science_students', 'created_at', 'DESC');
         if (result.success) {
           return result.data as PhdScienceStudent[];
@@ -169,7 +174,8 @@ export function useCreatePhdScienceStudent() {
   return useMutation({
     mutationFn: async (data: Omit<PhdScienceStudent, 'id' | 'created_at' | 'updated_at'>) => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.insert('phd_science_students', data);
         if (!result.success) throw new Error(result.error);
         
@@ -217,7 +223,8 @@ export function useUpdatePhdScienceStudent() {
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<PhdScienceStudent> & { id: string }) => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.update('phd_science_students', id, data);
         if (!result.success) throw new Error(result.error);
         return result.data;
@@ -249,7 +256,8 @@ export function useDeletePhdScienceStudent() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (isElectron()) {
-        const db = getDbClient()!;
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
         const result = await db.delete('phd_science_students', id);
         if (!result.success) throw new Error(result.error);
         return;
