@@ -294,6 +294,7 @@ export function FontManagement() {
     setParsedFont(fontInfo);
     setSelectedFile(file);
     setIsArabicOverride(null); // Reset override
+    setStyleOverride(null); // Reset style override
     
     toast.success(`تم التعرف على الخط: ${fontInfo.fontName}`);
   };
@@ -431,6 +432,7 @@ export function FontManagement() {
                 <div>
                   <span className="text-muted-foreground">النمط:</span>
                   <Select
+                    key={`style-${styleOverride ?? parsedFont.fontStyle}`}
                     value={styleOverride !== null ? styleOverride : parsedFont.fontStyle}
                     onValueChange={(v) => setStyleOverride(v as 'normal' | 'bold')}
                   >
