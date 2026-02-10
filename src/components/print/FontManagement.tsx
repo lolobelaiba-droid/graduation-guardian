@@ -431,19 +431,26 @@ export function FontManagement() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">النمط:</span>
-                  <Select
-                    key={`style-${styleOverride ?? parsedFont.fontStyle}`}
-                    value={styleOverride !== null ? styleOverride : parsedFont.fontStyle}
-                    onValueChange={(v) => setStyleOverride(v as 'normal' | 'bold')}
-                  >
-                    <SelectTrigger className="h-8 mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">عادي (Regular)</SelectItem>
-                      <SelectItem value="bold">غامق (Bold)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 mt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={(styleOverride !== null ? styleOverride : parsedFont.fontStyle) === 'normal' ? 'default' : 'outline'}
+                      className="h-8 flex-1"
+                      onClick={() => setStyleOverride('normal')}
+                    >
+                      عادي (Regular)
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={(styleOverride !== null ? styleOverride : parsedFont.fontStyle) === 'bold' ? 'default' : 'outline'}
+                      className="h-8 flex-1 font-bold"
+                      onClick={() => setStyleOverride('bold')}
+                    >
+                      غامق (Bold)
+                    </Button>
+                  </div>
                 </div>
               </div>
               
