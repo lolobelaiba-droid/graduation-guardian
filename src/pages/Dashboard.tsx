@@ -6,7 +6,6 @@ import { GenderChart } from "@/components/dashboard/GenderChart";
 import { AverageRegistrationYears } from "@/components/dashboard/AverageRegistrationYears";
 import { ThemeSelector } from "@/components/dashboard/ThemeSelector";
 import { ExportStatsDialog } from "@/components/dashboard/ExportStatsDialog";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useUniversitySettings } from "@/hooks/useUniversitySettings";
@@ -79,11 +78,6 @@ export default function Dashboard() {
         <div className="flex items-center gap-3 flex-wrap">
           <ThemeSelector />
           <ExportStatsDialog />
-          <Link to="/print">
-            <Button size="lg" className="gap-2 shadow-lg">
-              طباعة شهادة جديدة
-            </Button>
-          </Link>
         </div>
       </div>
 

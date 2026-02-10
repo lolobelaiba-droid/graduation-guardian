@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, CalendarIcon, FileSpreadsheet, Plus, X } from "lucide-react";
+import { Download, CalendarIcon, FileSpreadsheet, Plus, X, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -972,8 +972,8 @@ export function ExportStatsDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="lg" className="gap-2 shadow-lg">
-          <Download className="h-5 w-5" />
+        <Button size="lg" className="gap-2 shadow-lg bg-gradient-to-l from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground">
+          <BarChart3 className="h-5 w-5" />
           تصدير الإحصائيات
         </Button>
       </DialogTrigger>
