@@ -506,6 +506,12 @@ export function FontManagement() {
                   <Badge variant={font.is_arabic ? "default" : "secondary"}>
                     {font.is_arabic ? "عربي" : "لاتيني"}
                   </Badge>
+                  {font.font_style === 'bold' && (
+                    <Badge variant="outline" className="text-xs">غامق</Badge>
+                  )}
+                  {font.font_style === 'italic' && (
+                    <Badge variant="outline" className="text-xs">مائل</Badge>
+                  )}
                 </div>
                 <Button
                   variant="ghost"
