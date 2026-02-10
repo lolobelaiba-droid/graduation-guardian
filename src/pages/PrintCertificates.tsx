@@ -39,7 +39,7 @@ import { AddFieldDialog } from "@/components/print/AddFieldDialog";
 import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
 import { FontManagement } from "@/components/print/FontManagement";
 import { PrintableCSS } from "@/components/print/PrintableCSS";
-import { getFontOptions, setCustomFonts, type FontConfig } from "@/lib/arabicFonts";
+import { getFontOptions, getAllFonts, setCustomFonts, type FontConfig } from "@/lib/arabicFonts";
 import { toWesternNumerals } from "@/lib/numerals";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -1443,12 +1443,26 @@ export default function PrintCertificates() {
                     تطبيق خصائص الخط على جميع الحقول
                   </h4>
                   
-                  {selectedTemplateId ? (
+                {selectedTemplateId ? (() => {
+                    // Compute common values across all fields for controlled display
+                    const commonFont = templateFields.length > 0 && templateFields.every(f => f.font_name === templateFields[0].font_name)
+                      ? templateFields[0].font_name || "" : "";
+                    const commonSize = templateFields.length > 0 && templateFields.every(f => f.font_size === templateFields[0].font_size)
+                      ? templateFields[0].font_size : null;
+                    const commonColor = templateFields.length > 0 && templateFields.every(f => f.font_color === templateFields[0].font_color)
+                      ? templateFields[0].font_color || "#000000" : "#000000";
+
+                    // Detect if current common font is a bold variant
+                    const isBoldVariant = commonFont ? (commonFont.endsWith('-Bold') || commonFont.includes('Bold')) : false;
+                    const currentStyle = isBoldVariant ? "bold" : "normal";
+
+                    return (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Font Family */}
                       <div className="space-y-2">
                         <Label>نوع الخط</Label>
                         <Select
+                          value={commonFont || undefined}
                           onValueChange={(v) => {
                             void applyToAllFields({ font_name: v }, "تم تطبيق الخط على جميع الحقول");
                           }}
@@ -1494,6 +1508,8 @@ export default function PrintCertificates() {
                             min={8}
                             max={72}
                             placeholder="14"
+                            defaultValue={commonSize ?? ""}
+                            key={`font-size-${commonSize}`}
                             className="w-20"
                             onBlur={(e) => {
                               const size = parseInt(e.target.value);
@@ -1517,7 +1533,8 @@ export default function PrintCertificates() {
                         <div className="flex gap-2">
                           <Input
                             type="color"
-                            defaultValue="#000000"
+                            value={commonColor}
+                            key={`font-color-${commonColor}`}
                             className="w-12 h-10 p-1 cursor-pointer"
                             onChange={(e) => {
                               void applyToAllFields({ font_color: e.target.value }, "تم تطبيق اللون على جميع الحقول");
@@ -1526,15 +1543,44 @@ export default function PrintCertificates() {
                         </div>
                       </div>
 
-                      {/* Font Style */}
+                      {/* Font Style (Bold) */}
                       <div className="space-y-2">
                         <Label>نمط الخط</Label>
                         <Select
+                          value={currentStyle}
                           onValueChange={(v) => {
-                            if (!selectedTemplateId) return;
-                            // Note: font_style is not in the current schema, 
-                            // but we can simulate with font_name variations
-                            toast.info("سيتم دعم أنماط الخط قريباً");
+                            if (!selectedTemplateId || !commonFont) {
+                              toast.error("يرجى اختيار نوع الخط أولاً");
+                              return;
+                            }
+                            // Get base font family (without -Bold suffix)
+                            const baseFamily = commonFont.replace(/-Bold$/, '').replace(/ Bold$/, '');
+                            
+                            if (v === "bold") {
+                              const boldVariantName = `${baseFamily}-Bold`;
+                              const allFontsList = getAllFonts();
+                              const boldFont = allFontsList.find((f) => 
+                                f.name === boldVariantName || 
+                                (f.family === baseFamily && f.style === 'bold')
+                              );
+                              
+                              if (boldFont) {
+                                void applyToAllFields({ font_name: boldFont.name }, "تم تطبيق النمط الغامق على جميع الحقول");
+                              } else {
+                                toast.error(`لا يوجد نمط غامق متاح لخط ${baseFamily}`);
+                              }
+                            } else {
+                              const allFontsList = getAllFonts();
+                              const normalFont = allFontsList.find((f) => 
+                                f.family === baseFamily && f.style === 'normal'
+                              );
+                              
+                              if (normalFont) {
+                                void applyToAllFields({ font_name: normalFont.name }, "تم تطبيق النمط العادي على جميع الحقول");
+                              } else {
+                                void applyToAllFields({ font_name: baseFamily }, "تم تطبيق النمط العادي على جميع الحقول");
+                              }
+                            }
                           }}
                         >
                           <SelectTrigger>
@@ -1543,12 +1589,13 @@ export default function PrintCertificates() {
                           <SelectContent>
                             <SelectItem value="normal">عادي</SelectItem>
                             <SelectItem value="bold">غامق</SelectItem>
-                            <SelectItem value="italic">مائل</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
-                  ) : (
+                    );
+                  })()
+                  : (
                     <div className="text-center text-muted-foreground py-4">
                       يرجى اختيار قالب أولاً
                     </div>
