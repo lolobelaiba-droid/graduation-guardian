@@ -32,14 +32,27 @@ export function useCssPrint() {
           margin: 0;
         }
 
-        /* Hide everything except the printable certificate */
-        body > * {
+        /* Hide EVERYTHING on the page first */
+        *, *::before, *::after {
           visibility: hidden !important;
-          position: absolute !important;
+        }
+
+        body, html {
+          margin: 0 !important;
+          padding: 0 !important;
           overflow: hidden !important;
+          background: white !important;
+          box-shadow: none !important;
         }
 
         /* Override the hidden wrapper so the certificate can escape */
+        #printable-certificate-wrapper,
+        #printable-certificate-wrapper *,
+        #printable-certificate,
+        #printable-certificate * {
+          visibility: visible !important;
+        }
+
         #printable-certificate-wrapper {
           position: fixed !important;
           left: 0 !important;
@@ -51,12 +64,9 @@ export function useCssPrint() {
           clip-path: none !important;
           white-space: normal !important;
           z-index: 999999 !important;
-          visibility: visible !important;
         }
 
-        /* Make the printable certificate visible */
         #printable-certificate {
-          visibility: visible !important;
           position: relative !important;
           left: 0 !important;
           top: 0 !important;
@@ -64,36 +74,15 @@ export function useCssPrint() {
           height: ${options.heightMm}mm !important;
           margin: 0 !important;
           padding: 0 !important;
-          z-index: 999999 !important;
-          background: white !important;
           overflow: hidden !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
           color-adjust: exact !important;
         }
 
-        /* Ensure all children of the printable certificate are visible */
-        #printable-certificate * {
-          visibility: visible !important;
-        }
-
-        /* Ensure images print with correct colors */
         #printable-certificate img {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-        }
-
-        /* Hide scrollbars, shadows, borders */
-        body {
-          margin: 0 !important;
-          padding: 0 !important;
-          overflow: hidden !important;
-        }
-
-        /* Remove all backgrounds and shadows from non-print elements */
-        html, body {
-          background: white !important;
-          box-shadow: none !important;
         }
       }
     `;
