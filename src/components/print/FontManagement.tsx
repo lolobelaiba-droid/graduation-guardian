@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Plus, Trash2, FileType, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -224,6 +225,7 @@ export function FontManagement() {
   const [parsedFont, setParsedFont] = useState<ParsedFontInfo | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isArabicOverride, setIsArabicOverride] = useState<boolean | null>(null);
+  const [styleOverride, setStyleOverride] = useState<'normal' | 'bold' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -320,13 +322,14 @@ export function FontManagement() {
         .from("custom-fonts")
         .getPublicUrl(filePath);
 
-      // Use override if set, otherwise use parsed value
+      // Use overrides if set, otherwise use parsed values
       const isArabic = isArabicOverride !== null ? isArabicOverride : parsedFont.isArabic;
+      const effectiveStyle = styleOverride !== null ? styleOverride : parsedFont.fontStyle;
+      const effectiveWeight = effectiveStyle === 'bold' ? 'bold' : 'normal';
 
-      // For bold/italic variants, ensure the font_name includes a style suffix
-      // so the style lookup system can find bold variants by name pattern
+      // For bold variants, ensure the font_name includes a style suffix
       let saveFontName = parsedFont.fontName;
-      if (parsedFont.fontStyle === 'bold' && !saveFontName.includes('Bold') && !saveFontName.includes('عريض')) {
+      if (effectiveStyle === 'bold' && !saveFontName.includes('Bold') && !saveFontName.includes('عريض')) {
         saveFontName = `${parsedFont.fontName} Bold`;
       }
 
@@ -338,8 +341,8 @@ export function FontManagement() {
           font_family: parsedFont.fontFamily,
           font_url: urlData.publicUrl,
           is_arabic: isArabic,
-          font_weight: parsedFont.fontWeight,
-          font_style: parsedFont.fontStyle,
+          font_weight: effectiveWeight,
+          font_style: effectiveStyle,
         });
 
       if (dbError) throw dbError;
@@ -348,6 +351,7 @@ export function FontManagement() {
       setParsedFont(null);
       setSelectedFile(null);
       setIsArabicOverride(null);
+      setStyleOverride(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       queryClient.invalidateQueries({ queryKey: ["custom_fonts"] });
@@ -363,6 +367,7 @@ export function FontManagement() {
     setParsedFont(null);
     setSelectedFile(null);
     setIsArabicOverride(null);
+    setStyleOverride(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -425,9 +430,18 @@ export function FontManagement() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">النمط:</span>
-                  <p className="font-medium">
-                    {parsedFont.fontStyle === 'bold' ? 'غامق (Bold)' : parsedFont.fontStyle === 'italic' ? 'مائل (Italic)' : 'عادي (Regular)'}
-                  </p>
+                  <Select
+                    value={styleOverride !== null ? styleOverride : parsedFont.fontStyle}
+                    onValueChange={(v) => setStyleOverride(v as 'normal' | 'bold')}
+                  >
+                    <SelectTrigger className="h-8 mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">عادي (Regular)</SelectItem>
+                      <SelectItem value="bold">غامق (Bold)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
