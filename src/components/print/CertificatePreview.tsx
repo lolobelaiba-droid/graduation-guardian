@@ -837,7 +837,7 @@ export function CertificatePreview({
         {/* Info bar */}
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {isLandscape ? 'أفقي' : 'عمودي'} • {toWesternNumerals(width)}×{toWesternNumerals(height)}mm • {template.page_size}
+            {isLandscape ? 'أفقي' : 'عمودي'} • {toWesternNumerals(width)}×{toWesternNumerals(height)}mm • {((template as any).print_paper_size || template.page_size || 'a4').toUpperCase()}
           </span>
           <span className="flex items-center gap-2">
             <GripVertical className="h-3 w-3" />
