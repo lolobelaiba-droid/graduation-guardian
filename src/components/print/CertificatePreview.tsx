@@ -554,7 +554,7 @@ export function CertificatePreview({
           style={{
             width: `${width * SCALE}px`,
             height: `${height * SCALE}px`,
-            direction: isRtlLanguage ? 'rtl' : 'ltr',
+            direction: 'ltr',
           }}
           onMouseMove={(e) => {
             handleMouseMove(e);
