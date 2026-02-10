@@ -203,15 +203,18 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
 
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
     try {
+      // Remove field_ar/field_fr for non-LMD types (only phd_lmd has these columns)
+      const { field_ar, field_fr, ...restData } = data;
+      
       switch (selectedType) {
         case 'phd_lmd':
-          await createPhdLmd.mutateAsync(data as Parameters<typeof createPhdLmd.mutateAsync>[0]);
+          await createPhdLmd.mutateAsync({ ...restData, field_ar, field_fr } as Parameters<typeof createPhdLmd.mutateAsync>[0]);
           break;
         case 'phd_science':
-          await createPhdScience.mutateAsync(data as Parameters<typeof createPhdScience.mutateAsync>[0]);
+          await createPhdScience.mutateAsync(restData as Parameters<typeof createPhdScience.mutateAsync>[0]);
           break;
         case 'master':
-          await createMaster.mutateAsync(data as Parameters<typeof createMaster.mutateAsync>[0]);
+          await createMaster.mutateAsync(restData as Parameters<typeof createMaster.mutateAsync>[0]);
           break;
       }
       form.reset();
