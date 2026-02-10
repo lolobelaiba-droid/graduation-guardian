@@ -972,9 +972,10 @@ export function ExportStatsDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="lg" className="gap-2 shadow-lg bg-gradient-to-l from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground">
-          <BarChart3 className="h-5 w-5" />
+        <Button size="lg" className="gap-3 px-8 py-6 text-base font-semibold shadow-xl bg-gradient-to-l from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground rounded-xl transition-all duration-200 hover:shadow-2xl hover:scale-[1.02]">
+          <BarChart3 className="h-6 w-6" />
           تصدير الإحصائيات
+          <Download className="h-5 w-5 opacity-70" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg" dir="rtl">
