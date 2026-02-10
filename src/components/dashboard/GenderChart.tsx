@@ -1,3 +1,4 @@
+import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Loader2 } from "lucide-react";
 import { useGenderDistribution, useGenderDistributionCandidates } from "@/hooks/useDashboardStats";
@@ -11,7 +12,8 @@ interface GenderChartProps {
   dataSource?: "candidates" | "defended";
 }
 
-export function GenderChart({ dataSource = "defended" }: GenderChartProps) {
+export const GenderChart = React.forwardRef<HTMLDivElement, GenderChartProps>(
+  function GenderChart({ dataSource = "defended" }, ref) {
   const candidatesQuery = useGenderDistributionCandidates();
   const defendedQuery = useGenderDistribution();
   
@@ -25,7 +27,7 @@ export function GenderChart({ dataSource = "defended" }: GenderChartProps) {
     : "توزيع المناقشين حسب الجنس";
 
   return (
-    <div className="bg-card rounded-2xl shadow-card p-6">
+    <div ref={ref} className="bg-card rounded-2xl shadow-card p-6">
       <h3 className="text-lg font-semibold mb-6">{title}</h3>
       
       {isLoading ? (
@@ -88,4 +90,4 @@ export function GenderChart({ dataSource = "defended" }: GenderChartProps) {
       )}
     </div>
   );
-}
+});

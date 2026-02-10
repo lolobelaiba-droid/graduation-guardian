@@ -1,3 +1,4 @@
+import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Loader2 } from "lucide-react";
 import { useFacultyDistribution, useFacultyDistributionCandidates } from "@/hooks/useDashboardStats";
@@ -21,7 +22,8 @@ interface FacultyChartProps {
   dataSource?: "candidates" | "defended";
 }
 
-export function FacultyChart({ dataSource = "defended" }: FacultyChartProps) {
+export const FacultyChart = React.forwardRef<HTMLDivElement, FacultyChartProps>(
+  function FacultyChart({ dataSource = "defended" }, ref) {
   const candidatesQuery = useFacultyDistributionCandidates();
   const defendedQuery = useFacultyDistribution();
   
@@ -35,7 +37,7 @@ export function FacultyChart({ dataSource = "defended" }: FacultyChartProps) {
     : "توزيع المناقشين حسب الكلية";
 
   return (
-    <div className="bg-card rounded-2xl shadow-card p-6 h-full flex flex-col">
+    <div ref={ref} className="bg-card rounded-2xl shadow-card p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       
       {isLoading ? (
@@ -124,4 +126,4 @@ export function FacultyChart({ dataSource = "defended" }: FacultyChartProps) {
       )}
     </div>
   );
-}
+});
