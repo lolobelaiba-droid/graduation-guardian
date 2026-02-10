@@ -17,6 +17,7 @@ import type { Certificate } from "@/types/certificates";
 import { toWesternNumerals } from "@/lib/numerals";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import ExportPdfDialog from "@/components/annual-report/ExportPdfDialog";
 
 export default function AnnualReport() {
   const [selectedYear, setSelectedYear] = useState<string>("all");
@@ -202,8 +203,26 @@ export default function AnnualReport() {
           )}
           <Button variant="outline" size="sm" className="gap-2 h-9" onClick={handleExportReport}>
             <Download className="h-4 w-4" />
-            تصدير التقرير
+            تصدير Excel
           </Button>
+          <ExportPdfDialog
+            data={{
+              yearLabel: selectedYear === "all" ? "كل_السنوات" : selectedYear,
+              total: yearData.length,
+              byType,
+              byFaculty,
+              bySpecialty,
+              byMonth,
+              monthNames,
+              students: yearData.map(s => ({
+                full_name_ar: s.full_name_ar,
+                faculty_ar: s.faculty_ar,
+                specialty_ar: s.specialty_ar,
+                defense_date: s.defense_date,
+                _type: s._type,
+              })),
+            }}
+          />
         </div>
       </div>
 
