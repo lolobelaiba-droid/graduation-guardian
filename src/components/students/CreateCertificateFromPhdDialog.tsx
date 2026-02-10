@@ -260,21 +260,25 @@ export function CreateCertificateFromPhdDialog({
         notes: selectedStudent.notes || null,
       } : {};
 
+      // Remove field_ar/field_fr for non-LMD types (phd_science doesn't have these columns)
+      const { field_ar, field_fr, ...restData } = data;
+      
       const certificateData = {
-        ...data,
+        ...restData,
         ...phdReferenceData,
-        faculty_fr: '', // Set empty as field is simplified to Arabic only
-        thesis_title_fr: '', // Single field with auto-direction
-        jury_president_fr: '', // Single field with auto-direction
-        jury_members_fr: '', // Single field with auto-direction
+        faculty_fr: '',
+        thesis_title_fr: '',
+        jury_president_fr: '',
+        jury_members_fr: '',
       };
 
       // Create certificate
       if (selectedType === 'phd_lmd') {
         await createPhdLmd.mutateAsync({
           ...certificateData,
-          field_ar: data.field_ar || '',
-          research_lab_ar: data.research_lab_ar || '',
+          field_ar: field_ar || '',
+          field_fr: field_fr || '',
+          research_lab_ar: restData.research_lab_ar || '',
         } as any);
         
         // Delete student from PhD database after successful certificate creation
