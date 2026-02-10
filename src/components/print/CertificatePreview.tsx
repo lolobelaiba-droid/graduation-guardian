@@ -456,12 +456,6 @@ export function CertificatePreview({
               تغييرات غير محفوظة
             </Badge>
           )}
-          {canUndo && onUndo && (
-            <Button variant="outline" size="sm" onClick={onUndo}>
-              <Undo2 className="h-4 w-4 ml-1" />
-              تراجع
-            </Button>
-          )}
           {dragState && dragPreview && (
             <Badge variant="default" className="font-mono text-xs animate-pulse">
               X: {toWesternNumerals(dragPreview.x)} | Y: {toWesternNumerals(dragPreview.y)} مم
