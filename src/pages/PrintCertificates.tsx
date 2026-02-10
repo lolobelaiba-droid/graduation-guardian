@@ -128,19 +128,17 @@ export default function PrintCertificates() {
 
   // Update custom fonts in the arabicFonts module when they change
   useEffect(() => {
-    if (customFontsData.length > 0) {
-      const fontConfigs: FontConfig[] = customFontsData.map(f => ({
-        name: f.font_name,
-        displayName: f.font_name,
-        displayNameAr: f.font_name,
-        family: f.font_family,
-        url: f.font_url,
-        style: (f.font_style || 'normal') as 'normal' | 'bold' | 'italic',
-        isArabic: f.is_arabic || false,
-        isSystem: false,
-      }));
-      setCustomFonts(fontConfigs);
-    }
+    const fontConfigs: FontConfig[] = customFontsData.map(f => ({
+      name: f.font_name,
+      displayName: f.font_name,
+      displayNameAr: f.font_name,
+      family: f.font_family,
+      url: f.font_url,
+      style: (f.font_style || 'normal') as 'normal' | 'bold' | 'italic',
+      isArabic: f.is_arabic || false,
+      isSystem: false,
+    }));
+    setCustomFonts(fontConfigs);
   }, [customFontsData]);
 
   // Load printers (desktop app only)
