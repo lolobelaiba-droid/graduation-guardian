@@ -20,7 +20,12 @@ import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 // Default A4 dimensions in mm (fallback)
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
-const SCALE = 3.2;
+// Use the SAME base scale as CertificatePreview to guarantee identical rendering
+const BASE_SCALE = 2;
+// CSS zoom factor applied on top of BASE_SCALE for the enlarged view
+const ZOOM = 1.6;
+// Effective scale for coordinate display purposes
+const SCALE = BASE_SCALE;
 
 interface FieldChange {
   fieldId: string;
@@ -409,8 +414,8 @@ export function FullPreviewDialog({
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !canvasRef.current) return;
 
-    const deltaX = (e.clientX - dragState.startX) / SCALE;
-    const deltaY = (e.clientY - dragState.startY) / SCALE;
+    const deltaX = (e.clientX - dragState.startX) / (SCALE * ZOOM);
+    const deltaY = (e.clientY - dragState.startY) / (SCALE * ZOOM);
 
     // Calculate new position (round to 0.5mm for precision)
     let newX = Math.round((dragState.fieldStartX + deltaX) * 2) / 2;
@@ -509,7 +514,7 @@ export function FullPreviewDialog({
   const handleResizeMove = useCallback((e: React.MouseEvent) => {
     if (!resizeState) return;
     
-    const deltaX = (e.clientX - resizeState.startX) / SCALE;
+    const deltaX = (e.clientX - resizeState.startX) / (SCALE * ZOOM);
     const newWidth = Math.max(20, Math.round((resizeState.startWidth + deltaX) * 2) / 2);
     
     setLocalFieldWidths(prev => ({
@@ -777,6 +782,12 @@ export function FullPreviewDialog({
 
           {/* Preview Canvas */}
           <div className="flex-1 overflow-auto bg-muted/30 p-4 flex items-center justify-center" dir="ltr">
+            {/* Outer wrapper sized to the zoomed dimensions so scrolling works correctly */}
+            <div style={{
+              width: `${width * BASE_SCALE * ZOOM}px`,
+              height: `${height * BASE_SCALE * ZOOM}px`,
+              flexShrink: 0,
+            }}>
             <div
               ref={canvasRef}
               className={cn(
@@ -784,10 +795,12 @@ export function FullPreviewDialog({
                 dragState && "cursor-grabbing"
               )}
               style={{
-                width: `${width * SCALE}px`,
-                height: `${height * SCALE}px`,
+                width: `${width * BASE_SCALE}px`,
+                height: `${height * BASE_SCALE}px`,
                 overflow: 'hidden',
                 direction: 'ltr',
+                transform: `scale(${ZOOM})`,
+                transformOrigin: 'top left',
               }}
               onMouseMove={(e) => {
                 handleMouseMove(e);
@@ -1012,6 +1025,7 @@ export function FullPreviewDialog({
                   </div>
                 );
               })}
+            </div>
             </div>
           </div>
         </div>
