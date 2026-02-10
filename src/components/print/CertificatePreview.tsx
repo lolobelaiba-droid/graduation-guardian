@@ -555,7 +555,7 @@ export function CertificatePreview({
       </div>
 
       {/* Canvas */}
-      <div className="overflow-auto bg-muted/30 rounded-lg p-4">
+      <div className="overflow-auto bg-muted/30 rounded-lg p-4" dir="ltr">
         <div
           ref={canvasRef}
           className={cn(

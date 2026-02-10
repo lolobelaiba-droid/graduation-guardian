@@ -776,7 +776,7 @@ export function FullPreviewDialog({
           </div>
 
           {/* Preview Canvas */}
-          <div className="flex-1 overflow-auto bg-muted/30 p-4 flex items-center justify-center">
+          <div className="flex-1 overflow-auto bg-muted/30 p-4 flex items-center justify-center" dir="ltr">
             <div
               ref={canvasRef}
               className={cn(
