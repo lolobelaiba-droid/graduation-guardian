@@ -810,14 +810,14 @@ export function FullPreviewDialog({
                   >
                     <div
                       className={cn(
-                        "border border-transparent transition-all select-none px-1 relative",
+                        "border border-transparent transition-all select-none relative",
                         showFieldControls && "hover:border-primary/50 hover:bg-primary/5",
                         isSelected && "border-primary border-2 bg-primary/10 rounded",
                         isDragging && "border-primary border-2 bg-primary/20 rounded shadow-lg",
                         hasChange && !isSelected && "border-destructive/50 border bg-destructive/5"
                       )}
                       style={{
-                        fontSize: `${field.font_size * SCALE * 0.35}px`,
+                        fontSize: `${field.font_size * SCALE * 0.353}px`,
                         fontFamily: fieldFontStyles[field.id] || getFontFamilyCSS(field.font_name),
                         color: field.font_color,
                         textAlign: field.text_align as 'left' | 'right' | 'center',
@@ -826,6 +826,7 @@ export function FullPreviewDialog({
                         wordWrap: hasWidth ? 'break-word' : undefined,
                         width: hasWidth ? `${effectiveWidth! * SCALE}px` : undefined,
                         lineHeight: hasWidth ? '1.4' : undefined,
+                        padding: '0',
                       }}
                       onMouseDown={(e) => showFieldControls && handleFieldMouseDown(e, field)}
                       title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${effectiveWidth}مم` : ''}`}

@@ -638,7 +638,7 @@ export function CertificatePreview({
                     isDragging && "border-primary border-2 bg-primary/10 rounded shadow-lg",
                   )}
                   style={{
-                    fontSize: `${field.font_size * SCALE * 0.35}px`,
+                    fontSize: `${field.font_size * SCALE * 0.353}px`,
                     fontFamily: fieldFontStyles[field.id] || getFontFamilyCSS(field.font_name),
                     color: isVisible ? field.font_color : '#999',
                     textAlign: field.text_align as 'left' | 'right' | 'center',
@@ -646,7 +646,7 @@ export function CertificatePreview({
                     whiteSpace: hasWidth ? 'normal' : 'nowrap',
                     wordWrap: hasWidth ? 'break-word' : undefined,
                     width: hasWidth ? `${field.field_width! * SCALE}px` : undefined,
-                    padding: '2px 4px',
+                    padding: '0',
                     textDecoration: !isVisible ? 'line-through' : 'none',
                     lineHeight: hasWidth ? '1.4' : undefined,
                   }}
