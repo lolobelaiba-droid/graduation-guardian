@@ -1445,7 +1445,7 @@ export default function PrintCertificates() {
                   
                 {selectedTemplateId ? (() => {
                     // Compute common values across all fields for controlled display
-                    const commonFont = templateFields.length > 0 && templateFields.every(f => f.font_name === templateFields[0].font_name)
+                    const rawCommonFont = templateFields.length > 0 && templateFields.every(f => f.font_name === templateFields[0].font_name)
                       ? templateFields[0].font_name || "" : "";
                     const commonSize = templateFields.length > 0 && templateFields.every(f => f.font_size === templateFields[0].font_size)
                       ? templateFields[0].font_size : null;
@@ -1453,8 +1453,15 @@ export default function PrintCertificates() {
                       ? templateFields[0].font_color || "#000000" : "#000000";
 
                     // Detect if current common font is a bold variant
-                    const isBoldVariant = commonFont ? (commonFont.endsWith('-Bold') || commonFont.includes('Bold')) : false;
+                    const isBoldVariant = rawCommonFont ? (rawCommonFont.endsWith('-Bold') || rawCommonFont.includes('-Bold')) : false;
                     const currentStyle = isBoldVariant ? "bold" : "normal";
+                    
+                    // Normalize font name for the family dropdown (strip bold suffix to match getFontOptions values)
+                    const baseFontFamily = isBoldVariant ? rawCommonFont.replace(/-Bold$/, '') : rawCommonFont;
+                    // Map to the family value used by getFontOptions - check getAllFonts for the actual family
+                    const allFontsList = getAllFonts();
+                    const matchedFont = allFontsList.find(f => f.name === rawCommonFont || f.family === rawCommonFont);
+                    const commonFontForDropdown = matchedFont?.family || baseFontFamily;
 
                     return (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1462,9 +1469,19 @@ export default function PrintCertificates() {
                       <div className="space-y-2">
                         <Label>نوع الخط</Label>
                         <Select
-                          value={commonFont || undefined}
+                          value={commonFontForDropdown || undefined}
                           onValueChange={(v) => {
-                            void applyToAllFields({ font_name: v }, "تم تطبيق الخط على جميع الحقول");
+                            // When changing font family, respect current bold style
+                            if (currentStyle === "bold") {
+                              const boldFont = allFontsList.find(f => f.family === v && f.style === 'bold');
+                              if (boldFont) {
+                                void applyToAllFields({ font_name: boldFont.name }, "تم تطبيق الخط على جميع الحقول");
+                                return;
+                              }
+                            }
+                            // Use normal variant or family name directly
+                            const normalFont = allFontsList.find(f => f.family === v && f.style === 'normal');
+                            void applyToAllFields({ font_name: normalFont?.name || v }, "تم تطبيق الخط على جميع الحقول");
                           }}
                         >
                           <SelectTrigger>
@@ -1549,18 +1566,15 @@ export default function PrintCertificates() {
                         <Select
                           value={currentStyle}
                           onValueChange={(v) => {
-                            if (!selectedTemplateId || !commonFont) {
+                            if (!selectedTemplateId || !commonFontForDropdown) {
                               toast.error("يرجى اختيار نوع الخط أولاً");
                               return;
                             }
-                            // Get base font family (without -Bold suffix)
-                            const baseFamily = commonFont.replace(/-Bold$/, '').replace(/ Bold$/, '');
+                            const baseFamily = commonFontForDropdown;
                             
                             if (v === "bold") {
-                              const boldVariantName = `${baseFamily}-Bold`;
-                              const allFontsList = getAllFonts();
                               const boldFont = allFontsList.find((f) => 
-                                f.name === boldVariantName || 
+                                f.name === `${baseFamily}-Bold` || 
                                 (f.family === baseFamily && f.style === 'bold')
                               );
                               
@@ -1570,7 +1584,6 @@ export default function PrintCertificates() {
                                 toast.error(`لا يوجد نمط غامق متاح لخط ${baseFamily}`);
                               }
                             } else {
-                              const allFontsList = getAllFonts();
                               const normalFont = allFontsList.find((f) => 
                                 f.family === baseFamily && f.style === 'normal'
                               );
