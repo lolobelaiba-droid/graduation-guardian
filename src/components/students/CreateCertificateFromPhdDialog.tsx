@@ -260,11 +260,8 @@ export function CreateCertificateFromPhdDialog({
         notes: selectedStudent.notes || null,
       } : {};
 
-      // Remove field_ar/field_fr for non-LMD types (phd_science doesn't have these columns)
-      const { field_ar, field_fr, ...restData } = data;
-      
       const certificateData = {
-        ...restData,
+        ...data,
         ...phdReferenceData,
         faculty_fr: '',
         thesis_title_fr: '',
@@ -276,19 +273,21 @@ export function CreateCertificateFromPhdDialog({
       if (selectedType === 'phd_lmd') {
         await createPhdLmd.mutateAsync({
           ...certificateData,
-          field_ar: field_ar || '',
-          field_fr: field_fr || '',
-          research_lab_ar: restData.research_lab_ar || '',
+          field_ar: data.field_ar || '',
+          field_fr: data.field_fr || '',
+          research_lab_ar: data.research_lab_ar || '',
         } as any);
         
-        // Delete student from PhD database after successful certificate creation
         if (selectedStudent) {
           await deletePhdLmd.mutateAsync(selectedStudent.id);
         }
       } else if (selectedType === 'phd_science') {
-        await createPhdScience.mutateAsync(certificateData as any);
+        await createPhdScience.mutateAsync({
+          ...certificateData,
+          field_ar: data.field_ar || '',
+          field_fr: data.field_fr || '',
+        } as any);
         
-        // Delete student from PhD database after successful certificate creation
         if (selectedStudent) {
           await deletePhdScience.mutateAsync(selectedStudent.id);
         }
@@ -303,7 +302,7 @@ export function CreateCertificateFromPhdDialog({
     }
   };
 
-  const showFieldField = selectedType === 'phd_lmd';
+  const showFieldField = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const isResearchLabRequired = selectedType === 'phd_lmd';
 
   // Filter to only show PhD types (not master)

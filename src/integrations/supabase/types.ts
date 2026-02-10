@@ -786,6 +786,8 @@ export type Database = {
           employment_status: string | null
           faculty_ar: string
           faculty_fr: string | null
+          field_ar: string
+          field_fr: string | null
           first_registration_year: string | null
           full_name_ar: string
           full_name_fr: string | null
@@ -831,6 +833,8 @@ export type Database = {
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
           first_registration_year?: string | null
           full_name_ar: string
           full_name_fr?: string | null
@@ -876,6 +880,8 @@ export type Database = {
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
           first_registration_year?: string | null
           full_name_ar?: string
           full_name_fr?: string | null
@@ -922,6 +928,8 @@ export type Database = {
           employment_status: string | null
           faculty_ar: string
           faculty_fr: string | null
+          field_ar: string
+          field_fr: string | null
           first_registration_year: string | null
           full_name_ar: string
           full_name_fr: string | null
@@ -960,6 +968,8 @@ export type Database = {
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
           first_registration_year?: string | null
           full_name_ar: string
           full_name_fr?: string | null
@@ -998,6 +1008,8 @@ export type Database = {
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
           first_registration_year?: string | null
           full_name_ar?: string
           full_name_fr?: string | null

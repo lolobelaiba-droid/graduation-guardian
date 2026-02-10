@@ -102,6 +102,8 @@ const baseSchema = z.object({
 const phdScienceSchema = baseSchema.extend({
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
   thesis_title_fr: z.string().optional().nullable(),
+  field_ar: z.string().min(1, "الميدان مطلوب"),
+  field_fr: z.string().optional().nullable(),
   jury_president_ar: z.string().min(1, "رئيس اللجنة مطلوب"),
   jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
@@ -110,8 +112,6 @@ const phdScienceSchema = baseSchema.extend({
 });
 
 const phdLmdSchema = phdScienceSchema.extend({
-  field_ar: z.string().min(1, "الميدان مطلوب"),
-  field_fr: z.string().optional().nullable(),
   research_lab_ar: z.string().min(1, "مخبر البحث مطلوب"), // مطلوب لدكتوراه ل م د
 });
 
@@ -203,7 +203,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
 
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
     try {
-      // Remove field_ar/field_fr for non-LMD types (only phd_lmd has these columns)
+      // Remove field_ar/field_fr for master type (doesn't have these columns)
       const { field_ar, field_fr, ...restData } = data;
       
       switch (selectedType) {
@@ -211,7 +211,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
           await createPhdLmd.mutateAsync({ ...restData, field_ar, field_fr } as Parameters<typeof createPhdLmd.mutateAsync>[0]);
           break;
         case 'phd_science':
-          await createPhdScience.mutateAsync(restData as Parameters<typeof createPhdScience.mutateAsync>[0]);
+          await createPhdScience.mutateAsync({ ...restData, field_ar: field_ar || '', field_fr } as Parameters<typeof createPhdScience.mutateAsync>[0]);
           break;
         case 'master':
           await createMaster.mutateAsync(restData as Parameters<typeof createMaster.mutateAsync>[0]);
@@ -225,7 +225,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   };
 
   const showThesisFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
-  const showFieldField = selectedType === 'phd_lmd';
+  const showFieldField = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const showJuryFields = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const showResearchLabField = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const isResearchLabRequired = selectedType === 'phd_lmd';
