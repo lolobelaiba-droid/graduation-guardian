@@ -548,22 +548,15 @@ export default function PrintCertificates() {
     try {
       setIsPrinting(true);
 
-      // Desktop app: Use CSS-based native print with window.print()
+      // Use CSS-based native print with window.print()
       // This provides full print preview and correct paper dimensions
-      if (isDesktop) {
-        const dims = getTemplatePaperDimensions(template);
-        await cssPrint({
-          widthMm: dims.width,
-          heightMm: dims.height,
-          orientation: template.page_orientation === 'landscape' ? 'landscape' : 'portrait',
-        });
-        toast.success(`تم إرسال الشهادة إلى الطباعة`);
-        return;
-      }
-
-      // Web: download PDF (user can print via system dialog from the PDF viewer)
-      await generatePDF(selectedStudents as unknown as Record<string, unknown>[], templateFields, template, selectedType);
-      toast.success(`تم إنشاء PDF لـ ${selectedStudents.length} طالب`);
+      const dims = getTemplatePaperDimensions(template);
+      await cssPrint({
+        widthMm: dims.width,
+        heightMm: dims.height,
+        orientation: template.page_orientation === 'landscape' ? 'landscape' : 'portrait',
+      });
+      toast.success(`تم إرسال الشهادة إلى الطباعة`);
     } catch (error) {
       toast.error("فشل في الطباعة: " + (error as Error).message);
     } finally {
@@ -1650,7 +1643,7 @@ export default function PrintCertificates() {
           Hidden on screen via overflow:hidden + zero size, but the
           #printable-certificate inside uses position:fixed in print CSS
           so it becomes visible and fills the page. */}
-      {isDesktop && selectedTemplateId && previewStudent && (() => {
+      {selectedTemplateId && previewStudent && (() => {
         const currentTemplate = templates.find(t => t.id === selectedTemplateId);
         if (!currentTemplate) return null;
         const dims = getTemplatePaperDimensions(currentTemplate);
