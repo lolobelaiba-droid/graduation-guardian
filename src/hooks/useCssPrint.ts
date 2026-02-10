@@ -56,6 +56,12 @@ export function useCssPrint() {
           visibility: visible !important;
         }
 
+        /* Hide background image inside printable area - only used for alignment */
+        #printable-certificate-wrapper [data-print-hide] {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
         #printable-certificate-wrapper {
           display: block !important;
           position: fixed !important;

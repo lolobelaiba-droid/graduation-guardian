@@ -137,11 +137,12 @@ export function PrintableCSS({
         boxSizing: 'border-box',
       }}
     >
-      {/* Background image */}
+      {/* Background image - hidden during print, only used for field alignment */}
       {template.background_image_url && (
         <img
           src={template.background_image_url}
           alt=""
+          data-print-hide
           style={{
             position: 'absolute',
             width: `${backgroundScaleX}%`,
