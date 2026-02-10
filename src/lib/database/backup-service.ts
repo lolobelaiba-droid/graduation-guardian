@@ -32,6 +32,35 @@ export interface BackupData {
 
 export class BackupService {
   /**
+   * جلب جميع الصفوف من جدول مع pagination لتجاوز حد 1000 صف
+   */
+  private static async fetchAllRows(tableName: string): Promise<unknown[]> {
+    const PAGE_SIZE = 1000;
+    let allData: unknown[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from(tableName as 'settings')
+        .select("*")
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data);
+        from += PAGE_SIZE;
+        hasMore = data.length === PAGE_SIZE;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return allData;
+  }
+
+  /**
    * تصدير جميع البيانات
    */
   static async exportAll(): Promise<{ data: BackupData | null; error: Error | null }> {
@@ -66,46 +95,46 @@ export class BackupService {
         customFieldOptions,
         printHistory,
       ] = await Promise.all([
-        supabase.from("phd_lmd_certificates").select("*"),
-        supabase.from("phd_science_certificates").select("*"),
-        supabase.from("master_certificates").select("*"),
-        supabase.from("certificate_templates").select("*"),
-        supabase.from("certificate_template_fields").select("*"),
-        supabase.from("settings").select("*"),
-        supabase.from("user_settings").select("*"),
-        supabase.from("dropdown_options").select("*"),
-        supabase.from("custom_fonts").select("*"),
-        supabase.from("activity_log").select("*"),
-        supabase.from("phd_lmd_students").select("*"),
-        supabase.from("phd_science_students").select("*"),
-        supabase.from("academic_titles").select("*"),
-        supabase.from("custom_fields").select("*"),
-        supabase.from("custom_field_values").select("*"),
-        supabase.from("custom_field_options").select("*"),
-        supabase.from("print_history").select("*"),
+        this.fetchAllRows("phd_lmd_certificates"),
+        this.fetchAllRows("phd_science_certificates"),
+        this.fetchAllRows("master_certificates"),
+        this.fetchAllRows("certificate_templates"),
+        this.fetchAllRows("certificate_template_fields"),
+        this.fetchAllRows("settings"),
+        this.fetchAllRows("user_settings"),
+        this.fetchAllRows("dropdown_options"),
+        this.fetchAllRows("custom_fonts"),
+        this.fetchAllRows("activity_log"),
+        this.fetchAllRows("phd_lmd_students"),
+        this.fetchAllRows("phd_science_students"),
+        this.fetchAllRows("academic_titles"),
+        this.fetchAllRows("custom_fields"),
+        this.fetchAllRows("custom_field_values"),
+        this.fetchAllRows("custom_field_options"),
+        this.fetchAllRows("print_history"),
       ]);
 
       const backupData: BackupData = {
         version: "2.0",
         created_at: new Date().toISOString(),
         data: {
-          phd_lmd_certificates: (phdLmd.data || []) as TablesInsert<'phd_lmd_certificates'>[],
-          phd_science_certificates: (phdScience.data || []) as TablesInsert<'phd_science_certificates'>[],
-          master_certificates: (master.data || []) as TablesInsert<'master_certificates'>[],
-          certificate_templates: (templates.data || []) as TablesInsert<'certificate_templates'>[],
-          certificate_template_fields: (templateFields.data || []) as TablesInsert<'certificate_template_fields'>[],
-          settings: (settings.data || []) as TablesInsert<'settings'>[],
-          user_settings: (userSettings.data || []) as TablesInsert<'user_settings'>[],
-          dropdown_options: (dropdownOptions.data || []) as TablesInsert<'dropdown_options'>[],
-          custom_fonts: (customFonts.data || []) as TablesInsert<'custom_fonts'>[],
-          activity_log: (activityLog.data || []) as TablesInsert<'activity_log'>[],
-          phd_lmd_students: (phdLmdStudents.data || []) as TablesInsert<'phd_lmd_students'>[],
-          phd_science_students: (phdScienceStudents.data || []) as TablesInsert<'phd_science_students'>[],
-          academic_titles: (academicTitles.data || []) as TablesInsert<'academic_titles'>[],
-          custom_fields: (customFields.data || []) as TablesInsert<'custom_fields'>[],
-          custom_field_values: (customFieldValues.data || []) as TablesInsert<'custom_field_values'>[],
-          custom_field_options: (customFieldOptions.data || []) as TablesInsert<'custom_field_options'>[],
-          print_history: (printHistory.data || []) as TablesInsert<'print_history'>[],
+          phd_lmd_certificates: phdLmd as TablesInsert<'phd_lmd_certificates'>[],
+          phd_science_certificates: phdScience as TablesInsert<'phd_science_certificates'>[],
+          master_certificates: master as TablesInsert<'master_certificates'>[],
+          certificate_templates: templates as TablesInsert<'certificate_templates'>[],
+          certificate_template_fields: templateFields as TablesInsert<'certificate_template_fields'>[],
+          settings: settings as TablesInsert<'settings'>[],
+          user_settings: userSettings as TablesInsert<'user_settings'>[],
+          dropdown_options: dropdownOptions as TablesInsert<'dropdown_options'>[],
+          custom_fonts: customFonts as TablesInsert<'custom_fonts'>[],
+          activity_log: activityLog as TablesInsert<'activity_log'>[],
+          phd_lmd_students: phdLmdStudents as TablesInsert<'phd_lmd_students'>[],
+          phd_science_students: phdScienceStudents as TablesInsert<'phd_science_students'>[],
+          academic_titles: academicTitles as TablesInsert<'academic_titles'>[],
+          custom_fields: customFields as TablesInsert<'custom_fields'>[],
+          custom_field_values: customFieldValues as TablesInsert<'custom_field_values'>[],
+          custom_field_options: customFieldOptions as TablesInsert<'custom_field_options'>[],
+          print_history: printHistory as TablesInsert<'print_history'>[],
         },
       };
 
