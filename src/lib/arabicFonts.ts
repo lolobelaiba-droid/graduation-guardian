@@ -211,14 +211,29 @@ export function getFontOptions(): { value: string; label: string; labelAr: strin
   const allFontsList = getAllFonts();
   
   // Add all fonts, avoiding duplicates by family
+  // First pass: prefer 'normal' style variants
   allFontsList.forEach(font => {
     const familyKey = font.family.toLowerCase();
     if (!seenFamilies.has(familyKey) && font.style === 'normal') {
       seenFamilies.add(familyKey);
       options.push({
         value: font.family,
-        label: font.displayName.replace(' Bold', ''),
-        labelAr: font.displayNameAr.replace(' عريض', ''),
+        label: font.displayName.replace(' Bold', '').replace(' Italic', ''),
+        labelAr: font.displayNameAr.replace(' عريض', '').replace(' مائل', ''),
+        isArabic: font.isArabic,
+        isSystem: font.isSystem,
+      });
+    }
+  });
+  // Second pass: add families that only have bold/italic variants (no normal)
+  allFontsList.forEach(font => {
+    const familyKey = font.family.toLowerCase();
+    if (!seenFamilies.has(familyKey)) {
+      seenFamilies.add(familyKey);
+      options.push({
+        value: font.family,
+        label: font.displayName.replace(' Bold', '').replace(' Italic', ''),
+        labelAr: font.displayNameAr.replace(' عريض', '').replace(' مائل', '').replace(' Bold', ''),
         isArabic: font.isArabic,
         isSystem: font.isSystem,
       });
