@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
+import { getFontByName } from "@/lib/arabicFonts";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -625,6 +626,7 @@ export function CertificatePreview({
                   style={{
                     fontSize: `${field.font_size * SCALE * 0.353}px`,
                     fontFamily: fieldFontStyles[field.id] || getFontFamilyCSS(field.font_name),
+                    fontWeight: (() => { const fc = field.font_name ? getFontByName(field.font_name) : undefined; return fc?.style === 'bold' ? 'bold' : 'normal'; })(),
                     color: isVisible ? field.font_color : '#999',
                     textAlign: field.text_align as 'left' | 'right' | 'center',
                     direction: fieldDirection,
