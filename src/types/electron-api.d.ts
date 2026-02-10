@@ -50,6 +50,10 @@ interface ElectronAPI {
     options?: { deviceName?: string }
   ) => Promise<{ success: boolean; error?: string }>;
 
+  printNative?: (
+    options?: { pageSize?: { width: number; height: number }; landscape?: boolean }
+  ) => Promise<{ success: boolean; error?: string }>;
+
   openPrintersSettings?: () => Promise<boolean>;
   
   db: DbOperations;

@@ -247,6 +247,35 @@ ipcMain.handle('printers:print-pdf', async (_event, payload) => {
   }
 });
 
+ipcMain.handle('printers:print-native', async (_event, payload) => {
+  try {
+    const { options } = payload || {};
+    const win = BrowserWindow.getFocusedWindow() || mainWindow;
+    if (!win) return { success: false, error: 'No window available' };
+
+    const success = await new Promise((resolve) => {
+      win.webContents.print(
+        {
+          silent: false,
+          printBackground: true,
+          margins: { marginType: 'none' },
+          pageSize: options?.pageSize || undefined,
+          landscape: options?.landscape || false,
+        },
+        (ok, failureReason) => {
+          if (!ok) console.error('Print failed:', failureReason);
+          resolve(ok);
+        }
+      );
+    });
+
+    return success ? { success: true } : { success: false, error: 'Print cancelled or failed' };
+  } catch (e) {
+    console.error('Failed to print:', e);
+    return { success: false, error: String(e?.message || e) };
+  }
+});
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   // Initialize database
