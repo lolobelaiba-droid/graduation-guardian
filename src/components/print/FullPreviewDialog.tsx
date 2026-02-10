@@ -95,6 +95,7 @@ export function FullPreviewDialog({
     fieldStartY: number;
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
+  const [alignmentGuides, setAlignmentGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
 
   // Resize state for field width
   const [resizeState, setResizeState] = useState<{
@@ -419,8 +420,31 @@ export function FullPreviewDialog({
     newX = Math.max(0, Math.min(width - 10, newX));
     newY = Math.max(0, Math.min(height - 10, newY));
 
+    // Snap threshold in mm
+    const SNAP_THRESHOLD = 1.5;
+    const guidesX: number[] = [];
+    const guidesY: number[] = [];
+
+    // Compare with other visible fields
+    const otherFields = fields.filter(f => f.is_visible && f.id !== dragState.fieldId);
+    for (const other of otherFields) {
+      const otherPos = localFieldPositions[other.id] || { x: other.position_x, y: other.position_y };
+      
+      // Snap X (left edge alignment)
+      if (Math.abs(newX - otherPos.x) < SNAP_THRESHOLD) {
+        newX = otherPos.x;
+        guidesX.push(otherPos.x);
+      }
+      // Snap Y (top edge alignment)
+      if (Math.abs(newY - otherPos.y) < SNAP_THRESHOLD) {
+        newY = otherPos.y;
+        guidesY.push(otherPos.y);
+      }
+    }
+
+    setAlignmentGuides({ x: guidesX, y: guidesY });
     setDragPreview({ x: newX, y: newY });
-  }, [dragState, width, height]);
+  }, [dragState, width, height, fields, localFieldPositions]);
 
   const handleMouseUp = useCallback(() => {
     if (dragState && dragPreview) {
@@ -450,6 +474,7 @@ export function FullPreviewDialog({
     }
     setDragState(null);
     setDragPreview(null);
+    setAlignmentGuides({ x: [], y: [] });
   }, [dragState, dragPreview, fields]);
 
   const handleMouseLeave = useCallback(() => {
@@ -840,6 +865,40 @@ export function FullPreviewDialog({
                     strokeWidth={2}
                     strokeDasharray="10,5"
                   />
+                </svg>
+              )}
+
+              {/* Alignment guides when dragging */}
+              {dragState && (alignmentGuides.x.length > 0 || alignmentGuides.y.length > 0) && (
+                <svg
+                  className="pointer-events-none"
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', zIndex: 20 }}
+                  viewBox={`0 0 ${width * SCALE} ${height * SCALE}`}
+                >
+                  {alignmentGuides.x.map((x, i) => (
+                    <line
+                      key={`ax-${i}`}
+                      x1={x * SCALE}
+                      y1={0}
+                      x2={x * SCALE}
+                      y2={height * SCALE}
+                      stroke="rgba(34, 197, 94, 0.8)"
+                      strokeWidth={1.5}
+                      strokeDasharray="6,3"
+                    />
+                  ))}
+                  {alignmentGuides.y.map((y, i) => (
+                    <line
+                      key={`ay-${i}`}
+                      x1={0}
+                      y1={y * SCALE}
+                      x2={width * SCALE}
+                      y2={y * SCALE}
+                      stroke="rgba(34, 197, 94, 0.8)"
+                      strokeWidth={1.5}
+                      strokeDasharray="6,3"
+                    />
+                  ))}
                 </svg>
               )}
 
