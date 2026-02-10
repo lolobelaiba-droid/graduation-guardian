@@ -1450,14 +1450,18 @@ export default function PrintCertificates() {
                     const commonColor = templateFields.length > 0 && templateFields.every(f => f.font_color === templateFields[0].font_color)
                       ? templateFields[0].font_color || "#000000" : "#000000";
 
+                    const allFontsList = getAllFonts();
                     // Detect if current common font is a bold variant
-                    const isBoldVariant = rawCommonFont ? (rawCommonFont.endsWith('-Bold') || rawCommonFont.includes('-Bold')) : false;
+                    const matchedRawFont = allFontsList.find(f => f.name === rawCommonFont);
+                    const isBoldVariant = matchedRawFont ? matchedRawFont.style === 'bold' : 
+                      (rawCommonFont ? (rawCommonFont.includes('-Bold') || rawCommonFont.includes(' Bold')) : false);
                     const currentStyle = isBoldVariant ? "bold" : "normal";
                     
                     // Normalize font name for the family dropdown (strip bold suffix to match getFontOptions values)
-                    const baseFontFamily = isBoldVariant ? rawCommonFont.replace(/-Bold$/, '') : rawCommonFont;
+                    const baseFontFamily = isBoldVariant 
+                      ? rawCommonFont.replace(/-Bold$/, '').replace(/\s+Bold$/, '') 
+                      : rawCommonFont;
                     // Map to the family value used by getFontOptions - check getAllFonts for the actual family
-                    const allFontsList = getAllFonts();
                     const matchedFont = allFontsList.find(f => f.name === rawCommonFont || f.family === rawCommonFont);
                     const commonFontForDropdown = matchedFont?.family || baseFontFamily;
 
@@ -1561,47 +1565,55 @@ export default function PrintCertificates() {
                       {/* Font Style (Bold) */}
                       <div className="space-y-2">
                         <Label>نمط الخط</Label>
-                        <Select
-                          value={currentStyle}
-                          onValueChange={(v) => {
-                            if (!selectedTemplateId || !commonFontForDropdown) {
-                              toast.error("يرجى اختيار نوع الخط أولاً");
-                              return;
-                            }
-                            const baseFamily = commonFontForDropdown;
-                            
-                            if (v === "bold") {
-                              const boldFont = allFontsList.find((f) => 
-                                f.name === `${baseFamily}-Bold` || 
-                                (f.family === baseFamily && f.style === 'bold')
-                              );
-                              
-                              if (boldFont) {
-                                void applyToAllFields({ font_name: boldFont.name }, "تم تطبيق النمط الغامق على جميع الحقول");
-                              } else {
-                                toast.error(`لا يوجد نمط غامق متاح لخط ${baseFamily}`);
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={currentStyle === 'normal' ? 'default' : 'outline'}
+                            className="h-10 flex-1"
+                            onClick={() => {
+                              if (!selectedTemplateId || !commonFontForDropdown) {
+                                toast.error("يرجى اختيار نوع الخط أولاً");
+                                return;
                               }
-                            } else {
+                              const baseFamily = commonFontForDropdown;
                               const normalFont = allFontsList.find((f) => 
                                 f.family === baseFamily && f.style === 'normal'
                               );
-                              
                               if (normalFont) {
                                 void applyToAllFields({ font_name: normalFont.name }, "تم تطبيق النمط العادي على جميع الحقول");
                               } else {
                                 void applyToAllFields({ font_name: baseFamily }, "تم تطبيق النمط العادي على جميع الحقول");
                               }
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="عادي" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="normal">عادي</SelectItem>
-                            <SelectItem value="bold">غامق</SelectItem>
-                          </SelectContent>
-                        </Select>
+                            }}
+                          >
+                            عادي
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={currentStyle === 'bold' ? 'default' : 'outline'}
+                            className="h-10 flex-1 font-bold"
+                            onClick={() => {
+                              if (!selectedTemplateId || !commonFontForDropdown) {
+                                toast.error("يرجى اختيار نوع الخط أولاً");
+                                return;
+                              }
+                              const baseFamily = commonFontForDropdown;
+                              const boldFont = allFontsList.find((f) => 
+                                f.name === `${baseFamily}-Bold` || 
+                                (f.family === baseFamily && f.style === 'bold')
+                              );
+                              if (boldFont) {
+                                void applyToAllFields({ font_name: boldFont.name }, "تم تطبيق النمط الغامق على جميع الحقول");
+                              } else {
+                                toast.error(`لا يوجد نمط غامق متاح لخط ${baseFamily}`);
+                              }
+                            }}
+                          >
+                            غامق
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     );
