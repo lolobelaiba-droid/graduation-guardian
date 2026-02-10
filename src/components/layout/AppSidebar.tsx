@@ -14,6 +14,7 @@ import {
   X,
   Database,
   StickyNote,
+  FileBarChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
@@ -25,6 +26,7 @@ const menuItems = [
   { title: "طباعة الشهادات", icon: Printer, path: "/print" },
   { title: "إدارة القوالب", icon: FileText, path: "/templates" },
   { title: "الإعدادات", icon: Settings, path: "/settings" },
+  { title: "التقرير السنوي", icon: FileBarChart, path: "/annual-report" },
   { title: "سجل الأنشطة", icon: Activity, path: "/activity" },
   { title: "سجل الملاحظات", icon: StickyNote, path: "/notes" },
 ];
