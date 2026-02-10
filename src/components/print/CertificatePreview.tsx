@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useMemo } from "react";
-import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical, Undo2, Save } from "lucide-react";
+import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, EyeOff, Trash2, GripVertical, Undo2, Save, Grid3X3 } from "lucide-react";
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
@@ -93,6 +93,7 @@ export function CertificatePreview({
 }: CertificatePreviewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
+  const [showGuidelines, setShowGuidelines] = useState(false);
   const [fieldToDelete, setFieldToDelete] = useState<TemplateField | null>(null);
   const [dragState, setDragState] = useState<{
     fieldId: string;
@@ -437,6 +438,16 @@ export function CertificatePreview({
             </Button>
           )}
 
+          <Button
+            variant={showGuidelines ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setShowGuidelines(!showGuidelines)}
+            title={showGuidelines ? "إخفاء الخطوط الإرشادية" : "إظهار الخطوط الإرشادية"}
+          >
+            <Grid3X3 className="h-4 w-4 ml-1" />
+            {showGuidelines ? "إخفاء الشبكة" : "الشبكة"}
+          </Button>
+
           {/* Background offset toggle and controls */}
           {template.background_image_url && onBackgroundOffsetChange && onToggleBackgroundControls && (
             <>
@@ -555,6 +566,7 @@ export function CertificatePreview({
             width: `${width * SCALE}px`,
             height: `${height * SCALE}px`,
             direction: 'ltr',
+            overflow: 'hidden',
           }}
           onMouseMove={(e) => {
             handleMouseMove(e);
@@ -583,8 +595,61 @@ export function CertificatePreview({
             />
           )}
 
-          {/* Grid overlay for positioning help (only when no background) */}
-          {!template.background_image_url && (
+          {/* Guidelines Grid - matches FullPreviewDialog */}
+          {showGuidelines && (
+            <svg
+              className="pointer-events-none"
+              viewBox={`0 0 ${width * SCALE} ${height * SCALE}`}
+              style={{ position: 'absolute', zIndex: 5, top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+            >
+              {/* Grid lines every 10mm */}
+              {Array.from({ length: Math.floor(width / 10) - 1 }, (_, i) => (i + 1) * 10).map(x => (
+                <line
+                  key={`v-${x}`}
+                  x1={x * SCALE}
+                  y1={0}
+                  x2={x * SCALE}
+                  y2={height * SCALE}
+                  stroke="rgba(59, 130, 246, 0.15)"
+                  strokeWidth={1}
+                />
+              ))}
+              {Array.from({ length: Math.floor(height / 10) - 1 }, (_, i) => (i + 1) * 10).map(y => (
+                <line
+                  key={`h-${y}`}
+                  x1={0}
+                  y1={y * SCALE}
+                  x2={width * SCALE}
+                  y2={y * SCALE}
+                  stroke="rgba(59, 130, 246, 0.15)"
+                  strokeWidth={1}
+                />
+              ))}
+              {/* Center vertical line */}
+              <line
+                x1={(width / 2) * SCALE}
+                y1={0}
+                x2={(width / 2) * SCALE}
+                y2={height * SCALE}
+                stroke="rgba(239, 68, 68, 0.6)"
+                strokeWidth={2}
+                strokeDasharray="10,5"
+              />
+              {/* Center horizontal line */}
+              <line
+                x1={0}
+                y1={(height / 2) * SCALE}
+                x2={width * SCALE}
+                y2={(height / 2) * SCALE}
+                stroke="rgba(239, 68, 68, 0.6)"
+                strokeWidth={2}
+                strokeDasharray="10,5"
+              />
+            </svg>
+          )}
+
+          {/* Grid overlay for positioning help (only when no background and no guidelines) */}
+          {!template.background_image_url && !showGuidelines && (
             <div
               className="absolute inset-0 pointer-events-none opacity-10"
               style={{
