@@ -761,7 +761,7 @@ export function FullPreviewDialog({
               style={{
                 width: `${width * SCALE}px`,
                 height: `${height * SCALE}px`,
-                direction: 'ltr',
+                overflow: 'hidden',
               }}
               onMouseMove={(e) => {
                 handleMouseMove(e);
@@ -793,9 +793,9 @@ export function FullPreviewDialog({
               {/* Guidelines Grid */}
               {showGuidelines && (
                 <svg
-                  className="absolute pointer-events-none"
+                  className="pointer-events-none"
                   viewBox={`0 0 ${width * SCALE} ${height * SCALE}`}
-                  style={{ zIndex: 5, top: 0, left: 0, width: `${width * SCALE}px`, height: `${height * SCALE}px`, overflow: 'visible' }}
+                  style={{ position: 'absolute', zIndex: 5, top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
                 >
                   {/* Grid lines every 10mm */}
                   {Array.from({ length: Math.floor(width / 10) - 1 }, (_, i) => (i + 1) * 10).map(x => (
