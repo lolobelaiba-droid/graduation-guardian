@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
-import { FileBarChart, Download, Calendar, Building, BookOpen, Award } from "lucide-react";
+import { FileBarChart, Download, Calendar, Building, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import { Separator } from "@/components/ui/separator";
 import {
   usePhdLmdCertificates,
   usePhdScienceCertificates,
-  useMasterCertificates,
 } from "@/hooks/useCertificates";
 import { certificateTypeLabels } from "@/types/certificates";
 import type { Certificate } from "@/types/certificates";
@@ -26,14 +25,15 @@ export default function AnnualReport() {
 
   const { data: phdLmdData = [], isLoading: l1 } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: l2 } = usePhdScienceCertificates();
-  const { data: masterData = [], isLoading: l3 } = useMasterCertificates();
 
-  const isLoading = l1 || l2 || l3;
+  const isLoading = l1 || l2;
   const allData = useMemo(() => [
     ...phdLmdData.map(s => ({ ...s, _type: "phd_lmd" as const })),
     ...phdScienceData.map(s => ({ ...s, _type: "phd_science" as const })),
-    ...masterData.map(s => ({ ...s, _type: "master" as const })),
-  ], [phdLmdData, phdScienceData, masterData]);
+  ], [phdLmdData, phdScienceData]);
+
+  const [expandFaculty, setExpandFaculty] = useState(false);
+  const [expandSpecialty, setExpandSpecialty] = useState(false);
 
   // Get available years
   const availableYears = useMemo(() => {
@@ -67,15 +67,14 @@ export default function AnnualReport() {
   const byType = useMemo(() => ({
     phd_lmd: yearData.filter(s => s._type === "phd_lmd").length,
     phd_science: yearData.filter(s => s._type === "phd_science").length,
-    master: yearData.filter(s => s._type === "master").length,
   }), [yearData]);
 
   // Stats by faculty
   const byFaculty = useMemo(() => {
-    const map: Record<string, { phd_lmd: number; phd_science: number; master: number; total: number }> = {};
+    const map: Record<string, { phd_lmd: number; phd_science: number; total: number }> = {};
     yearData.forEach(s => {
       const fac = s.faculty_ar || "غير محدد";
-      if (!map[fac]) map[fac] = { phd_lmd: 0, phd_science: 0, master: 0, total: 0 };
+      if (!map[fac]) map[fac] = { phd_lmd: 0, phd_science: 0, total: 0 };
       map[fac][s._type]++;
       map[fac].total++;
     });
@@ -120,7 +119,6 @@ export default function AnnualReport() {
       { "البيان": "إجمالي المناقشات", "العدد": yearData.length },
       { "البيان": certificateTypeLabels.phd_lmd.ar, "العدد": byType.phd_lmd },
       { "البيان": certificateTypeLabels.phd_science.ar, "العدد": byType.phd_science },
-      { "البيان": certificateTypeLabels.master.ar, "العدد": byType.master },
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData), "ملخص");
 
@@ -129,7 +127,6 @@ export default function AnnualReport() {
       "الكلية": fac,
       [certificateTypeLabels.phd_lmd.ar]: counts.phd_lmd,
       [certificateTypeLabels.phd_science.ar]: counts.phd_science,
-      [certificateTypeLabels.master.ar]: counts.master,
       "الإجمالي": counts.total,
     }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(facultyData), "حسب الكلية");
@@ -217,7 +214,7 @@ export default function AnnualReport() {
       ) : (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-3xl font-bold text-primary">{toWesternNumerals(yearData.length)}</div>
@@ -234,12 +231,6 @@ export default function AnnualReport() {
               <CardContent className="p-4 text-center">
                 <div className="text-3xl font-bold text-primary/60">{toWesternNumerals(byType.phd_science)}</div>
                 <p className="text-sm text-muted-foreground mt-1">{certificateTypeLabels.phd_science.ar}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-3xl font-bold text-accent-foreground">{toWesternNumerals(byType.master)}</div>
-                <p className="text-sm text-muted-foreground mt-1">{certificateTypeLabels.master.ar}</p>
               </CardContent>
             </Card>
           </div>
@@ -286,41 +277,44 @@ export default function AnnualReport() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="max-h-[400px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="text-right font-semibold">الكلية</TableHead>
-                        <TableHead className="text-center font-semibold text-xs">د.ل.م.د</TableHead>
-                        <TableHead className="text-center font-semibold text-xs">د.علوم</TableHead>
-                        <TableHead className="text-center font-semibold text-xs">ماجستير</TableHead>
-                        <TableHead className="text-center font-semibold">المجموع</TableHead>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="text-right font-semibold">الكلية</TableHead>
+                      <TableHead className="text-center font-semibold text-xs">د.ل.م.د</TableHead>
+                      <TableHead className="text-center font-semibold text-xs">د.علوم</TableHead>
+                      <TableHead className="text-center font-semibold">المجموع</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(expandFaculty ? byFaculty : byFaculty.slice(0, 2)).map(([fac, counts]) => (
+                      <TableRow key={fac}>
+                        <TableCell className="font-medium text-sm">{fac}</TableCell>
+                        <TableCell className="text-center">{toWesternNumerals(counts.phd_lmd)}</TableCell>
+                        <TableCell className="text-center">{toWesternNumerals(counts.phd_science)}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                            {toWesternNumerals(counts.total)}
+                          </Badge>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {byFaculty.map(([fac, counts]) => (
-                        <TableRow key={fac}>
-                          <TableCell className="font-medium text-sm">{fac}</TableCell>
-                          <TableCell className="text-center">{toWesternNumerals(counts.phd_lmd)}</TableCell>
-                          <TableCell className="text-center">{toWesternNumerals(counts.phd_science)}</TableCell>
-                          <TableCell className="text-center">{toWesternNumerals(counts.master)}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline" className="bg-primary/10 text-primary">
-                              {toWesternNumerals(counts.total)}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {byFaculty.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            لا توجد بيانات للسنة المحددة
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                    {byFaculty.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                          لا توجد بيانات للسنة المحددة
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                {byFaculty.length > 2 && (
+                  <div className="p-2 border-t">
+                    <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={() => setExpandFaculty(!expandFaculty)}>
+                      {expandFaculty ? <><ChevronUp className="h-4 w-4" /> إخفاء</> : <><ChevronDown className="h-4 w-4" /> عرض الكل ({toWesternNumerals(byFaculty.length)})</>}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -334,37 +328,42 @@ export default function AnnualReport() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="max-h-[400px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="text-right font-semibold">التخصص</TableHead>
-                        <TableHead className="text-right font-semibold">الكلية</TableHead>
-                        <TableHead className="text-center font-semibold">العدد</TableHead>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="text-right font-semibold">التخصص</TableHead>
+                      <TableHead className="text-right font-semibold">الكلية</TableHead>
+                      <TableHead className="text-center font-semibold">العدد</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(expandSpecialty ? bySpecialty : bySpecialty.slice(0, 2)).map(([spec, info]) => (
+                      <TableRow key={spec}>
+                        <TableCell className="font-medium text-sm">{spec}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{info.faculty}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                            {toWesternNumerals(info.count)}
+                          </Badge>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {bySpecialty.map(([spec, info]) => (
-                        <TableRow key={spec}>
-                          <TableCell className="font-medium text-sm">{spec}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{info.faculty}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline" className="bg-primary/10 text-primary">
-                              {toWesternNumerals(info.count)}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {bySpecialty.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                            لا توجد بيانات للسنة المحددة
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                    {bySpecialty.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                          لا توجد بيانات للسنة المحددة
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                {bySpecialty.length > 2 && (
+                  <div className="p-2 border-t">
+                    <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={() => setExpandSpecialty(!expandSpecialty)}>
+                      {expandSpecialty ? <><ChevronUp className="h-4 w-4" /> إخفاء</> : <><ChevronDown className="h-4 w-4" /> عرض الكل ({toWesternNumerals(bySpecialty.length)})</>}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
