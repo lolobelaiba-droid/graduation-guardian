@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2, MoveHorizontal, MoveVertical, Link, Unlink } from "lucide-react";
+import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2, MoveHorizontal, MoveVertical, Link, Unlink, Grid3X3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -80,6 +80,7 @@ export function FullPreviewDialog({
   const [hasBackgroundChanges, setHasBackgroundChanges] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [showFieldControls, setShowFieldControls] = useState(true);
+  const [showGuidelines, setShowGuidelines] = useState(false);
   
   // Track field changes for undo
   const [fieldChanges, setFieldChanges] = useState<FieldChange[]>([]);
@@ -551,6 +552,19 @@ export function FullPreviewDialog({
         <div className="flex flex-1 overflow-hidden">
           {/* Controls Sidebar */}
           <div className="w-64 border-l bg-muted/20 p-3 space-y-5 overflow-y-auto flex-shrink-0">
+            {/* Guidelines Toggle */}
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-sm">خطوط إرشادية</h4>
+              <Button
+                variant={showGuidelines ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setShowGuidelines(!showGuidelines)}
+              >
+                <Grid3X3 className="h-4 w-4 ml-1" />
+                {showGuidelines ? "مفعّل" : "معطّل"}
+              </Button>
+            </div>
+
             {/* Field Controls Toggle */}
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-sm">تحريك الحقول</h4>
@@ -774,6 +788,59 @@ export function FullPreviewDialog({
                     top: `${(100 - scaleY) / 2}%`,
                   }}
                 />
+              )}
+
+              {/* Guidelines Grid */}
+              {showGuidelines && (
+                <svg
+                  className="absolute inset-0 pointer-events-none"
+                  width={width * SCALE}
+                  height={height * SCALE}
+                  style={{ zIndex: 1 }}
+                >
+                  {/* Grid lines every 10mm */}
+                  {Array.from({ length: Math.floor(width / 10) }, (_, i) => (i + 1) * 10).map(x => (
+                    <line
+                      key={`v-${x}`}
+                      x1={x * SCALE}
+                      y1={0}
+                      x2={x * SCALE}
+                      y2={height * SCALE}
+                      stroke="rgba(59, 130, 246, 0.15)"
+                      strokeWidth={1}
+                    />
+                  ))}
+                  {Array.from({ length: Math.floor(height / 10) }, (_, i) => (i + 1) * 10).map(y => (
+                    <line
+                      key={`h-${y}`}
+                      x1={0}
+                      y1={y * SCALE}
+                      x2={width * SCALE}
+                      y2={y * SCALE}
+                      stroke="rgba(59, 130, 246, 0.15)"
+                      strokeWidth={1}
+                    />
+                  ))}
+                  {/* Center lines */}
+                  <line
+                    x1={(width / 2) * SCALE}
+                    y1={0}
+                    x2={(width / 2) * SCALE}
+                    y2={height * SCALE}
+                    stroke="rgba(239, 68, 68, 0.4)"
+                    strokeWidth={1.5}
+                    strokeDasharray="8,4"
+                  />
+                  <line
+                    x1={0}
+                    y1={(height / 2) * SCALE}
+                    x2={width * SCALE}
+                    y2={(height / 2) * SCALE}
+                    stroke="rgba(239, 68, 68, 0.4)"
+                    strokeWidth={1.5}
+                    strokeDasharray="8,4"
+                  />
+                </svg>
               )}
 
               {/* Fields */}
