@@ -81,8 +81,11 @@ const phdLmdSchema = baseSchema.extend({
   research_lab_ar: z.string().min(1, "مخبر البحث مطلوب"),
 });
 
-// PhD Science schema
-const phdScienceSchema = baseSchema;
+// PhD Science schema (now includes field)
+const phdScienceSchema = baseSchema.extend({
+  field_ar: z.string().min(1, "الميدان مطلوب"),
+  field_fr: z.string().optional().nullable(),
+});
 
 interface AddPhdStudentDialogProps {
   open: boolean;
@@ -297,7 +300,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
     }
   };
 
-  const showFieldField = selectedType === 'phd_lmd';
+  const showFieldField = selectedType === 'phd_lmd' || selectedType === 'phd_science';
   const isResearchLabRequired = selectedType === 'phd_lmd';
 
   return (

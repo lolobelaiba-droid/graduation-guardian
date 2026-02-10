@@ -39,7 +39,7 @@ function SectionHeader({ title }: { title: string }) {
 export function ViewPhdStudentDialog({ open, onOpenChange, student, studentType }: ViewPhdStudentDialogProps) {
   if (!student) return null;
 
-  const showFieldField = studentType === 'phd_lmd';
+  const showFieldField = studentType === 'phd_lmd' || studentType === 'phd_science';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
