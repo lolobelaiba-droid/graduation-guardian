@@ -133,6 +133,8 @@ export function PrintableCSS({
         backgroundColor: 'white',
         margin: 0,
         padding: 0,
+        direction: 'ltr',
+        boxSizing: 'border-box',
       }}
     >
       {/* Background image */}
@@ -180,7 +182,7 @@ export function PrintableCSS({
               whiteSpace: hasWidth ? 'normal' : 'nowrap',
               wordWrap: hasWidth ? 'break-word' : undefined,
               width: hasWidth ? `${field.field_width}mm` : undefined,
-              lineHeight: hasWidth ? '1.4' : '1.2',
+              lineHeight: hasWidth ? '1.4' : undefined,
               margin: 0,
               padding: 0,
             }}
