@@ -107,22 +107,45 @@ export function useCssPrint() {
   }, []);
 
   const print = useCallback((options: CssPrintOptions): Promise<void> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       // Inject the dynamic print styles
       injectPrintStyles(options);
 
       // Small delay to ensure styles are applied
       requestAnimationFrame(() => {
-        // Listen for after-print to clean up
-        const cleanup = () => {
-          removePrintStyles();
-          window.removeEventListener('afterprint', cleanup);
-          resolve();
-        };
-        window.addEventListener('afterprint', cleanup);
+        const isElectronEnv = !!(window as unknown as { electronAPI?: { printNative?: unknown } }).electronAPI?.printNative;
 
-        // Trigger native print dialog
-        window.print();
+        if (isElectronEnv) {
+          // Use Electron's webContents.print() via IPC for proper print dialog
+          const electronAPI = (window as unknown as { electronAPI: { printNative: (opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
+          // Convert mm to microns (1mm = 1000 microns) for Electron's pageSize
+          electronAPI.printNative({
+            pageSize: {
+              width: options.widthMm * 1000,
+              height: options.heightMm * 1000,
+            },
+            landscape: options.orientation === 'landscape',
+          }).then((result) => {
+            removePrintStyles();
+            if (result.success) {
+              resolve();
+            } else {
+              reject(new Error(result.error || 'Print failed'));
+            }
+          }).catch((err) => {
+            removePrintStyles();
+            reject(err);
+          });
+        } else {
+          // Web: use window.print() with afterprint cleanup
+          const cleanup = () => {
+            removePrintStyles();
+            window.removeEventListener('afterprint', cleanup);
+            resolve();
+          };
+          window.addEventListener('afterprint', cleanup);
+          window.print();
+        }
       });
     });
   }, [injectPrintStyles, removePrintStyles]);
