@@ -787,6 +787,7 @@ export function FullPreviewDialog({
                 width: `${width * SCALE}px`,
                 height: `${height * SCALE}px`,
                 overflow: 'hidden',
+                direction: 'ltr',
               }}
               onMouseMove={(e) => {
                 handleMouseMove(e);
