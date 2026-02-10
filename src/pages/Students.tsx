@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 import {
   Search,
@@ -10,6 +10,8 @@ import {
   Loader2,
   Printer,
   UserPlus,
+  Filter,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,7 @@ import {
   useDeleteMasterCertificate,
 } from "@/hooks/useCertificates";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { CertificateType, MentionType, Certificate } from "@/types/certificates";
 import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
 import StudentDetailsDialog from "@/components/students/StudentDetailsDialog";
@@ -69,6 +72,13 @@ export default function Students() {
   // Add Master student dialog state
   const [addMasterDialogOpen, setAddMasterDialogOpen] = useState(false);
 
+  // Advanced filters state
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterFaculty, setFilterFaculty] = useState<string>("all");
+  const [filterSpecialty, setFilterSpecialty] = useState<string>("all");
+  const [filterSupervisor, setFilterSupervisor] = useState<string>("all");
+  const [filterYear, setFilterYear] = useState<string>("all");
+
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdCertificates();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceCertificates();
   const { data: masterData = [], isLoading: loadingMaster } = useMasterCertificates();
@@ -89,14 +99,42 @@ export default function Students() {
   const isLoading = loadingPhdLmd || loadingPhdScience || loadingMaster;
   const currentData = getCurrentData();
 
+  // Extract unique filter options from current data
+  const filterOptions = useMemo(() => {
+    const faculties = [...new Set(currentData.map(s => s.faculty_ar).filter(Boolean))].sort();
+    const specialties = [...new Set(currentData.map(s => s.specialty_ar).filter(Boolean))].sort();
+    const supervisors = [...new Set(currentData.map(s => (s as any).supervisor_ar).filter(Boolean))].sort();
+    const years = [...new Set(currentData.map(s => {
+      if (!s.defense_date) return null;
+      return s.defense_date.substring(0, 4);
+    }).filter(Boolean) as string[])].sort().reverse();
+    return { faculties, specialties, supervisors, years };
+  }, [currentData]);
+
+  const isPhdType = selectedCertType === 'phd_lmd' || selectedCertType === 'phd_science';
+
   const filteredStudents = currentData.filter((student) => {
     const matchesSearch =
       student.full_name_ar.includes(searchQuery) ||
       student.student_number.includes(searchQuery) ||
       (student.full_name_fr?.includes(searchQuery) ?? false);
 
-    return matchesSearch;
+    const matchesFaculty = filterFaculty === "all" || student.faculty_ar === filterFaculty;
+    const matchesSpecialty = filterSpecialty === "all" || student.specialty_ar === filterSpecialty;
+    const matchesSupervisor = filterSupervisor === "all" || (student as any).supervisor_ar === filterSupervisor;
+    const matchesYear = filterYear === "all" || (student.defense_date && student.defense_date.startsWith(filterYear));
+
+    return matchesSearch && matchesFaculty && matchesSpecialty && matchesSupervisor && matchesYear;
   });
+
+  const activeFiltersCount = [filterFaculty, filterSpecialty, filterSupervisor, filterYear].filter(v => v !== "all").length;
+
+  const clearAllFilters = () => {
+    setFilterFaculty("all");
+    setFilterSpecialty("all");
+    setFilterSupervisor("all");
+    setFilterYear("all");
+  };
 
   const handleDeleteClick = (student: Certificate, type: CertificateType) => {
     setStudentToDelete(student);
@@ -193,8 +231,6 @@ export default function Students() {
     toast.success(`تم تصدير ${toWesternNumerals(currentData.length)} طالب`);
   };
 
-  // Check if the current type is PhD (not master) to show the create from database button
-  const isPhdType = selectedCertType === 'phd_lmd' || selectedCertType === 'phd_science';
   const isMasterType = selectedCertType === 'master';
 
   return (
@@ -237,8 +273,8 @@ export default function Students() {
 
         <TabsContent value={selectedCertType} className="mt-6">
           {/* Filters */}
-          <div className="bg-card rounded-2xl shadow-card p-4 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
+          <div className="bg-card rounded-2xl shadow-card p-4 mb-6 space-y-3">
+            <div className="flex flex-col md:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -248,7 +284,90 @@ export default function Students() {
                   className="pr-10"
                 />
               </div>
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                size="sm"
+                className="gap-2 shrink-0"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4" />
+                فلترة متقدمة
+                {activeFiltersCount > 0 && (
+                  <Badge variant="secondary" className="mr-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    {toWesternNumerals(activeFiltersCount)}
+                  </Badge>
+                )}
+              </Button>
+              {activeFiltersCount > 0 && (
+                <Button variant="ghost" size="sm" className="gap-1 text-destructive shrink-0" onClick={clearAllFilters}>
+                  <X className="h-4 w-4" />
+                  مسح الفلاتر
+                </Button>
+              )}
             </div>
+            
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-border">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">الكلية</label>
+                  <Select value={filterFaculty} onValueChange={setFilterFaculty}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="الكل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      {filterOptions.faculties.map(f => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">التخصص</label>
+                  <Select value={filterSpecialty} onValueChange={setFilterSpecialty}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="الكل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      {filterOptions.specialties.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isPhdType && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">المشرف</label>
+                    <Select value={filterSupervisor} onValueChange={setFilterSupervisor}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="الكل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">الكل</SelectItem>
+                        {filterOptions.supervisors.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">سنة المناقشة</label>
+                  <Select value={filterYear} onValueChange={setFilterYear}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="الكل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      {filterOptions.years.map(y => (
+                        <SelectItem key={y} value={y}>{toWesternNumerals(y)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Table */}
