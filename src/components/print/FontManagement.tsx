@@ -22,6 +22,8 @@ interface ParsedFontInfo {
   fontName: string;
   fontFamily: string;
   isArabic: boolean;
+  fontStyle: 'normal' | 'bold' | 'italic';
+  fontWeight: 'normal' | 'bold';
 }
 
 /**
@@ -42,8 +44,10 @@ async function parseFontFile(file: File): Promise<ParsedFontInfo> {
         
         let nameTableOffset = 0;
         let nameTableLength = 0;
+        let os2TableOffset = 0;
+        let headTableOffset = 0;
         
-        // Find 'name' table
+        // Find 'name', 'OS/2', and 'head' tables
         for (let i = 0; i < numTables; i++) {
           const tableOffset = 12 + i * 16;
           const tag = String.fromCharCode(
@@ -56,17 +60,43 @@ async function parseFontFile(file: File): Promise<ParsedFontInfo> {
           if (tag === 'name') {
             nameTableOffset = data.getUint32(tableOffset + 8);
             nameTableLength = data.getUint32(tableOffset + 12);
-            break;
+          } else if (tag === 'OS/2') {
+            os2TableOffset = data.getUint32(tableOffset + 8);
+          } else if (tag === 'head') {
+            headTableOffset = data.getUint32(tableOffset + 8);
           }
         }
         
+        // Detect bold/italic from OS/2 table (fsSelection field at offset 62)
+        let isBoldFromTable = false;
+        let isItalicFromTable = false;
+        
+        if (os2TableOffset > 0) {
+          try {
+            const fsSelection = data.getUint16(os2TableOffset + 62);
+            isBoldFromTable = !!(fsSelection & 0x0020); // bit 5 = BOLD
+            isItalicFromTable = !!(fsSelection & 0x0001); // bit 0 = ITALIC
+          } catch { /* ignore */ }
+        }
+        
+        // Fallback: detect from head table (macStyle at offset 44)
+        if (!isBoldFromTable && !isItalicFromTable && headTableOffset > 0) {
+          try {
+            const macStyle = data.getUint16(headTableOffset + 44);
+            isBoldFromTable = !!(macStyle & 0x0001); // bit 0 = Bold
+            isItalicFromTable = !!(macStyle & 0x0002); // bit 1 = Italic
+          } catch { /* ignore */ }
+        }
+        
         if (nameTableOffset === 0) {
-          // Fallback to filename
           const baseName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
+          const isBoldByName = /bold|عريض/i.test(baseName);
           resolve({
             fontName: baseName,
             fontFamily: baseName.replace(/[-_\s]+/g, ''),
-            isArabic: false
+            isArabic: false,
+            fontStyle: isBoldByName || isBoldFromTable ? 'bold' : 'normal',
+            fontWeight: isBoldByName || isBoldFromTable ? 'bold' : 'normal',
           });
           return;
         }
@@ -78,6 +108,7 @@ async function parseFontFile(file: File): Promise<ParsedFontInfo> {
         
         let fontFamily = '';
         let fontName = '';
+        let fontSubfamily = ''; // nameID 2 = Font Subfamily (Regular, Bold, Italic, etc.)
         let hasArabicGlyphs = false;
         
         for (let i = 0; i < count; i++) {
@@ -89,8 +120,8 @@ async function parseFontFile(file: File): Promise<ParsedFontInfo> {
           const length = data.getUint16(recordOffset + 8);
           const offset = data.getUint16(recordOffset + 10);
           
-          // nameID 1 = Font Family, nameID 4 = Full Font Name
-          if (nameID === 1 || nameID === 4) {
+          // nameID 1 = Font Family, nameID 2 = Subfamily, nameID 4 = Full Font Name
+          if (nameID === 1 || nameID === 2 || nameID === 4) {
             const stringStart = nameTableOffset + stringOffset + offset;
             let str = '';
             
@@ -117,6 +148,9 @@ async function parseFontFile(file: File): Promise<ParsedFontInfo> {
             if (str && nameID === 1 && !fontFamily) {
               fontFamily = str;
             }
+            if (str && nameID === 2 && !fontSubfamily) {
+              fontSubfamily = str;
+            }
             if (str && nameID === 4 && !fontName) {
               fontName = str;
             }
@@ -134,6 +168,15 @@ async function parseFontFile(file: File): Promise<ParsedFontInfo> {
         if (!fontName) fontName = fontFamily;
         if (!fontFamily) fontFamily = fontName.replace(/[-_\s]+/g, '');
         
+        // Detect bold/italic from subfamily name or font name
+        const isBoldByName = /bold|عريض|gras|heavy|black/i.test(fontSubfamily) || 
+                             /bold|عريض/i.test(fontName);
+        const isItalicByName = /italic|oblique|مائل/i.test(fontSubfamily) || 
+                               /italic|oblique/i.test(fontName);
+        
+        const isBold = isBoldFromTable || isBoldByName;
+        const isItalic = isItalicFromTable || isItalicByName;
+        
         // Detect Arabic fonts by common naming patterns
         const arabicPatterns = /arabic|عربي|naskh|kufi|majalla|amiri|cairo|tajawal|noto.*arab|scheherazade|lateef|harmattan/i;
         const isArabicByName = arabicPatterns.test(fontName) || arabicPatterns.test(fontFamily);
@@ -141,26 +184,34 @@ async function parseFontFile(file: File): Promise<ParsedFontInfo> {
         resolve({
           fontName,
           fontFamily: fontFamily.replace(/\s+/g, ''),
-          isArabic: hasArabicGlyphs || isArabicByName
+          isArabic: hasArabicGlyphs || isArabicByName,
+          fontStyle: isBold ? 'bold' : isItalic ? 'italic' : 'normal',
+          fontWeight: isBold ? 'bold' : 'normal',
         });
         
       } catch (error) {
         // Fallback to filename
         const baseName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
+        const isBoldByName = /bold|عريض/i.test(baseName);
         resolve({
           fontName: baseName,
           fontFamily: baseName.replace(/[-_\s]+/g, ''),
-          isArabic: false
+          isArabic: false,
+          fontStyle: isBoldByName ? 'bold' : 'normal',
+          fontWeight: isBoldByName ? 'bold' : 'normal',
         });
       }
     };
     
     reader.onerror = () => {
       const baseName = file.name.replace(/\.(ttf|otf|woff|woff2)$/i, '');
+      const isBoldByName = /bold|عريض/i.test(baseName);
       resolve({
         fontName: baseName,
         fontFamily: baseName.replace(/[-_\s]+/g, ''),
-        isArabic: false
+        isArabic: false,
+        fontStyle: isBoldByName ? 'bold' : 'normal',
+        fontWeight: isBoldByName ? 'bold' : 'normal',
       });
     };
     
@@ -272,16 +323,23 @@ export function FontManagement() {
       // Use override if set, otherwise use parsed value
       const isArabic = isArabicOverride !== null ? isArabicOverride : parsedFont.isArabic;
 
+      // For bold/italic variants, ensure the font_name includes a style suffix
+      // so the style lookup system can find bold variants by name pattern
+      let saveFontName = parsedFont.fontName;
+      if (parsedFont.fontStyle === 'bold' && !saveFontName.includes('Bold') && !saveFontName.includes('عريض')) {
+        saveFontName = `${parsedFont.fontName} Bold`;
+      }
+
       // Save to database
       const { error: dbError } = await supabase
         .from("custom_fonts")
         .insert({
-          font_name: parsedFont.fontName,
+          font_name: saveFontName,
           font_family: parsedFont.fontFamily,
           font_url: urlData.publicUrl,
           is_arabic: isArabic,
-          font_weight: "normal",
-          font_style: "normal",
+          font_weight: parsedFont.fontWeight,
+          font_style: parsedFont.fontStyle,
         });
 
       if (dbError) throw dbError;
@@ -356,7 +414,7 @@ export function FontManagement() {
                 <span className="font-medium">تم قراءة معلومات الخط</span>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">اسم الخط:</span>
                   <p className="font-medium">{parsedFont.fontName}</p>
@@ -364,6 +422,12 @@ export function FontManagement() {
                 <div>
                   <span className="text-muted-foreground">اسم العائلة:</span>
                   <p className="font-medium font-mono">{parsedFont.fontFamily}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">النمط:</span>
+                  <p className="font-medium">
+                    {parsedFont.fontStyle === 'bold' ? 'غامق (Bold)' : parsedFont.fontStyle === 'italic' ? 'مائل (Italic)' : 'عادي (Regular)'}
+                  </p>
                 </div>
               </div>
               
