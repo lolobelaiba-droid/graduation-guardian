@@ -1655,7 +1655,8 @@ export default function PrintCertificates() {
         if (!currentTemplate) return null;
         const dims = getTemplatePaperDimensions(currentTemplate);
         return (
-          <div 
+          <div
+            id="printable-certificate-wrapper"
             aria-hidden="true"
             style={{ 
               position: 'absolute', 

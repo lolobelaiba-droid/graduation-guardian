@@ -39,10 +39,25 @@ export function useCssPrint() {
           overflow: hidden !important;
         }
 
-        /* Make the printable certificate's ancestor wrapper visible */
+        /* Override the hidden wrapper so the certificate can escape */
+        #printable-certificate-wrapper {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: ${options.widthMm}mm !important;
+          height: ${options.heightMm}mm !important;
+          overflow: visible !important;
+          clip: auto !important;
+          clip-path: none !important;
+          white-space: normal !important;
+          z-index: 999999 !important;
+          visibility: visible !important;
+        }
+
+        /* Make the printable certificate visible */
         #printable-certificate {
           visibility: visible !important;
-          position: fixed !important;
+          position: relative !important;
           left: 0 !important;
           top: 0 !important;
           width: ${options.widthMm}mm !important;
@@ -52,7 +67,6 @@ export function useCssPrint() {
           z-index: 999999 !important;
           background: white !important;
           overflow: hidden !important;
-          clip: auto !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
           color-adjust: exact !important;
@@ -61,11 +75,6 @@ export function useCssPrint() {
         /* Ensure all children of the printable certificate are visible */
         #printable-certificate * {
           visibility: visible !important;
-        }
-
-        /* Override the parent wrapper's clip/overflow hiding */
-        #printable-certificate:is(*) {
-          clip-path: none !important;
         }
 
         /* Ensure images print with correct colors */
