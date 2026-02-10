@@ -793,13 +793,12 @@ export function FullPreviewDialog({
               {/* Guidelines Grid */}
               {showGuidelines && (
                 <svg
-                  className="absolute inset-0 pointer-events-none"
-                  width={width * SCALE}
-                  height={height * SCALE}
-                  style={{ zIndex: 1 }}
+                  className="absolute pointer-events-none"
+                  viewBox={`0 0 ${width * SCALE} ${height * SCALE}`}
+                  style={{ zIndex: 5, top: 0, left: 0, width: `${width * SCALE}px`, height: `${height * SCALE}px`, overflow: 'visible' }}
                 >
                   {/* Grid lines every 10mm */}
-                  {Array.from({ length: Math.floor(width / 10) }, (_, i) => (i + 1) * 10).map(x => (
+                  {Array.from({ length: Math.floor(width / 10) - 1 }, (_, i) => (i + 1) * 10).map(x => (
                     <line
                       key={`v-${x}`}
                       x1={x * SCALE}
@@ -810,7 +809,7 @@ export function FullPreviewDialog({
                       strokeWidth={1}
                     />
                   ))}
-                  {Array.from({ length: Math.floor(height / 10) }, (_, i) => (i + 1) * 10).map(y => (
+                  {Array.from({ length: Math.floor(height / 10) - 1 }, (_, i) => (i + 1) * 10).map(y => (
                     <line
                       key={`h-${y}`}
                       x1={0}
@@ -821,24 +820,25 @@ export function FullPreviewDialog({
                       strokeWidth={1}
                     />
                   ))}
-                  {/* Center lines */}
+                  {/* Center vertical line */}
                   <line
                     x1={(width / 2) * SCALE}
                     y1={0}
                     x2={(width / 2) * SCALE}
                     y2={height * SCALE}
-                    stroke="rgba(239, 68, 68, 0.4)"
-                    strokeWidth={1.5}
-                    strokeDasharray="8,4"
+                    stroke="rgba(239, 68, 68, 0.6)"
+                    strokeWidth={2}
+                    strokeDasharray="10,5"
                   />
+                  {/* Center horizontal line */}
                   <line
                     x1={0}
                     y1={(height / 2) * SCALE}
                     x2={width * SCALE}
                     y2={(height / 2) * SCALE}
-                    stroke="rgba(239, 68, 68, 0.4)"
-                    strokeWidth={1.5}
-                    strokeDasharray="8,4"
+                    stroke="rgba(239, 68, 68, 0.6)"
+                    strokeWidth={2}
+                    strokeDasharray="10,5"
                   />
                 </svg>
               )}
