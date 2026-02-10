@@ -32,12 +32,12 @@ export function useCssPrint() {
           margin: 0;
         }
 
-        /* Hide EVERYTHING on the page first */
-        *, *::before, *::after {
+        /* Hide everything */
+        body * {
           visibility: hidden !important;
         }
 
-        /* Completely remove non-print elements from flow */
+        /* Remove non-print elements from flow entirely */
         [data-print-hide] {
           display: none !important;
         }
@@ -45,30 +45,28 @@ export function useCssPrint() {
         body, html {
           margin: 0 !important;
           padding: 0 !important;
-          overflow: hidden !important;
+          overflow: visible !important;
           background: white !important;
           box-shadow: none !important;
         }
 
-        /* Override the hidden wrapper so the certificate can escape */
+        /* Show printable wrapper and all its descendants */
         #printable-certificate-wrapper,
-        #printable-certificate-wrapper *,
-        #printable-certificate,
-        #printable-certificate * {
+        #printable-certificate-wrapper * {
           visibility: visible !important;
         }
 
         #printable-certificate-wrapper {
+          display: block !important;
           position: fixed !important;
           left: 0 !important;
           top: 0 !important;
           width: ${options.widthMm}mm !important;
           height: ${options.heightMm}mm !important;
-          overflow: visible !important;
-          clip: auto !important;
-          clip-path: none !important;
-          white-space: normal !important;
           z-index: 999999 !important;
+          background: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
 
         #printable-certificate {
