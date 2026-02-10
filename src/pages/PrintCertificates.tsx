@@ -493,7 +493,7 @@ export default function PrintCertificates() {
   // Helper: Get template paper dimensions in mm
   const getTemplatePaperDimensions = (tmpl: typeof templates[0]) => {
     // First try template-specific print settings
-    const paperSize = tmpl.print_paper_size || tmpl.page_size || 'a4';
+    const paperSize = (tmpl.print_paper_size || tmpl.page_size || 'a4').toLowerCase();
     let width: number;
     let height: number;
 
