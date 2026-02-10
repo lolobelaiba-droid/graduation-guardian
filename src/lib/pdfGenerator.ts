@@ -440,23 +440,19 @@ function renderArabicDateFieldSplit(
   const dayWidth = doc.getTextWidth(day);
   const spaceWidth = doc.getTextWidth(' ');
   
-  // For RTL: Start from the right position and render right-to-left
-  // Visual order should be: DAY MONTH YEAR (reading right to left)
-  // So we render: YEAR first (leftmost), then MONTH, then DAY (rightmost)
-  const startX = field.position_x;
+  // In the preview (CSS), position_x is the LEFT edge of the element.
+  // For RTL visual order (day month year reading right-to-left),
+  // we render left-to-right in PDF: YEAR MONTH DAY
+  // starting from position_x (left edge).
   const y = field.position_y;
+  let currentX = field.position_x;
   
-  // Render from right to left (day is rightmost)
-  // Day (rightmost - at startX, aligned right)
-  doc.text(day, startX, y, { align: 'right' });
-  
-  // Month (to the left of day)
-  const monthX = startX - dayWidth - spaceWidth;
-  doc.text(shapedMonth, monthX, y, { align: 'right' });
-  
-  // Year (leftmost)
-  const yearX = monthX - monthWidth - spaceWidth;
-  doc.text(year, yearX, y, { align: 'right' });
+  // Render left to right: year, space, month, space, day
+  doc.text(year, currentX, y, { align: 'left' });
+  currentX += yearWidth + spaceWidth;
+  doc.text(shapedMonth, currentX, y, { align: 'left' });
+  currentX += monthWidth + spaceWidth;
+  doc.text(day, currentX, y, { align: 'left' });
   
   logger.log(`[PDF Render] Arabic date split: day=${day}, month=${monthName}, year=${year}`);
 }
@@ -499,28 +495,24 @@ function renderCertificateNumberSplit(
     return trimmed;
   });
   
-  const startX = field.position_x;
+  // In the preview (CSS), position_x is the LEFT edge.
+  // For RTL visual order, we render parts left-to-right in PDF
+  // so the visual result matches the preview.
   const y = field.position_y;
+  let currentX = field.position_x;
   const slashWidth = doc.getTextWidth('/');
   
-  // For RTL rendering, we render from right to left
-  // The rightmost part should be at startX
-  let currentX = startX;
-  
-  for (let i = 0; i < processedParts.length; i++) {
+  // Render parts in reverse order (last part first = leftmost in RTL visual)
+  for (let i = processedParts.length - 1; i >= 0; i--) {
     const part = processedParts[i];
     
-    // Render the part
-    doc.text(part, currentX, y, { align: 'right' });
-    
-    // Move left for the next part
+    doc.text(part, currentX, y, { align: 'left' });
     const partWidth = doc.getTextWidth(part);
-    currentX = currentX - partWidth;
+    currentX += partWidth;
     
-    // Add slash between parts (except after the last one)
-    if (i < processedParts.length - 1) {
-      doc.text('/', currentX, y, { align: 'right' });
-      currentX = currentX - slashWidth;
+    if (i > 0) {
+      doc.text('/', currentX, y, { align: 'left' });
+      currentX += slashWidth;
     }
   }
   
@@ -628,8 +620,22 @@ function renderField(
     logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}, Width: ${field.field_width}mm, Lines: ${lines.length}, X: ${textX}`);
   } else {
     // Render text as single line
-    doc.text(processed.text, field.position_x, field.position_y, { align });
-    logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}`);
+    // In the preview (CSS), position_x is always the LEFT edge of the element.
+    // For fields without field_width, we must match this behavior in PDF.
+    // With jsPDF align='right', x is the RIGHT edge, so we need to calculate text width.
+    // With align='left', x is the LEFT edge (matches preview).
+    // With align='center', x is the center point.
+    let textX = field.position_x;
+    if (align === 'right') {
+      // Measure text width and offset so right edge aligns correctly
+      const textWidth = doc.getTextWidth(processed.text);
+      textX = field.position_x + textWidth;
+    } else if (align === 'center') {
+      const textWidth = doc.getTextWidth(processed.text);
+      textX = field.position_x + textWidth / 2;
+    }
+    doc.text(processed.text, textX, field.position_y, { align });
+    logger.log(`[PDF Render] Field: ${field.field_key}, Lang: ${language}, Align: ${align}, X: ${textX}`);
   }
 }
 
