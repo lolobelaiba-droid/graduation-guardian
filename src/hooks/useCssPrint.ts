@@ -37,6 +37,11 @@ export function useCssPrint() {
           visibility: hidden !important;
         }
 
+        /* Completely remove non-print elements from flow */
+        [data-print-hide] {
+          display: none !important;
+        }
+
         body, html {
           margin: 0 !important;
           padding: 0 !important;

@@ -898,7 +898,7 @@ export default function PrintCertificates() {
       </Card>
 
       {/* Preview - Full height */}
-      <Card className="flex-1">
+      <Card className="flex-1" data-print-hide>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
