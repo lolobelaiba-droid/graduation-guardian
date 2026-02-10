@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Plus, Printer, Eye, Settings2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Type, Fullscreen, Search, Clock, FileType, User, Hash, BookOpen, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1647,17 +1648,12 @@ export default function PrintCertificates() {
         const currentTemplate = templates.find(t => t.id === selectedTemplateId);
         if (!currentTemplate) return null;
         const dims = getTemplatePaperDimensions(currentTemplate);
-        return (
+        return createPortal(
           <div
             id="printable-certificate-wrapper"
             aria-hidden="true"
+            className="hidden print:!block"
             style={{ 
-              position: 'absolute', 
-              width: '1px',
-              height: '1px',
-              overflow: 'hidden',
-              clip: 'rect(0, 0, 0, 0)',
-              whiteSpace: 'nowrap',
               pointerEvents: 'none',
             }}
           >
@@ -1674,7 +1670,8 @@ export default function PrintCertificates() {
               backgroundScaleY={backgroundScaleY}
               dateFormatSettings={dateFormatSettings}
             />
-          </div>
+          </div>,
+          document.body
         );
       })()}
     </div>
