@@ -1,23 +1,20 @@
 import { useState, useMemo } from "react";
-import * as XLSX from "xlsx";
-import { FileBarChart, Download, Calendar, Building, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { FileBarChart, Calendar, Building, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import {
   usePhdLmdCertificates,
   usePhdScienceCertificates,
 } from "@/hooks/useCertificates";
 import { certificateTypeLabels } from "@/types/certificates";
-import type { Certificate } from "@/types/certificates";
 import { toWesternNumerals } from "@/lib/numerals";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import ExportPdfDialog from "@/components/annual-report/ExportPdfDialog";
+import { extractStartYear } from "@/lib/registration-calculation";
 
 export default function AnnualReport() {
   const [selectedYear, setSelectedYear] = useState<string>("all");
@@ -107,51 +104,6 @@ export default function AnnualReport() {
 
   const monthNames = ["جانفي", "فيفري", "مارس", "أفريل", "ماي", "جوان", "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
-  const handleExportReport = () => {
-    if (yearData.length === 0) {
-      toast.error("لا توجد بيانات للتصدير");
-      return;
-    }
-
-    const wb = XLSX.utils.book_new();
-
-    // Sheet 1: Summary
-    const summaryData = [
-      { "البيان": "إجمالي المناقشات", "العدد": yearData.length },
-      { "البيان": certificateTypeLabels.phd_lmd.ar, "العدد": byType.phd_lmd },
-      { "البيان": certificateTypeLabels.phd_science.ar, "العدد": byType.phd_science },
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData), "ملخص");
-
-    // Sheet 2: By Faculty
-    const facultyData = byFaculty.map(([fac, counts]) => ({
-      "الكلية": fac,
-      [certificateTypeLabels.phd_lmd.ar]: counts.phd_lmd,
-      [certificateTypeLabels.phd_science.ar]: counts.phd_science,
-      "الإجمالي": counts.total,
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(facultyData), "حسب الكلية");
-
-    // Sheet 3: By Specialty
-    const specData = bySpecialty.map(([spec, info]) => ({
-      "التخصص": spec,
-      "الكلية": info.faculty,
-      "العدد": info.count,
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(specData), "حسب التخصص");
-
-    // Sheet 4: Monthly
-    const monthlyData = monthNames.map((name, i) => ({
-      "الشهر": name,
-      "عدد المناقشات": byMonth[i],
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyData), "التوزيع الشهري");
-
-    const yearLabel = selectedYear === "all" ? "كل_السنوات" : selectedYear;
-    XLSX.writeFile(wb, `تقرير_سنوي_${yearLabel}.xlsx`);
-    toast.success("تم تصدير التقرير بنجاح");
-  };
-
   const maxMonthly = Math.max(...byMonth, 1);
 
   return (
@@ -201,10 +153,6 @@ export default function AnnualReport() {
               مسح الفترة
             </Button>
           )}
-          <Button variant="outline" size="sm" className="gap-2 h-9" onClick={handleExportReport}>
-            <Download className="h-4 w-4" />
-            تصدير Excel
-          </Button>
           <ExportPdfDialog
             data={{
               yearLabel: selectedYear === "all" ? "كل_السنوات" : selectedYear,
@@ -218,8 +166,13 @@ export default function AnnualReport() {
                 full_name_ar: s.full_name_ar,
                 faculty_ar: s.faculty_ar,
                 specialty_ar: s.specialty_ar,
+                branch_ar: (s as any).branch_ar || "",
                 defense_date: s.defense_date,
                 _type: s._type,
+                first_registration_year: (s as any).first_registration_year || "",
+                employment_status: (s as any).employment_status || "",
+                registration_count: (s as any).registration_count || null,
+                current_year: (s as any).current_year || "",
               })),
             }}
           />
