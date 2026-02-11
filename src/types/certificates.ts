@@ -42,6 +42,8 @@ export interface BaseCertificate {
   registration_count?: number | null;
   thesis_language?: string | null;
   notes?: string | null;
+  province?: string | null;
+  signature_title?: string | null;
 }
 
 // PhD LMD Certificate
@@ -177,6 +179,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'jury_members_ar', name_ar: 'أعضاء اللجنة', name_fr: 'Membres du jury', required: true },
     { key: 'certificate_date_ar', name_ar: 'تاريخ الشهادة (عربي)', name_fr: 'Date du certificat (AR)', required: true },
     { key: 'certificate_date_fr', name_ar: 'تاريخ الشهادة (فرنسي)', name_fr: 'Date du certificat (FR)', required: false },
+    { key: 'province', name_ar: 'الولاية', name_fr: 'Wilaya', required: false },
+    { key: 'signature_title', name_ar: 'إمضاء', name_fr: 'Signature', required: false },
   ],
   phd_science: [
     { key: 'student_number', name_ar: 'الرقم', name_fr: 'N°', required: true },
@@ -202,6 +206,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'jury_members_ar', name_ar: 'أعضاء اللجنة', name_fr: 'Membres du jury', required: true },
     { key: 'certificate_date_ar', name_ar: 'تاريخ الشهادة (عربي)', name_fr: 'Date du certificat (AR)', required: true },
     { key: 'certificate_date_fr', name_ar: 'تاريخ الشهادة (فرنسي)', name_fr: 'Date du certificat (FR)', required: false },
+    { key: 'province', name_ar: 'الولاية', name_fr: 'Wilaya', required: false },
+    { key: 'signature_title', name_ar: 'إمضاء', name_fr: 'Signature', required: false },
   ],
   master: [
     { key: 'student_number', name_ar: 'الرقم', name_fr: 'N°', required: true },
@@ -224,6 +230,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'defense_date_fr', name_ar: 'تاريخ المناقشة (فرنسي)', name_fr: 'Date de soutenance (FR)', required: false },
     { key: 'certificate_date_ar', name_ar: 'تاريخ الشهادة (عربي)', name_fr: 'Date du certificat (AR)', required: true },
     { key: 'certificate_date_fr', name_ar: 'تاريخ الشهادة (فرنسي)', name_fr: 'Date du certificat (FR)', required: false },
+    { key: 'province', name_ar: 'الولاية', name_fr: 'Wilaya', required: false },
+    { key: 'signature_title', name_ar: 'إمضاء', name_fr: 'Signature', required: false },
   ],
 };
 
@@ -235,4 +243,13 @@ export const getCertificateTable = (type: CertificateType): string => {
     master: 'master_certificates',
   };
   return tables[type];
+};
+
+// Get default signature title based on faculty name
+export const getDefaultSignatureTitle = (facultyAr: string): string => {
+  if (!facultyAr) return '';
+  const lower = facultyAr.trim();
+  if (lower.includes('معهد')) return 'مدير المعهد';
+  if (lower.includes('كلية')) return 'عميد الكلية';
+  return 'عميد الكلية';
 };

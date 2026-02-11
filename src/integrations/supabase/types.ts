@@ -403,7 +403,9 @@ export type Database = {
           mention: Database["public"]["Enums"]["mention_type"]
           phone_number: string | null
           professional_email: string | null
+          province: string | null
           research_lab_ar: string | null
+          signature_title: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -431,7 +433,9 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          province?: string | null
           research_lab_ar?: string | null
+          signature_title?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -459,7 +463,9 @@ export type Database = {
           mention?: Database["public"]["Enums"]["mention_type"]
           phone_number?: string | null
           professional_email?: string | null
+          province?: string | null
           research_lab_ar?: string | null
+          signature_title?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
@@ -535,10 +541,12 @@ export type Database = {
           notes: string | null
           phone_number: string | null
           professional_email: string | null
+          province: string | null
           registration_count: number | null
           registration_number: string | null
           registration_type: string | null
           research_lab_ar: string | null
+          signature_title: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -582,10 +590,12 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          province?: string | null
           registration_count?: number | null
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          signature_title?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -629,10 +639,12 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          province?: string | null
           registration_count?: number | null
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          signature_title?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
@@ -802,10 +814,12 @@ export type Database = {
           notes: string | null
           phone_number: string | null
           professional_email: string | null
+          province: string | null
           registration_count: number | null
           registration_number: string | null
           registration_type: string | null
           research_lab_ar: string | null
+          signature_title: string | null
           specialty_ar: string
           specialty_fr: string | null
           student_number: string
@@ -849,10 +863,12 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          province?: string | null
           registration_count?: number | null
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          signature_title?: string | null
           specialty_ar: string
           specialty_fr?: string | null
           student_number: string
@@ -896,10 +912,12 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
+          province?: string | null
           registration_count?: number | null
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          signature_title?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
           student_number?: string
