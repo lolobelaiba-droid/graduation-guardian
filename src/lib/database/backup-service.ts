@@ -199,12 +199,16 @@ export class BackupService {
         deleteTable("notes"),
       ]);
 
-      // Helper to restore a table with error checking
+      // Helper to restore a table in batches with error checking
+      const BATCH_SIZE = 500;
       const restoreTable = async (tableName: string, data: unknown[] | undefined) => {
-        if (data && data.length > 0) {
-          const { error } = await supabase.from(tableName as 'phd_lmd_certificates').insert(data as TablesInsert<'phd_lmd_certificates'>[]);
+        if (!data || data.length === 0) return;
+        
+        for (let i = 0; i < data.length; i += BATCH_SIZE) {
+          const batch = data.slice(i, i + BATCH_SIZE);
+          const { error } = await supabase.from(tableName as 'phd_lmd_certificates').insert(batch as TablesInsert<'phd_lmd_certificates'>[]);
           if (error) {
-            console.error(`Error restoring ${tableName}:`, error.message);
+            console.error(`Error restoring ${tableName} (batch ${Math.floor(i / BATCH_SIZE) + 1}):`, error.message);
             throw new Error(`فشل استعادة جدول ${tableName}: ${error.message}`);
           }
         }
