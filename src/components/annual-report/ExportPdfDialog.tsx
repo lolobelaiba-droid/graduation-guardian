@@ -42,6 +42,7 @@ export interface StudentData {
   first_registration_year: string;
   employment_status: string;
   registration_type: string;
+  inscription_status: string;
   registration_count: number | null;
   current_year: string;
   research_lab_ar: string;
@@ -98,6 +99,7 @@ const AVAILABLE_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "first_registration_year", label: "سنة أول تسجيل" },
   { key: "employment_status", label: "الحالة الوظيفية" },
   { key: "registration_type", label: "نوع التسجيل" },
+  { key: "inscription_status", label: "حالة التسجيل" },
   { key: "research_lab_ar", label: "مخبر البحث" },
   { key: "current_year", label: "السنة الحالية" },
 ];

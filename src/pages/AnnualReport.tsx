@@ -184,6 +184,7 @@ export default function AnnualReport() {
                   first_registration_year: a.first_registration_year || "",
                   employment_status: a.employment_status || "",
                   registration_type: a.registration_type || "",
+                  inscription_status: a.inscription_status || "",
                   registration_count: a.registration_count || null,
                   current_year: a.current_year || "",
                   research_lab_ar: a.research_lab_ar || "",
