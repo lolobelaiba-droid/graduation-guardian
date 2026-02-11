@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { JuryMembersInput } from "@/components/ui/jury-members-input";
 import { AcademicTitleInput } from "@/components/ui/academic-title-input";
@@ -510,7 +511,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>تاريخ الميلاد / Né(e) le *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -821,7 +822,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>تاريخ محضر المناقشة *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -835,7 +836,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>تاريخ اصدار الشهادة</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput value={field.value || ''} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { AcademicTitleInput } from "@/components/ui/academic-title-input";
 import { Button } from "@/components/ui/button";
@@ -499,7 +500,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                   <FormItem>
                     <FormLabel>تاريخ الميلاد *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
