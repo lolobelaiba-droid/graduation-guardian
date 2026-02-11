@@ -72,7 +72,6 @@ const certificateSchema = z.object({
   university_ar: z.string().optional().nullable(),
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
-  faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -83,9 +82,8 @@ const certificateSchema = z.object({
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
   research_lab_ar: z.string().optional().nullable(),
   
-  // Fields to be filled for certificate
+  // Fields to be filled for certificate (single fields with auto-direction)
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
-  thesis_title_fr: z.string().optional().nullable(),
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
@@ -95,20 +93,6 @@ const certificateSchema = z.object({
   // PhD LMD specific
   field_ar: z.string().optional().nullable(),
   field_fr: z.string().optional().nullable(),
-
-  // Additional PhD fields (editable)
-  registration_number_phd: z.string().optional().nullable(),
-  co_supervisor_ar: z.string().optional().nullable(),
-  supervisor_university: z.string().optional().nullable(),
-  co_supervisor_university: z.string().optional().nullable(),
-  employment_status: z.string().optional().nullable(),
-  registration_type: z.string().optional().nullable(),
-  inscription_status: z.string().optional().nullable(),
-  current_year: z.string().optional().nullable(),
-  registration_count: z.coerce.number().optional().nullable(),
-  thesis_language: z.string().optional().nullable(),
-  status: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
 });
 
 interface CreateCertificateFromPhdDialogProps {
@@ -188,7 +172,6 @@ export function CreateCertificateFromPhdDialog({
       university_ar: 'جامعة أم البواقي',
       university_fr: "Université D'oum El Bouaghi",
       faculty_ar: '',
-      faculty_fr: '',
       branch_ar: '',
       branch_fr: '',
       specialty_ar: '',
@@ -197,7 +180,6 @@ export function CreateCertificateFromPhdDialog({
       defense_date: '',
       certificate_date: new Date().toISOString().split('T')[0],
       thesis_title_ar: '',
-      thesis_title_fr: '',
       field_ar: '',
       field_fr: '',
       jury_president_ar: '',
@@ -207,18 +189,6 @@ export function CreateCertificateFromPhdDialog({
       phone_number: '',
       supervisor_ar: '',
       research_lab_ar: '',
-      registration_number_phd: '',
-      co_supervisor_ar: '',
-      supervisor_university: '',
-      co_supervisor_university: '',
-      employment_status: '',
-      registration_type: '',
-      inscription_status: '',
-      current_year: '',
-      registration_count: null,
-      thesis_language: '',
-      status: '',
-      notes: '',
     },
   });
 
@@ -236,7 +206,7 @@ export function CreateCertificateFromPhdDialog({
     
     // Pre-fill form with student data
     form.reset({
-      student_number: '',
+      student_number: '', // Certificate number should be new
       full_name_ar: pendingStudent.full_name_ar,
       full_name_fr: pendingStudent.full_name_fr || '',
       gender: pendingStudent.gender as 'male' | 'female',
@@ -246,7 +216,6 @@ export function CreateCertificateFromPhdDialog({
       university_ar: pendingStudent.university_ar || 'جامعة أم البواقي',
       university_fr: pendingStudent.university_fr || "Université D'oum El Bouaghi",
       faculty_ar: pendingStudent.faculty_ar,
-      faculty_fr: pendingStudent.faculty_fr || '',
       branch_ar: pendingStudent.branch_ar,
       branch_fr: pendingStudent.branch_fr || '',
       specialty_ar: pendingStudent.specialty_ar,
@@ -257,7 +226,6 @@ export function CreateCertificateFromPhdDialog({
       supervisor_ar: pendingStudent.supervisor_ar,
       research_lab_ar: pendingStudent.research_lab_ar || '',
       thesis_title_ar: pendingStudent.thesis_title_ar || '',
-      thesis_title_fr: pendingStudent.thesis_title_fr || '',
       field_ar: (pendingStudent as PhdLmdStudent).field_ar || '',
       field_fr: (pendingStudent as PhdLmdStudent).field_fr || '',
       mention: 'honorable' as MentionType,
@@ -265,18 +233,6 @@ export function CreateCertificateFromPhdDialog({
       certificate_date: new Date().toISOString().split('T')[0],
       jury_president_ar: '',
       jury_members_ar: '',
-      registration_number_phd: pendingStudent.registration_number || '',
-      co_supervisor_ar: pendingStudent.co_supervisor_ar || '',
-      supervisor_university: pendingStudent.supervisor_university || '',
-      co_supervisor_university: pendingStudent.co_supervisor_university || '',
-      employment_status: pendingStudent.employment_status || '',
-      registration_type: pendingStudent.registration_type || '',
-      inscription_status: pendingStudent.inscription_status || '',
-      current_year: pendingStudent.current_year || '',
-      registration_count: pendingStudent.registration_count || null,
-      thesis_language: pendingStudent.thesis_language || '',
-      status: pendingStudent.status || '',
-      notes: pendingStudent.notes || '',
     });
     
     setShowForm(true);
@@ -290,28 +246,25 @@ export function CreateCertificateFromPhdDialog({
     try {
       // Prepare certificate data with required French fields (empty if not provided)
       // Include PhD reference data from selected student
-      const phdReferenceData = {
-        registration_number: data.registration_number_phd || null,
-        co_supervisor_ar: data.co_supervisor_ar || null,
-        supervisor_university: data.supervisor_university || null,
-        co_supervisor_university: data.co_supervisor_university || null,
-        employment_status: data.employment_status || null,
-        registration_type: data.registration_type || null,
-        inscription_status: data.inscription_status || null,
-        current_year: data.current_year || null,
-        registration_count: data.registration_count || null,
-        thesis_language: data.thesis_language || null,
-        notes: data.notes || null,
-      };
-
-      // Remove extra fields not in certificate table
-      const { registration_number_phd, co_supervisor_ar, supervisor_university, co_supervisor_university, employment_status, registration_type, inscription_status, current_year, registration_count, thesis_language, status, notes, ...baseData } = data;
+      const phdReferenceData = selectedStudent ? {
+        registration_number: selectedStudent.registration_number || null,
+        co_supervisor_ar: selectedStudent.co_supervisor_ar || null,
+        supervisor_university: selectedStudent.supervisor_university || null,
+        co_supervisor_university: selectedStudent.co_supervisor_university || null,
+        employment_status: selectedStudent.employment_status || null,
+        registration_type: selectedStudent.registration_type || null,
+        inscription_status: selectedStudent.inscription_status || null,
+        current_year: selectedStudent.current_year || null,
+        registration_count: selectedStudent.registration_count || null,
+        thesis_language: selectedStudent.thesis_language || null,
+        notes: selectedStudent.notes || null,
+      } : {};
 
       const certificateData = {
-        ...baseData,
+        ...data,
         ...phdReferenceData,
-        faculty_fr: data.faculty_fr || '',
-        thesis_title_fr: data.thesis_title_fr || '',
+        faculty_fr: '',
+        thesis_title_fr: '',
         jury_president_fr: '',
         jury_members_fr: '',
       };
@@ -1042,246 +995,127 @@ export function CreateCertificateFromPhdDialog({
                   </FormItem>
                 )}
               />
-              {/* PhD Additional Data - Editable */}
-              <SectionHeader title="بيانات إضافية من قاعدة بيانات طلبة الدكتوراه" />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="registration_number_phd"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>رقم التسجيل</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="رقم التسجيل" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="current_year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>سنة التسجيل</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="سنة التسجيل" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* PhD Student Reference Data - All pre-filled fields from database */}
+              {selectedStudent && (
+                <>
+                  <SectionHeader title="بيانات إضافية من قاعدة بيانات طلبة الدكتوراه (للاطلاع)" />
+                  
+                  <div className="p-4 bg-muted/30 rounded-lg border space-y-3">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                      {selectedStudent.registration_number && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">رقم التسجيل:</span>
+                          <span className="text-sm font-medium">{selectedStudent.registration_number}</span>
+                        </div>
+                      )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="registration_count"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>عدد التسجيلات</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value ?? ''} type="number" placeholder="عدد التسجيلات" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="registration_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>نوع التسجيل</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="نوع التسجيل" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      {(selectedStudent as any).current_year && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">سنة التسجيل:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).current_year}</span>
+                        </div>
+                      )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="co_supervisor_ar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>مساعد المشرف</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="مساعد المشرف" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="employment_status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الحالة الوظيفية</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="الحالة الوظيفية" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      {(selectedStudent as any).registration_count && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">عدد التسجيلات:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).registration_count}</span>
+                        </div>
+                      )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="supervisor_university"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>جامعة انتماء المشرف</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="جامعة انتماء المشرف" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="co_supervisor_university"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="جامعة انتماء مساعد المشرف" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      {(selectedStudent as any).co_supervisor_ar && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">مساعد المشرف:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).co_supervisor_ar}</span>
+                        </div>
+                      )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="inscription_status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>حالة التسجيل</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="حالة التسجيل" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="thesis_language"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>لغة الأطروحة</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="اختر لغة الأطروحة" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="arabic">العربية</SelectItem>
-                          <SelectItem value="french">الفرنسية</SelectItem>
-                          <SelectItem value="english">الإنجليزية</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      {(selectedStudent as any).supervisor_university && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">جامعة انتماء المشرف:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).supervisor_university}</span>
+                        </div>
+                      )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الحالة</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="اختر الحالة" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">نشط</SelectItem>
-                          <SelectItem value="graduated">تخرج</SelectItem>
-                          <SelectItem value="suspended">معلق</SelectItem>
-                          <SelectItem value="withdrawn">منسحب</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      {(selectedStudent as any).co_supervisor_university && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">جامعة انتماء مساعد المشرف:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).co_supervisor_university}</span>
+                        </div>
+                      )}
 
-                <FormField
-                  control={form.control}
-                  name="faculty_fr"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الكلية (فرنسي)</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} dir="ltr" placeholder="Faculté" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      {(selectedStudent as any).employment_status && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">الحالة الوظيفية:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).employment_status}</span>
+                        </div>
+                      )}
 
-              <FormField
-                control={form.control}
-                name="thesis_title_fr"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>عنوان الأطروحة (فرنسي)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        value={field.value || ''}
-                        rows={2} 
-                        placeholder="Titre de la thèse"
-                        dir="ltr"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      {(selectedStudent as any).registration_type && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">نوع التسجيل:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).registration_type}</span>
+                        </div>
+                      )}
 
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ملاحظات</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        value={field.value || ''}
-                        rows={2} 
-                        placeholder="ملاحظات إضافية"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      {(selectedStudent as any).inscription_status && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">حالة التسجيل:</span>
+                          <span className="text-sm font-medium">{(selectedStudent as any).inscription_status}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).thesis_language && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">لغة الأطروحة:</span>
+                          <span className="text-sm font-medium">
+                            {(selectedStudent as any).thesis_language === 'arabic' ? 'العربية' :
+                             (selectedStudent as any).thesis_language === 'french' ? 'الفرنسية' :
+                             (selectedStudent as any).thesis_language === 'english' ? 'الإنجليزية' :
+                             (selectedStudent as any).thesis_language}
+                          </span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).thesis_title_fr && (
+                        <div className="flex items-center gap-2 col-span-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">عنوان الأطروحة (فرنسي):</span>
+                          <span className="text-sm font-medium" dir="ltr">{(selectedStudent as any).thesis_title_fr}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).faculty_fr && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">الكلية (فرنسي):</span>
+                          <span className="text-sm font-medium" dir="ltr">{(selectedStudent as any).faculty_fr}</span>
+                        </div>
+                      )}
+
+                      {(selectedStudent as any).status && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-[140px]">الحالة:</span>
+                          <span className="text-sm font-medium">
+                            {(selectedStudent as any).status === 'active' ? 'نشط' :
+                             (selectedStudent as any).status === 'graduated' ? 'تخرج' :
+                             (selectedStudent as any).status === 'suspended' ? 'معلق' :
+                             (selectedStudent as any).status === 'withdrawn' ? 'منسحب' :
+                             (selectedStudent as any).status}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedStudent.notes && (
+                      <div className="mt-2 pt-2 border-t">
+                        <span className="text-sm text-muted-foreground">ملاحظات:</span>
+                        <p className="text-sm font-medium mt-1 bg-destructive/10 text-destructive p-2 rounded-md border border-destructive/20">
+                          {selectedStudent.notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setSelectedStudent(null); }}>
