@@ -197,7 +197,12 @@ export function FullPreviewDialog({
   const hasFieldChanges = fieldChanges.length > 0;
   const hasAnyChanges = hasBackgroundChanges || hasFieldChanges;
 
-  const getFieldValue = useCallback((fieldKey: string): string => {
+  const getFieldValue = useCallback((fieldKey: string, field?: TemplateField): string => {
+    // Handle static text fields - return the stored text from field_name_fr
+    if (fieldKey.startsWith('static_text_') && field?.field_name_fr) {
+      return field.field_name_fr;
+    }
+
     // Handle mention fields
     if (fieldKey === 'mention_ar') {
       const mentionValue = student['mention'] as MentionType;
@@ -924,7 +929,7 @@ export function FullPreviewDialog({
                 const isDragging = dragState?.fieldId === field.id;
                 const isResizing = resizeState?.fieldId === field.id;
                 const hasChange = fieldChanges.some(c => c.fieldId === field.id);
-                const value = getFieldValue(field.field_key);
+                const value = getFieldValue(field.field_key, field);
                 const resizable = isResizableField(field.field_key);
                 const effectiveWidth = localFieldWidths[field.id] ?? field.field_width;
                 const hasWidth = effectiveWidth != null;
