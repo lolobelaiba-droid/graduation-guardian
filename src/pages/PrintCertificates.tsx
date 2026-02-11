@@ -36,6 +36,7 @@ import { generatePDF, generatePDFBlob } from "@/lib/pdfGenerator";
 import { BackgroundUpload } from "@/components/print/BackgroundUpload";
 import { ImportExcelDialog } from "@/components/print/import";
 import { AddFieldDialog } from "@/components/print/AddFieldDialog";
+import { BrowseDatabaseDialog } from "@/components/print/BrowseDatabaseDialog";
 import { FullPreviewDialog } from "@/components/print/FullPreviewDialog";
 import { FontManagement } from "@/components/print/FontManagement";
 import { PrintableCSS } from "@/components/print/PrintableCSS";
@@ -689,19 +690,20 @@ export default function PrintCertificates() {
           ) : (
             <div className="space-y-3">
               {/* Search Box with Smart Suggestions */}
-              <div className="relative" ref={searchContainerRef}>
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-                <Input
-                  ref={searchInputRef}
-                  placeholder="بحث بالاسم أو اللقب أو رقم الشهادة..."
-                  value={studentSearch}
-                  onChange={(e) => {
-                    setStudentSearch(e.target.value);
-                    setShowSearchSuggestions(true);
-                  }}
-                  onFocus={() => setShowSearchSuggestions(true)}
-                  className="pr-9"
-                />
+              <div className="flex gap-2 items-start">
+                <div className="relative flex-1" ref={searchContainerRef}>
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="بحث بالاسم أو اللقب أو رقم الشهادة..."
+                    value={studentSearch}
+                    onChange={(e) => {
+                      setStudentSearch(e.target.value);
+                      setShowSearchSuggestions(true);
+                    }}
+                    onFocus={() => setShowSearchSuggestions(true)}
+                    className="pr-9"
+                  />
                 
                 {/* Smart Suggestions Dropdown */}
                 {showSearchSuggestions && studentSearch.trim() && searchSuggestions.length > 0 && (
@@ -782,6 +784,15 @@ export default function PrintCertificates() {
                     <p className="text-sm text-muted-foreground">لا توجد نتائج لـ "{studentSearch}"</p>
                   </div>
                 )}
+                </div>
+                <BrowseDatabaseDialog
+                  students={allStudents.map(s => ({
+                    ...s,
+                    faculty_ar: (s as any).faculty_ar,
+                    supervisor_ar: (s as any).supervisor_ar,
+                  }))}
+                  onSelect={(student) => handleSelectSuggestion(student as any)}
+                />
               </div>
 
               {selectedStudentIds.length === 1 && (
