@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 import jsPDF from "jspdf";
 import { Download, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -119,6 +120,7 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
   );
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const { data: uniSettings } = useUniversitySettings();
 
   const toggle = (key: SectionKey) => {
     setSelected((prev) => {
@@ -149,7 +151,7 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
     }
     setGenerating(true);
     try {
-      await generatePdf(data, selected, selectedColumns);
+      await generatePdf(data, selected, selectedColumns, uniSettings);
       toast.success("تم إنشاء التقرير بنجاح");
       setOpen(false);
     } catch (e) {
@@ -257,6 +259,21 @@ async function loadAmiriFont(doc: jsPDF) {
 
 function shape(text: string): string {
   return shapeArabicText(text);
+}
+
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
 }
 
 function addPageIfNeeded(doc: jsPDF, y: number, needed: number = LINE_HEIGHT * 2): number {
@@ -371,19 +388,42 @@ function getColumnValue(s: StudentData, key: ColumnKey): string {
 // Main PDF generator
 // ============================================================================
 
-async function generatePdf(data: ReportData, sections: Set<SectionKey>, customColumns: Set<ColumnKey>) {
+async function generatePdf(data: ReportData, sections: Set<SectionKey>, customColumns: Set<ColumnKey>, uniSettings?: { universityName?: string; universityNameEn?: string; universityLogo?: string }) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   await loadAmiriFont(doc);
 
   const pageW = doc.internal.pageSize.getWidth();
   let y = PAGE_MARGIN;
 
-  // Report header
+  // University logo & name header
+  const logoUrl = uniSettings?.universityLogo;
+  const uniName = uniSettings?.universityName || "جامعة أم البواقي";
+
+  if (logoUrl) {
+    try {
+      const img = await loadImageAsBase64(logoUrl);
+      if (img) {
+        const logoSize = 18;
+        doc.addImage(img, "PNG", (pageW - logoSize) / 2, y, logoSize, logoSize);
+        y += logoSize + 3;
+      }
+    } catch (e) {
+      console.warn("Failed to load university logo for PDF", e);
+    }
+  }
+
+  doc.setFont(FONT_NAME, "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(33, 33, 33);
+  doc.text(shape(uniName), pageW / 2, y, { align: "center" });
+  y += 8;
+
+  // Report title
   doc.setFont(FONT_NAME, "bold");
   doc.setFontSize(18);
   doc.setTextColor(59, 130, 246);
-  doc.text(shape("التقرير السنوي"), pageW / 2, y + 5, { align: "center" });
-  y += 12;
+  doc.text(shape("التقرير السنوي"), pageW / 2, y + 2, { align: "center" });
+  y += 10;
 
   doc.setFontSize(11);
   doc.setTextColor(100, 100, 100);
