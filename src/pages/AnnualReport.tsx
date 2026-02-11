@@ -183,6 +183,7 @@ export default function AnnualReport() {
                   thesis_title_ar: a.thesis_title_ar || "",
                   first_registration_year: a.first_registration_year || "",
                   employment_status: a.employment_status || "",
+                  registration_type: a.registration_type || "",
                   registration_count: a.registration_count || null,
                   current_year: a.current_year || "",
                   research_lab_ar: a.research_lab_ar || "",
