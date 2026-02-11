@@ -788,12 +788,95 @@ export function FullPreviewDialog({
 
           {/* Preview Canvas */}
           <div className="flex-1 overflow-auto bg-muted/30 p-4 flex items-center justify-center" dir="ltr">
-            {/* Outer wrapper sized to the zoomed dimensions so scrolling works correctly */}
+            {/* Outer wrapper sized to the zoomed dimensions + rulers so scrolling works correctly */}
             <div style={{
-              width: `${width * BASE_SCALE * ZOOM}px`,
-              height: `${height * BASE_SCALE * ZOOM}px`,
               flexShrink: 0,
             }}>
+              {/* Horizontal Ruler (top) */}
+              <div className="flex" style={{ marginRight: `${20 * ZOOM}px` }}>
+                <div style={{ width: `${20 * ZOOM}px`, height: `${20 * ZOOM}px`, flexShrink: 0 }} />
+                <div style={{
+                  width: `${width * BASE_SCALE * ZOOM}px`,
+                  height: `${20 * ZOOM}px`,
+                  position: 'relative',
+                  background: '#f8f8f8',
+                  borderBottom: '1px solid #ccc',
+                  overflow: 'hidden',
+                }}>
+                  {Array.from({ length: Math.floor(width / 10) + 1 }, (_, i) => i).map(cm => (
+                    <div key={`hr-${cm}`} style={{
+                      position: 'absolute',
+                      left: `${cm * 10 * BASE_SCALE * ZOOM}px`,
+                      top: 0,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}>
+                      <div style={{ width: '1px', height: `${12 * ZOOM}px`, background: '#666' }} />
+                      <span style={{ fontSize: `${8 * ZOOM}px`, color: '#666', lineHeight: 1, marginTop: '1px', userSelect: 'none' }}>
+                        {cm}
+                      </span>
+                      {/* Half-cm tick */}
+                      {cm < Math.floor(width / 10) && (
+                        <div style={{
+                          position: 'absolute',
+                          left: `${5 * BASE_SCALE * ZOOM}px`,
+                          top: 0,
+                          width: '1px',
+                          height: `${8 * ZOOM}px`,
+                          background: '#999',
+                        }} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Row with vertical ruler + canvas */}
+              <div className="flex">
+                {/* Vertical Ruler (left) */}
+                <div style={{
+                  width: `${20 * ZOOM}px`,
+                  height: `${height * BASE_SCALE * ZOOM}px`,
+                  position: 'relative',
+                  background: '#f8f8f8',
+                  borderLeft: '1px solid #ccc',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}>
+                  {Array.from({ length: Math.floor(height / 10) + 1 }, (_, i) => i).map(cm => (
+                    <div key={`vr-${cm}`} style={{
+                      position: 'absolute',
+                      top: `${cm * 10 * BASE_SCALE * ZOOM}px`,
+                      left: 0,
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}>
+                      <div style={{ height: '1px', width: `${12 * ZOOM}px`, background: '#666' }} />
+                      <span style={{ fontSize: `${8 * ZOOM}px`, color: '#666', lineHeight: 1, marginRight: '1px', userSelect: 'none', writingMode: 'vertical-lr' }}>
+                        {cm}
+                      </span>
+                      {/* Half-cm tick */}
+                      {cm < Math.floor(height / 10) && (
+                        <div style={{
+                          position: 'absolute',
+                          top: `${5 * BASE_SCALE * ZOOM}px`,
+                          left: 0,
+                          height: '1px',
+                          width: `${8 * ZOOM}px`,
+                          background: '#999',
+                        }} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {/* Canvas wrapper */}
+                <div style={{
+                  width: `${width * BASE_SCALE * ZOOM}px`,
+                  height: `${height * BASE_SCALE * ZOOM}px`,
+                  flexShrink: 0,
+                }}>
             <div
               ref={canvasRef}
               className={cn(
@@ -1033,6 +1116,8 @@ export function FullPreviewDialog({
                 );
               })}
             </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
