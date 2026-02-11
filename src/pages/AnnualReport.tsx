@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { FileBarChart, Calendar, Building, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, Building, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { certificateTypeLabels } from "@/types/certificates";
 import { toWesternNumerals } from "@/lib/numerals";
 import { Loader2 } from "lucide-react";
 import ExportPdfDialog from "@/components/annual-report/ExportPdfDialog";
-import { extractStartYear } from "@/lib/registration-calculation";
+import type { StudentData } from "@/components/annual-report/ExportPdfDialog";
 
 export default function AnnualReport() {
   const [selectedYear, setSelectedYear] = useState<string>("all");
@@ -110,6 +110,46 @@ export default function AnnualReport() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <ExportPdfDialog
+            data={{
+              yearLabel: selectedYear === "all" ? "كل_السنوات" : selectedYear,
+              total: yearData.length,
+              byType,
+              byFaculty,
+              bySpecialty,
+              byMonth,
+              monthNames,
+              students: yearData.map(s => {
+                const a = s as any;
+                return {
+                  full_name_ar: s.full_name_ar,
+                  full_name_fr: a.full_name_fr || "",
+                  faculty_ar: s.faculty_ar,
+                  faculty_fr: a.faculty_fr || "",
+                  specialty_ar: s.specialty_ar,
+                  specialty_fr: a.specialty_fr || "",
+                  branch_ar: a.branch_ar || "",
+                  branch_fr: a.branch_fr || "",
+                  defense_date: s.defense_date,
+                  date_of_birth: a.date_of_birth || "",
+                  birthplace_ar: a.birthplace_ar || "",
+                  student_number: a.student_number || "",
+                  supervisor_ar: a.supervisor_ar || "",
+                  co_supervisor_ar: a.co_supervisor_ar || "",
+                  mention: a.mention || "",
+                  thesis_title_ar: a.thesis_title_ar || "",
+                  first_registration_year: a.first_registration_year || "",
+                  employment_status: a.employment_status || "",
+                  registration_count: a.registration_count || null,
+                  current_year: a.current_year || "",
+                  research_lab_ar: a.research_lab_ar || "",
+                  _type: s._type,
+                } as StudentData;
+              }),
+            }}
+          />
+        </div>
         <div>
           <h1 className="text-3xl font-bold text-foreground">التقرير السنوي</h1>
           <p className="text-muted-foreground mt-1">ملخص المناقشات والشهادات الصادرة حسب الكلية والتخصص</p>
@@ -153,29 +193,6 @@ export default function AnnualReport() {
               مسح الفترة
             </Button>
           )}
-          <ExportPdfDialog
-            data={{
-              yearLabel: selectedYear === "all" ? "كل_السنوات" : selectedYear,
-              total: yearData.length,
-              byType,
-              byFaculty,
-              bySpecialty,
-              byMonth,
-              monthNames,
-              students: yearData.map(s => ({
-                full_name_ar: s.full_name_ar,
-                faculty_ar: s.faculty_ar,
-                specialty_ar: s.specialty_ar,
-                branch_ar: (s as any).branch_ar || "",
-                defense_date: s.defense_date,
-                _type: s._type,
-                first_registration_year: (s as any).first_registration_year || "",
-                employment_status: (s as any).employment_status || "",
-                registration_count: (s as any).registration_count || null,
-                current_year: (s as any).current_year || "",
-              })),
-            }}
-          />
         </div>
       </div>
 
