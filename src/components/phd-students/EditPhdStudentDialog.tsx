@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -152,6 +153,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
     return studentType === 'phd_lmd' ? phdLmdSchema : phdScienceSchema;
   };
 
+  const { getFrFromAr, getArFromFr } = useFieldDomainSync();
   const form = useForm({
     resolver: zodResolver(getSchema()),
     defaultValues: {
@@ -679,7 +681,11 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                         <FormControl>
                           <DropdownWithAdd
                             value={field.value || ''}
-                            onChange={field.onChange}
+                            onChange={(v) => {
+                              field.onChange(v);
+                              const fr = getFrFromAr(v);
+                              if (fr) form.setValue('field_fr' as any, fr);
+                            }}
                             optionType="field_ar"
                             placeholder="الميدان"
                           />
@@ -697,7 +703,11 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                         <FormControl>
                           <DropdownWithAdd
                             value={field.value || ''}
-                            onChange={field.onChange}
+                            onChange={(v) => {
+                              field.onChange(v);
+                              const ar = getArFromFr(v);
+                              if (ar) form.setValue('field_ar' as any, ar);
+                            }}
                             optionType="field_fr"
                             placeholder="Domaine"
                             dir="ltr"
