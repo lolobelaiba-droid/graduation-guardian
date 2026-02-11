@@ -27,6 +27,7 @@ export interface BackupData {
     custom_field_values?: TablesInsert<'custom_field_values'>[];
     custom_field_options?: TablesInsert<'custom_field_options'>[];
     print_history?: TablesInsert<'print_history'>[];
+    notes?: TablesInsert<'notes'>[];
   };
 }
 
@@ -94,6 +95,7 @@ export class BackupService {
         customFieldValues,
         customFieldOptions,
         printHistory,
+        notes,
       ] = await Promise.all([
         this.fetchAllRows("phd_lmd_certificates"),
         this.fetchAllRows("phd_science_certificates"),
@@ -112,6 +114,7 @@ export class BackupService {
         this.fetchAllRows("custom_field_values"),
         this.fetchAllRows("custom_field_options"),
         this.fetchAllRows("print_history"),
+        this.fetchAllRows("notes"),
       ]);
 
       const backupData: BackupData = {
@@ -135,6 +138,7 @@ export class BackupService {
           custom_field_values: customFieldValues as TablesInsert<'custom_field_values'>[],
           custom_field_options: customFieldOptions as TablesInsert<'custom_field_options'>[],
           print_history: printHistory as TablesInsert<'print_history'>[],
+          notes: notes as TablesInsert<'notes'>[],
         },
       };
 
@@ -162,29 +166,47 @@ export class BackupService {
     try {
       const { data: tableData } = backupData;
       
-      // Delete existing data (order matters for foreign keys)
-      await supabase.from("custom_field_values").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("custom_field_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("certificate_template_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("print_history").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("certificate_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("custom_fields").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("phd_lmd_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("phd_science_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("master_certificates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("phd_lmd_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("phd_science_students").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("dropdown_options").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("custom_fonts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("academic_titles").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("activity_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("user_settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("settings").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // Helper to delete all rows from a table
+      const deleteTable = async (tableName: string) => {
+        const { error } = await supabase.from(tableName as 'settings').delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        if (error) console.warn(`Warning deleting ${tableName}:`, error.message);
+      };
 
-      // Helper to restore a table
+      // Delete existing data (order matters for foreign keys)
+      // Dependent tables first
+      await Promise.all([
+        deleteTable("custom_field_values"),
+        deleteTable("custom_field_options"),
+        deleteTable("certificate_template_fields"),
+        deleteTable("print_history"),
+      ]);
+
+      // Then parent/independent tables
+      await Promise.all([
+        deleteTable("certificate_templates"),
+        deleteTable("custom_fields"),
+        deleteTable("phd_lmd_certificates"),
+        deleteTable("phd_science_certificates"),
+        deleteTable("master_certificates"),
+        deleteTable("phd_lmd_students"),
+        deleteTable("phd_science_students"),
+        deleteTable("dropdown_options"),
+        deleteTable("custom_fonts"),
+        deleteTable("academic_titles"),
+        deleteTable("activity_log"),
+        deleteTable("user_settings"),
+        deleteTable("settings"),
+        deleteTable("notes"),
+      ]);
+
+      // Helper to restore a table with error checking
       const restoreTable = async (tableName: string, data: unknown[] | undefined) => {
         if (data && data.length > 0) {
-          await supabase.from(tableName as 'phd_lmd_certificates').insert(data as TablesInsert<'phd_lmd_certificates'>[]);
+          const { error } = await supabase.from(tableName as 'phd_lmd_certificates').insert(data as TablesInsert<'phd_lmd_certificates'>[]);
+          if (error) {
+            console.error(`Error restoring ${tableName}:`, error.message);
+            throw new Error(`فشل استعادة جدول ${tableName}: ${error.message}`);
+          }
         }
       };
 
@@ -201,6 +223,7 @@ export class BackupService {
         restoreTable("activity_log", tableData.activity_log),
         restoreTable("settings", tableData.settings),
         restoreTable("user_settings", tableData.user_settings),
+        restoreTable("notes", tableData.notes),
       ]);
 
       // Parent tables with dependents
