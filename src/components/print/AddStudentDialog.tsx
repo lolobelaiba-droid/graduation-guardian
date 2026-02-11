@@ -34,6 +34,7 @@ import {
 import {
   certificateTypeLabels,
   mentionLabels,
+  getDefaultSignatureTitle,
   type CertificateType,
   type MentionType,
 } from "@/types/certificates";
@@ -71,6 +72,8 @@ const masterSchema = z.object({
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
+  province: z.string().optional().nullable(),
+  signature_title: z.string().optional().nullable(),
 });
 
 // Base schema for PhD types (includes supervisor and contact info)
@@ -93,6 +96,8 @@ const baseSchema = z.object({
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
+  province: z.string().optional().nullable(),
+  signature_title: z.string().optional().nullable(),
   first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
@@ -191,6 +196,8 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       phone_number: '',
       supervisor_ar: '',
       research_lab_ar: '',
+      province: 'أم البواقي',
+      signature_title: '',
     },
   });
 
@@ -198,6 +205,17 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   useEffect(() => {
     form.clearErrors();
   }, [selectedType, form]);
+
+  // Auto-compute signature_title based on faculty
+  const watchedFaculty = form.watch('faculty_ar');
+  useEffect(() => {
+    if (watchedFaculty) {
+      const currentSig = form.getValues('signature_title');
+      if (!currentSig) {
+        form.setValue('signature_title', getDefaultSignatureTitle(watchedFaculty));
+      }
+    }
+  }, [watchedFaculty, form]);
 
   const isLoading = createPhdLmd.isPending || createPhdScience.isPending || createMaster.isPending;
 
@@ -872,6 +890,37 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                 </div>
               </>
             )}
+
+            {/* Province & Signature */}
+            <SectionHeader title="الولاية والإمضاء" />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="province"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الولاية</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || 'أم البواقي'} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="signature_title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>إمضاء</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder="عميد الكلية / مدير المعهد" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

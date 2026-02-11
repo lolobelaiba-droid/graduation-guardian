@@ -51,6 +51,7 @@ import {
 import {
   certificateTypeLabels,
   mentionLabels,
+  getDefaultSignatureTitle,
   type CertificateType,
   type MentionType,
 } from "@/types/certificates";
@@ -93,6 +94,8 @@ const certificateSchema = z.object({
   // PhD LMD specific
   field_ar: z.string().optional().nullable(),
   field_fr: z.string().optional().nullable(),
+  province: z.string().optional().nullable(),
+  signature_title: z.string().optional().nullable(),
 });
 
 interface CreateCertificateFromPhdDialogProps {
@@ -189,6 +192,8 @@ export function CreateCertificateFromPhdDialog({
       phone_number: '',
       supervisor_ar: '',
       research_lab_ar: '',
+      province: 'أم البواقي',
+      signature_title: '',
     },
   });
 
@@ -233,6 +238,8 @@ export function CreateCertificateFromPhdDialog({
       certificate_date: new Date().toISOString().split('T')[0],
       jury_president_ar: '',
       jury_members_ar: '',
+      province: 'أم البواقي',
+      signature_title: getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
     });
     
     setShowForm(true);
@@ -1116,6 +1123,37 @@ export function CreateCertificateFromPhdDialog({
                   </div>
                 </>
               )}
+
+              {/* Province & Signature */}
+              <SectionHeader title="الولاية والإمضاء" />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="province"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الولاية</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || 'أم البواقي'} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="signature_title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>إمضاء</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ''} placeholder="عميد الكلية / مدير المعهد" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setSelectedStudent(null); }}>

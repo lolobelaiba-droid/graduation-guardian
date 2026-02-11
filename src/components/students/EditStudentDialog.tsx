@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { CertificateType, MentionType, Certificate } from "@/types/certificates";
-import { mentionLabels, certificateTypeLabels } from "@/types/certificates";
+import { mentionLabels, certificateTypeLabels, getDefaultSignatureTitle } from "@/types/certificates";
 import {
   useUpdatePhdLmdCertificate,
   useUpdatePhdScienceCertificate,
@@ -86,6 +86,8 @@ const phdLmdSchema = z.object({
   current_year: z.string().optional().nullable(),
   registration_count: z.number().optional().nullable(),
   notes: z.string().optional().nullable(),
+  province: z.string().optional().nullable(),
+  signature_title: z.string().optional().nullable(),
 });
 
 type PhdLmdFormValues = z.infer<typeof phdLmdSchema>;
@@ -134,6 +136,8 @@ const phdScienceSchema = z.object({
   current_year: z.string().optional().nullable(),
   registration_count: z.number().optional().nullable(),
   notes: z.string().optional().nullable(),
+  province: z.string().optional().nullable(),
+  signature_title: z.string().optional().nullable(),
 });
 
 type PhdScienceFormValues = z.infer<typeof phdScienceSchema>;
@@ -158,6 +162,8 @@ const masterSchema = z.object({
   mention: z.enum(["honorable", "very_honorable"]),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
+  province: z.string().optional().nullable(),
+  signature_title: z.string().optional().nullable(),
 });
 
 type MasterFormValues = z.infer<typeof masterSchema>;
@@ -235,6 +241,8 @@ export default function EditStudentDialog({
         current_year: student.current_year || "",
         registration_count: student.registration_count || null,
         notes: student.notes || "",
+        province: student.province || "أم البواقي",
+        signature_title: student.signature_title || getDefaultSignatureTitle(student.faculty_ar || ""),
       };
 
       if (certificateType === "phd_lmd" && "field_ar" in student) {
@@ -1009,6 +1017,39 @@ export default function EditStudentDialog({
                       <FormLabel>تاريخ الشهادة *</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Province & Signature */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-primary">الولاية والإمضاء</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={"province" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الولاية</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || "أم البواقي"} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"signature_title" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>إمضاء</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={(field.value as string) || ""} placeholder="عميد الكلية / مدير المعهد" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -210,6 +210,13 @@ export default function StudentDetailsDialog({
             </>
           )}
 
+          {/* Province & Signature */}
+          <SectionTitle>الولاية والإمضاء</SectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <DetailRow label="الولاية" value={student.province} />
+            <DetailRow label="إمضاء" value={student.signature_title} />
+          </div>
+
           {/* Dates */}
           <SectionTitle>التواريخ</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
