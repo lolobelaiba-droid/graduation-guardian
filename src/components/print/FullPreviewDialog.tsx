@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2, MoveHorizontal, MoveVertical, Link, Unlink, Grid3X3 } from "lucide-react";
+import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, RotateCcw, Printer, Move, GripVertical, Undo2, MoveHorizontal, MoveVertical, Link, Unlink, Grid3X3, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -87,6 +87,7 @@ export function FullPreviewDialog({
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [showFieldControls, setShowFieldControls] = useState(true);
   const [showGuidelines, setShowGuidelines] = useState(false);
+  const [showRulers, setShowRulers] = useState(true);
   
   // Track field changes for undo
   const [fieldChanges, setFieldChanges] = useState<FieldChange[]>([]);
@@ -601,6 +602,19 @@ export function FullPreviewDialog({
               </Button>
             </div>
 
+            {/* Rulers Toggle */}
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-sm">المساطر</h4>
+              <Button
+                variant={showRulers ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setShowRulers(!showRulers)}
+              >
+                <Ruler className="h-4 w-4 ml-1" />
+                {showRulers ? "مفعّل" : "معطّل"}
+              </Button>
+            </div>
+
             {/* Field Controls Toggle */}
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-sm">تحريك الحقول</h4>
@@ -793,6 +807,7 @@ export function FullPreviewDialog({
               flexShrink: 0,
             }}>
               {/* Horizontal Ruler (top) */}
+              {showRulers && (
               <div className="flex" style={{ marginRight: `${20 * ZOOM}px` }}>
                 <div style={{ width: `${20 * ZOOM}px`, height: `${20 * ZOOM}px`, flexShrink: 0 }} />
                 <div style={{
@@ -832,9 +847,11 @@ export function FullPreviewDialog({
                   ))}
                 </div>
               </div>
+              )}
               {/* Row with vertical ruler + canvas */}
               <div className="flex">
                 {/* Vertical Ruler (left) */}
+                {showRulers && (
                 <div style={{
                   width: `${20 * ZOOM}px`,
                   height: `${height * BASE_SCALE * ZOOM}px`,
@@ -871,6 +888,7 @@ export function FullPreviewDialog({
                     </div>
                   ))}
                 </div>
+                )}
                 {/* Canvas wrapper */}
                 <div style={{
                   width: `${width * BASE_SCALE * ZOOM}px`,
