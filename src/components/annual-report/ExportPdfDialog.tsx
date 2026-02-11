@@ -17,6 +17,20 @@ import { certificateTypeLabels } from "@/types/certificates";
 import { toWesternNumerals } from "@/lib/numerals";
 import { loadFontFile, arrayBufferToBase64, getAllFonts } from "@/lib/arabicFonts";
 import { shapeArabicText } from "@/lib/pdf/arabicTextUtils";
+import { extractStartYear } from "@/lib/registration-calculation";
+
+interface StudentData {
+  full_name_ar: string;
+  faculty_ar: string;
+  specialty_ar: string;
+  branch_ar: string;
+  defense_date: string;
+  _type: string;
+  first_registration_year: string;
+  employment_status: string;
+  registration_count: number | null;
+  current_year: string;
+}
 
 interface ReportData {
   yearLabel: string;
@@ -26,33 +40,29 @@ interface ReportData {
   bySpecialty: [string, { count: number; faculty: string; type: string }][];
   byMonth: number[];
   monthNames: string[];
-  students: Array<{
-    full_name_ar: string;
-    faculty_ar: string;
-    specialty_ar: string;
-    defense_date: string;
-    _type: string;
-  }>;
+  students: StudentData[];
 }
 
 interface ExportPdfDialogProps {
   data: ReportData;
 }
 
-type SectionKey = "summary" | "monthly" | "faculty" | "specialty" | "students";
+type SectionKey = "summary" | "monthly" | "faculty" | "specialty" | "students" | "status" | "avgYears";
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "summary", label: "ملخص عام" },
   { key: "monthly", label: "التوزيع الشهري" },
   { key: "faculty", label: "حسب الكلية" },
   { key: "specialty", label: "حسب التخصص" },
+  { key: "status", label: "حالة الطلاب (نظامي / متأخر / الحالة الوظيفية)" },
+  { key: "avgYears", label: "متوسط سنوات التسجيل" },
   { key: "students", label: "قائمة الطلاب المناقشين" },
 ];
 
 export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<SectionKey>>(
-    new Set(["summary", "monthly", "faculty", "specialty"])
+    new Set(["summary", "monthly", "faculty", "specialty", "status", "avgYears"])
   );
   const [generating, setGenerating] = useState(false);
 
@@ -120,7 +130,7 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
 }
 
 // ============================================================================
-// PDF Generation
+// PDF Generation Helpers
 // ============================================================================
 
 const FONT_NAME = "Amiri";
@@ -214,6 +224,36 @@ function drawTableRow(
   return y + rowH;
 }
 
+// ============================================================================
+// Statistics helpers
+// ============================================================================
+
+function getStudentStatus(s: StudentData): string {
+  if (s.current_year === "متأخر") return "متأخر";
+  const maxYears = s._type === "phd_lmd" ? 5 : 6;
+  if (s.registration_count && s.registration_count > maxYears) return "متأخر";
+  return "نظامي";
+}
+
+function calcRegistrationYears(s: StudentData): number | null {
+  if (s.registration_count && s.registration_count >= 1) return s.registration_count;
+  if (!s.first_registration_year || !s.defense_date) return null;
+  const firstYear = extractStartYear(s.first_registration_year);
+  const defenseYear = parseInt(s.defense_date.substring(0, 4), 10);
+  if (!firstYear || isNaN(defenseYear)) return null;
+  return defenseYear - firstYear + 1;
+}
+
+function computeAvg(values: number[]): string {
+  if (values.length === 0) return "-";
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  return toWesternNumerals(avg.toFixed(1));
+}
+
+// ============================================================================
+// Main PDF generator
+// ============================================================================
+
 async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   await loadAmiriFont(doc);
@@ -240,6 +280,81 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
     y = drawText(doc, `إجمالي المناقشات: ${toWesternNumerals(data.total)}`, y);
     y = drawText(doc, `${certificateTypeLabels.phd_lmd.ar}: ${toWesternNumerals(data.byType.phd_lmd)}`, y);
     y = drawText(doc, `${certificateTypeLabels.phd_science.ar}: ${toWesternNumerals(data.byType.phd_science)}`, y);
+    y += 5;
+  }
+
+  // ---- Student Status ----
+  if (sections.has("status")) {
+    y = drawTitle(doc, "حالة الطلاب", y);
+
+    // Regular vs Late
+    const regular = data.students.filter(s => getStudentStatus(s) === "نظامي").length;
+    const late = data.students.filter(s => getStudentStatus(s) === "متأخر").length;
+    y = drawText(doc, `نظامي: ${toWesternNumerals(regular)}`, y);
+    y = drawText(doc, `متأخر: ${toWesternNumerals(late)}`, y);
+    y += 3;
+
+    // Employment status breakdown
+    const empMap: Record<string, number> = {};
+    data.students.forEach(s => {
+      const status = s.employment_status || "غير محدد";
+      empMap[status] = (empMap[status] || 0) + 1;
+    });
+    const empEntries = Object.entries(empMap).sort((a, b) => b[1] - a[1]);
+    if (empEntries.length > 0) {
+      y = drawText(doc, "الحالة الوظيفية:", y, { bold: true });
+      const colW = [80, 30];
+      y = drawTableRow(doc, ["الحالة", "العدد"], colW, y, { bold: true, bg: true });
+      empEntries.forEach(([status, count]) => {
+        y = drawTableRow(doc, [status, toWesternNumerals(count)], colW, y);
+      });
+    }
+    y += 5;
+  }
+
+  // ---- Average Registration Years ----
+  if (sections.has("avgYears")) {
+    y = drawTitle(doc, "متوسط سنوات التسجيل", y);
+
+    // By Faculty
+    const facYears: Record<string, number[]> = {};
+    const branchYears: Record<string, number[]> = {};
+    const specYears: Record<string, number[]> = {};
+
+    data.students.forEach(s => {
+      const years = calcRegistrationYears(s);
+      if (years == null) return;
+      const fac = s.faculty_ar || "غير محدد";
+      const branch = s.branch_ar || "غير محدد";
+      const spec = s.specialty_ar || "غير محدد";
+      (facYears[fac] ??= []).push(years);
+      (branchYears[branch] ??= []).push(years);
+      (specYears[spec] ??= []).push(years);
+    });
+
+    // Faculty average
+    y = drawText(doc, "حسب الكلية:", y, { bold: true });
+    const colW2 = [80, 30, 30];
+    y = drawTableRow(doc, ["الكلية", "المتوسط", "العدد"], colW2, y, { bold: true, bg: true });
+    Object.entries(facYears).sort((a, b) => b[1].length - a[1].length).forEach(([fac, vals]) => {
+      y = drawTableRow(doc, [fac, computeAvg(vals), toWesternNumerals(vals.length)], colW2, y);
+    });
+    y += 3;
+
+    // Branch average
+    y = drawText(doc, "حسب الشعبة:", y, { bold: true });
+    y = drawTableRow(doc, ["الشعبة", "المتوسط", "العدد"], colW2, y, { bold: true, bg: true });
+    Object.entries(branchYears).sort((a, b) => b[1].length - a[1].length).forEach(([branch, vals]) => {
+      y = drawTableRow(doc, [branch, computeAvg(vals), toWesternNumerals(vals.length)], colW2, y);
+    });
+    y += 3;
+
+    // Specialty average
+    y = drawText(doc, "حسب التخصص:", y, { bold: true });
+    y = drawTableRow(doc, ["التخصص", "المتوسط", "العدد"], colW2, y, { bold: true, bg: true });
+    Object.entries(specYears).sort((a, b) => b[1].length - a[1].length).forEach(([spec, vals]) => {
+      y = drawTableRow(doc, [spec, computeAvg(vals), toWesternNumerals(vals.length)], colW2, y);
+    });
     y += 5;
   }
 
@@ -286,8 +401,8 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
   // ---- Students list ----
   if (sections.has("students")) {
     y = drawTitle(doc, "قائمة الطلاب المناقشين", y);
-    const colW = [10, 55, 40, 40, 30];
-    y = drawTableRow(doc, ["#", "الاسم الكامل", "الكلية", "التخصص", "تاريخ المناقشة"], colW, y, { bold: true, bg: true });
+    const colW = [10, 45, 35, 30, 25, 20];
+    y = drawTableRow(doc, ["#", "الاسم الكامل", "الكلية", "التخصص", "تاريخ المناقشة", "الحالة"], colW, y, { bold: true, bg: true });
     data.students.forEach((s, i) => {
       y = drawTableRow(
         doc,
@@ -297,6 +412,7 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
           s.faculty_ar || "",
           s.specialty_ar || "",
           s.defense_date ? toWesternNumerals(s.defense_date) : "",
+          getStudentStatus(s),
         ],
         colW,
         y
