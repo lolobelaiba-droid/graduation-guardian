@@ -1,6 +1,6 @@
 import { useState } from "react";
 import jsPDF from "jspdf";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -12,6 +12,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { certificateTypeLabels } from "@/types/certificates";
 import { toWesternNumerals } from "@/lib/numerals";
@@ -19,17 +22,29 @@ import { loadFontFile, arrayBufferToBase64, getAllFonts } from "@/lib/arabicFont
 import { shapeArabicText } from "@/lib/pdf/arabicTextUtils";
 import { extractStartYear } from "@/lib/registration-calculation";
 
-interface StudentData {
+export interface StudentData {
   full_name_ar: string;
+  full_name_fr: string;
   faculty_ar: string;
+  faculty_fr: string;
   specialty_ar: string;
+  specialty_fr: string;
   branch_ar: string;
+  branch_fr: string;
   defense_date: string;
-  _type: string;
+  date_of_birth: string;
+  birthplace_ar: string;
+  student_number: string;
+  supervisor_ar: string;
+  co_supervisor_ar: string;
+  mention: string;
+  thesis_title_ar: string;
   first_registration_year: string;
   employment_status: string;
   registration_count: number | null;
   current_year: string;
+  research_lab_ar: string;
+  _type: string;
 }
 
 interface ReportData {
@@ -47,7 +62,7 @@ interface ExportPdfDialogProps {
   data: ReportData;
 }
 
-type SectionKey = "summary" | "monthly" | "faculty" | "specialty" | "students" | "status" | "avgYears";
+type SectionKey = "summary" | "monthly" | "faculty" | "specialty" | "students" | "status" | "avgYears" | "customTable";
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "summary", label: "ملخص عام" },
@@ -57,17 +72,61 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "status", label: "حالة الطلاب (نظامي / متأخر / الحالة الوظيفية)" },
   { key: "avgYears", label: "متوسط سنوات التسجيل" },
   { key: "students", label: "قائمة الطلاب المناقشين" },
+  { key: "customTable", label: "جدول مخصص (اختيار الأعمدة)" },
 ];
+
+type ColumnKey = keyof Omit<StudentData, "_type">;
+
+const AVAILABLE_COLUMNS: { key: ColumnKey; label: string }[] = [
+  { key: "full_name_ar", label: "الاسم الكامل (عربي)" },
+  { key: "full_name_fr", label: "الاسم الكامل (فرنسي)" },
+  { key: "student_number", label: "رقم الشهادة" },
+  { key: "faculty_ar", label: "الكلية (عربي)" },
+  { key: "faculty_fr", label: "الكلية (فرنسي)" },
+  { key: "branch_ar", label: "الشعبة (عربي)" },
+  { key: "branch_fr", label: "الشعبة (فرنسي)" },
+  { key: "specialty_ar", label: "التخصص (عربي)" },
+  { key: "specialty_fr", label: "التخصص (فرنسي)" },
+  { key: "defense_date", label: "تاريخ المناقشة" },
+  { key: "date_of_birth", label: "تاريخ الميلاد" },
+  { key: "birthplace_ar", label: "مكان الميلاد" },
+  { key: "supervisor_ar", label: "المشرف" },
+  { key: "co_supervisor_ar", label: "مساعد المشرف" },
+  { key: "mention", label: "التقدير" },
+  { key: "thesis_title_ar", label: "عنوان الأطروحة" },
+  { key: "first_registration_year", label: "سنة أول تسجيل" },
+  { key: "employment_status", label: "الحالة الوظيفية" },
+  { key: "research_lab_ar", label: "مخبر البحث" },
+  { key: "current_year", label: "السنة الحالية" },
+];
+
+const mentionLabels: Record<string, string> = {
+  honorable: "مشرف",
+  very_honorable: "مشرف جدا",
+};
 
 export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<SectionKey>>(
     new Set(["summary", "monthly", "faculty", "specialty", "status", "avgYears"])
   );
+  const [selectedColumns, setSelectedColumns] = useState<Set<ColumnKey>>(
+    new Set(["full_name_ar", "faculty_ar", "specialty_ar", "defense_date"])
+  );
+  const [columnsOpen, setColumnsOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   const toggle = (key: SectionKey) => {
     setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleColumn = (key: ColumnKey) => {
+    setSelectedColumns((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -80,9 +139,13 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
       toast.error("اختر قسماً واحداً على الأقل");
       return;
     }
+    if (selected.has("customTable") && selectedColumns.size === 0) {
+      toast.error("اختر عموداً واحداً على الأقل للجدول المخصص");
+      return;
+    }
     setGenerating(true);
     try {
-      await generatePdf(data, selected);
+      await generatePdf(data, selected, selectedColumns);
       toast.success("تم إنشاء التقرير بنجاح");
       setOpen(false);
     } catch (e) {
@@ -93,6 +156,8 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
     }
   };
 
+  const showCustomColumns = selected.has("customTable");
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -101,23 +166,55 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
           تصدير PDF
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md" dir="rtl">
+      <DialogContent className="sm:max-w-lg" dir="rtl">
         <DialogHeader>
           <DialogTitle>تصدير تقرير PDF</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">اختر الأقسام التي تريد تضمينها في التقرير:</p>
-        <div className="space-y-3 py-2">
-          {SECTIONS.map((s) => (
-            <div key={s.key} className="flex items-center gap-3">
-              <Checkbox
-                id={s.key}
-                checked={selected.has(s.key)}
-                onCheckedChange={() => toggle(s.key)}
-              />
-              <Label htmlFor={s.key} className="cursor-pointer">{s.label}</Label>
-            </div>
-          ))}
-        </div>
+        <ScrollArea className="max-h-[60vh]">
+          <p className="text-sm text-muted-foreground mb-3">اختر الأقسام التي تريد تضمينها في التقرير:</p>
+          <div className="space-y-3 py-2">
+            {SECTIONS.map((s) => (
+              <div key={s.key}>
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id={s.key}
+                    checked={selected.has(s.key)}
+                    onCheckedChange={() => toggle(s.key)}
+                  />
+                  <Label htmlFor={s.key} className="cursor-pointer">{s.label}</Label>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {showCustomColumns && (
+            <>
+              <Separator className="my-3" />
+              <Collapsible open={columnsOpen} onOpenChange={setColumnsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-between gap-2 text-sm font-medium">
+                    اختر أعمدة الجدول المخصص ({toWesternNumerals(selectedColumns.size)} عمود)
+                    {columnsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2 py-2 pr-2">
+                    {AVAILABLE_COLUMNS.map((col) => (
+                      <div key={col.key} className="flex items-center gap-3">
+                        <Checkbox
+                          id={`col-${col.key}`}
+                          checked={selectedColumns.has(col.key)}
+                          onCheckedChange={() => toggleColumn(col.key)}
+                        />
+                        <Label htmlFor={`col-${col.key}`} className="cursor-pointer text-sm">{col.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </>
+          )}
+        </ScrollArea>
         <DialogFooter>
           <Button onClick={handleExport} disabled={generating || selected.size === 0} className="gap-2">
             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -250,11 +347,27 @@ function computeAvg(values: number[]): string {
   return toWesternNumerals(avg.toFixed(1));
 }
 
+const mentionLabelsMap: Record<string, string> = {
+  honorable: "مشرف",
+  very_honorable: "مشرف جدا",
+};
+
+function getColumnValue(s: StudentData, key: ColumnKey): string {
+  const val = s[key];
+  if (val == null) return "";
+  if (key === "mention") return mentionLabelsMap[String(val)] || String(val);
+  if (key === "registration_count") return val ? toWesternNumerals(val) : "";
+  if (key === "defense_date" || key === "date_of_birth" || key === "first_registration_year") {
+    return val ? toWesternNumerals(String(val)) : "";
+  }
+  return String(val);
+}
+
 // ============================================================================
 // Main PDF generator
 // ============================================================================
 
-async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
+async function generatePdf(data: ReportData, sections: Set<SectionKey>, customColumns: Set<ColumnKey>) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   await loadAmiriFont(doc);
 
@@ -286,15 +399,12 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
   // ---- Student Status ----
   if (sections.has("status")) {
     y = drawTitle(doc, "حالة الطلاب", y);
-
-    // Regular vs Late
     const regular = data.students.filter(s => getStudentStatus(s) === "نظامي").length;
     const late = data.students.filter(s => getStudentStatus(s) === "متأخر").length;
     y = drawText(doc, `نظامي: ${toWesternNumerals(regular)}`, y);
     y = drawText(doc, `متأخر: ${toWesternNumerals(late)}`, y);
     y += 3;
 
-    // Employment status breakdown
     const empMap: Record<string, number> = {};
     data.students.forEach(s => {
       const status = s.employment_status || "غير محدد";
@@ -316,7 +426,6 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
   if (sections.has("avgYears")) {
     y = drawTitle(doc, "متوسط سنوات التسجيل", y);
 
-    // By Faculty
     const facYears: Record<string, number[]> = {};
     const branchYears: Record<string, number[]> = {};
     const specYears: Record<string, number[]> = {};
@@ -332,16 +441,14 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
       (specYears[spec] ??= []).push(years);
     });
 
-    // Faculty average
-    y = drawText(doc, "حسب الكلية:", y, { bold: true });
     const colW2 = [80, 30, 30];
+    y = drawText(doc, "حسب الكلية:", y, { bold: true });
     y = drawTableRow(doc, ["الكلية", "المتوسط", "العدد"], colW2, y, { bold: true, bg: true });
     Object.entries(facYears).sort((a, b) => b[1].length - a[1].length).forEach(([fac, vals]) => {
       y = drawTableRow(doc, [fac, computeAvg(vals), toWesternNumerals(vals.length)], colW2, y);
     });
     y += 3;
 
-    // Branch average
     y = drawText(doc, "حسب الشعبة:", y, { bold: true });
     y = drawTableRow(doc, ["الشعبة", "المتوسط", "العدد"], colW2, y, { bold: true, bg: true });
     Object.entries(branchYears).sort((a, b) => b[1].length - a[1].length).forEach(([branch, vals]) => {
@@ -349,7 +456,6 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
     });
     y += 3;
 
-    // Specialty average
     y = drawText(doc, "حسب التخصص:", y, { bold: true });
     y = drawTableRow(doc, ["التخصص", "المتوسط", "العدد"], colW2, y, { bold: true, bg: true });
     Object.entries(specYears).sort((a, b) => b[1].length - a[1].length).forEach(([spec, vals]) => {
@@ -377,12 +483,7 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
     const colW = [70, 25, 25, 25];
     y = drawTableRow(doc, ["الكلية", "د.ل.م.د", "د.علوم", "المجموع"], colW, y, { bold: true, bg: true });
     data.byFaculty.forEach(([fac, counts]) => {
-      y = drawTableRow(
-        doc,
-        [fac, toWesternNumerals(counts.phd_lmd), toWesternNumerals(counts.phd_science), toWesternNumerals(counts.total)],
-        colW,
-        y
-      );
+      y = drawTableRow(doc, [fac, toWesternNumerals(counts.phd_lmd), toWesternNumerals(counts.phd_science), toWesternNumerals(counts.total)], colW, y);
     });
     y += 5;
   }
@@ -404,20 +505,49 @@ async function generatePdf(data: ReportData, sections: Set<SectionKey>) {
     const colW = [10, 45, 35, 30, 25, 20];
     y = drawTableRow(doc, ["#", "الاسم الكامل", "الكلية", "التخصص", "تاريخ المناقشة", "الحالة"], colW, y, { bold: true, bg: true });
     data.students.forEach((s, i) => {
-      y = drawTableRow(
-        doc,
-        [
-          toWesternNumerals(i + 1),
-          s.full_name_ar || "",
-          s.faculty_ar || "",
-          s.specialty_ar || "",
-          s.defense_date ? toWesternNumerals(s.defense_date) : "",
-          getStudentStatus(s),
-        ],
-        colW,
-        y
-      );
+      y = drawTableRow(doc, [
+        toWesternNumerals(i + 1),
+        s.full_name_ar || "",
+        s.faculty_ar || "",
+        s.specialty_ar || "",
+        s.defense_date ? toWesternNumerals(s.defense_date) : "",
+        getStudentStatus(s),
+      ], colW, y);
     });
+    y += 5;
+  }
+
+  // ---- Custom Table ----
+  if (sections.has("customTable") && customColumns.size > 0) {
+    y = drawTitle(doc, "جدول مخصص", y);
+
+    const orderedCols = AVAILABLE_COLUMNS.filter(c => customColumns.has(c.key));
+    const totalAvailable = pageW - PAGE_MARGIN * 2 - 10; // 10 for # column
+    const colWidth = Math.min(totalAvailable / orderedCols.length, 50);
+    const colWidths = [10, ...orderedCols.map(() => colWidth)];
+    const headers = ["#", ...orderedCols.map(c => c.label)];
+
+    // Switch to landscape if many columns
+    if (orderedCols.length > 5) {
+      doc.addPage("a4", "landscape");
+      y = PAGE_MARGIN + 10;
+      const lPageW = doc.internal.pageSize.getWidth();
+      const lTotalAvail = lPageW - PAGE_MARGIN * 2 - 10;
+      const lColWidth = Math.min(lTotalAvail / orderedCols.length, 50);
+      const lColWidths = [10, ...orderedCols.map(() => lColWidth)];
+
+      y = drawTableRow(doc, headers, lColWidths, y, { bold: true, bg: true });
+      data.students.forEach((s, i) => {
+        const row = [toWesternNumerals(i + 1), ...orderedCols.map(c => getColumnValue(s, c.key))];
+        y = drawTableRow(doc, row, lColWidths, y);
+      });
+    } else {
+      y = drawTableRow(doc, headers, colWidths, y, { bold: true, bg: true });
+      data.students.forEach((s, i) => {
+        const row = [toWesternNumerals(i + 1), ...orderedCols.map(c => getColumnValue(s, c.key))];
+        y = drawTableRow(doc, row, colWidths, y);
+      });
+    }
   }
 
   // Footer on each page
