@@ -158,131 +158,133 @@ function createWindow() {
 // Printer / Print IPC
 // =====================
 
-ipcMain.handle('printers:list', async () => {
-  const win = BrowserWindow.getFocusedWindow() || mainWindow;
-  if (!win) return [];
-  try {
-    const printers = await win.webContents.getPrintersAsync();
-    return printers;
-  } catch (e) {
-    console.error('Failed to list printers:', e);
-    return [];
-  }
-});
-
-ipcMain.handle('printers:open-settings', async () => {
-  try {
-    if (process.platform === 'win32') {
-      await shell.openExternal('ms-settings:printers');
-      return true;
-    }
-    if (process.platform === 'darwin') {
-      await shell.openExternal('x-apple.systempreferences:com.apple.preference.printers');
-      return true;
-    }
-    // Linux: no universal URI. Return false so the UI can inform the user.
-    return false;
-  } catch (e) {
-    console.error('Failed to open printer settings:', e);
-    return false;
-  }
-});
-
-ipcMain.handle('printers:print-pdf', async (_event, payload) => {
-  try {
-    const { pdf, options } = payload || {};
-    if (!pdf) return { success: false, error: 'Missing PDF data' };
-
-    const deviceName = options?.deviceName;
-
-    // Write to a temporary file so Chromium PDF viewer can load it reliably.
-    const tmpPath = path.join(os.tmpdir(), `certificates_${Date.now()}.pdf`);
-    const buffer = Buffer.from(new Uint8Array(pdf));
-    fs.writeFileSync(tmpPath, buffer);
-
-    const printWindow = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        webSecurity: true,
-      },
-    });
-
-    await printWindow.loadURL(pathToFileURL(tmpPath).toString());
-
-    // Wait a tick for the PDF plugin/viewer to initialize.
-    await new Promise((r) => setTimeout(r, 300));
-
-    const success = await new Promise((resolve) => {
-      printWindow.webContents.print(
-        {
-          silent: false, // show native dialog (tools/properties)
-          printBackground: true,
-          deviceName: deviceName || undefined,
-        },
-        (ok, failureReason) => {
-          if (!ok) console.error('Print failed:', failureReason);
-          resolve(ok);
-        }
-      );
-    });
-
-    try {
-      printWindow.close();
-    } catch {
-      // ignore
-    }
-
-    try {
-      fs.unlinkSync(tmpPath);
-    } catch {
-      // ignore
-    }
-
-    return success ? { success: true } : { success: false, error: 'Print cancelled or failed' };
-  } catch (e) {
-    console.error('Failed to print PDF:', e);
-    return { success: false, error: String(e?.message || e) };
-  }
-});
-
-ipcMain.handle('printers:print-native', async (_event, payload) => {
-  try {
-    const { options } = payload || {};
+function registerPrinterHandlers() {
+  ipcMain.handle('printers:list', async () => {
     const win = BrowserWindow.getFocusedWindow() || mainWindow;
-    if (!win) return { success: false, error: 'No window available' };
+    if (!win) return [];
+    try {
+      const printers = await win.webContents.getPrintersAsync();
+      return printers;
+    } catch (e) {
+      console.error('Failed to list printers:', e);
+      return [];
+    }
+  });
 
-    const success = await new Promise((resolve) => {
-      win.webContents.print(
-        {
-          silent: false,
-          printBackground: true,
-          margins: { marginType: 'none' },
-          pageSize: options?.pageSize || undefined,
-          landscape: options?.landscape || false,
+  ipcMain.handle('printers:open-settings', async () => {
+    try {
+      if (process.platform === 'win32') {
+        await shell.openExternal('ms-settings:printers');
+        return true;
+      }
+      if (process.platform === 'darwin') {
+        await shell.openExternal('x-apple.systempreferences:com.apple.preference.printers');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Failed to open printer settings:', e);
+      return false;
+    }
+  });
+
+  ipcMain.handle('printers:print-pdf', async (_event, payload) => {
+    try {
+      const { pdf, options } = payload || {};
+      if (!pdf) return { success: false, error: 'Missing PDF data' };
+
+      const deviceName = options?.deviceName;
+
+      const tmpPath = path.join(os.tmpdir(), `certificates_${Date.now()}.pdf`);
+      const buffer = Buffer.from(new Uint8Array(pdf));
+      fs.writeFileSync(tmpPath, buffer);
+
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          webSecurity: true,
         },
-        (ok, failureReason) => {
-          if (!ok) console.error('Print failed:', failureReason);
-          resolve(ok);
-        }
-      );
-    });
+      });
 
-    return success ? { success: true } : { success: false, error: 'Print cancelled or failed' };
-  } catch (e) {
-    console.error('Failed to print:', e);
-    return { success: false, error: String(e?.message || e) };
-  }
-});
+      await printWindow.loadURL(pathToFileURL(tmpPath).toString());
+
+      await new Promise((r) => setTimeout(r, 300));
+
+      const success = await new Promise((resolve) => {
+        printWindow.webContents.print(
+          {
+            silent: false,
+            printBackground: true,
+            deviceName: deviceName || undefined,
+          },
+          (ok, failureReason) => {
+            if (!ok) console.error('Print failed:', failureReason);
+            resolve(ok);
+          }
+        );
+      });
+
+      try {
+        printWindow.close();
+      } catch {
+        // ignore
+      }
+
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch {
+        // ignore
+      }
+
+      return success ? { success: true } : { success: false, error: 'Print cancelled or failed' };
+    } catch (e) {
+      console.error('Failed to print PDF:', e);
+      return { success: false, error: String(e?.message || e) };
+    }
+  });
+
+  ipcMain.handle('printers:print-native', async (_event, payload) => {
+    try {
+      const { options } = payload || {};
+      const win = BrowserWindow.getFocusedWindow() || mainWindow;
+      if (!win) return { success: false, error: 'No window available' };
+
+      const success = await new Promise((resolve) => {
+        win.webContents.print(
+          {
+            silent: false,
+            printBackground: true,
+            margins: { marginType: 'none' },
+            pageSize: options?.pageSize || undefined,
+            landscape: options?.landscape || false,
+          },
+          (ok, failureReason) => {
+            if (!ok) console.error('Print failed:', failureReason);
+            resolve(ok);
+          }
+        );
+      });
+
+      return success ? { success: true } : { success: false, error: 'Print cancelled or failed' };
+    } catch (e) {
+      console.error('Failed to print:', e);
+      return { success: false, error: String(e?.message || e) };
+    }
+  });
+
+  console.log('Printer IPC handlers registered');
+}
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   // Initialize database
   db.initializeDatabase();
   
-  // Register database IPC handlers
+  // Register all IPC handlers
   registerDatabaseHandlers();
+  registerPrinterHandlers();
   
   createWindow();
 
