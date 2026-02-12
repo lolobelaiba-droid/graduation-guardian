@@ -184,7 +184,7 @@ async function registerFonts(doc: jsPDF, fontsNeeded: string[]): Promise<Set<str
         doc.addFileToVFS(fileName, fontBase64);
         
         // Register with Identity-H for Unicode (Arabic) support
-        (doc as any).addFont(fileName, font.family, font.style, 'Identity-H');
+        doc.addFont(fileName, font.family, font.style, undefined, 'Identity-H');
         
         registeredFonts.add(`${font.family}:${font.style}`);
         logger.log(`[PDF Fonts] Registered: ${font.family} (${font.style})`);

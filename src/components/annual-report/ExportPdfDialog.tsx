@@ -253,7 +253,7 @@ async function loadAmiriFont(doc: jsPDF) {
     const ext = font.url.split("?")[0].split(".").pop() || "ttf";
     const fileName = `${font.name}.${ext}`;
     doc.addFileToVFS(fileName, base64);
-    (doc as any).addFont(fileName, font.family, font.style, "Identity-H");
+    doc.addFont(fileName, font.family, font.style, undefined, "Identity-H");
   }
 }
 
