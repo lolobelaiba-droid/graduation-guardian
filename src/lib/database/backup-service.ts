@@ -269,17 +269,48 @@ export class BackupService {
    * قراءة ملف النسخة الاحتياطية
    */
   static async readBackupFile(file: File): Promise<BackupData | null> {
+    let text: string;
     try {
-      const text = await file.text();
-      const backupData = JSON.parse(text);
-      
-      if (!backupData.version || !backupData.data) {
-        return null;
-      }
-      
-      return backupData as BackupData;
-    } catch {
-      return null;
+      text = await file.text();
+    } catch (e) {
+      console.error("Failed to read file content:", e);
+      throw new Error("فشل في قراءة محتوى الملف. تأكد من أن الملف غير تالف.");
     }
+
+    let backupData: Record<string, unknown>;
+    try {
+      backupData = JSON.parse(text);
+    } catch (e) {
+      console.error("Failed to parse JSON:", e);
+      throw new Error("الملف ليس بتنسيق JSON صالح. تأكد من اختيار ملف نسخة احتياطية صحيح.");
+    }
+
+    // Support both wrapped format {version, data: {...}} and raw data format {...tables...}
+    if (backupData.version && backupData.data) {
+      return backupData as unknown as BackupData;
+    }
+
+    // If the file is raw table data (exported from desktop without wrapper)
+    const hasTableKeys = ['phd_lmd_certificates', 'settings', 'certificate_templates']
+      .some(key => key in backupData);
+    
+    if (hasTableKeys) {
+      return {
+        version: "2.0",
+        created_at: new Date().toISOString(),
+        data: backupData as unknown as BackupData['data'],
+      };
+    }
+
+    // Check if data is nested one level deeper (e.g. {data: {tables...}})
+    if (backupData.data && typeof backupData.data === 'object') {
+      return {
+        version: "2.0",
+        created_at: (backupData.created_at as string) || new Date().toISOString(),
+        data: backupData.data as BackupData['data'],
+      };
+    }
+
+    throw new Error("هيكل ملف النسخة الاحتياطية غير معروف. تأكد من أن الملف تم تصديره من هذا البرنامج.");
   }
 }
