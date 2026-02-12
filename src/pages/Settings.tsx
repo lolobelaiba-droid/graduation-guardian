@@ -84,6 +84,7 @@ export default function Settings() {
     summary: BackupSummary;
   } | null>(null);
   const [currentDataSummary, setCurrentDataSummary] = useState<BackupSummary | null>(null);
+  const [restoreProgress, setRestoreProgress] = useState<{ step: string; current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -416,6 +417,7 @@ export default function Settings() {
 
     setShowRestoreConfirm(false);
     setIsRestoring(true);
+    setRestoreProgress({ step: "حفظ البيانات الحالية...", current: 0, total: 1 });
 
     try {
       // Save current state before restoring
@@ -430,7 +432,9 @@ export default function Settings() {
         data: pendingBackupData.data as BackupData['data'],
       };
 
-      const { error } = await BackupService.importAll(backupToRestore);
+      const { error } = await BackupService.importAll(backupToRestore, (step, current, total) => {
+        setRestoreProgress({ step, current, total });
+      });
       if (error) throw error;
 
       setCanUndo(true);
@@ -442,6 +446,7 @@ export default function Settings() {
       toast.error("حدث خطأ أثناء استعادة النسخة الاحتياطية");
     } finally {
       setIsRestoring(false);
+      setRestoreProgress(null);
     }
   };
 
@@ -896,6 +901,25 @@ export default function Settings() {
                   </Button>
                 )}
               </div>
+              {isRestoring && restoreProgress && (
+                <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm font-medium text-foreground">
+                      {restoreProgress.step}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.round((restoreProgress.current / restoreProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-left" dir="ltr">
+                    {restoreProgress.current} / {restoreProgress.total}
+                  </p>
+                </div>
+              )}
               {canUndo && (
                 <div className="mt-4 p-3 bg-accent/50 border border-accent rounded-lg flex items-center gap-2">
                   <RefreshCw className="h-4 w-4 text-accent-foreground" />
