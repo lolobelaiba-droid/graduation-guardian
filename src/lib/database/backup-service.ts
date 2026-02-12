@@ -205,7 +205,11 @@ export class BackupService {
       
       // Helper to delete all rows from a table
       const deleteTable = async (tableName: string) => {
-        const { error } = await supabase.from(tableName as 'settings').delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        // Use gte to match all UUIDs (covers all possible id values)
+        const { error } = await supabase
+          .from(tableName as 'settings')
+          .delete()
+          .gte("id", "00000000-0000-0000-0000-000000000000");
         if (error) console.warn(`Warning deleting ${tableName}:`, error.message);
       };
 
@@ -238,6 +242,9 @@ export class BackupService {
 
       // Helper to restore a table in batches
       const BATCH_SIZE = 500;
+      // Tables with unique constraints that need upsert
+      const UPSERT_TABLES = ['settings', 'user_settings', 'dropdown_options'];
+      
       const restoreTable = async (tableName: string, data: unknown[] | undefined) => {
         const label = TABLE_LABELS[tableName] || tableName;
         const count = data?.length || 0;
@@ -245,9 +252,20 @@ export class BackupService {
         
         if (!data || data.length === 0) return;
         
+        const useUpsert = UPSERT_TABLES.includes(tableName);
+        
         for (let i = 0; i < data.length; i += BATCH_SIZE) {
           const batch = data.slice(i, i + BATCH_SIZE);
-          const { error } = await supabase.from(tableName as 'phd_lmd_certificates').insert(batch as TablesInsert<'phd_lmd_certificates'>[]);
+          let error;
+          
+          if (useUpsert) {
+            const result = await supabase.from(tableName as 'settings').upsert(batch as TablesInsert<'settings'>[], { onConflict: 'id' });
+            error = result.error;
+          } else {
+            const result = await supabase.from(tableName as 'phd_lmd_certificates').insert(batch as TablesInsert<'phd_lmd_certificates'>[]);
+            error = result.error;
+          }
+          
           if (error) {
             console.error(`Error restoring ${tableName} (batch ${Math.floor(i / BATCH_SIZE) + 1}):`, error.message);
             throw new Error(`فشل استعادة ${label}: ${error.message}`);
