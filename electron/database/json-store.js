@@ -121,7 +121,8 @@ function initializeDatabase() {
     'academic_titles',
     'custom_fields',
     'custom_field_values',
-    'custom_field_options'
+    'custom_field_options',
+    'notes'
   ];
   
   tables.forEach(function(table) {
@@ -458,7 +459,8 @@ function exportAllData() {
       custom_fields: readTable('custom_fields'),
       custom_field_values: readTable('custom_field_values'),
       custom_field_options: readTable('custom_field_options'),
-      print_history: readTable('print_history')
+      print_history: readTable('print_history'),
+      notes: readTable('notes')
     }
   };
 }
@@ -484,7 +486,8 @@ function importAllData(backupData) {
     'custom_fields',
     'custom_field_values',
     'custom_field_options',
-    'print_history'
+    'print_history',
+    'notes'
   ];
   
   tableNames.forEach(function(tableName) {
