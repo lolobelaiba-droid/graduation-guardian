@@ -121,7 +121,16 @@ export async function loadFontFile(url: string): Promise<ArrayBuffer | null> {
   }
 
   try {
-    const response = await fetch(url);
+    // In Electron with file:// protocol, absolute paths like "/fonts/..." 
+    // resolve to filesystem root. Convert to relative path.
+    let resolvedUrl = url;
+    const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+    if (isFileProtocol && url.startsWith('/')) {
+      // Convert "/fonts/Amiri-Regular.ttf" to "./fonts/Amiri-Regular.ttf"
+      resolvedUrl = '.' + url;
+    }
+
+    const response = await fetch(resolvedUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch font: ${response.statusText}`);
     }
