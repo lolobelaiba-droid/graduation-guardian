@@ -317,14 +317,19 @@ export default function Settings() {
 
   const prepareRestoreConfirmation = async (tableData: BackupData['data'], createdAt?: string) => {
     const backupSummary: BackupSummary = {
-      ...getBackupSummary(tableData),
+      ...getBackupSummary(tableData || {} as BackupData['data']),
       createdAt,
     };
 
-    const { data: currentExport } = await BackupService.exportAll();
-    const currentSummary: BackupSummary = currentExport
-      ? getBackupSummary(currentExport.data)
-      : { phdLmdCount: 0, phdScienceCount: 0, masterCount: 0, templatesCount: 0, phdLmdStudentsCount: 0, phdScienceStudentsCount: 0 };
+    let currentSummary: BackupSummary = { phdLmdCount: 0, phdScienceCount: 0, masterCount: 0, templatesCount: 0, phdLmdStudentsCount: 0, phdScienceStudentsCount: 0 };
+    try {
+      const { data: currentExport } = await BackupService.exportAll();
+      if (currentExport) {
+        currentSummary = getBackupSummary(currentExport.data);
+      }
+    } catch (e) {
+      console.warn("Could not fetch current data for comparison:", e);
+    }
 
     setPendingBackupData({ data: tableData as unknown as Record<string, unknown[]>, summary: backupSummary });
     setCurrentDataSummary(currentSummary);
@@ -397,7 +402,8 @@ export default function Settings() {
       setShowRestoreConfirm(true);
     } catch (error) {
       console.error("Error reading backup file:", error);
-      toast.error("حدث خطأ أثناء قراءة ملف النسخة الاحتياطية");
+      const message = error instanceof Error ? error.message : "حدث خطأ أثناء قراءة ملف النسخة الاحتياطية";
+      toast.error(message);
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
