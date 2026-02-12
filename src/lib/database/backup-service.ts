@@ -151,10 +151,36 @@ export class BackupService {
   /**
    * استيراد جميع البيانات
    */
-  static async importAll(backupData: BackupData): Promise<{ success: boolean; error: Error | null }> {
+  static async importAll(
+    backupData: BackupData,
+    onProgress?: (step: string, current: number, total: number) => void
+  ): Promise<{ success: boolean; error: Error | null }> {
+    const TABLE_LABELS: Record<string, string> = {
+      phd_lmd_certificates: "شهادات دكتوراه ل م د",
+      phd_science_certificates: "شهادات دكتوراه علوم",
+      master_certificates: "شهادات الماستر",
+      certificate_templates: "قوالب الشهادات",
+      certificate_template_fields: "حقول القوالب",
+      settings: "الإعدادات",
+      user_settings: "إعدادات المستخدم",
+      dropdown_options: "خيارات القوائم",
+      custom_fonts: "الخطوط المخصصة",
+      activity_log: "سجل النشاطات",
+      phd_lmd_students: "طلبة دكتوراه ل م د",
+      phd_science_students: "طلبة دكتوراه علوم",
+      academic_titles: "الألقاب العلمية",
+      custom_fields: "الحقول المخصصة",
+      custom_field_values: "قيم الحقول المخصصة",
+      custom_field_options: "خيارات الحقول المخصصة",
+      print_history: "سجل الطباعة",
+      notes: "الملاحظات",
+    };
+
     if (isElectron()) {
       const db = getDbClient()!;
+      onProgress?.("جاري استعادة البيانات محلياً...", 1, 2);
       const result = await db.importAllData(backupData);
+      onProgress?.("اكتملت الاستعادة", 2, 2);
       
       if (result.success) {
         return { success: true, error: null };
@@ -165,6 +191,17 @@ export class BackupService {
     // Supabase version
     try {
       const { data: tableData } = backupData;
+
+      // Count total restore steps
+      const allTables = [
+        "phd_lmd_certificates", "phd_science_certificates", "master_certificates",
+        "phd_lmd_students", "phd_science_students", "dropdown_options", "custom_fonts",
+        "academic_titles", "activity_log", "settings", "user_settings", "notes",
+        "certificate_templates", "custom_fields",
+        "certificate_template_fields", "custom_field_values", "custom_field_options", "print_history",
+      ];
+      const totalSteps = allTables.length + 2; // +2 for delete phases
+      let currentStep = 0;
       
       // Helper to delete all rows from a table
       const deleteTable = async (tableName: string) => {
@@ -172,8 +209,8 @@ export class BackupService {
         if (error) console.warn(`Warning deleting ${tableName}:`, error.message);
       };
 
-      // Delete existing data (order matters for foreign keys)
-      // Dependent tables first
+      // Delete existing data
+      onProgress?.("حذف البيانات القديمة (الجداول المرتبطة)...", ++currentStep, totalSteps);
       await Promise.all([
         deleteTable("custom_field_values"),
         deleteTable("custom_field_options"),
@@ -181,7 +218,7 @@ export class BackupService {
         deleteTable("print_history"),
       ]);
 
-      // Then parent/independent tables
+      onProgress?.("حذف البيانات القديمة (الجداول الرئيسية)...", ++currentStep, totalSteps);
       await Promise.all([
         deleteTable("certificate_templates"),
         deleteTable("custom_fields"),
@@ -199,9 +236,13 @@ export class BackupService {
         deleteTable("notes"),
       ]);
 
-      // Helper to restore a table in batches with error checking
+      // Helper to restore a table in batches
       const BATCH_SIZE = 500;
       const restoreTable = async (tableName: string, data: unknown[] | undefined) => {
+        const label = TABLE_LABELS[tableName] || tableName;
+        const count = data?.length || 0;
+        onProgress?.(`استعادة ${label} (${count} سجل)...`, ++currentStep, totalSteps);
+        
         if (!data || data.length === 0) return;
         
         for (let i = 0; i < data.length; i += BATCH_SIZE) {
@@ -209,38 +250,34 @@ export class BackupService {
           const { error } = await supabase.from(tableName as 'phd_lmd_certificates').insert(batch as TablesInsert<'phd_lmd_certificates'>[]);
           if (error) {
             console.error(`Error restoring ${tableName} (batch ${Math.floor(i / BATCH_SIZE) + 1}):`, error.message);
-            throw new Error(`فشل استعادة جدول ${tableName}: ${error.message}`);
+            throw new Error(`فشل استعادة ${label}: ${error.message}`);
           }
         }
       };
 
-      // Independent tables first
-      await Promise.all([
-        restoreTable("phd_lmd_certificates", tableData.phd_lmd_certificates),
-        restoreTable("phd_science_certificates", tableData.phd_science_certificates),
-        restoreTable("master_certificates", tableData.master_certificates),
-        restoreTable("phd_lmd_students", tableData.phd_lmd_students),
-        restoreTable("phd_science_students", tableData.phd_science_students),
-        restoreTable("dropdown_options", tableData.dropdown_options),
-        restoreTable("custom_fonts", tableData.custom_fonts),
-        restoreTable("academic_titles", tableData.academic_titles),
-        restoreTable("activity_log", tableData.activity_log),
-        restoreTable("settings", tableData.settings),
-        restoreTable("user_settings", tableData.user_settings),
-        restoreTable("notes", tableData.notes),
-      ]);
+      // Independent tables (sequential for progress visibility)
+      await restoreTable("phd_lmd_certificates", tableData.phd_lmd_certificates);
+      await restoreTable("phd_science_certificates", tableData.phd_science_certificates);
+      await restoreTable("master_certificates", tableData.master_certificates);
+      await restoreTable("phd_lmd_students", tableData.phd_lmd_students);
+      await restoreTable("phd_science_students", tableData.phd_science_students);
+      await restoreTable("dropdown_options", tableData.dropdown_options);
+      await restoreTable("custom_fonts", tableData.custom_fonts);
+      await restoreTable("academic_titles", tableData.academic_titles);
+      await restoreTable("activity_log", tableData.activity_log);
+      await restoreTable("settings", tableData.settings);
+      await restoreTable("user_settings", tableData.user_settings);
+      await restoreTable("notes", tableData.notes);
 
       // Parent tables with dependents
       await restoreTable("certificate_templates", tableData.certificate_templates);
       await restoreTable("custom_fields", tableData.custom_fields);
 
       // Dependent tables
-      await Promise.all([
-        restoreTable("certificate_template_fields", tableData.certificate_template_fields),
-        restoreTable("custom_field_values", tableData.custom_field_values),
-        restoreTable("custom_field_options", tableData.custom_field_options),
-        restoreTable("print_history", tableData.print_history),
-      ]);
+      await restoreTable("certificate_template_fields", tableData.certificate_template_fields);
+      await restoreTable("custom_field_values", tableData.custom_field_values);
+      await restoreTable("custom_field_options", tableData.custom_field_options);
+      await restoreTable("print_history", tableData.print_history);
 
       return { success: true, error: null };
     } catch (error) {
