@@ -452,88 +452,88 @@ export default function Reports() {
       )}
 
       {/* ثالثا: الإجراءات الإدارية */}
-      {adminActions.length > 0 && (
-        <>
-          <SectionHeader title="ثالثا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
-          <Card>
-            <CardContent className="p-0">
-              <div className="max-h-[500px] overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">المشرف</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">النوع</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">الحالة</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">تاريخ المصادقة</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">تاريخ المناقشة</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">مدة المعالجة</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {adminActions.map((s, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                        <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
-                        <TableCell className="text-[11px]">{s.supervisor}</TableCell>
-                        <TableCell className="text-center text-[11px]">{s.type}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={s.status === 'regular' ? 'default' : 'destructive'} className="text-[10px]">
-                            {s.status === 'regular' ? 'منتظم' : s.status === 'delayed' ? 'متأخر' : '-'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center text-[11px]">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
-                        <TableCell className="text-center text-[11px]">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
-                        <TableCell className="text-center text-[11px] font-medium">
-                          {s.processingTime ? `${toWesternNumerals(s.processingTime.months)} شهر ${toWesternNumerals(s.processingTime.days)} يوم` : '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
-
-      {/* رابعا: المناقشات بالإنجليزية */}
-      {englishTheses.length > 0 && (
-        <>
-          <SectionHeader title="رابعا: المناقشات باللغة الإنجليزية" icon={<Globe className="h-5 w-5" />} />
-          <Card>
-            <CardContent className="p-0">
+      <SectionHeader title="ثالثا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
+      <Card>
+        <CardContent className="p-0">
+          {adminActions.length > 0 ? (
+            <div className="max-h-[500px] overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="text-right text-[11px] font-bold">#</TableHead>
                     <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">الشعبة</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">التخصص</TableHead>
                     <TableHead className="text-right text-[11px] font-bold">المشرف</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">عنوان الأطروحة</TableHead>
+                    <TableHead className="text-center text-[11px] font-bold">النوع</TableHead>
+                    <TableHead className="text-center text-[11px] font-bold">الحالة</TableHead>
+                    <TableHead className="text-center text-[11px] font-bold">تاريخ المصادقة</TableHead>
                     <TableHead className="text-center text-[11px] font-bold">تاريخ المناقشة</TableHead>
+                    <TableHead className="text-center text-[11px] font-bold">مدة المعالجة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {englishTheses.map((s, i) => (
+                  {adminActions.map((s, i) => (
                     <TableRow key={i}>
                       <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
                       <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
-                      <TableCell className="text-[11px]">{s.branch}</TableCell>
-                      <TableCell className="text-[11px]">{s.specialty}</TableCell>
                       <TableCell className="text-[11px]">{s.supervisor}</TableCell>
-                      <TableCell className="text-[11px] max-w-[250px] truncate">{s.thesisTitle}</TableCell>
+                      <TableCell className="text-center text-[11px]">{s.type}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={s.status === 'regular' ? 'default' : 'destructive'} className="text-[10px]">
+                          {s.status === 'regular' ? 'منتظم' : s.status === 'delayed' ? 'متأخر' : '-'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-[11px]">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
                       <TableCell className="text-center text-[11px]">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
+                      <TableCell className="text-center text-[11px] font-medium">
+                        {s.processingTime ? `${toWesternNumerals(s.processingTime.months)} شهر ${toWesternNumerals(s.processingTime.days)} يوم` : '-'}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </>
-      )}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground text-sm">لا توجد بيانات للإجراءات الإدارية</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* رابعا: المناقشات بالإنجليزية */}
+      <SectionHeader title="رابعا: المناقشات باللغة الإنجليزية" icon={<Globe className="h-5 w-5" />} />
+      <Card>
+        <CardContent className="p-0">
+          {englishTheses.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="text-right text-[11px] font-bold">#</TableHead>
+                  <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-[11px] font-bold">الشعبة</TableHead>
+                  <TableHead className="text-right text-[11px] font-bold">التخصص</TableHead>
+                  <TableHead className="text-right text-[11px] font-bold">المشرف</TableHead>
+                  <TableHead className="text-right text-[11px] font-bold">عنوان الأطروحة</TableHead>
+                  <TableHead className="text-center text-[11px] font-bold">تاريخ المناقشة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {englishTheses.map((s, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
+                    <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
+                    <TableCell className="text-[11px]">{s.branch}</TableCell>
+                    <TableCell className="text-[11px]">{s.specialty}</TableCell>
+                    <TableCell className="text-[11px]">{s.supervisor}</TableCell>
+                    <TableCell className="text-[11px] max-w-[250px] truncate">{s.thesisTitle}</TableCell>
+                    <TableCell className="text-center text-[11px]">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground text-sm">لا توجد مناقشات باللغة الإنجليزية</div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* خامسا: المخابر */}
       {labStats.length > 0 && (
