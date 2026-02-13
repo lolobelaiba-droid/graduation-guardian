@@ -12,6 +12,7 @@ import {
   UserPlus,
   Filter,
   X,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import { CreateCertificateFromPhdDialog } from "@/components/students/CreateCert
 import { DeleteStudentDialog } from "@/components/students/DeleteStudentDialog";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { useRestoreStudentToPhd } from "@/hooks/useRestoreStudent";
+import { ImportCertificateExcelDialog } from "@/components/students/import";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 
@@ -71,6 +73,9 @@ export default function Students() {
   
   // Add Master student dialog state
   const [addMasterDialogOpen, setAddMasterDialogOpen] = useState(false);
+
+  // Import old data dialog state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // Advanced filters state
   const [showFilters, setShowFilters] = useState(false);
@@ -247,6 +252,10 @@ export default function Students() {
           <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
             <Download className="h-4 w-4" />
             تصدير Excel
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4" />
+            استيراد بيانات قديمة
           </Button>
           {isPhdType && (
             <Button size="sm" className="gap-2" onClick={() => setCreateCertDialogOpen(true)}>
@@ -497,6 +506,12 @@ export default function Students() {
         onRestoreToDatabase={handleRestoreToDatabase}
         isDeleting={deletePhdLmd.isPending || deletePhdScience.isPending || deleteMaster.isPending}
         isRestoring={restoreStudent.isPending}
+      />
+
+      <ImportCertificateExcelDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        certificateType={selectedCertType}
       />
     </div>
   );
