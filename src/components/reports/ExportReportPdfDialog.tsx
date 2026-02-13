@@ -248,16 +248,21 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       doc.setFont("Amiri", "normal");
       doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 4, { align: "center" });
 
-      // Period under gauge - render as separate segments to avoid bidi issues
-      doc.setFontSize(5.5);
+      // Period under gauge - two lines: title then date range
       doc.setTextColor(100, 100, 100);
+      doc.setFont("Amiri", "bold");
+      doc.setFontSize(5.5);
+      doc.text(processText("الفترة الزمنية"), gaugeX, gaugeY + gaugeR + 8, { align: "center" });
+
+      doc.setFont("Amiri", "normal");
+      doc.setFontSize(5);
       const now = new Date();
       const yrStart = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
       const yrEnd = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
       const fromDisplay = periodFrom ? toWesternNumerals(formatDateDDMMYYYY(periodFrom)) : toWesternNumerals(`01/09/${yrStart}`);
       const toDisplay = periodTo ? toWesternNumerals(formatDateDDMMYYYY(periodTo)) : toWesternNumerals(`31/08/${yrEnd}`);
-      const periodLine = `${toDisplay}  ${processText("إلى")}  ${fromDisplay}  ${processText("من")}  :${processText("الفترة")}`;
-      doc.text(periodLine, gaugeX, gaugeY + gaugeR + 8, { align: "center" });
+      const rangeLine = `${toDisplay}  ${processText("إلى")}  ${fromDisplay}  ${processText("من")}`;
+      doc.text(rangeLine, gaugeX, gaugeY + gaugeR + 12, { align: "center" });
       doc.setTextColor(0, 0, 0);
 
       // Criteria cards on the right side
