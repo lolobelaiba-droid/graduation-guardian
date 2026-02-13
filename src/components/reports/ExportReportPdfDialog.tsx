@@ -813,7 +813,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
         s.councilDate ? toWesternNumerals(formatDateDDMMYYYY(s.councilDate)) : "-",
         s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
-        s.processingTime ? processText(`${String(s.processingTime.months).padStart(2, '0')} شهر و ${String(s.processingTime.days).padStart(2, '0')} يوم`) : "-",
+        s.processingTime ? `\u200F${String(s.processingTime.months).padStart(2, '0')} ${processText('شهر')} ${processText('و')} ${String(s.processingTime.days).padStart(2, '0')} ${processText('يوم')}` : "-",
       ]);
       drawTable(["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
     }
