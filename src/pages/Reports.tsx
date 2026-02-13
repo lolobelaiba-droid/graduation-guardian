@@ -363,103 +363,87 @@ export default function Reports() {
 
       {/* أولا: المسجلين */}
       <SectionHeader title="أولا: إحصائيات عامة حول الطلبة المسجلين حاليا" icon={<Users className="h-5 w-5" />} />
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2">
-          <Card className="shadow-sm">
-            <CardContent className="p-0">
-              <div className="max-h-[500px] overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-primary/5 border-b-2 border-primary/20">
-                      <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
-                      <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
-                      <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
-                      <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
-                      <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
-                      <TableHead className="text-center text-xs font-bold text-foreground">سنة أول تسجيل</TableHead>
-                      <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
+      <Card className="shadow-sm">
+        <CardContent className="p-0">
+          <div className="max-h-[500px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                  <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">سنة أول تسجيل</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRegistered.map((s, i) => {
+                  const status = getRegistrationStatus((s as any).registration_count, s._type);
+                  return (
+                    <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
+                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                      <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                      <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{(s as any).first_registration_year ? toWesternNumerals((s as any).first_registration_year) : '-'}</TableCell>
+                      <TableCell className="text-center py-2.5">
+                        <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
+                          {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRegistered.map((s, i) => {
-                      const status = getRegistrationStatus((s as any).registration_count, s._type);
-                      return (
-                        <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
-                          <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
-                          <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
-                          <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
-                          <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
-                          <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
-                          <TableCell className="text-center text-xs py-2.5">{(s as any).first_registration_year ? toWesternNumerals((s as any).first_registration_year) : '-'}</TableCell>
-                          <TableCell className="text-center py-2.5">
-                            <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
-                              {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="space-y-4">
-          <MiniPieChart title="توزيع النوع" data={regTypeData} />
-          <MiniPieChart title="حالة التسجيل" data={regStatusData} useStatusColors />
-        </div>
-      </div>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ثانيا: المناقشين */}
       <SectionHeader title="ثانيا: إحصائيات عامة حول الطلبة المناقشين" icon={<GraduationCap className="h-5 w-5" />} />
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2">
-          <Card className="shadow-sm">
-            <CardContent className="p-0">
-              <div className="max-h-[500px] overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-primary/5 border-b-2 border-primary/20">
-                      <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
-                      <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
-                      <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
-                      <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
-                      <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
-                      <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
-                      <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+      <Card className="shadow-sm">
+        <CardContent className="p-0">
+          <div className="max-h-[500px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                  <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDefended.map((s, i) => {
+                  const status = getRegistrationStatus((s as any).registration_count, s._type);
+                  return (
+                    <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
+                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                      <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                      <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                      <TableCell className="text-center py-2.5">
+                        <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
+                          {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{(s as any).defense_date ? formatDate((s as any).defense_date) : '-'}</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDefended.map((s, i) => {
-                      const status = getRegistrationStatus((s as any).registration_count, s._type);
-                      return (
-                        <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
-                          <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
-                          <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
-                          <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
-                          <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
-                          <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
-                          <TableCell className="text-center py-2.5">
-                            <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
-                              {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center text-xs py-2.5">{(s as any).defense_date ? formatDate((s as any).defense_date) : '-'}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="space-y-4">
-          <MiniPieChart title="توزيع النوع" data={defTypeData} />
-          <MiniPieChart title="حالة التسجيل" data={defStatusData} useStatusColors />
-        </div>
-      </div>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* إحصائيات العضوية */}
       <SectionHeader title="إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)" icon={<UserCheck className="h-5 w-5" />} />

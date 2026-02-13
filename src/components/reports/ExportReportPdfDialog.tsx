@@ -153,18 +153,19 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
     y += 2;
 
-    // ───── HELPER: Draw table ─────
+    // ───── HELPER: Draw table with multi-line support ─────
     const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
       const tableW = PW - M * 2;
       const cols = colWidths || headers.map(() => tableW / headers.length);
-      const rowH = 5.5;
+      const baseRowH = 5.5;
+      const lineH = 3.2; // height per extra line
 
       const drawHeader = (startY: number) => {
         doc.setFont("Amiri", "bold");
         doc.setFontSize(7);
         doc.setFillColor(180, 180, 180);
         doc.setTextColor(255, 255, 255);
-        doc.rect(M, startY, tableW, rowH, "F");
+        doc.rect(M, startY, tableW, baseRowH, "F");
         let hx = PW - M;
         headers.forEach((h, i) => {
           doc.text(processText(h), hx - cols[i] / 2, startY + 4, { align: "center" });
@@ -172,34 +173,52 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         });
         doc.setTextColor(0, 0, 0);
         doc.setFont("Amiri", "normal");
-        return startY + rowH;
+        return startY + baseRowH;
       };
 
       y = drawHeader(y);
       doc.setFontSize(6.5);
 
       rows.forEach((row, ri) => {
-        if (y + rowH > PH - 15) {
+        // Calculate row height based on longest cell content
+        let maxLines = 1;
+        const cellLines: string[][] = row.map((cell, i) => {
+          const txt = processText(cell);
+          const colW = cols[i] - 2; // padding
+          const lines = doc.splitTextToSize(txt, colW);
+          if (lines.length > maxLines) maxLines = lines.length;
+          return lines;
+        });
+        const dynamicRowH = baseRowH + (maxLines > 1 ? (maxLines - 1) * lineH : 0);
+
+        if (y + dynamicRowH > PH - 15) {
           doc.addPage(); y = 15;
           y = drawHeader(y);
           doc.setFontSize(6.5);
+          // Recalculate since font reset
         }
         // Alternate row color
         if (ri % 2 === 0) {
           doc.setFillColor(245, 247, 250);
-          doc.rect(M, y, tableW, rowH, "F");
+          doc.rect(M, y, tableW, dynamicRowH, "F");
         }
         let cx = PW - M;
-        row.forEach((cell, i) => {
-          const maxChars = Math.floor(cols[i] / 1.1);
-          const txt = processText(cell);
-          const truncated = txt.length > maxChars ? txt.substring(0, maxChars) + "…" : txt;
-          doc.text(truncated, cx - cols[i] / 2, y + 3.8, { align: "center" });
+        cellLines.forEach((lines, i) => {
+          const cellCenterX = cx - cols[i] / 2;
+          if (lines.length === 1) {
+            doc.text(lines[0], cellCenterX, y + 3.8, { align: "center" });
+          } else {
+            // Multi-line: start from top with small offset
+            const startTextY = y + 3.2;
+            lines.forEach((line, li) => {
+              doc.text(line, cellCenterX, startTextY + li * lineH, { align: "center" });
+            });
+          }
           cx -= cols[i];
         });
         doc.setDrawColor(220, 220, 220);
-        doc.line(M, y + rowH, PW - M, y + rowH);
-        y += rowH;
+        doc.line(M, y + dynamicRowH, PW - M, y + dynamicRowH);
+        y += dynamicRowH;
       });
       y += 3;
     };
