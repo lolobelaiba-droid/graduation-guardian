@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 import jsPDF from "jspdf";
-import { Download, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Download, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,11 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { certificateTypeLabels } from "@/types/certificates";
 import { toWesternNumerals } from "@/lib/numerals";
 import { loadFontFile, arrayBufferToBase64 } from "@/lib/arabicFonts";
 import { processTextForPdf } from "@/lib/pdf/arabicTextUtils";
@@ -36,6 +32,7 @@ export interface StudentData {
   birthplace_ar: string;
   registration_date: string;
   status: string;
+  [key: string]: any;
 }
 
 interface ExportPdfDialogProps {
@@ -46,7 +43,7 @@ interface ExportPdfDialogProps {
   };
 }
 
-export function ExportPdfDialog({ data }: ExportPdfDialogProps) {
+export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { settings } = useUniversitySettings();
@@ -67,7 +64,6 @@ export function ExportPdfDialog({ data }: ExportPdfDialogProps) {
     { key: "defense_date", label: "تاريخ المناقشة" },
   ];
 
-  // دالة معالجة النصوص بنفس منطق الشهادات الناجح
   const processText = (text: string) => {
     return processTextForPdf(text || "", { useReshaping: true, rtl: true }).text;
   };
@@ -82,7 +78,7 @@ export function ExportPdfDialog({ data }: ExportPdfDialogProps) {
         putOnlyUsedFonts: true
       });
 
-      // تحميل الخط العربي بترميز Identity-H (حل مشكلة الرموز)
+      // تحميل الخط بترميز Identity-H لضمان دعم العربية (مثل الشهادات)
       const fontData = await loadFontFile("Amiri-Regular.ttf");
       const base64Font = arrayBufferToBase64(fontData);
       doc.addFileToVFS("Amiri-Regular.ttf", base64Font);
@@ -93,7 +89,6 @@ export function ExportPdfDialog({ data }: ExportPdfDialogProps) {
       const MARGIN = 15;
       let currentY = 20;
 
-      // رسم الهيدر (جامعة العربي بن مهيدي)
       doc.setFontSize(14);
       doc.text(processText(settings?.university_name_ar || "جامعة العربي بن مهيدي - أم البواقي"), PAGE_WIDTH / 2, currentY, { align: "center" });
       currentY += 10;
@@ -102,11 +97,9 @@ export function ExportPdfDialog({ data }: ExportPdfDialogProps) {
       doc.text(processText(data.title), PAGE_WIDTH / 2, currentY, { align: "center" });
       currentY += 15;
 
-      // إعداد الجدول
       const tableHeaders = ["ت", ...columns.filter(c => selectedColumns.includes(c.key)).map(c => c.label)];
       const colWidth = (PAGE_WIDTH - (MARGIN * 2)) / tableHeaders.length;
 
-      // رسم رأس الجدول
       doc.setFillColor(240, 240, 240);
       doc.rect(MARGIN, currentY, PAGE_WIDTH - (MARGIN * 2), 10, "F");
       
@@ -118,7 +111,6 @@ export function ExportPdfDialog({ data }: ExportPdfDialogProps) {
       currentY += 10;
       doc.setFontSize(11);
 
-      // رسم بيانات الطلاب
       data.students.forEach((student, sIndex) => {
         if (currentY > 270) {
           doc.addPage();
@@ -134,7 +126,7 @@ export function ExportPdfDialog({ data }: ExportPdfDialogProps) {
 
         rowData.reverse().forEach((cell, cIndex) => {
           const xPos = MARGIN + (cIndex * colWidth) + (colWidth / 2);
-          doc.text(processText(String(cell)), xPos, currentY + 7, { align: "center" });
+          doc.text(processText(String(cell || "")), xPos, currentY + 7, { align: "center" });
         });
 
         doc.line(MARGIN, currentY + 10, PAGE_WIDTH - MARGIN, currentY + 10);
