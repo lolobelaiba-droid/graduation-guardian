@@ -261,7 +261,7 @@ export default function Reports() {
       {/* مؤشر الأداء + لوحة المؤشرات */}
       <Card className="shadow-sm">
         <CardContent className="p-6">
-          <div className="flex flex-col xl:flex-row-reverse items-start gap-6 mb-6">
+          <div className="flex flex-row-reverse items-start gap-6 mb-6">
             {/* شرح المعايير على اليمين */}
             <div className="flex-1 space-y-3">
               <h3 className="text-sm font-bold text-foreground mb-3">شرح المعايير الفرعية:</h3>
