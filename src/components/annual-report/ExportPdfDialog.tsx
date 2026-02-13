@@ -46,6 +46,8 @@ export interface StudentData {
   registration_count: number | null;
   current_year: string;
   research_lab_ar: string;
+  jury_president_ar: string;
+  jury_members_ar: string;
   _type: "phd_lmd" | "phd_science";
   [key: string]: any;
 }
@@ -64,7 +66,7 @@ interface ExportPdfDialogProps {
 }
 
 // Sections available for export
-type SectionKey = "summary" | "monthly" | "faculty" | "specialty" | "status" | "avg_years" | "custom_table";
+type SectionKey = "summary" | "monthly" | "faculty" | "specialty" | "status" | "avg_years" | "jury_stats" | "custom_table";
 
 const sectionLabels: Record<SectionKey, string> = {
   summary: "الملخص العام",
@@ -73,6 +75,7 @@ const sectionLabels: Record<SectionKey, string> = {
   specialty: "حسب التخصص",
   status: "حالة الطلاب (نظامي / متأخر)",
   avg_years: "متوسط سنوات التسجيل",
+  jury_stats: "إحصائيات اللجان (مشرف/رئيس/عضو)",
   custom_table: "جدول مخصص بالطلاب",
 };
 
@@ -371,7 +374,149 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
         currentY += 10;
       }
 
-      // ===== Section: Custom Table =====
+      // ===== Section: Jury Stats (مشرف/رئيس/عضو) =====
+      if (selectedSections.includes("jury_stats")) {
+        const professorStats: Record<string, { 
+          asSupervisor: number; asPresident: number; asMember: number; total: number;
+          faculties: Set<string>;
+        }> = {};
+
+        const ensureProf = (name: string) => {
+          if (!professorStats[name]) {
+            professorStats[name] = { asSupervisor: 0, asPresident: 0, asMember: 0, total: 0, faculties: new Set() };
+          }
+        };
+
+        // Extract academic title from name
+        const extractTitle = (name: string): { title: string; cleanName: string } => {
+          const titlePatterns = [
+            /^(أ\.د\.|أ\.د|أ\.\s*د\.|د\.|بروفيسور|بروف\.|Prof\.|Dr\.|Pr\.)\s*/i,
+          ];
+          for (const pattern of titlePatterns) {
+            const match = name.match(pattern);
+            if (match) {
+              return { title: match[1].trim(), cleanName: name.replace(pattern, "").trim() };
+            }
+          }
+          return { title: "", cleanName: name.trim() };
+        };
+
+        data.students.forEach((student) => {
+          const faculty = student.faculty_ar || "";
+
+          // Supervisor
+          const supervisor = student.supervisor_ar?.trim();
+          if (supervisor) {
+            ensureProf(supervisor);
+            professorStats[supervisor].asSupervisor++;
+            professorStats[supervisor].total++;
+            if (faculty) professorStats[supervisor].faculties.add(faculty);
+          }
+
+          // President (jury_president_ar)
+          const president = (student as any).jury_president_ar?.trim();
+          if (president) {
+            ensureProf(president);
+            professorStats[president].asPresident++;
+            professorStats[president].total++;
+            if (faculty) professorStats[president].faculties.add(faculty);
+          }
+
+          // Members (jury_members_ar)
+          const membersStr = (student as any).jury_members_ar || "";
+          const members = membersStr.split(/[،,;\n]|\s-\s|\s–\s/).map((m: string) => m.trim()).filter(Boolean);
+          members.forEach((member: string) => {
+            ensureProf(member);
+            professorStats[member].asMember++;
+            professorStats[member].total++;
+            if (faculty) professorStats[member].faculties.add(faculty);
+          });
+        });
+
+        const sortedProfs = Object.entries(professorStats).sort((a, b) => b[1].total - a[1].total);
+
+        if (sortedProfs.length > 0) {
+          checkPage(20);
+          doc.setFont("Amiri", "bold");
+          doc.setFontSize(13);
+          doc.text(processText("إحصائيات اللجان (مشرف / رئيس / عضو)"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+          currentY += 8;
+
+          // Table header
+          doc.setFontSize(9);
+          doc.setFillColor(220, 220, 220);
+          const juryTableW = PAGE_WIDTH - MARGIN * 2;
+          doc.rect(MARGIN, currentY, juryTableW, 8, "F");
+
+          const juryHeaders = ["المجموع", "عضو", "رئيس", "مشرف", "الكلية", "الرتبة", "الأستاذ", "ت"];
+          const juryCols = [12, 12, 12, 12, 25, 15, 35, 8]; // percentage-like widths
+          const juryColTotal = juryCols.reduce((a, b) => a + b, 0);
+          const juryColWidths = juryCols.map(c => (c / juryColTotal) * juryTableW);
+
+          // Draw headers RTL
+          let headerX = PAGE_WIDTH - MARGIN;
+          juryHeaders.forEach((h, i) => {
+            const w = juryColWidths[i];
+            doc.text(processText(h), headerX - w / 2, currentY + 6, { align: "center" });
+            headerX -= w;
+          });
+          currentY += 8;
+
+          doc.setFont("Amiri", "normal");
+          doc.setFontSize(8);
+
+          sortedProfs.forEach(([name, stats], idx) => {
+            if (currentY > PAGE_HEIGHT - 15) {
+              doc.addPage();
+              currentY = 15;
+              // Redraw header
+              doc.setFont("Amiri", "bold");
+              doc.setFontSize(9);
+              doc.setFillColor(220, 220, 220);
+              doc.rect(MARGIN, currentY, juryTableW, 8, "F");
+              let hx = PAGE_WIDTH - MARGIN;
+              juryHeaders.forEach((h, i) => {
+                const w = juryColWidths[i];
+                doc.text(processText(h), hx - w / 2, currentY + 6, { align: "center" });
+                hx -= w;
+              });
+              currentY += 8;
+              doc.setFont("Amiri", "normal");
+              doc.setFontSize(8);
+            }
+
+            const { title, cleanName } = extractTitle(name);
+            const facStr = Array.from(stats.faculties).join(" | ");
+
+            const rowVals = [
+              toWesternNumerals(stats.total),
+              toWesternNumerals(stats.asMember),
+              toWesternNumerals(stats.asPresident),
+              toWesternNumerals(stats.asSupervisor),
+              facStr,
+              title,
+              cleanName,
+              toWesternNumerals(idx + 1),
+            ];
+
+            let cellX = PAGE_WIDTH - MARGIN;
+            rowVals.forEach((v, i) => {
+              const w = juryColWidths[i];
+              const displayText = processText(v);
+              const maxChars = Math.floor(w / 1.5);
+              const truncated = displayText.length > maxChars ? displayText.substring(0, maxChars) + "…" : displayText;
+              doc.text(truncated, cellX - w / 2, currentY + 5, { align: "center" });
+              cellX -= w;
+            });
+
+            doc.setDrawColor(200, 200, 200);
+            doc.line(MARGIN, currentY + 7, PAGE_WIDTH - MARGIN, currentY + 7);
+            currentY += 7;
+          });
+          currentY += 6;
+        }
+      }
+
       if (hasCustomTable && activeCols.length > 0) {
         // If landscape and this is a new section, may need a new page
         checkPage(20);
