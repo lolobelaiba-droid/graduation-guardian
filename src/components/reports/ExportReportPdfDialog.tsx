@@ -151,15 +151,6 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
     y += 6;
 
-    // Period line
-    if (periodFrom || periodTo) {
-      doc.setFont("Amiri", "normal");
-      doc.setFontSize(8);
-      const fromDisplay = periodFrom ? toWesternNumerals(formatDateDDMMYYYY(periodFrom)) : "...";
-      const toDisplay = periodTo ? toWesternNumerals(formatDateDDMMYYYY(periodTo)) : "...";
-      doc.text(processText(`الفترة: من ${fromDisplay} إلى ${toDisplay}`), PW - M, y, { align: "right" });
-      y += 6;
-    }
     y += 2;
 
     // ───── HELPER: Draw table ─────
@@ -256,6 +247,24 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       doc.setFontSize(6.5);
       doc.setFont("Amiri", "normal");
       doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 4, { align: "center" });
+
+      // Period under gauge
+      doc.setFontSize(5.5);
+      doc.setTextColor(100, 100, 100);
+      const defaultFrom = () => {
+        const now = new Date();
+        const yr = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+        return `01/09/${yr}`;
+      };
+      const defaultTo = () => {
+        const now = new Date();
+        const yr = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
+        return `31/08/${yr}`;
+      };
+      const fromDisplay = periodFrom ? toWesternNumerals(formatDateDDMMYYYY(periodFrom)) : toWesternNumerals(defaultFrom());
+      const toDisplay = periodTo ? toWesternNumerals(formatDateDDMMYYYY(periodTo)) : toWesternNumerals(defaultTo());
+      doc.text(processText(`الفترة: من ${fromDisplay} إلى ${toDisplay}`), gaugeX, gaugeY + gaugeR + 8, { align: "center" });
+      doc.setTextColor(0, 0, 0);
 
       // Criteria cards on the right side
       const criteriaX = M + gaugeR * 2 + 15; // start after gauge
