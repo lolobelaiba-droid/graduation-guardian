@@ -14,6 +14,8 @@ import { calculateKpi, calcProcessingTime, getRegistrationStatus } from "@/lib/k
 import { KpiGauge } from "@/components/reports/KpiGauge";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { SectionHeader } from "@/components/reports/SectionHeader";
+import ExportReportPdfDialog from "@/components/reports/ExportReportPdfDialog";
+import type { ReportExportData } from "@/components/reports/ExportReportPdfDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -266,8 +268,8 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* Faculty Filter */}
-      <div className="flex items-center gap-3">
+      {/* Faculty Filter + Export */}
+      <div className="flex items-center gap-3 flex-wrap">
         <label className="text-sm font-medium text-muted-foreground">تصفية حسب الكلية:</label>
         <Select value={selectedFaculty} onValueChange={setSelectedFaculty}>
           <SelectTrigger className="w-72">
@@ -280,6 +282,31 @@ export default function Reports() {
             ))}
           </SelectContent>
         </Select>
+        <div className="mr-auto">
+          <ExportReportPdfDialog data={{
+            facultyName: selectedFaculty !== "all" ? selectedFaculty : undefined,
+            kpi,
+            registeredCount: filteredRegistered.length,
+            defendedCount: filteredDefended.length,
+            registeredLmd: filteredRegistered.filter(s => s._type === 'phd_lmd').length,
+            registeredScience: filteredRegistered.filter(s => s._type === 'phd_science').length,
+            defendedLmd: filteredDefended.filter(s => s._type === 'phd_lmd').length,
+            defendedScience: filteredDefended.filter(s => s._type === 'phd_science').length,
+            avgRegAll: avgRegYears.regAll,
+            avgRegLmd: avgRegYears.regLmd,
+            avgRegScience: avgRegYears.regScience,
+            avgDefAll: avgRegYears.defAll,
+            avgDefLmd: avgRegYears.defLmd,
+            avgDefScience: avgRegYears.defScience,
+            registeredStudents: filteredRegistered,
+            defendedStudents: filteredDefended,
+            adminActions,
+            juryStats,
+            englishTheses,
+            labStats,
+            assistantProfessors,
+          }} />
+        </div>
       </div>
 
       {/* KPI Dashboard */}
