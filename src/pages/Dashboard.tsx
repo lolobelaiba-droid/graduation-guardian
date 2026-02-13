@@ -1,4 +1,4 @@
-import { Users, GraduationCap, Award, Database, AlertTriangle } from "lucide-react";
+import { Users, GraduationCap, Award, Database } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { FacultyChart } from "@/components/dashboard/FacultyChart";
 import { CertificateTypeChart } from "@/components/dashboard/CertificateTypeChart";
@@ -89,7 +89,7 @@ export default function Dashboard() {
             <Database className="h-5 w-5" />
             <h2 className="text-lg font-semibold">قاعدة بيانات طلبة الدكتوراه</h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
               title="إجمالي الطلبة"
               value={isLoading ? "..." : stats?.totalPhdCandidates || 0}
@@ -114,14 +114,6 @@ export default function Dashboard() {
               variant="orange"
               compact
             />
-            <StatCard
-              title="المتأخرون"
-              value={isLoading ? "..." : stats?.delayedCandidates || 0}
-              subtitle="طالب متأخر"
-              icon={AlertTriangle}
-              variant="orange"
-              compact
-            />
           </div>
         </div>
 
@@ -131,7 +123,7 @@ export default function Dashboard() {
             <Award className="h-5 w-5" />
             <h2 className="text-lg font-semibold">قاعدة بيانات الطلبة المناقشين</h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
               title="إجمالي المناقشين"
               value={isLoading ? "..." : stats?.totalDefendedStudents || 0}
@@ -153,14 +145,6 @@ export default function Dashboard() {
               value={isLoading ? "..." : stats?.phdScienceDefendedCount || 0}
               subtitle="شهادة"
               icon={GraduationCap}
-              variant="orange"
-              compact
-            />
-            <StatCard
-              title="المتأخرون"
-              value={isLoading ? "..." : stats?.delayedDefended || 0}
-              subtitle="طالب متأخر"
-              icon={AlertTriangle}
               variant="orange"
               compact
             />
