@@ -43,7 +43,7 @@ export interface ReportExportData {
     processingTime: { months: number; days: number; totalDays: number } | null;
   }[];
   juryStats: {
-    name: string; title: string; supervisor: number; coSupervisor: number;
+    name: string; title: string; university: string; supervisor: number; coSupervisor: number;
     president: number; member: number; total: number;
   }[];
   englishTheses: {
@@ -492,16 +492,16 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       checkPage(15);
       sectionTitle("إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)");
       const tableW = PW - M * 2;
-      const cols = [7, 38, 22, 18, 22, 20, 20, 18].map(p => (p / 165) * tableW);
+      const cols = [6, 32, 18, 28, 15, 15, 15, 15, 15].map(p => (p / 159) * tableW);
       const rows = data.juryStats.map((s, i) => [
-        toWesternNumerals(i + 1), s.name, s.title,
+        toWesternNumerals(i + 1), s.name, s.title, s.university || '-',
         s.supervisor > 0 ? toWesternNumerals(s.supervisor) : "-",
         s.coSupervisor > 0 ? toWesternNumerals(s.coSupervisor) : "-",
         s.president > 0 ? toWesternNumerals(s.president) : "-",
         s.member > 0 ? toWesternNumerals(s.member) : "-",
         toWesternNumerals(s.total),
       ]);
-      drawTable(["#", "الاسم واللقب", "الرتبة", "مشرف", "مشرف مساعد", "رئيس لجنة", "عضو لجنة", "المجموع"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "عضو ل.", "المجموع"], rows, cols);
     }
 
     // ───── Administrative Actions ─────
