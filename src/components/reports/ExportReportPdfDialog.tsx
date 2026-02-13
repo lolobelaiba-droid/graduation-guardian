@@ -261,8 +261,29 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       const yrEnd = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
       const fromDisplay = periodFrom ? toWesternNumerals(formatDateDDMMYYYY(periodFrom)) : toWesternNumerals(`01/09/${yrStart}`);
       const toDisplay = periodTo ? toWesternNumerals(formatDateDDMMYYYY(periodTo)) : toWesternNumerals(`31/08/${yrEnd}`);
-      const rangeLine = `${toDisplay}  ${processText("إلى")}  ${fromDisplay}  ${processText("من")}`;
-      doc.text(rangeLine, gaugeX, gaugeY + gaugeR + 12, { align: "center" });
+      // RTL: render segments right-to-left manually
+      const periodCenterX = gaugeX;
+      const periodY = gaugeY + gaugeR + 12;
+      const segments = [
+        { text: processText("من"), font: "bold" },
+        { text: ` ${fromDisplay} `, font: "normal" },
+        { text: processText("إلى"), font: "bold" },
+        { text: ` ${toDisplay}`, font: "normal" },
+      ];
+      // Calculate total width
+      let totalW = 0;
+      segments.forEach(seg => {
+        doc.setFont("Amiri", seg.font as "bold" | "normal");
+        totalW += doc.getTextWidth(seg.text);
+      });
+      // Start from right side
+      let sx = periodCenterX + totalW / 2;
+      segments.forEach(seg => {
+        doc.setFont("Amiri", seg.font as "bold" | "normal");
+        const w = doc.getTextWidth(seg.text);
+        sx -= w;
+        doc.text(seg.text, sx, periodY);
+      });
       doc.setTextColor(0, 0, 0);
 
       // Criteria cards on the right side
