@@ -55,7 +55,7 @@ const exportTypeLabels: Record<ExportType, string> = {
 
 // Available fields for pivot table - varies by data source
 type PivotFieldCandidates = "phd_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "status" | "first_registration_year" | "current_year" | "registration_count" | "thesis_language" | "field_ar" | "research_lab_ar" | "university_ar" | "supervisor_ar";
-type PivotFieldDefended = "certificate_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "mention" | "defense_year" | "first_registration_year" | "field_ar" | "research_lab_ar" | "university_ar" | "supervisor_ar";
+type PivotFieldDefended = "certificate_type" | "faculty_ar" | "gender" | "branch_ar" | "specialty_ar" | "mention" | "defense_year" | "first_registration_year" | "field_ar" | "research_lab_ar" | "university_ar" | "supervisor_ar" | "jury_president_ar" | "professor_name" | "jury_role";
 type PivotField = PivotFieldCandidates | PivotFieldDefended;
 
 const pivotFieldLabels: Record<PivotField, string> = {
@@ -76,12 +76,15 @@ const pivotFieldLabels: Record<PivotField, string> = {
   research_lab_ar: "مخبر البحث",
   university_ar: "الجامعة",
   supervisor_ar: "المشرف",
+  jury_president_ar: "رئيس اللجنة",
+  professor_name: "اسم الأستاذ",
+  jury_role: "الدور (مشرف/رئيس/عضو)",
 };
 
 // Pivot fields available for each data source
 const pivotFieldsForSource: Record<DataSource, PivotField[]> = {
   phd_candidates: ["phd_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "field_ar", "status", "first_registration_year", "current_year", "registration_count", "thesis_language", "research_lab_ar", "university_ar", "supervisor_ar"],
-  defended_students: ["certificate_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "field_ar", "mention", "defense_year", "first_registration_year", "research_lab_ar", "university_ar", "supervisor_ar"],
+  defended_students: ["certificate_type", "faculty_ar", "gender", "branch_ar", "specialty_ar", "field_ar", "mention", "defense_year", "first_registration_year", "research_lab_ar", "university_ar", "supervisor_ar", "jury_president_ar", "professor_name", "jury_role"],
 };
 
 const certificateTypeLabels = {
@@ -866,10 +869,44 @@ export function ExportStatsDialog() {
                 return student.university_ar || "غير محدد";
               case "supervisor_ar":
                 return student.supervisor_ar || "غير محدد";
+              case "jury_president_ar":
+                return student.jury_president_ar || "غير محدد";
+              case "professor_name":
+                return student._professor_name || "غير محدد";
+              case "jury_role":
+                return student._jury_role || "غير محدد";
               default:
                 return "غير محدد";
             }
           };
+
+          // Check if jury role fields are used - if so, explode records into professor-role rows
+          const allFields = [...pivotRowFields, ...pivotColFields];
+          const needsExplosion = allFields.includes("professor_name") || allFields.includes("jury_role");
+          
+          let processedData = allStudents;
+          if (needsExplosion && dataSource === "defended_students") {
+            const explodedRecords: any[] = [];
+            allStudents.forEach((record) => {
+              // Supervisor
+              const supervisor = (record as any).supervisor_ar?.trim();
+              if (supervisor) {
+                explodedRecords.push({ ...record, _professor_name: supervisor, _jury_role: "مشرف" });
+              }
+              // President
+              const president = (record as any).jury_president_ar?.trim();
+              if (president) {
+                explodedRecords.push({ ...record, _professor_name: president, _jury_role: "رئيس لجنة" });
+              }
+              // Members
+              const membersStr = (record as any).jury_members_ar || "";
+              const members = membersStr.split(/[،,;\n]|\s-\s|\s–\s/).map((m: string) => m.trim()).filter(Boolean);
+              members.forEach((member: string) => {
+                explodedRecords.push({ ...record, _professor_name: member, _jury_role: "عضو لجنة" });
+              });
+            });
+            processedData = explodedRecords;
+          }
 
           // Helper to get combined key for multiple fields
           const getCombinedKey = (student: any, fields: PivotField[]): string => {
@@ -885,7 +922,7 @@ export function ExportStatsDialog() {
           const rowValues = new Set<string>();
           const colValues = new Set<string>();
 
-          allStudents.forEach((student) => {
+          processedData.forEach((student) => {
             rowValues.add(getCombinedKey(student, pivotRowFields));
             colValues.add(getCombinedKey(student, pivotColFields));
           });
@@ -903,7 +940,7 @@ export function ExportStatsDialog() {
           });
 
           // Count occurrences
-          allStudents.forEach((student) => {
+          processedData.forEach((student) => {
             const rowVal = getCombinedKey(student, pivotRowFields);
             const colVal = getCombinedKey(student, pivotColFields);
             pivotData[rowVal][colVal]++;
