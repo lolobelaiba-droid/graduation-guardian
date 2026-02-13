@@ -118,6 +118,11 @@ export default function PrintCertificates() {
   const { data: customFontsData = [] } = useQuery({
     queryKey: ["custom_fonts"],
     queryFn: async () => {
+      if (isDesktop && window.electronAPI?.db) {
+        const result = await window.electronAPI.db.getAll('custom_fonts', 'created_at', 'DESC');
+        if (result.success) return (result.data || []) as Array<{ font_name: string; font_family: string; font_url: string; font_style: string | null; is_arabic: boolean | null }>;
+        return [];
+      }
       const { data, error } = await supabase
         .from("custom_fonts")
         .select("*")
