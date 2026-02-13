@@ -147,7 +147,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       const drawHeader = (startY: number) => {
         doc.setFont("Amiri", "bold");
         doc.setFontSize(7);
-        doc.setFillColor(66, 133, 244);
+        doc.setFillColor(180, 180, 180);
         doc.setTextColor(255, 255, 255);
         doc.rect(M, startY, tableW, rowH, "F");
         let hx = PW - M;
@@ -250,29 +250,86 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       });
       y += 12;
 
-      // Dashboard summary
-      checkPage(30);
+      // Dashboard summary - match UI card layout
+      checkPage(45);
       doc.setDrawColor(200, 200, 200);
       doc.line(M, y, PW - M, y);
-      y += 3.5;
+      y += 4;
       doc.setFont("Amiri", "bold");
       doc.setFontSize(8);
       doc.text(processText("لوحة المؤشرات المختصرة"), PW - M, y, { align: "right" });
-      y += 4.5;
-      doc.setFont("Amiri", "normal");
-      doc.setFontSize(7);
+      y += 5;
 
-      const statsLines = [
-        `عدد المسجلين في الدكتوراه: ${toWesternNumerals(data.registeredCount)} (ل.م.د: ${toWesternNumerals(data.registeredLmd)}، علوم: ${toWesternNumerals(data.registeredScience)})`,
-        `متوسط سنوات التسجيل للمسجلين: ${toWesternNumerals(data.avgRegAll.toFixed(1))} (ل.م.د: ${toWesternNumerals(data.avgRegLmd.toFixed(1))}، علوم: ${toWesternNumerals(data.avgRegScience.toFixed(1))})`,
-        `عدد المناقشين: ${toWesternNumerals(data.defendedCount)} (ل.م.د: ${toWesternNumerals(data.defendedLmd)}، علوم: ${toWesternNumerals(data.defendedScience)})`,
-        `متوسط مدة التسجيل للمناقشين: ${toWesternNumerals(data.avgDefAll.toFixed(1))} (ل.م.د: ${toWesternNumerals(data.avgDefLmd.toFixed(1))}، علوم: ${toWesternNumerals(data.avgDefScience.toFixed(1))})`,
+      const cardW = (PW - M * 2 - 6) / 4; // 4 cards with 2mm gaps
+      const cardH = 28;
+      const cardStartX = M;
+
+      const dashboardCards = [
+        {
+          title: "عدد المسجلين في الدكتوراه",
+          items: [
+            { label: "الإجمالي", value: toWesternNumerals(data.registeredCount) },
+            { label: "ل.م.د", value: toWesternNumerals(data.registeredLmd) },
+            { label: "علوم", value: toWesternNumerals(data.registeredScience) },
+          ],
+        },
+        {
+          title: "متوسط سنوات التسجيل (المسجلين)",
+          items: [
+            { label: "المتوسط العام", value: toWesternNumerals(data.avgRegAll.toFixed(1)) },
+            { label: "ل.م.د", value: toWesternNumerals(data.avgRegLmd.toFixed(1)) },
+            { label: "علوم", value: toWesternNumerals(data.avgRegScience.toFixed(1)) },
+          ],
+        },
+        {
+          title: "عدد المناقشين",
+          items: [
+            { label: "الإجمالي", value: toWesternNumerals(data.defendedCount) },
+            { label: "ل.م.د", value: toWesternNumerals(data.defendedLmd) },
+            { label: "علوم", value: toWesternNumerals(data.defendedScience) },
+          ],
+        },
+        {
+          title: "متوسط مدة التسجيل (المناقشين)",
+          items: [
+            { label: "المتوسط العام", value: toWesternNumerals(data.avgDefAll.toFixed(1)) },
+            { label: "ل.م.د", value: toWesternNumerals(data.avgDefLmd.toFixed(1)) },
+            { label: "علوم", value: toWesternNumerals(data.avgDefScience.toFixed(1)) },
+          ],
+        },
       ];
-      statsLines.forEach(line => {
-        doc.text(processText(line), PW - M, y, { align: "right" });
-        y += 4.5;
+
+      // Draw cards right-to-left
+      dashboardCards.forEach((card, ci) => {
+        const cx = PW - M - ci * (cardW + 2);
+        // Card border
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(cx - cardW, y, cardW, cardH, 1.5, 1.5, "S");
+        
+        // Card title
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(5.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text(processText(card.title), cx - 2, y + 4, { align: "right" });
+        
+        // Card items
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(6);
+        doc.setTextColor(0, 0, 0);
+        card.items.forEach((item, ii) => {
+          const iy = y + 9 + ii * 5.5;
+          doc.setFont("Amiri", "bold");
+          doc.setFontSize(8);
+          doc.text(item.value, cx - cardW / 2, iy + 1, { align: "center" });
+          doc.setFont("Amiri", "normal");
+          doc.setFontSize(5);
+          doc.setTextColor(130, 130, 130);
+          doc.text(processText(item.label), cx - cardW / 2, iy + 4, { align: "center" });
+          doc.setTextColor(0, 0, 0);
+        });
       });
-      y += 3;
+      y += cardH + 5;
     }
 
     // ───── Registered Students ─────
