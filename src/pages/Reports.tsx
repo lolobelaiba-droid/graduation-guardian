@@ -351,11 +351,13 @@ export default function Reports() {
               <BarChart3 className="h-4 w-4 text-primary" />
               لوحة المؤشرات المختصرة
             </h3>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <DashboardCard title="عدد المسجلين في الدكتوراه" icon={<Users className="h-4 w-4" />} items={[{ label: "الإجمالي", value: filteredRegistered.length }, { label: "ل.م.د", value: regLmdCount }, { label: "علوم", value: regSciCount }]} />
               <DashboardCard title="متوسط سنوات التسجيل (المسجلين)" icon={<Clock className="h-4 w-4" />} items={[{ label: "المتوسط العام", value: avgRegYears.regAll.toFixed(1) }, { label: "ل.م.د", value: avgRegYears.regLmd.toFixed(1) }, { label: "علوم", value: avgRegYears.regScience.toFixed(1) }]} />
+              <DashboardCard title="عدد المتأخرين (المسجلين)" icon={<AlertTriangle className="h-4 w-4" />} items={[{ label: "الإجمالي", value: regStatusData[1]?.value || 0 }, { label: "من أصل", value: filteredRegistered.length }, { label: "النسبة", value: filteredRegistered.length > 0 ? `${((regStatusData[1]?.value || 0) / filteredRegistered.length * 100).toFixed(1)}%` : '0%' }]} />
               <DashboardCard title="عدد المناقشين" icon={<GraduationCap className="h-4 w-4" />} items={[{ label: "الإجمالي", value: filteredDefended.length }, { label: "ل.م.د", value: defLmdCount }, { label: "علوم", value: defSciCount }]} />
               <DashboardCard title="متوسط مدة التسجيل (المناقشين)" icon={<TrendingUp className="h-4 w-4" />} items={[{ label: "المتوسط العام", value: avgRegYears.defAll.toFixed(1) }, { label: "ل.م.د", value: avgRegYears.defLmd.toFixed(1) }, { label: "علوم", value: avgRegYears.defScience.toFixed(1) }]} />
+              <DashboardCard title="عدد المتأخرين (المناقشين)" icon={<AlertTriangle className="h-4 w-4" />} items={[{ label: "الإجمالي", value: defStatusData[1]?.value || 0 }, { label: "من أصل", value: filteredDefended.length }, { label: "النسبة", value: filteredDefended.length > 0 ? `${((defStatusData[1]?.value || 0) / filteredDefended.length * 100).toFixed(1)}%` : '0%' }]} />
             </div>
           </div>
         </CardContent>
