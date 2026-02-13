@@ -88,6 +88,7 @@ const phdLmdSchema = z.object({
   notes: z.string().optional().nullable(),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
+  scientific_council_date: z.string().min(1, "تاريخ المصادقة في المجلس العلمي مطلوب"),
 });
 
 type PhdLmdFormValues = z.infer<typeof phdLmdSchema>;
@@ -138,6 +139,7 @@ const phdScienceSchema = z.object({
   notes: z.string().optional().nullable(),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
+  scientific_council_date: z.string().min(1, "تاريخ المصادقة في المجلس العلمي مطلوب"),
 });
 
 type PhdScienceFormValues = z.infer<typeof phdScienceSchema>;
@@ -164,6 +166,7 @@ const masterSchema = z.object({
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
+  scientific_council_date: z.string().min(1, "تاريخ المصادقة في المجلس العلمي مطلوب"),
 });
 
 type MasterFormValues = z.infer<typeof masterSchema>;
@@ -243,6 +246,7 @@ export default function EditStudentDialog({
         notes: student.notes || "",
         province: student.province || "أم البواقي",
         signature_title: student.signature_title || getDefaultSignatureTitle(student.faculty_ar || ""),
+        scientific_council_date: student.scientific_council_date || "",
       };
 
       if (certificateType === "phd_lmd" && "field_ar" in student) {
@@ -1017,6 +1021,19 @@ export default function EditStudentDialog({
                       <FormLabel>تاريخ الشهادة *</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={"scientific_council_date" as keyof FormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>تاريخ المصادقة في المجلس العلمي *</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} value={(field.value as string) || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

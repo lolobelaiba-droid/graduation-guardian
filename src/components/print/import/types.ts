@@ -43,6 +43,8 @@ export const getDbFieldKey = (fieldKey: string): string => {
     'defense_date_fr': 'defense_date',
     'certificate_date_ar': 'certificate_date',
     'certificate_date_fr': 'certificate_date',
+    'scientific_council_date_ar': 'scientific_council_date',
+    'scientific_council_date_fr': 'scientific_council_date',
     'mention_ar': 'mention',
     'mention_fr': 'mention',
   };

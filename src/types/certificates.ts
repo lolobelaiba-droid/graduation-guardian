@@ -44,6 +44,7 @@ export interface BaseCertificate {
   notes?: string | null;
   province?: string | null;
   signature_title?: string | null;
+  scientific_council_date?: string | null;
 }
 
 // PhD LMD Certificate
@@ -181,6 +182,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'certificate_date_fr', name_ar: 'تاريخ الشهادة (فرنسي)', name_fr: 'Date du certificat (FR)', required: false },
     { key: 'province', name_ar: 'الولاية', name_fr: 'Wilaya', required: false },
     { key: 'signature_title', name_ar: 'إمضاء', name_fr: 'Signature', required: false },
+    { key: 'scientific_council_date_ar', name_ar: 'تاريخ المصادقة في المجلس العلمي (عربي)', name_fr: 'Date du conseil scientifique (AR)', required: false },
+    { key: 'scientific_council_date_fr', name_ar: 'تاريخ المصادقة في المجلس العلمي (فرنسي)', name_fr: 'Date du conseil scientifique (FR)', required: false },
   ],
   phd_science: [
     { key: 'student_number', name_ar: 'الرقم', name_fr: 'N°', required: true },
@@ -208,6 +211,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'certificate_date_fr', name_ar: 'تاريخ الشهادة (فرنسي)', name_fr: 'Date du certificat (FR)', required: false },
     { key: 'province', name_ar: 'الولاية', name_fr: 'Wilaya', required: false },
     { key: 'signature_title', name_ar: 'إمضاء', name_fr: 'Signature', required: false },
+    { key: 'scientific_council_date_ar', name_ar: 'تاريخ المصادقة في المجلس العلمي (عربي)', name_fr: 'Date du conseil scientifique (AR)', required: false },
+    { key: 'scientific_council_date_fr', name_ar: 'تاريخ المصادقة في المجلس العلمي (فرنسي)', name_fr: 'Date du conseil scientifique (FR)', required: false },
   ],
   master: [
     { key: 'student_number', name_ar: 'الرقم', name_fr: 'N°', required: true },
@@ -232,6 +237,8 @@ export const certificateFields: Record<CertificateType, { key: string; name_ar: 
     { key: 'certificate_date_fr', name_ar: 'تاريخ الشهادة (فرنسي)', name_fr: 'Date du certificat (FR)', required: false },
     { key: 'province', name_ar: 'الولاية', name_fr: 'Wilaya', required: false },
     { key: 'signature_title', name_ar: 'إمضاء', name_fr: 'Signature', required: false },
+    { key: 'scientific_council_date_ar', name_ar: 'تاريخ المصادقة في المجلس العلمي (عربي)', name_fr: 'Date du conseil scientifique (AR)', required: false },
+    { key: 'scientific_council_date_fr', name_ar: 'تاريخ المصادقة في المجلس العلمي (فرنسي)', name_fr: 'Date du conseil scientifique (FR)', required: false },
   ],
 };
 

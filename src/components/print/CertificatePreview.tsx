@@ -267,6 +267,22 @@ export function CertificatePreview({
       return '';
     }
     
+    if (fieldKey === 'scientific_council_date_ar') {
+      const value = student['scientific_council_date'];
+      if (value) {
+        return formatDefenseDate(value as string, true, dateFormatSettings);
+      }
+      return '';
+    }
+    
+    if (fieldKey === 'scientific_council_date_fr') {
+      const value = student['scientific_council_date'];
+      if (value) {
+        return formatDefenseDate(value as string, false, dateFormatSettings);
+      }
+      return '';
+    }
+    
     const value = student[fieldKey];
     
     // Legacy date fields support (default to French format)

@@ -76,6 +76,7 @@ const masterSchema = z.object({
   certificate_date: z.string().optional(),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
+  scientific_council_date: z.string().min(1, "تاريخ المصادقة في المجلس العلمي مطلوب"),
 });
 
 // Base schema for PhD types (includes supervisor and contact info)
@@ -100,6 +101,7 @@ const baseSchema = z.object({
   certificate_date: z.string().optional(),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
+  scientific_council_date: z.string().min(1, "تاريخ المصادقة في المجلس العلمي مطلوب"),
   first_registration_year: z.string().min(1, "سنة أول تسجيل مطلوبة"),
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
@@ -201,6 +203,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
       research_lab_ar: '',
       province: 'أم البواقي',
       signature_title: '',
+      scientific_council_date: '',
     },
   });
 
@@ -845,6 +848,20 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>تاريخ اصدار الشهادة</FormLabel>
+                    <FormControl>
+                      <DateInput value={field.value || ''} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="scientific_council_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>تاريخ المصادقة في المجلس العلمي *</FormLabel>
                     <FormControl>
                       <DateInput value={field.value || ''} onChange={field.onChange} />
                     </FormControl>

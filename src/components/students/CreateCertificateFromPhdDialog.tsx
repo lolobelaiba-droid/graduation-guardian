@@ -97,6 +97,7 @@ const certificateSchema = z.object({
   field_fr: z.string().optional().nullable(),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
+  scientific_council_date: z.string().min(1, "تاريخ المصادقة في المجلس العلمي مطلوب"),
 });
 
 interface CreateCertificateFromPhdDialogProps {
@@ -196,6 +197,7 @@ export function CreateCertificateFromPhdDialog({
       research_lab_ar: '',
       province: 'أم البواقي',
       signature_title: '',
+      scientific_council_date: '',
     },
   });
 
@@ -242,6 +244,7 @@ export function CreateCertificateFromPhdDialog({
       jury_members_ar: '',
       province: 'أم البواقي',
       signature_title: getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
+      scientific_council_date: '',
     });
     
     setShowForm(true);
@@ -560,6 +563,19 @@ export function CreateCertificateFromPhdDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>تاريخ إصدار الشهادة</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="scientific_council_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>تاريخ المصادقة في المجلس العلمي *</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
