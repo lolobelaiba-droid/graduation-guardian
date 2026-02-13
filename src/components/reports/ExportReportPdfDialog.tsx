@@ -17,6 +17,7 @@ import { toWesternNumerals } from "@/lib/numerals";
 import { loadFontFile, arrayBufferToBase64 } from "@/lib/arabicFonts";
 import { processTextForPdf } from "@/lib/pdf/arabicTextUtils";
 import type { KpiResult } from "@/lib/kpi-calculator";
+import { getRegistrationStatus } from "@/lib/kpi-calculator";
 import type { InsightCard } from "@/lib/strategic-insights";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -386,11 +387,28 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       doc.text(processText("لوحة المؤشرات المختصرة"), PW - M, y, { align: "right" });
       y += 5;
 
-      const cardW = (PW - M * 2 - 6) / 4; // 4 cards with 2mm gaps
+      // Calculate delayed counts from student data
+      const calcDelayed = (students: any[]) => {
+        let delayed = 0;
+        students.forEach(s => {
+          const st = getRegistrationStatus(s.registration_count, s._type);
+          if (st === 'delayed') delayed++;
+        });
+        return delayed;
+      };
+      const regDelayed = calcDelayed(data.registeredStudents);
+      const defDelayed = calcDelayed(data.defendedStudents);
+      const regDelayedPct = data.registeredCount > 0 ? ((regDelayed / data.registeredCount) * 100).toFixed(1) : '0.0';
+      const defDelayedPct = data.defendedCount > 0 ? ((defDelayed / data.defendedCount) * 100).toFixed(1) : '0.0';
+
+      const cardCols = 3;
+      const cardGapX = 2;
+      const cardGapY = 2;
+      const cardW = (PW - M * 2 - (cardCols - 1) * cardGapX) / cardCols;
       const cardH = 28;
-      const cardStartX = M;
 
       const dashboardCards = [
+        // Row 1
         {
           title: "عدد المسجلين في الدكتوراه",
           items: [
@@ -408,6 +426,15 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
           ],
         },
         {
+          title: "عدد المتأخرين (المسجلين)",
+          items: [
+            { label: "الإجمالي", value: toWesternNumerals(regDelayed) },
+            { label: "من أصل", value: toWesternNumerals(data.registeredCount) },
+            { label: "النسبة", value: `${toWesternNumerals(regDelayedPct)}%` },
+          ],
+        },
+        // Row 2
+        {
           title: "عدد المناقشين",
           items: [
             { label: "الإجمالي", value: toWesternNumerals(data.defendedCount) },
@@ -423,28 +450,40 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
             { label: "علوم", value: toWesternNumerals(data.avgDefScience.toFixed(1)) },
           ],
         },
+        {
+          title: "عدد المتأخرين (المناقشين)",
+          items: [
+            { label: "الإجمالي", value: toWesternNumerals(defDelayed) },
+            { label: "من أصل", value: toWesternNumerals(data.defendedCount) },
+            { label: "النسبة", value: `${toWesternNumerals(defDelayedPct)}%` },
+          ],
+        },
       ];
 
-      // Draw cards right-to-left
+      // Draw cards in 3-column grid, right-to-left
       dashboardCards.forEach((card, ci) => {
-        const cx = PW - M - ci * (cardW + 2);
+        const col = ci % cardCols;
+        const row = Math.floor(ci / cardCols);
+        const cx = PW - M - col * (cardW + cardGapX);
+        const cy = y + row * (cardH + cardGapY);
+
         // Card border
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.3);
-        doc.roundedRect(cx - cardW, y, cardW, cardH, 1.5, 1.5, "S");
+        doc.roundedRect(cx - cardW, cy, cardW, cardH, 1.5, 1.5, "S");
         
         // Card title
         doc.setFont("Amiri", "bold");
         doc.setFontSize(5.5);
         doc.setTextColor(100, 100, 100);
-        doc.text(processText(card.title), cx - 2, y + 4, { align: "right" });
+        doc.text(processText(card.title), cx - 2, cy + 4, { align: "right" });
         
         // Card items
         doc.setFont("Amiri", "normal");
         doc.setFontSize(6);
         doc.setTextColor(0, 0, 0);
         card.items.forEach((item, ii) => {
-          const iy = y + 9 + ii * 5.5;
+          const iy = cy + 9 + ii * 5.5;
           doc.setFont("Amiri", "bold");
           doc.setFontSize(8);
           doc.text(item.value, cx - cardW / 2, iy + 1, { align: "center" });
@@ -455,7 +494,8 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
           doc.setTextColor(0, 0, 0);
         });
       });
-      y += cardH + 5;
+      const totalRows = Math.ceil(dashboardCards.length / cardCols);
+      y += totalRows * (cardH + cardGapY) + 3;
     }
 
     // ───── Strategic Insights ─────
