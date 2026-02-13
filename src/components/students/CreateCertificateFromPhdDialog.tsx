@@ -36,6 +36,7 @@ import { AcademicTitleInput } from "@/components/ui/academic-title-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DateInput } from "@/components/ui/date-input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -577,7 +578,7 @@ export function CreateCertificateFromPhdDialog({
                     <FormItem>
                       <FormLabel>تاريخ المصادقة في المجلس العلمي *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateInput value={field.value || ''} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

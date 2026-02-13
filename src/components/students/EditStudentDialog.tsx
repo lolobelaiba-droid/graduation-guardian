@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { JuryMembersInput } from "@/components/ui/jury-members-input";
 import { AcademicTitleInput } from "@/components/ui/academic-title-input";
+import { DateInput } from "@/components/ui/date-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -1033,7 +1034,7 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>تاريخ المصادقة في المجلس العلمي *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={(field.value as string) || ""} />
+                        <DateInput value={(field.value as string) || ""} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
