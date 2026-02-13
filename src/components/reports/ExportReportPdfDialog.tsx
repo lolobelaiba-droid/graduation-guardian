@@ -272,7 +272,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         doc.setFillColor(248, 249, 252);
         doc.setDrawColor(210, 210, 210);
         doc.setLineWidth(0.2);
-        doc.roundedRect(criteriaX, cy, criteriaW, cardH, 1, 1, "FD");
+        doc.roundedRect(criteriaX, cy, criteriaW, critCardH, 1, 1, "FD");
 
         // Value (colored) on left of card
         const val = Math.round(c.value);
