@@ -419,7 +419,7 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>تاريخ الميلاد *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={field.value || ""} />
+                        <DateInput value={(field.value as string) || ""} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1008,7 +1008,7 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>تاريخ المناقشة *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={field.value || ""} />
+                        <DateInput value={(field.value as string) || ""} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1021,7 +1021,7 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>تاريخ الشهادة *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={field.value || ""} />
+                        <DateInput value={(field.value as string) || ""} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

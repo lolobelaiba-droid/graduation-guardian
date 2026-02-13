@@ -496,7 +496,7 @@ export function CreateCertificateFromPhdDialog({
                     <FormItem>
                       <FormLabel>تاريخ المناقشة *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateInput value={field.value || ''} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -565,7 +565,7 @@ export function CreateCertificateFromPhdDialog({
                     <FormItem>
                       <FormLabel>تاريخ إصدار الشهادة</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateInput value={field.value || ''} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -712,7 +712,7 @@ export function CreateCertificateFromPhdDialog({
                     <FormItem>
                       <FormLabel>تاريخ الميلاد *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateInput value={field.value || ''} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
