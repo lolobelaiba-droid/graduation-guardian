@@ -87,10 +87,10 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // ── Landscape A4 ──
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", putOnlyUsedFonts: true });
+      // ── Use landscape for tables with many columns, portrait for KPI page ──
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", putOnlyUsedFonts: true });
 
-      // Load fonts
+      // ===== Load fonts (same as annual report) =====
       const fontData = await loadFontFile("/fonts/Amiri-Regular.ttf");
       if (!fontData) throw new Error("فشل تحميل ملف الخط Amiri-Regular.ttf");
       doc.addFileToVFS("Amiri-Regular.ttf", arrayBufferToBase64(fontData));
@@ -104,110 +104,49 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
 
       doc.setFont("Amiri", "normal");
 
-      const PW = doc.internal.pageSize.getWidth();   // 297
-      const PH = doc.internal.pageSize.getHeight();   // 210
-      const M = 12;
-      let y = 12;
+      const MARGIN = 15;
+      let PAGE_WIDTH = doc.internal.pageSize.getWidth();
+      let PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+      let currentY = 20;
 
       const checkPage = (needed: number) => {
-        if (y + needed > PH - 12) { doc.addPage(); y = 12; }
+        if (currentY + needed > PAGE_HEIGHT - 15) { doc.addPage(); currentY = 20; }
       };
 
-      // ───── Official Header ─────
+      // ===== Header (same style as annual report) =====
       doc.setFont("Amiri", "bold");
-      doc.setFontSize(10);
-      doc.text(processText("الجمهورية الجزائرية الديمقراطية الشعبية"), PW / 2, y, { align: "center" });
-      y += 5;
-      doc.setFont("Amiri", "normal");
-      doc.setFontSize(9);
-      doc.text(processText("وزارة التعليم العالي والبحث العلمي"), PW / 2, y, { align: "center" });
-      y += 6;
-
-      doc.setFont("Amiri", "bold");
-      doc.setFontSize(12);
-      doc.text(processText(settings?.universityName || "جامعة العربي بن مهيدي أم البواقي"), PW / 2, y, { align: "center" });
-      y += 7;
-
       doc.setFontSize(14);
-      doc.text(processText("تقرير الأداء في التكوين"), PW / 2, y, { align: "center" });
-      y += 5;
+      doc.text(
+        processText(settings?.universityName || "جامعة العربي بن مهيدي - أم البواقي"),
+        PAGE_WIDTH / 2, currentY, { align: "center" }
+      );
+      currentY += 10;
+
+      doc.setFontSize(16);
+      doc.text(processText("تقرير الأداء في التكوين"), PAGE_WIDTH / 2, currentY, { align: "center" });
+      currentY += 8;
 
       if (data.facultyName) {
-        doc.setFontSize(10);
-        doc.text(processText(`كلية/معهد: ${data.facultyName}`), PW / 2, y, { align: "center" });
-        y += 5;
+        doc.setFontSize(11);
+        doc.text(processText(`كلية/معهد: ${data.facultyName}`), PAGE_WIDTH / 2, currentY, { align: "center" });
+        currentY += 8;
       }
 
-      doc.setDrawColor(66, 133, 244);
-      doc.setLineWidth(0.5);
-      doc.line(M, y, PW - M, y);
-      y += 6;
+      doc.setFont("Amiri", "normal");
+      currentY += 4;
 
-      // ───── HELPER: Draw table ─────
-      const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
-        const tableW = PW - M * 2;
-        const cols = colWidths || headers.map(() => tableW / headers.length);
-
-        const drawHeader = (startY: number) => {
-          doc.setFont("Amiri", "bold");
-          doc.setFontSize(7);
-          doc.setFillColor(220, 230, 245);
-          doc.rect(M, startY, tableW, 6, "F");
-          let hx = PW - M;
-          headers.forEach((h, i) => {
-            doc.text(processText(h), hx - cols[i] / 2, startY + 4.2, { align: "center" });
-            hx -= cols[i];
-          });
-          doc.setFont("Amiri", "normal");
-          return startY + 6;
-        };
-
-        y = drawHeader(y);
-        doc.setFontSize(6.5);
-
-        rows.forEach(row => {
-          if (y > PH - 12) {
-            doc.addPage(); y = 12;
-            y = drawHeader(y);
-            doc.setFontSize(6.5);
-          }
-          let cx = PW - M;
-          row.forEach((cell, i) => {
-            const maxChars = Math.floor(cols[i] / 1.2);
-            const txt = processText(cell);
-            const truncated = txt.length > maxChars ? txt.substring(0, maxChars) + "…" : txt;
-            doc.text(truncated, cx - cols[i] / 2, y + 4, { align: "center" });
-            cx -= cols[i];
-          });
-          doc.setDrawColor(210, 210, 210);
-          doc.line(M, y + 5.5, PW - M, y + 5.5);
-          y += 5.5;
-        });
-        y += 3;
-      };
-
-      const sectionTitle = (title: string) => {
-        checkPage(12);
-        doc.setFont("Amiri", "bold");
-        doc.setFontSize(10);
-        doc.setFillColor(66, 133, 244);
-        doc.rect(M, y - 2, PW - M * 2, 7, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.text(processText(title), PW / 2, y + 2.5, { align: "center" });
-        doc.setTextColor(0, 0, 0);
-        y += 9;
-        doc.setFont("Amiri", "normal");
-      };
-
-      // ───── KPI Section (Page 1) ─────
+      // ===== KPI Section =====
       if (selectedSections.includes("kpi")) {
-        checkPage(50);
-        sectionTitle("مؤشر الأداء العام");
+        checkPage(60);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("مؤشر الأداء العام"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
 
         // KPI circle
-        const gaugeX = PW / 2;
-        const gaugeY = y + 15;
-        const gaugeR = 14;
+        const gaugeX = PAGE_WIDTH / 2;
+        const gaugeY = currentY + 18;
+        const gaugeR = 16;
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(2.5);
         doc.circle(gaugeX, gaugeY, gaugeR, "S");
@@ -221,45 +160,38 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
         doc.circle(gaugeX, gaugeY, gaugeR, "S");
 
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(16);
+        doc.setFontSize(18);
+        doc.setTextColor(0, 0, 0);
         doc.text(toWesternNumerals(kpiVal) + "%", gaugeX, gaugeY + 2, { align: "center" });
-        doc.setFontSize(7);
-        doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 4, { align: "center" });
-        y = gaugeY + gaugeR + 8;
-
-        // Sub-KPIs row
-        doc.setFont("Amiri", "normal");
         doc.setFontSize(8);
+        doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 5, { align: "center" });
+        currentY = gaugeY + gaugeR + 10;
+
+        // Sub-KPIs
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(11);
         const subKpis = [
           { label: "الفعالية التدفقية (30%)", value: data.kpi.flowEffectiveness },
           { label: "سرعة الإنجاز (25%)", value: data.kpi.speedOfAchievement },
           { label: "الجودة الزمنية (25%)", value: data.kpi.timeQuality },
           { label: "الفعالية الإدارية (20%)", value: data.kpi.administrativeEffectiveness },
         ];
-        checkPage(15);
-        const kpiColW = (PW - M * 2) / 4;
-        subKpis.forEach((sk, i) => {
-          const cx = PW - M - i * kpiColW - kpiColW / 2;
-          doc.setFont("Amiri", "bold");
-          doc.setFontSize(11);
-          doc.text(toWesternNumerals(Math.round(sk.value)) + "%", cx, y + 4, { align: "center" });
-          doc.setFont("Amiri", "normal");
-          doc.setFontSize(6);
-          doc.text(processText(sk.label), cx, y + 8, { align: "center" });
+        subKpis.forEach(sk => {
+          doc.text(
+            processText(`${sk.label}: ${toWesternNumerals(Math.round(sk.value))}%`),
+            PAGE_WIDTH - MARGIN, currentY, { align: "right" }
+          );
+          currentY += 6;
         });
-        y += 14;
+        currentY += 4;
 
         // Dashboard summary
-        checkPage(30);
-        doc.setDrawColor(200, 200, 200);
-        doc.line(M, y, PW - M, y);
-        y += 4;
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(9);
-        doc.text(processText("لوحة المؤشرات المختصرة"), PW - M, y, { align: "right" });
-        y += 5;
+        doc.setFontSize(13);
+        doc.text(processText("لوحة المؤشرات المختصرة"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
         doc.setFont("Amiri", "normal");
-        doc.setFontSize(8);
+        doc.setFontSize(11);
 
         const statsLines = [
           `عدد المسجلين في الدكتوراه: ${toWesternNumerals(data.registeredCount)} (ل.م.د: ${toWesternNumerals(data.registeredLmd)}، علوم: ${toWesternNumerals(data.registeredScience)})`,
@@ -268,51 +200,130 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
           `متوسط مدة التسجيل للمناقشين: ${toWesternNumerals(data.avgDefAll.toFixed(1))} (ل.م.د: ${toWesternNumerals(data.avgDefLmd.toFixed(1))}، علوم: ${toWesternNumerals(data.avgDefScience.toFixed(1))})`,
         ];
         statsLines.forEach(line => {
-          doc.text(processText(line), PW - M, y, { align: "right" });
-          y += 5;
+          doc.text(processText(line), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+          currentY += 6;
         });
-        y += 3;
+        currentY += 6;
       }
 
-      // ───── أولا: Registered Students ─────
+      // ===== Helper: Draw table (same style as annual report) =====
+      const drawTableSection = (
+        title: string,
+        headers: string[],
+        rows: string[][],
+        colWidths?: number[],
+        useNewPage?: boolean,
+      ) => {
+        if (useNewPage) { doc.addPage(); currentY = 20; }
+
+        // Recalculate page dimensions (in case orientation changed)
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        checkPage(20);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText(title), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = colWidths || headers.map(() => tableW / headers.length);
+
+        const drawHeader = (startY: number) => {
+          doc.setFont("Amiri", "bold");
+          doc.setFontSize(9);
+          doc.setFillColor(220, 220, 220);
+          doc.rect(MARGIN, startY, tableW, 8, "F");
+          // Draw headers RTL
+          let hx = PAGE_WIDTH - MARGIN;
+          headers.forEach((h, i) => {
+            doc.text(processText(h), hx - cols[i] / 2, startY + 6, { align: "center" });
+            hx -= cols[i];
+          });
+          doc.setFont("Amiri", "normal");
+          return startY + 8;
+        };
+
+        currentY = drawHeader(currentY);
+        doc.setFontSize(8);
+
+        rows.forEach(row => {
+          if (currentY > PAGE_HEIGHT - 15) {
+            doc.addPage();
+            currentY = 15;
+            currentY = drawHeader(currentY);
+            doc.setFontSize(8);
+          }
+
+          let cx = PAGE_WIDTH - MARGIN;
+          row.forEach((cell, i) => {
+            const maxChars = Math.floor(cols[i] / 1.5);
+            const txt = processText(cell);
+            const truncated = txt.length > maxChars ? txt.substring(0, maxChars) + "…" : txt;
+            doc.text(truncated, cx - cols[i] / 2, currentY + 5, { align: "center" });
+            cx -= cols[i];
+          });
+          doc.setDrawColor(200, 200, 200);
+          doc.line(MARGIN, currentY + 7, PAGE_WIDTH - MARGIN, currentY + 7);
+          currentY += 7;
+        });
+        currentY += 6;
+      };
+
+      // ===== أولا: Registered Students (landscape for wide table) =====
       if (selectedSections.includes("registered") && data.registeredStudents.length > 0) {
-        doc.addPage(); y = 12;
-        sectionTitle("أولا: إحصائيات عامة حول الطلبة المسجلين حاليا");
-        const headers = ["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "سنة أول تسجيل", "حالة التسجيل"];
-        const tableW = PW - M * 2;
-        const cols = [8, 50, 40, 40, 28, 30, 28].map(p => (p / 224) * tableW);
+        // Switch to landscape for this table
+        doc.addPage("a4", "landscape");
+        currentY = 20;
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = [8, 50, 35, 35, 25, 25, 22].map(p => (p / 200) * tableW);
         const rows = data.registeredStudents.map((s: any, i: number) => [
           toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
           s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
           s.first_registration_year ? toWesternNumerals(s.first_registration_year) : "-",
           getStatusLabel(s.registration_count, s._type),
         ]);
-        drawTable(headers, rows, cols);
+        drawTableSection(
+          "أولا: إحصائيات عامة حول الطلبة المسجلين حاليا",
+          ["ت", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "سنة أول تسجيل", "حالة التسجيل"],
+          rows, cols
+        );
       }
 
-      // ───── ثانيا: Defended Students ─────
+      // ===== ثانيا: Defended Students =====
       if (selectedSections.includes("defended") && data.defendedStudents.length > 0) {
-        doc.addPage(); y = 12;
-        sectionTitle("ثانيا: إحصائيات عامة حول الطلبة المناقشين");
-        const headers = ["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "حالة التسجيل", "تاريخ المناقشة"];
-        const tableW = PW - M * 2;
-        const cols = [8, 50, 40, 40, 28, 25, 30].map(p => (p / 221) * tableW);
+        doc.addPage("a4", "landscape");
+        currentY = 20;
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = [8, 50, 35, 35, 25, 22, 28].map(p => (p / 203) * tableW);
         const rows = data.defendedStudents.map((s: any, i: number) => [
           toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
           s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
           getStatusLabel(s.registration_count, s._type),
           s.defense_date ? toWesternNumerals(formatDateDDMMYYYY(s.defense_date)) : "-",
         ]);
-        drawTable(headers, rows, cols);
+        drawTableSection(
+          "ثانيا: إحصائيات عامة حول الطلبة المناقشين",
+          ["ت", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "حالة التسجيل", "تاريخ المناقشة"],
+          rows, cols
+        );
       }
 
-      // ───── إحصائيات العضوية ─────
+      // ===== إحصائيات العضوية =====
       if (selectedSections.includes("jury") && data.juryStats.length > 0) {
-        doc.addPage(); y = 12;
-        sectionTitle("إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)");
-        const headers = ["#", "الاسم واللقب", "الرتبة", "مشرف", "مشرف مساعد", "رئيس لجنة", "عضو لجنة", "المجموع"];
-        const tableW = PW - M * 2;
-        const cols = [8, 55, 30, 22, 28, 25, 25, 22].map(p => (p / 215) * tableW);
+        doc.addPage("a4", "landscape");
+        currentY = 20;
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = [8, 55, 30, 20, 25, 22, 22, 18].map(p => (p / 200) * tableW);
         const rows = data.juryStats.map((s, i) => [
           toWesternNumerals(i + 1), s.name, s.title,
           s.supervisor > 0 ? toWesternNumerals(s.supervisor) : "-",
@@ -321,16 +332,22 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
           s.member > 0 ? toWesternNumerals(s.member) : "-",
           toWesternNumerals(s.total),
         ]);
-        drawTable(headers, rows, cols);
+        drawTableSection(
+          "إحصائيات العضوية (مشرف / مشرف مساعد / رئيس لجنة / عضو لجنة)",
+          ["ت", "الاسم واللقب", "الرتبة", "مشرف", "مشرف مساعد", "رئيس لجنة", "عضو لجنة", "المجموع"],
+          rows, cols
+        );
       }
 
-      // ───── ثالثا: Administrative Actions ─────
+      // ===== ثالثا: Administrative Actions =====
       if (selectedSections.includes("admin") && data.adminActions.length > 0) {
-        doc.addPage(); y = 12;
-        sectionTitle("ثالثا: الإجراءات الإدارية");
-        const headers = ["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"];
-        const tableW = PW - M * 2;
-        const cols = [8, 45, 40, 20, 20, 30, 30, 30].map(p => (p / 223) * tableW);
+        doc.addPage("a4", "landscape");
+        currentY = 20;
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = [8, 42, 38, 18, 18, 28, 28, 28].map(p => (p / 208) * tableW);
         const rows = data.adminActions.map((s, i) => [
           toWesternNumerals(i + 1), s.name, s.supervisor, s.type,
           s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
@@ -338,62 +355,86 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
           s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
           s.processingTime ? `${toWesternNumerals(s.processingTime.months)} شهر ${toWesternNumerals(s.processingTime.days)} يوم` : "-",
         ]);
-        drawTable(headers, rows, cols);
+        drawTableSection(
+          "ثالثا: الإجراءات الإدارية",
+          ["ت", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"],
+          rows, cols
+        );
       }
 
-      // ───── رابعا: English Theses ─────
+      // ===== رابعا: English Theses =====
       if (selectedSections.includes("english") && data.englishTheses.length > 0) {
-        doc.addPage(); y = 12;
-        sectionTitle("رابعا: المناقشات باللغة الإنجليزية");
-        const headers = ["#", "الاسم واللقب", "الشعبة", "التخصص", "المشرف", "عنوان الأطروحة", "تاريخ المناقشة"];
-        const tableW = PW - M * 2;
-        const cols = [8, 40, 30, 30, 40, 70, 28].map(p => (p / 246) * tableW);
+        doc.addPage("a4", "landscape");
+        currentY = 20;
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = [8, 38, 28, 28, 38, 70, 25].map(p => (p / 235) * tableW);
         const rows = data.englishTheses.map((s, i) => [
           toWesternNumerals(i + 1), s.name, s.branch, s.specialty, s.supervisor,
           s.thesisTitle,
           s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
         ]);
-        drawTable(headers, rows, cols);
+        drawTableSection(
+          "رابعا: المناقشات باللغة الإنجليزية",
+          ["ت", "الاسم واللقب", "الشعبة", "التخصص", "المشرف", "عنوان الأطروحة", "تاريخ المناقشة"],
+          rows, cols
+        );
       }
 
-      // ───── خامسا: Lab Stats ─────
+      // ===== خامسا: Lab Stats (portrait - few columns) =====
       if (selectedSections.includes("labs") && data.labStats.length > 0) {
-        doc.addPage(); y = 12;
-        sectionTitle("خامسا: عدد المناقشات حسب مخابر البحث");
-        const headers = ["#", "مخبر البحث", "عدد المناقشين"];
-        const tableW = PW - M * 2;
-        const cols = [12, 180, 40].map(p => (p / 232) * tableW);
+        doc.addPage("a4", "portrait");
+        currentY = 20;
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = [10, 120, 30].map(p => (p / 160) * tableW);
         const rows = data.labStats.map((s, i) => [
           toWesternNumerals(i + 1), s.name, toWesternNumerals(s.count),
         ]);
-        drawTable(headers, rows, cols);
+        drawTableSection(
+          "خامسا: عدد المناقشات حسب مخابر البحث",
+          ["ت", "مخبر البحث", "عدد المناقشين"],
+          rows, cols
+        );
       }
 
-      // ───── سادسا: Assistant Professors ─────
+      // ===== سادسا: Assistant Professors =====
       if (selectedSections.includes("assistants") && data.assistantProfessors.length > 0) {
-        doc.addPage(); y = 12;
-        sectionTitle("سادسا: الأساتذة المساعدين المناقشين");
-        const headers = ["#", "الاسم واللقب", "الحالة الوظيفية", "الشعبة", "التخصص", "المشرف", "تاريخ المناقشة"];
-        const tableW = PW - M * 2;
-        const cols = [8, 45, 35, 35, 35, 45, 30].map(p => (p / 233) * tableW);
+        doc.addPage("a4", "landscape");
+        currentY = 20;
+        PAGE_WIDTH = doc.internal.pageSize.getWidth();
+        PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+
+        const tableW = PAGE_WIDTH - MARGIN * 2;
+        const cols = [8, 42, 30, 32, 32, 42, 25].map(p => (p / 211) * tableW);
         const rows = data.assistantProfessors.map((s, i) => [
           toWesternNumerals(i + 1), s.name, s.employmentStatus, s.branch,
           s.specialty, s.supervisor,
           s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
         ]);
-        drawTable(headers, rows, cols);
+        drawTableSection(
+          "سادسا: الأساتذة المساعدين المناقشين",
+          ["ت", "الاسم واللقب", "الحالة الوظيفية", "الشعبة", "التخصص", "المشرف", "تاريخ المناقشة"],
+          rows, cols
+        );
       }
 
-      // ───── Footer on all pages ─────
+      // ===== Footer on all pages =====
       const totalPages = doc.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
+        const pw = doc.internal.pageSize.getWidth();
+        const ph = doc.internal.pageSize.getHeight();
         doc.setFont("Amiri", "normal");
-        doc.setFontSize(6);
+        doc.setFontSize(7);
         doc.setTextColor(150, 150, 150);
         doc.text(
           processText(`مديرية الدراسات العليا والبحث العلمي - صفحة ${toWesternNumerals(p)} من ${toWesternNumerals(totalPages)}`),
-          PW / 2, PH - 5, { align: "center" }
+          pw / 2, ph - 7, { align: "center" }
         );
         doc.setTextColor(0, 0, 0);
       }
