@@ -248,22 +248,16 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       doc.setFont("Amiri", "normal");
       doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 4, { align: "center" });
 
-      // Period under gauge
+      // Period under gauge - render as separate segments to avoid bidi issues
       doc.setFontSize(5.5);
       doc.setTextColor(100, 100, 100);
-      const defaultFrom = () => {
-        const now = new Date();
-        const yr = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
-        return `01/09/${yr}`;
-      };
-      const defaultTo = () => {
-        const now = new Date();
-        const yr = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
-        return `31/08/${yr}`;
-      };
-      const fromDisplay = periodFrom ? toWesternNumerals(formatDateDDMMYYYY(periodFrom)) : toWesternNumerals(defaultFrom());
-      const toDisplay = periodTo ? toWesternNumerals(formatDateDDMMYYYY(periodTo)) : toWesternNumerals(defaultTo());
-      doc.text(processText(`الفترة: من ${fromDisplay} إلى ${toDisplay}`), gaugeX, gaugeY + gaugeR + 8, { align: "center" });
+      const now = new Date();
+      const yrStart = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+      const yrEnd = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
+      const fromDisplay = periodFrom ? toWesternNumerals(formatDateDDMMYYYY(periodFrom)) : toWesternNumerals(`01/09/${yrStart}`);
+      const toDisplay = periodTo ? toWesternNumerals(formatDateDDMMYYYY(periodTo)) : toWesternNumerals(`31/08/${yrEnd}`);
+      const periodLine = `${toDisplay}  ${processText("إلى")}  ${fromDisplay}  ${processText("من")}  :${processText("الفترة")}`;
+      doc.text(periodLine, gaugeX, gaugeY + gaugeR + 8, { align: "center" });
       doc.setTextColor(0, 0, 0);
 
       // Criteria cards on the right side
