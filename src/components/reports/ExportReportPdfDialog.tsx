@@ -187,12 +187,12 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
       const tableW = PW - M * 2;
       const cols = colWidths || headers.map(() => tableW / headers.length);
-      const baseRowH = 5.5;
-      const lineH = 3.2; // height per extra line
+      const baseRowH = 6.5;
+      const lineH = 3.8; // height per extra line
 
       const drawHeader = (startY: number) => {
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(7);
+        doc.setFontSize(9);
         doc.setFillColor(180, 180, 180);
         doc.setTextColor(255, 255, 255);
         doc.rect(M, startY, tableW, baseRowH, "F");
@@ -207,7 +207,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       };
 
       y = drawHeader(y);
-      doc.setFontSize(6.5);
+      doc.setFontSize(8.5);
 
       rows.forEach((row, ri) => {
         // Calculate row height based on longest cell content
@@ -225,7 +225,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         if (y + dynamicRowH > PH - 15) {
           doc.addPage(); y = 15;
           y = drawHeader(y);
-          doc.setFontSize(6.5);
+          doc.setFontSize(8.5);
           // Recalculate since font reset
         }
         // Alternate row color
