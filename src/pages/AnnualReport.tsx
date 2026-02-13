@@ -186,6 +186,8 @@ export default function AnnualReport() {
                 registration_count: (s as any).registration_count || null,
                 current_year: (s as any).current_year || "",
                 research_lab_ar: (s as any).research_lab_ar || "",
+                jury_president_ar: (s as any).jury_president_ar || "",
+                jury_members_ar: (s as any).jury_members_ar || "",
                 _type: s._type,
               })),
             }}
