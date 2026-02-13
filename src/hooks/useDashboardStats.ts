@@ -21,35 +21,60 @@ export function useDashboardStats() {
         const phdLmdCertsCount = phdLmdCerts.success ? (phdLmdCerts.data?.length || 0) : 0;
         const phdScienceCertsCount = phdScienceCerts.success ? (phdScienceCerts.data?.length || 0) : 0;
 
+        const delayedCandidatesElectron =
+          ((phdLmdStudents.data as Array<{ registration_count: number | null }>) || []).filter(s => s.registration_count && s.registration_count > 3).length +
+          ((phdScienceStudents.data as Array<{ registration_count: number | null }>) || []).filter(s => s.registration_count && s.registration_count > 5).length;
+
+        const delayedDefendedElectron =
+          ((phdLmdCerts.data as Array<{ registration_count: number | null }>) || []).filter(s => s.registration_count && s.registration_count > 3).length +
+          ((phdScienceCerts.data as Array<{ registration_count: number | null }>) || []).filter(s => s.registration_count && s.registration_count > 5).length;
+
         return {
           // PhD Candidates (pre-defense)
           totalPhdCandidates: phdLmdStudentsCount + phdScienceStudentsCount,
           phdLmdCandidatesCount: phdLmdStudentsCount,
           phdScienceCandidatesCount: phdScienceStudentsCount,
+          delayedCandidates: delayedCandidatesElectron,
           // Defended Students (post-defense with certificates)
           totalDefendedStudents: phdLmdCertsCount + phdScienceCertsCount,
           phdLmdDefendedCount: phdLmdCertsCount,
           phdScienceDefendedCount: phdScienceCertsCount,
+          delayedDefended: delayedDefendedElectron,
         };
       }
 
       // Web mode - use Supabase
-      const [phdLmdStudents, phdScienceStudents, phdLmdCerts, phdScienceCerts] = await Promise.all([
+      const [phdLmdStudents, phdScienceStudents, phdLmdCerts, phdScienceCerts,
+             phdLmdStudentsReg, phdScienceStudentsReg, phdLmdCertsReg, phdScienceCertsReg] = await Promise.all([
         supabase.from("phd_lmd_students").select("*", { count: "exact", head: true }),
         supabase.from("phd_science_students").select("*", { count: "exact", head: true }),
         supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
         supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
+        supabase.from("phd_lmd_students").select("registration_count"),
+        supabase.from("phd_science_students").select("registration_count"),
+        supabase.from("phd_lmd_certificates").select("registration_count"),
+        supabase.from("phd_science_certificates").select("registration_count"),
       ]);
+
+      const delayedCandidates =
+        (phdLmdStudentsReg.data || []).filter(s => s.registration_count && s.registration_count > 3).length +
+        (phdScienceStudentsReg.data || []).filter(s => s.registration_count && s.registration_count > 5).length;
+
+      const delayedDefended =
+        (phdLmdCertsReg.data || []).filter(s => s.registration_count && s.registration_count > 3).length +
+        (phdScienceCertsReg.data || []).filter(s => s.registration_count && s.registration_count > 5).length;
 
       return {
         // PhD Candidates (pre-defense)
         totalPhdCandidates: (phdLmdStudents.count || 0) + (phdScienceStudents.count || 0),
         phdLmdCandidatesCount: phdLmdStudents.count || 0,
         phdScienceCandidatesCount: phdScienceStudents.count || 0,
+        delayedCandidates,
         // Defended Students (post-defense with certificates)
         totalDefendedStudents: (phdLmdCerts.count || 0) + (phdScienceCerts.count || 0),
         phdLmdDefendedCount: phdLmdCerts.count || 0,
         phdScienceDefendedCount: phdScienceCerts.count || 0,
+        delayedDefended,
       };
     },
   });
