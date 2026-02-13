@@ -261,15 +261,42 @@ export default function Reports() {
       {/* مؤشر الأداء + لوحة المؤشرات */}
       <Card className="shadow-sm">
         <CardContent className="p-6">
-          <div className="flex flex-col xl:flex-row items-center gap-6 mb-6">
+          <div className="flex flex-col xl:flex-row-reverse items-start gap-6 mb-6">
+            {/* شرح المعايير على اليمين */}
+            <div className="flex-1 space-y-3">
+              <h3 className="text-sm font-bold text-foreground mb-3">شرح المعايير الفرعية:</h3>
+              <KpiCriteriaCard
+                value={kpi.flowEffectiveness}
+                weight="30%"
+                title="معيار الفعالية التدفقية"
+                description="يقيس نسبة الطلبة الذين ناقشوا فعلياً مقارنة بإجمالي المسجلين."
+                formula="(عدد المناقشين ÷ إجمالي المسجلين) × 100"
+              />
+              <KpiCriteriaCard
+                value={kpi.speedOfAchievement}
+                weight="25%"
+                title="معيار سرعة الإنجاز"
+                description="يعتمد على عدد السنوات من أول تسجيل حتى المناقشة."
+                formula="تشجيع الالتزام بالمدة القانونية"
+              />
+              <KpiCriteriaCard
+                value={kpi.timeQuality}
+                weight="25%"
+                title="معيار الجودة الزمنية"
+                description="يفاضل بين المناقشين في وضعية نظامي والمتأخرين."
+                formula="(عدد النظاميين ÷ إجمالي المناقشين) × 100"
+              />
+              <KpiCriteriaCard
+                value={kpi.administrativeEffectiveness}
+                weight="20%"
+                title="معيار الفعالية الإدارية"
+                description="يقيس كفاءة معالجة الملفات بين الإيداع والمناقشة."
+                formula="أقل من 3 أشهر: 100 | 3-6 أشهر: 70 | أكثر: 40"
+              />
+            </div>
+            {/* دائرة المؤشر على اليسار */}
             <div className="flex-shrink-0">
               <KpiGauge value={kpi.general} label="مؤشر الأداء العام" size={180} />
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
-              <SubKpiCard value={kpi.flowEffectiveness} label="الفعالية التدفقية" weight="30%" />
-              <SubKpiCard value={kpi.speedOfAchievement} label="سرعة الإنجاز" weight="25%" />
-              <SubKpiCard value={kpi.timeQuality} label="الجودة الزمنية" weight="25%" />
-              <SubKpiCard value={kpi.administrativeEffectiveness} label="الفعالية الإدارية" weight="20%" />
             </div>
           </div>
 
@@ -618,6 +645,23 @@ function DashboardCard({ title, icon, items }: { title: string; icon: React.Reac
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function KpiCriteriaCard({ value, weight, title, description, formula }: { value: number; weight: string; title: string; description: string; formula: string }) {
+  const color = value >= 80 ? "text-green-600" : value >= 50 ? "text-yellow-600" : "text-red-600";
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
+      <div className="flex-shrink-0 text-center min-w-[50px]">
+        <div className={`text-lg font-bold ${color}`}>{toWesternNumerals(Math.round(value))}%</div>
+        <Badge variant="outline" className="text-[10px]">{weight}</Badge>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-foreground">{title}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
+        <p className="text-[10px] text-muted-foreground/70 mt-0.5 italic">{formula}</p>
+      </div>
+    </div>
   );
 }
 
