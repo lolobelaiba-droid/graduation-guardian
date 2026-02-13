@@ -221,7 +221,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         doc.line(M, y + dynamicRowH, PW - M, y + dynamicRowH);
         y += dynamicRowH;
       });
-      y += 3;
+      y += 10;
     };
 
     const sectionTitle = (title: string) => {
