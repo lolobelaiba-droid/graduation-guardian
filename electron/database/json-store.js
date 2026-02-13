@@ -305,7 +305,17 @@ function getUserSetting(key) {
   var data = readTable('user_settings');
   for (var i = 0; i < data.length; i++) {
     if (data[i].setting_key === key) {
-      return data[i];
+      var item = {};
+      for (var k in data[i]) {
+        if (data[i].hasOwnProperty(k)) {
+          item[k] = data[i][k];
+        }
+      }
+      // Parse setting_value if it's a JSON string
+      if (typeof item.setting_value === 'string') {
+        try { item.setting_value = JSON.parse(item.setting_value); } catch(e) {}
+      }
+      return item;
     }
   }
   return null;
@@ -341,7 +351,20 @@ function setUserSetting(key, value) {
 }
 
 function getAllUserSettings() {
-  return readTable('user_settings');
+  var data = readTable('user_settings');
+  return data.map(function(item) {
+    var result = {};
+    for (var key in item) {
+      if (item.hasOwnProperty(key)) {
+        result[key] = item[key];
+      }
+    }
+    // Parse setting_value if it's a JSON string
+    if (typeof result.setting_value === 'string') {
+      try { result.setting_value = JSON.parse(result.setting_value); } catch(e) {}
+    }
+    return result;
+  });
 }
 
 // ============================================

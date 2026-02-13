@@ -23,7 +23,12 @@ export function useUserSettings() {
         if (result.success && result.data) {
           const settings: AppSettings = {};
           result.data.forEach((item: { setting_key: string; setting_value: unknown }) => {
-            const value = item.setting_value as Record<string, unknown>;
+            // Parse JSON string if stored as string (Electron stores setting_value as JSON string)
+            let rawValue = item.setting_value;
+            if (typeof rawValue === 'string') {
+              try { rawValue = JSON.parse(rawValue); } catch {}
+            }
+            const value = rawValue as Record<string, unknown>;
             if (item.setting_key === 'selectedLanguage') {
               settings.selectedLanguage = value?.value as TemplateLanguage;
             } else if (item.setting_key === 'selectedCertificateType') {
