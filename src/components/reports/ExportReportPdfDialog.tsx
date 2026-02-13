@@ -405,7 +405,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       const cardGapX = 2;
       const cardGapY = 2;
       const cardW = (PW - M * 2 - (cardCols - 1) * cardGapX) / cardCols;
-      const cardH = 28;
+      const cardH = 30;
 
       const dashboardCards = [
         // Row 1
@@ -460,37 +460,48 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         },
       ];
 
-      // Draw cards in 3-column grid, right-to-left
+      // Draw cards in 3-column grid, right-to-left, matching UI layout
+      checkPage(cardH * 2 + cardGapY + 5);
       dashboardCards.forEach((card, ci) => {
         const col = ci % cardCols;
         const row = Math.floor(ci / cardCols);
-        const cx = PW - M - col * (cardW + cardGapX);
-        const cy = y + row * (cardH + cardGapY);
+        // Right-to-left: rightmost card is col 0
+        const cardLeft = PW - M - (col + 1) * cardW - col * cardGapX;
+        const cardTop = y + row * (cardH + cardGapY);
+        const cardRight = cardLeft + cardW;
 
         // Card border
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.3);
-        doc.roundedRect(cx - cardW, cy, cardW, cardH, 1.5, 1.5, "S");
+        doc.roundedRect(cardLeft, cardTop, cardW, cardH, 1.5, 1.5, "S");
         
-        // Card title
+        // Card title (top-right, bold, colored like primary)
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(5.5);
-        doc.setTextColor(100, 100, 100);
-        doc.text(processText(card.title), cx - 2, cy + 4, { align: "right" });
-        
-        // Card items
-        doc.setFont("Amiri", "normal");
         doc.setFontSize(6);
+        doc.setTextColor(66, 133, 244);
+        doc.text(processText(card.title), cardRight - 3, cardTop + 5, { align: "right" });
         doc.setTextColor(0, 0, 0);
+
+        // Separator line under title
+        doc.setDrawColor(230, 230, 230);
+        doc.setLineWidth(0.2);
+        doc.line(cardLeft + 2, cardTop + 7.5, cardRight - 2, cardTop + 7.5);
+        
+        // Card items as rows: value on LEFT, label on RIGHT
+        const itemStartY = cardTop + 11;
+        const itemRowH = 6;
         card.items.forEach((item, ii) => {
-          const iy = cy + 9 + ii * 5.5;
+          const iy = itemStartY + ii * itemRowH;
+          // Value (bold, left side)
           doc.setFont("Amiri", "bold");
           doc.setFontSize(8);
-          doc.text(item.value, cx - cardW / 2, iy + 1, { align: "center" });
+          doc.setTextColor(0, 0, 0);
+          doc.text(item.value, cardLeft + 4, iy + 1, { align: "left" });
+          // Label (normal, right side)
           doc.setFont("Amiri", "normal");
-          doc.setFontSize(5);
-          doc.setTextColor(130, 130, 130);
-          doc.text(processText(item.label), cx - cardW / 2, iy + 4, { align: "center" });
+          doc.setFontSize(6);
+          doc.setTextColor(120, 120, 120);
+          doc.text(processText(item.label), cardRight - 3, iy + 1, { align: "right" });
           doc.setTextColor(0, 0, 0);
         });
       });
