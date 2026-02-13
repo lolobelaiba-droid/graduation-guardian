@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: () => process.platform,
   isElectron: true,
 
+  // File operations
+  saveFile: (defaultFileName, content) =>
+    ipcRenderer.invoke('file:saveDialog', { defaultFileName, content }),
+
   // Printers
   getPrinters: () => ipcRenderer.invoke('printers:list'),
   printPdf: (pdfArrayBuffer, options) =>

@@ -3,6 +3,7 @@ import { Upload, X, Image, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron } from "@/lib/database/db-client";
 
 interface BackgroundUploadProps {
   templateId: string;
@@ -37,30 +38,46 @@ export function BackgroundUpload({
     setIsUploading(true);
 
     try {
-      // Generate unique file name
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${templateId}_${Date.now()}.${fileExt}`;
-      const filePath = `backgrounds/${fileName}`;
+      if (isElectron()) {
+        // In Electron: convert to base64 and store directly
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          onUploadComplete(base64);
+          toast.success("تم رفع صورة الخلفية بنجاح");
+          setIsUploading(false);
+        };
+        reader.onerror = () => {
+          toast.error("فشل في قراءة الصورة");
+          setIsUploading(false);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Web: upload to Supabase Storage
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${templateId}_${Date.now()}.${fileExt}`;
+        const filePath = `backgrounds/${fileName}`;
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("template-backgrounds")
-        .upload(filePath, file, { upsert: true });
+        const { error: uploadError } = await supabase.storage
+          .from("template-backgrounds")
+          .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("template-backgrounds")
-        .getPublicUrl(filePath);
+        const { data: { publicUrl } } = supabase.storage
+          .from("template-backgrounds")
+          .getPublicUrl(filePath);
 
-      onUploadComplete(publicUrl);
-      toast.success("تم رفع صورة الخلفية بنجاح");
+        onUploadComplete(publicUrl);
+        toast.success("تم رفع صورة الخلفية بنجاح");
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("فشل في رفع الصورة");
     } finally {
-      setIsUploading(false);
+      if (!isElectron()) {
+        setIsUploading(false);
+      }
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -71,11 +88,15 @@ export function BackgroundUpload({
     if (!currentImageUrl) return;
 
     try {
-      // Extract file path from URL
-      const urlParts = currentImageUrl.split("/template-backgrounds/");
-      if (urlParts.length > 1) {
-        const filePath = urlParts[1];
-        await supabase.storage.from("template-backgrounds").remove([filePath]);
+      if (!isElectron()) {
+        // Only try to remove from Supabase storage if it's a URL (not base64)
+        if (currentImageUrl.startsWith('http')) {
+          const urlParts = currentImageUrl.split("/template-backgrounds/");
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage.from("template-backgrounds").remove([filePath]);
+          }
+        }
       }
 
       onUploadComplete(null);

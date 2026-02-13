@@ -261,8 +261,10 @@ export default function Settings() {
       const { data: backupData, error } = await BackupService.exportAll();
       if (error || !backupData) throw error || new Error("فشل التصدير");
 
-      BackupService.downloadBackupFile(backupData);
-      toast.success("تم تنزيل النسخة الاحتياطية بنجاح");
+      const saved = await BackupService.downloadBackupFile(backupData);
+      if (saved) {
+        toast.success("تم تنزيل النسخة الاحتياطية بنجاح");
+      }
     } catch (error) {
       console.error("Error downloading backup:", error);
       toast.error("حدث خطأ أثناء تنزيل النسخة الاحتياطية");
@@ -278,9 +280,11 @@ export default function Settings() {
       if (exportError || !backupData) throw exportError || new Error("فشل التصدير");
 
       if (isElectron()) {
-        // In desktop mode, just download the file
-        BackupService.downloadBackupFile(backupData);
-        toast.success("تم حفظ النسخة الاحتياطية بنجاح");
+        // In desktop mode, use native save dialog
+        const saved = await BackupService.downloadBackupFile(backupData);
+        if (saved) {
+          toast.success("تم حفظ النسخة الاحتياطية بنجاح");
+        }
         return;
       }
 

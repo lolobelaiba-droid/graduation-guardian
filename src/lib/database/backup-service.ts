@@ -306,18 +306,31 @@ export class BackupService {
   /**
    * تنزيل ملف النسخة الاحتياطية
    */
-  static downloadBackupFile(backupData: BackupData): void {
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-      type: "application/json",
-    });
+  static async downloadBackupFile(backupData: BackupData): Promise<boolean> {
+    const jsonContent = JSON.stringify(backupData, null, 2);
+    const defaultFileName = `backup_${new Date().toISOString().split("T")[0]}.json`;
+
+    // In Electron, use native save dialog
+    if (isElectron() && (window as any).electronAPI?.saveFile) {
+      try {
+        const result = await (window as any).electronAPI.saveFile(defaultFileName, jsonContent);
+        return result.success;
+      } catch (e) {
+        console.error('Electron save failed, falling back to browser download:', e);
+      }
+    }
+
+    // Fallback: browser download
+    const blob = new Blob([jsonContent], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `backup_${new Date().toISOString().split("T")[0]}.json`;
+    a.download = defaultFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    return true;
   }
 
   /**
