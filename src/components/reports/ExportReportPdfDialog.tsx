@@ -813,12 +813,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
         s.councilDate ? toWesternNumerals(formatDateDDMMYYYY(s.councilDate)) : "-",
         s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
-        s.processingTime ? (() => {
-          const m = String(s.processingTime!.months).padStart(2, '0');
-          const d = String(s.processingTime!.days).padStart(2, '0');
-          // Use LTR override to prevent BiDi reordering: "07 شهر و 02 يوم"
-          return `\u202D${m} ${processText("شهر")} ${processText("و")} ${d} ${processText("يوم")}\u202C`;
-        })() : "-",
+        s.processingTime ? processText(`${String(s.processingTime.months).padStart(2, '0')} شهر و ${String(s.processingTime.days).padStart(2, '0')} يوم`) : "-",
       ]);
       drawTable(["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
     }
