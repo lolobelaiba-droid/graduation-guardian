@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useUniversitySettings } from "@/hooks/useUniversitySettings";
+import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import { Download, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -387,18 +388,22 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
           }
         };
 
-        // Extract academic title from name
-        const extractTitle = (name: string): { title: string; cleanName: string } => {
-          const titlePatterns = [
-            /^(أ\.د\.|أ\.د|أ\.\s*د\.|د\.|بروفيسور|بروف\.|Prof\.|Dr\.|Pr\.)\s*/i,
-          ];
-          for (const pattern of titlePatterns) {
-            const match = name.match(pattern);
-            if (match) {
-              return { title: match[1].trim(), cleanName: name.replace(pattern, "").trim() };
+        // Fetch academic titles from database for proper rank extraction
+        const { data: academicTitles } = await supabase.from("academic_titles").select("abbreviation, full_name");
+        const titlesMap = new Map<string, string>();
+        (academicTitles || []).forEach((t: any) => {
+          titlesMap.set(t.abbreviation, t.full_name);
+        });
+
+        // Extract academic title from name using database titles
+        const extractTitle = (fullName: string): { title: string; cleanName: string } => {
+          const trimmed = fullName.trim();
+          for (const [abbr, fullTitle] of titlesMap) {
+            if (trimmed.startsWith(abbr + " ") || trimmed.startsWith(abbr + ".") || trimmed.startsWith(abbr + "/")) {
+              return { title: fullTitle, cleanName: trimmed.substring(abbr.length).replace(/^[.\s/]+/, "").trim() };
             }
           }
-          return { title: "", cleanName: name.trim() };
+          return { title: "", cleanName: trimmed };
         };
 
         data.students.forEach((student) => {
