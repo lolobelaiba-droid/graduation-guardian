@@ -211,51 +211,105 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
     // ───── KPI Section ─────
     if (selectedSections.includes("kpi")) {
-      checkPage(65);
+      checkPage(75);
       sectionTitle("مؤشر الأداء العام");
 
-      const gaugeX = PW / 2;
-      const gaugeY = y + 12;
-      const gaugeR = 12;
+      // Layout: gauge on LEFT, criteria cards on RIGHT
+      const gaugeR = 14;
+      const gaugeX = M + gaugeR + 5;
+      const gaugeY = y + gaugeR + 2;
+
+      // Draw gauge circle
       doc.setDrawColor(200, 200, 200);
       doc.setLineWidth(2);
       doc.circle(gaugeX, gaugeY, gaugeR, "S");
       const kpiVal = Math.round(data.kpi.general);
-      if (kpiVal > 90) doc.setDrawColor(34, 197, 94);
-      else if (kpiVal > 75) doc.setDrawColor(59, 130, 246);
-      else if (kpiVal > 50) doc.setDrawColor(234, 179, 8);
+      if (kpiVal >= 80) doc.setDrawColor(34, 197, 94);
+      else if (kpiVal >= 50) doc.setDrawColor(234, 179, 8);
       else doc.setDrawColor(239, 68, 68);
-      doc.setLineWidth(2);
+      doc.setLineWidth(2.5);
       doc.circle(gaugeX, gaugeY, gaugeR, "S");
 
       doc.setFont("Amiri", "bold");
-      doc.setFontSize(14);
-      doc.text(toWesternNumerals(kpiVal) + "%", gaugeX, gaugeY + 2, { align: "center" });
-      doc.setFontSize(6.5);
-      doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 3.5, { align: "center" });
-      y = gaugeY + gaugeR + 7;
-
-      // Sub-KPIs
-      doc.setFont("Amiri", "normal");
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      doc.text(toWesternNumerals(kpiVal) + "", gaugeX, gaugeY + 1, { align: "center" });
       doc.setFontSize(7);
-      const subKpis = [
-        { label: "الفعالية التدفقية (30%)", value: data.kpi.flowEffectiveness },
-        { label: "سرعة الإنجاز (25%)", value: data.kpi.speedOfAchievement },
-        { label: "الجودة الزمنية (25%)", value: data.kpi.timeQuality },
-        { label: "الفعالية الإدارية (20%)", value: data.kpi.administrativeEffectiveness },
+      doc.text("/ 100", gaugeX, gaugeY + 5.5, { align: "center" });
+      doc.setFontSize(6.5);
+      doc.setFont("Amiri", "normal");
+      doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 4, { align: "center" });
+
+      // Criteria cards on the right side
+      const criteriaX = M + gaugeR * 2 + 15; // start after gauge
+      const criteriaW = PW - M - criteriaX;
+      const critCardH = 13;
+      const cardGap = 2;
+
+      const criteria = [
+        { title: "معيار الفعالية التدفقية", weight: "30%", value: data.kpi.flowEffectiveness,
+          desc: "يقيس نسبة الطلبة الذين ناقشوا فعلياً مقارنة بإجمالي المسجلين.",
+          formula: "(عدد المناقشين ÷ إجمالي المسجلين) × 100" },
+        { title: "معيار سرعة الإنجاز", weight: "25%", value: data.kpi.speedOfAchievement,
+          desc: "يعتمد على عدد السنوات من أول تسجيل حتى المناقشة.",
+          formula: "تشجيع الالتزام بالمدة القانونية" },
+        { title: "معيار الجودة الزمنية", weight: "25%", value: data.kpi.timeQuality,
+          desc: "يفاضل بين المناقشين في وضعية نظامي والمتأخرين.",
+          formula: "(عدد النظاميين ÷ إجمالي المناقشين) × 100" },
+        { title: "معيار الفعالية الإدارية", weight: "20%", value: data.kpi.administrativeEffectiveness,
+          desc: "يقيس كفاءة معالجة الملفات بين الإيداع والمناقشة.",
+          formula: "أقل من 3 أشهر: 100 | 3-6 أشهر: 70 | أكثر: 40" },
       ];
-      checkPage(12);
-      const kpiColW = (PW - M * 2) / 4;
-      subKpis.forEach((sk, i) => {
-        const cx = PW - M - i * kpiColW - kpiColW / 2;
+
+      // Title
+      doc.setFont("Amiri", "bold");
+      doc.setFontSize(7);
+      doc.text(processText("شرح المعايير الفرعية:"), PW - M, y, { align: "right" });
+      let cy = y + 4;
+
+      criteria.forEach((c) => {
+        // Card background
+        doc.setFillColor(248, 249, 252);
+        doc.setDrawColor(210, 210, 210);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(criteriaX, cy, criteriaW, cardH, 1, 1, "FD");
+
+        // Value (colored) on left of card
+        const val = Math.round(c.value);
+        if (val >= 80) doc.setTextColor(34, 197, 94);
+        else if (val >= 50) doc.setTextColor(234, 179, 8);
+        else doc.setTextColor(239, 68, 68);
         doc.setFont("Amiri", "bold");
         doc.setFontSize(10);
-        doc.text(toWesternNumerals(Math.round(sk.value)) + "%", cx, y + 3, { align: "center" });
+        doc.text(toWesternNumerals(val) + "%", criteriaX + criteriaW - 2, cy + 5, { align: "right" });
+
+        // Weight badge
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(5);
+        doc.text(c.weight, criteriaX + criteriaW - 2, cy + 9.5, { align: "right" });
+
+        // Title
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(6.5);
+        doc.text(processText(c.title), criteriaX + criteriaW - 18, cy + 4, { align: "right" });
+
+        // Description
         doc.setFont("Amiri", "normal");
         doc.setFontSize(5.5);
-        doc.text(processText(sk.label), cx, y + 7, { align: "center" });
+        doc.setTextColor(80, 80, 80);
+        doc.text(processText(c.desc), criteriaX + criteriaW - 18, cy + 8, { align: "right" });
+
+        // Formula
+        doc.setFontSize(4.5);
+        doc.setTextColor(140, 140, 140);
+        doc.text(processText(c.formula), criteriaX + criteriaW - 18, cy + 11.5, { align: "right" });
+
+        doc.setTextColor(0, 0, 0);
+        cy += critCardH + cardGap;
       });
-      y += 12;
+
+      y = Math.max(gaugeY + gaugeR + 8, cy + 2);
 
       // Dashboard summary - match UI card layout
       checkPage(45);
