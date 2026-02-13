@@ -122,17 +122,36 @@ export async function loadFontFile(url: string): Promise<ArrayBuffer | null> {
 
   try {
     // In Electron with file:// protocol, absolute paths like "/fonts/..." 
-    // resolve to filesystem root. Convert to relative path.
+    // resolve to filesystem root. We need to try multiple resolution strategies.
     let resolvedUrl = url;
     const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+    
     if (isFileProtocol && url.startsWith('/')) {
-      // Convert "/fonts/Amiri-Regular.ttf" to "./fonts/Amiri-Regular.ttf"
+      // Strategy 1: relative to current HTML file (dev / unpacked)
       resolvedUrl = '.' + url;
     }
 
-    const response = await fetch(resolvedUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch font: ${response.statusText}`);
+    let response = await fetch(resolvedUrl).catch(() => null);
+
+    // Strategy 2: For packaged Electron, fonts are in extraResources
+    // electron-builder copies public/fonts → resources/fonts
+    if ((!response || !response.ok) && isFileProtocol && url.startsWith('/fonts/')) {
+      const fileName = url.replace('/fonts/', '');
+      // In packaged app, __dirname-based paths won't work in renderer,
+      // but we can try the resources path relative to the app location
+      const altPaths = [
+        `../fonts/${fileName}`,           // relative from dist/
+        `../../fonts/${fileName}`,        // deeper nesting
+        `./assets/fonts/${fileName}`,     // if bundled in assets
+      ];
+      for (const alt of altPaths) {
+        response = await fetch(alt).catch(() => null);
+        if (response && response.ok) break;
+      }
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(`Failed to fetch font: ${url}`);
     }
     const arrayBuffer = await response.arrayBuffer();
     fontCache.set(url, arrayBuffer);
