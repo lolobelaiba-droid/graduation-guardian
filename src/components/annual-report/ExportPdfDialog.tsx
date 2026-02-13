@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 import jsPDF from "jspdf";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,7 +13,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
+import { certificateTypeLabels } from "@/types/certificates";
 import { toWesternNumerals } from "@/lib/numerals";
 import { loadFontFile, arrayBufferToBase64 } from "@/lib/arabicFonts";
 import { processTextForPdf } from "@/lib/pdf/arabicTextUtils";
@@ -59,40 +63,69 @@ interface ExportPdfDialogProps {
   };
 }
 
+// Sections available for export
+type SectionKey = "summary" | "monthly" | "faculty" | "specialty" | "status" | "avg_years" | "custom_table";
+
+const sectionLabels: Record<SectionKey, string> = {
+  summary: "الملخص العام",
+  monthly: "التوزيع الشهري",
+  faculty: "حسب الكلية",
+  specialty: "حسب التخصص",
+  status: "حالة الطلاب (نظامي / متأخر)",
+  avg_years: "متوسط سنوات التسجيل",
+  custom_table: "جدول مخصص بالطلاب",
+};
+
+const allColumns = [
+  { key: "full_name_ar", label: "الاسم واللقب" },
+  { key: "specialty_ar", label: "التخصص" },
+  { key: "branch_ar", label: "الفرع" },
+  { key: "faculty_ar", label: "الكلية" },
+  { key: "defense_date", label: "تاريخ المناقشة" },
+  { key: "supervisor_ar", label: "المشرف" },
+  { key: "co_supervisor_ar", label: "المشرف المساعد" },
+  { key: "mention", label: "التقدير" },
+  { key: "first_registration_year", label: "سنة أول تسجيل" },
+  { key: "research_lab_ar", label: "مخبر البحث" },
+  { key: "employment_status", label: "الحالة الوظيفية" },
+  { key: "registration_type", label: "نوع التسجيل" },
+  { key: "inscription_status", label: "حالة التسجيل" },
+  { key: "current_year", label: "السنة الحالية" },
+  { key: "student_number", label: "رقم الطالب" },
+  { key: "date_of_birth", label: "تاريخ الميلاد" },
+  { key: "birthplace_ar", label: "مكان الميلاد" },
+  { key: "thesis_title_ar", label: "عنوان الأطروحة" },
+  { key: "_type", label: "نوع الشهادة" },
+  { key: "registration_count", label: "عدد التسجيلات" },
+];
+
 export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { data: settings } = useUniversitySettings();
-  
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([
-    "full_name_ar",
-    "specialty_ar",
-    "faculty_ar",
-    "defense_date",
+  const [columnsOpen, setColumnsOpen] = useState(false);
+
+  const [selectedSections, setSelectedSections] = useState<SectionKey[]>([
+    "summary", "monthly", "faculty", "specialty", "custom_table"
   ]);
 
-  const columns = [
-    { key: "full_name_ar", label: "الاسم واللقب" },
-    { key: "specialty_ar", label: "التخصص" },
-    { key: "branch_ar", label: "الفرع" },
-    { key: "faculty_ar", label: "الكلية" },
-    { key: "defense_date", label: "تاريخ المناقشة" },
-    { key: "supervisor_ar", label: "المشرف" },
-    { key: "mention", label: "التقدير" },
-    { key: "first_registration_year", label: "سنة أول تسجيل" },
-    { key: "research_lab_ar", label: "مخبر البحث" },
-    { key: "employment_status", label: "الحالة الوظيفية" },
-    { key: "registration_type", label: "نوع التسجيل" },
-    { key: "inscription_status", label: "حالة التسجيل" },
-    { key: "current_year", label: "السنة الحالية" },
-    { key: "student_number", label: "رقم الطالب" },
-    { key: "date_of_birth", label: "تاريخ الميلاد" },
-    { key: "birthplace_ar", label: "مكان الميلاد" },
-    { key: "thesis_title_ar", label: "عنوان الأطروحة" },
-    { key: "co_supervisor_ar", label: "المشرف المساعد" },
-    { key: "_type", label: "نوع الشهادة" },
-  ];
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([
+    "full_name_ar", "specialty_ar", "faculty_ar", "defense_date", "mention",
+  ]);
 
+  const toggleSection = (key: SectionKey) => {
+    setSelectedSections(prev =>
+      prev.includes(key) ? prev.filter(s => s !== key) : [...prev, key]
+    );
+  };
+
+  const toggleColumn = (key: string) => {
+    setSelectedColumns(prev =>
+      prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]
+    );
+  };
+
+  /** Process Arabic text for PDF - same mechanism as certificate printing */
   const processText = (text: string) => {
     return processTextForPdf(text || "", { language: "ar" }).text;
   };
@@ -100,96 +133,310 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const activeCols = columns.filter(c => selectedColumns.includes(c.key));
-      const isLandscape = activeCols.length > 5;
+      const hasCustomTable = selectedSections.includes("custom_table");
+      const activeCols = allColumns.filter(c => selectedColumns.includes(c.key));
+      const isLandscape = hasCustomTable && activeCols.length > 5;
 
       const doc = new jsPDF({
         orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
         format: "a4",
-        putOnlyUsedFonts: true
+        putOnlyUsedFonts: true,
       });
 
-      // تحميل الخط بترميز Identity-H لضمان دعم العربية
+      // ===== تحميل الخطوط بنفس آلية طباعة الشهادات =====
+      // Regular font
       const fontData = await loadFontFile("Amiri-Regular.ttf");
       const base64Font = arrayBufferToBase64(fontData);
       doc.addFileToVFS("Amiri-Regular.ttf", base64Font);
+      // المعامل الخامس هو Identity-H لدعم Unicode/Arabic (jsPDF v4)
       doc.addFont("Amiri-Regular.ttf", "Amiri", "normal", undefined as any, "Identity-H");
-      doc.setFont("Amiri");
+
+      // Bold font
+      try {
+        const boldData = await loadFontFile("Amiri-Bold.ttf");
+        const base64Bold = arrayBufferToBase64(boldData);
+        doc.addFileToVFS("Amiri-Bold.ttf", base64Bold);
+        doc.addFont("Amiri-Bold.ttf", "Amiri", "bold", undefined as any, "Identity-H");
+      } catch {
+        // Bold not available, will use normal
+      }
+
+      doc.setFont("Amiri", "normal");
 
       const PAGE_WIDTH = doc.internal.pageSize.getWidth();
       const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
-      const MARGIN = 12;
-      let currentY = 18;
+      const MARGIN = 15;
+      let currentY = 20;
 
-      // Header
-      doc.setFontSize(13);
-      doc.text(processText(settings?.universityName || "جامعة العربي بن مهيدي - أم البواقي"), PAGE_WIDTH / 2, currentY, { align: "center" });
-      currentY += 8;
-      
-      const titleLabel = data.yearLabel === "كل_السنوات" ? "التقرير السنوي - كل السنوات" : `التقرير السنوي - ${toWesternNumerals(data.yearLabel)}`;
-      doc.setFontSize(15);
-      doc.text(processText(titleLabel), PAGE_WIDTH / 2, currentY, { align: "center" });
-      currentY += 7;
-
-      // Summary line
-      doc.setFontSize(10);
-      const summaryText = `إجمالي المناقشات: ${toWesternNumerals(data.total)} | د.ل.م.د: ${toWesternNumerals(data.byType.phd_lmd)} | د.علوم: ${toWesternNumerals(data.byType.phd_science)}`;
-      doc.text(processText(summaryText), PAGE_WIDTH / 2, currentY, { align: "center" });
+      // ===== Header: University name + report title =====
+      doc.setFont("Amiri", "bold");
+      doc.setFontSize(14);
+      doc.text(
+        processText(settings?.universityName || "جامعة العربي بن مهيدي - أم البواقي"),
+        PAGE_WIDTH / 2, currentY, { align: "center" }
+      );
       currentY += 10;
 
-      // Table
-      const tableHeaders = ["ت", ...activeCols.map(c => c.label)];
-      const colCount = tableHeaders.length;
-      const tableWidth = PAGE_WIDTH - (MARGIN * 2);
-      const colWidth = tableWidth / colCount;
+      const titleLabel = data.yearLabel === "كل_السنوات"
+        ? "التقرير السنوي - كل السنوات"
+        : `التقرير السنوي - ${toWesternNumerals(data.yearLabel)}`;
+      doc.setFontSize(16);
+      doc.text(processText(titleLabel), PAGE_WIDTH / 2, currentY, { align: "center" });
+      currentY += 12;
 
-      const drawTableHeader = (y: number) => {
-        doc.setFillColor(220, 220, 220);
-        doc.rect(MARGIN, y, tableWidth, 8, "F");
-        doc.setFontSize(9);
-        tableHeaders.reverse().forEach((header, index) => {
-          const xPos = MARGIN + (index * colWidth) + (colWidth / 2);
-          doc.text(processText(header), xPos, y + 6, { align: "center" });
-        });
-        tableHeaders.reverse(); // restore order
-        return y + 8;
+      doc.setFont("Amiri", "normal");
+
+      // Helper: check page overflow and add new page
+      const checkPage = (needed: number) => {
+        if (currentY + needed > PAGE_HEIGHT - 15) {
+          doc.addPage();
+          currentY = 20;
+        }
       };
 
-      currentY = drawTableHeader(currentY);
-      doc.setFontSize(8);
+      // ===== Section: Summary =====
+      if (selectedSections.includes("summary")) {
+        checkPage(30);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("الملخص العام"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(11);
 
-      data.students.forEach((student, sIndex) => {
-        if (currentY > PAGE_HEIGHT - 15) {
-          doc.addPage();
-          currentY = 15;
-          doc.setFontSize(9);
-          currentY = drawTableHeader(currentY);
-          doc.setFontSize(8);
-        }
-
-        const typeLabel = student._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم";
-        const rowData = [
-          toWesternNumerals(sIndex + 1),
-          ...activeCols.map(c => {
-            if (c.key === "_type") return typeLabel;
-            return String(student[c.key] ?? "");
-          })
+        const summaryLines = [
+          `إجمالي المناقشات: ${toWesternNumerals(data.total)}`,
+          `${certificateTypeLabels.phd_lmd.ar}: ${toWesternNumerals(data.byType.phd_lmd)}`,
+          `${certificateTypeLabels.phd_science.ar}: ${toWesternNumerals(data.byType.phd_science)}`,
+          `عدد الكليات: ${toWesternNumerals(data.byFaculty.length)}`,
+          `عدد التخصصات: ${toWesternNumerals(data.bySpecialty.length)}`,
         ];
+        summaryLines.forEach(line => {
+          doc.text(processText(line), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+          currentY += 6;
+        });
+        currentY += 4;
+      }
 
-        rowData.reverse().forEach((cell, cIndex) => {
-          const xPos = MARGIN + (cIndex * colWidth) + (colWidth / 2);
-          const displayText = processText(cell);
-          // Truncate if too long for cell
-          const maxChars = Math.floor(colWidth / 1.8);
-          const truncated = displayText.length > maxChars ? displayText.substring(0, maxChars) + "..." : displayText;
-          doc.text(truncated, xPos, currentY + 5, { align: "center" });
+      // ===== Section: Monthly Distribution =====
+      if (selectedSections.includes("monthly")) {
+        checkPage(50);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("التوزيع الشهري للمناقشات"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(10);
+
+        const maxVal = Math.max(...data.byMonth, 1);
+        const barAreaWidth = PAGE_WIDTH - MARGIN * 2;
+        const barWidth = barAreaWidth / 12;
+        const barMaxHeight = 30;
+
+        data.byMonth.forEach((count, i) => {
+          const barH = (count / maxVal) * barMaxHeight;
+          const x = MARGIN + i * barWidth;
+          const barY = currentY + barMaxHeight - barH;
+
+          if (barH > 0) {
+            doc.setFillColor(66, 133, 244);
+            doc.rect(x + 2, barY, barWidth - 4, barH, "F");
+          }
+          // Month label
+          doc.setFontSize(7);
+          doc.text(processText(data.monthNames[i].substring(0, 3)), x + barWidth / 2, currentY + barMaxHeight + 5, { align: "center" });
+          // Count
+          if (count > 0) {
+            doc.setFontSize(7);
+            doc.text(toWesternNumerals(count), x + barWidth / 2, barY - 1, { align: "center" });
+          }
+        });
+        currentY += barMaxHeight + 12;
+      }
+
+      // ===== Section: By Faculty =====
+      if (selectedSections.includes("faculty") && data.byFaculty.length > 0) {
+        checkPage(20 + data.byFaculty.length * 7);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("حسب الكلية"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+
+        // Table header
+        doc.setFontSize(10);
+        doc.setFillColor(230, 230, 230);
+        doc.rect(MARGIN, currentY, PAGE_WIDTH - MARGIN * 2, 7, "F");
+        const facHeaders = ["المجموع", "د.علوم", "د.ل.م.د", "الكلية"];
+        const facColW = (PAGE_WIDTH - MARGIN * 2) / 4;
+        facHeaders.forEach((h, i) => {
+          doc.text(processText(h), PAGE_WIDTH - MARGIN - i * facColW - facColW / 2, currentY + 5, { align: "center" });
+        });
+        currentY += 7;
+
+        doc.setFont("Amiri", "normal");
+        data.byFaculty.forEach(([fac, counts]) => {
+          checkPage(7);
+          const vals = [toWesternNumerals(counts.total), toWesternNumerals(counts.phd_science), toWesternNumerals(counts.phd_lmd), fac];
+          vals.forEach((v, i) => {
+            doc.text(processText(v), PAGE_WIDTH - MARGIN - i * facColW - facColW / 2, currentY + 5, { align: "center" });
+          });
+          doc.setDrawColor(200, 200, 200);
+          doc.line(MARGIN, currentY + 7, PAGE_WIDTH - MARGIN, currentY + 7);
+          currentY += 7;
+        });
+        currentY += 6;
+      }
+
+      // ===== Section: By Specialty =====
+      if (selectedSections.includes("specialty") && data.bySpecialty.length > 0) {
+        checkPage(20 + data.bySpecialty.length * 7);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("حسب التخصص"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+
+        doc.setFontSize(10);
+        doc.setFillColor(230, 230, 230);
+        doc.rect(MARGIN, currentY, PAGE_WIDTH - MARGIN * 2, 7, "F");
+        const specHeaders = ["العدد", "الكلية", "التخصص"];
+        const specColW = (PAGE_WIDTH - MARGIN * 2) / 3;
+        specHeaders.forEach((h, i) => {
+          doc.text(processText(h), PAGE_WIDTH - MARGIN - i * specColW - specColW / 2, currentY + 5, { align: "center" });
+        });
+        currentY += 7;
+
+        doc.setFont("Amiri", "normal");
+        data.bySpecialty.forEach(([spec, info]) => {
+          checkPage(7);
+          const vals = [toWesternNumerals(info.count), info.faculty, spec];
+          vals.forEach((v, i) => {
+            doc.text(processText(String(v)), PAGE_WIDTH - MARGIN - i * specColW - specColW / 2, currentY + 5, { align: "center" });
+          });
+          doc.setDrawColor(200, 200, 200);
+          doc.line(MARGIN, currentY + 7, PAGE_WIDTH - MARGIN, currentY + 7);
+          currentY += 7;
+        });
+        currentY += 6;
+      }
+
+      // ===== Section: Student Status (Regular / Late) =====
+      if (selectedSections.includes("status")) {
+        checkPage(30);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("حالة الطلاب"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(11);
+
+        const currentAcademicYear = new Date().getFullYear();
+        let regularCount = 0;
+        let lateCount = 0;
+
+        data.students.forEach(s => {
+          if (s.first_registration_year) {
+            const regYear = parseInt(s.first_registration_year.substring(0, 4));
+            const yearsElapsed = currentAcademicYear - regYear;
+            if (yearsElapsed <= 4) regularCount++;
+            else lateCount++;
+          }
         });
 
-        doc.setDrawColor(200, 200, 200);
-        doc.line(MARGIN, currentY + 7, PAGE_WIDTH - MARGIN, currentY + 7);
-        currentY += 7;
-      });
+        doc.text(processText(`طلاب نظاميون (≤ 4 سنوات): ${toWesternNumerals(regularCount)}`), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 6;
+        doc.text(processText(`طلاب متأخرون (> 4 سنوات): ${toWesternNumerals(lateCount)}`), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 10;
+      }
+
+      // ===== Section: Average Registration Years =====
+      if (selectedSections.includes("avg_years")) {
+        checkPage(20);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("متوسط سنوات التسجيل"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(11);
+
+        const currentAcademicYear = new Date().getFullYear();
+        let totalYears = 0;
+        let countWithReg = 0;
+        data.students.forEach(s => {
+          if (s.first_registration_year) {
+            const regYear = parseInt(s.first_registration_year.substring(0, 4));
+            totalYears += currentAcademicYear - regYear;
+            countWithReg++;
+          }
+        });
+        const avg = countWithReg > 0 ? (totalYears / countWithReg).toFixed(1) : "0";
+        doc.text(processText(`متوسط سنوات التسجيل: ${toWesternNumerals(avg)} سنة (من ${toWesternNumerals(countWithReg)} طالب)`), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 10;
+      }
+
+      // ===== Section: Custom Table =====
+      if (hasCustomTable && activeCols.length > 0) {
+        // If landscape and this is a new section, may need a new page
+        checkPage(20);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.text(processText("جدول الطلاب المناقشين"), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        currentY += 8;
+
+        const tableHeaders = ["ت", ...activeCols.map(c => c.label)];
+        const colCount = tableHeaders.length;
+        const tableWidth = PAGE_WIDTH - MARGIN * 2;
+        const colWidth = tableWidth / colCount;
+
+        const drawTableHeader = (y: number) => {
+          doc.setFont("Amiri", "bold");
+          doc.setFillColor(220, 220, 220);
+          doc.rect(MARGIN, y, tableWidth, 8, "F");
+          doc.setFontSize(8);
+          const reversed = [...tableHeaders].reverse();
+          reversed.forEach((header, index) => {
+            const xPos = MARGIN + index * colWidth + colWidth / 2;
+            doc.text(processText(header), xPos, y + 6, { align: "center" });
+          });
+          doc.setFont("Amiri", "normal");
+          return y + 8;
+        };
+
+        currentY = drawTableHeader(currentY);
+        doc.setFontSize(7);
+
+        data.students.forEach((student, sIndex) => {
+          if (currentY > PAGE_HEIGHT - 15) {
+            doc.addPage();
+            currentY = 15;
+            currentY = drawTableHeader(currentY);
+            doc.setFontSize(7);
+          }
+
+          const typeLabel = student._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم";
+          const rowData = [
+            toWesternNumerals(sIndex + 1),
+            ...activeCols.map(c => {
+              if (c.key === "_type") return typeLabel;
+              if (c.key === "registration_count") return student.registration_count != null ? toWesternNumerals(student.registration_count) : "";
+              return String(student[c.key] ?? "");
+            }),
+          ];
+
+          const reversed = [...rowData].reverse();
+          reversed.forEach((cell, cIndex) => {
+            const xPos = MARGIN + cIndex * colWidth + colWidth / 2;
+            const displayText = processText(cell);
+            const maxChars = Math.floor(colWidth / 1.5);
+            const truncated = displayText.length > maxChars ? displayText.substring(0, maxChars) + "…" : displayText;
+            doc.text(truncated, xPos, currentY + 5, { align: "center" });
+          });
+
+          doc.setDrawColor(200, 200, 200);
+          doc.line(MARGIN, currentY + 7, PAGE_WIDTH - MARGIN, currentY + 7);
+          currentY += 7;
+        });
+      }
 
       const fileName = `تقرير_سنوي_${data.yearLabel}.pdf`;
       doc.save(fileName);
@@ -208,38 +455,77 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <FileText className="h-4 w-4" />
-          تصدير PDF
+          تصدير التقرير السنوي (PDF)
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="text-right">إعدادات تصدير التقرير السنوي</DialogTitle>
         </DialogHeader>
         
-        <div className="py-4">
-          <Label className="mb-4 block text-right">اختر الأعمدة المراد إظهارها في الجدول:</Label>
-          <p className="text-xs text-muted-foreground mb-3 text-right">
-            عند اختيار أكثر من 5 أعمدة، يتم التحويل تلقائياً إلى الوضع الأفقي (Landscape)
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-right" dir="rtl">
-            {columns.map((col) => (
-              <div key={col.key} className="flex items-center gap-2">
-                <Checkbox 
-                  id={col.key}
-                  checked={selectedColumns.includes(col.key)}
-                  onCheckedChange={(checked) => {
-                    if (checked) setSelectedColumns([...selectedColumns, col.key]);
-                    else setSelectedColumns(selectedColumns.filter(k => k !== col.key));
-                  }}
-                />
-                <Label htmlFor={col.key} className="text-sm cursor-pointer">{col.label}</Label>
+        <ScrollArea className="max-h-[60vh] pr-2">
+          <div className="py-4 space-y-4" dir="rtl">
+            {/* Section selection */}
+            <div>
+              <Label className="mb-3 block font-semibold">اختر الأقسام المراد تضمينها:</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {(Object.keys(sectionLabels) as SectionKey[]).map(key => (
+                  <div key={key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`section-${key}`}
+                      checked={selectedSections.includes(key)}
+                      onCheckedChange={() => toggleSection(key)}
+                    />
+                    <Label htmlFor={`section-${key}`} className="text-sm cursor-pointer">
+                      {sectionLabels[key]}
+                    </Label>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Column selection for custom table */}
+            {selectedSections.includes("custom_table") && (
+              <>
+                <Separator />
+                <Collapsible open={columnsOpen} onOpenChange={setColumnsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between gap-2 text-sm">
+                      <span>أعمدة الجدول المخصص ({toWesternNumerals(selectedColumns.length)} عمود)</span>
+                      {columnsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      عند اختيار أكثر من 5 أعمدة، يتم التحويل تلقائياً إلى الوضع الأفقي (Landscape)
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {allColumns.map(col => (
+                        <div key={col.key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`col-${col.key}`}
+                            checked={selectedColumns.includes(col.key)}
+                            onCheckedChange={() => toggleColumn(col.key)}
+                          />
+                          <Label htmlFor={`col-${col.key}`} className="text-xs cursor-pointer">
+                            {col.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
           </div>
-        </div>
+        </ScrollArea>
 
         <DialogFooter className="flex-row-reverse gap-2">
-          <Button onClick={handleExport} disabled={isExporting || selectedColumns.length === 0} className="gap-2">
+          <Button
+            onClick={handleExport}
+            disabled={isExporting || selectedSections.length === 0}
+            className="gap-2"
+          >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             بدء التصدير
           </Button>
