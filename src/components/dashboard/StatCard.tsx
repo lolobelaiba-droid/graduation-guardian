@@ -48,7 +48,7 @@ export function StatCard({
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium opacity-90 truncate">{title}</p>
+            <p className="text-xs font-medium opacity-90 leading-tight">{title}</p>
             <p className="text-2xl font-bold">{typeof value === 'number' ? toWesternNumerals(value) : value}</p>
             {subtitle && (
               <p className="text-xs opacity-75">{subtitle}</p>
