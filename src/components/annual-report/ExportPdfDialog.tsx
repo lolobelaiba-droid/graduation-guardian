@@ -328,22 +328,22 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
         doc.setFont("Amiri", "normal");
         doc.setFontSize(11);
 
-        const currentAcademicYear = new Date().getFullYear();
+        // استخدام القيم المعتمدة من قاعدة بيانات الشهادات (current_year, inscription_status)
         let regularCount = 0;
         let lateCount = 0;
 
         data.students.forEach(s => {
-          if (s.first_registration_year) {
-            const regYear = parseInt(s.first_registration_year.substring(0, 4));
-            const yearsElapsed = currentAcademicYear - regYear;
-            if (yearsElapsed <= 4) regularCount++;
-            else lateCount++;
+          // استخدام حقل current_year المخزن في قاعدة البيانات
+          if (s.current_year === "متأخر" || s.inscription_status === "متأخر") {
+            lateCount++;
+          } else if (s.current_year) {
+            regularCount++;
           }
         });
 
-        doc.text(processText(`طلاب نظاميون (≤ 4 سنوات): ${toWesternNumerals(regularCount)}`), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        doc.text(processText(`طلاب نظاميون: ${toWesternNumerals(regularCount)}`), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
         currentY += 6;
-        doc.text(processText(`طلاب متأخرون (> 4 سنوات): ${toWesternNumerals(lateCount)}`), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
+        doc.text(processText(`طلاب متأخرون: ${toWesternNumerals(lateCount)}`), PAGE_WIDTH - MARGIN, currentY, { align: "right" });
         currentY += 10;
       }
 
@@ -357,13 +357,12 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
         doc.setFont("Amiri", "normal");
         doc.setFontSize(11);
 
-        const currentAcademicYear = new Date().getFullYear();
+        // استخدام حقل registration_count المعتمد من قاعدة البيانات
         let totalYears = 0;
         let countWithReg = 0;
         data.students.forEach(s => {
-          if (s.first_registration_year) {
-            const regYear = parseInt(s.first_registration_year.substring(0, 4));
-            totalYears += currentAcademicYear - regYear;
+          if (s.registration_count != null && s.registration_count > 0) {
+            totalYears += s.registration_count;
             countWithReg++;
           }
         });
@@ -417,6 +416,11 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
             ...activeCols.map(c => {
               if (c.key === "_type") return typeLabel;
               if (c.key === "registration_count") return student.registration_count != null ? toWesternNumerals(student.registration_count) : "";
+              // تحويل التقدير من الإنجليزية إلى العربية
+              if (c.key === "mention") {
+                const mentionLabels: Record<string, string> = { honorable: "مشرف", very_honorable: "مشرف جدا" };
+                return mentionLabels[student.mention] || student.mention || "";
+              }
               return String(student[c.key] ?? "");
             }),
           ];
