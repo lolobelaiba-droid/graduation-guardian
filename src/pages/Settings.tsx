@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
   Building2,
   Database,
@@ -96,48 +97,63 @@ export default function Settings() {
   // Load all settings from database
   useEffect(() => {
     const loadSettings = async () => {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("*");
-
-      if (!error && data) {
-        data.forEach((setting) => {
-          switch (setting.key) {
-            // University settings
-            case "university_name":
-              if (setting.value) setUniversityName(setting.value);
-              break;
-            case "university_name_en":
-              if (setting.value) setUniversityNameEn(setting.value);
-              break;
-            case "university_address":
-              if (setting.value) setAddress(setting.value);
-              break;
-            case "university_phone":
-              if (setting.value) setPhone(setting.value);
-              break;
-            case "university_email":
-              if (setting.value) setEmail(setting.value);
-              break;
-            case "university_website":
-              if (setting.value) setWebsite(setting.value);
-              break;
-            case "university_logo":
-              if (setting.value) setUniversityLogo(setting.value);
-              break;
-            // Backup settings
-            case "backup_count":
-              if (setting.value) setBackupCount(setting.value);
-              break;
-          }
-        });
+      let settingsData: Array<{ key: string; value: string | null }> = [];
+      
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAllSettings();
+        if (result.success && result.data) {
+          settingsData = result.data as Array<{ key: string; value: string | null }>;
+        }
+      } else {
+        const { data, error } = await supabase
+          .from("settings")
+          .select("*");
+        if (!error && data) {
+          settingsData = data as Array<{ key: string; value: string | null }>;
+        }
       }
+
+      settingsData.forEach((setting) => {
+        switch (setting.key) {
+          case "university_name":
+            if (setting.value) setUniversityName(setting.value);
+            break;
+          case "university_name_en":
+            if (setting.value) setUniversityNameEn(setting.value);
+            break;
+          case "university_address":
+            if (setting.value) setAddress(setting.value);
+            break;
+          case "university_phone":
+            if (setting.value) setPhone(setting.value);
+            break;
+          case "university_email":
+            if (setting.value) setEmail(setting.value);
+            break;
+          case "university_website":
+            if (setting.value) setWebsite(setting.value);
+            break;
+          case "university_logo":
+            if (setting.value) setUniversityLogo(setting.value);
+            break;
+          case "backup_count":
+            if (setting.value) setBackupCount(setting.value);
+            break;
+        }
+      });
     };
 
     loadSettings();
   }, []);
 
   const saveSetting = async (key: string, value: string) => {
+    if (isElectron()) {
+      const db = getDbClient()!;
+      await db.setSetting(key, value);
+      return;
+    }
+
     const { data: existing } = await supabase
       .from("settings")
       .select("id")
@@ -261,6 +277,13 @@ export default function Settings() {
       const { data: backupData, error: exportError } = await BackupService.exportAll();
       if (exportError || !backupData) throw exportError || new Error("فشل التصدير");
 
+      if (isElectron()) {
+        // In desktop mode, just download the file
+        BackupService.downloadBackupFile(backupData);
+        toast.success("تم حفظ النسخة الاحتياطية بنجاح");
+        return;
+      }
+
       const now = new Date();
       const fileName = `backup_${now.toISOString().replace(/[:.]/g, '-')}.json`;
       const blob = new Blob([JSON.stringify(backupData, null, 2)], {
@@ -297,6 +320,11 @@ export default function Settings() {
   };
 
   const loadSavedBackups = async () => {
+    if (isElectron()) {
+      toast.info("في نسخة سطح المكتب، استخدم استعادة من ملف على الكمبيوتر");
+      handleRestoreFromComputer();
+      return;
+    }
     try {
       const { data: files, error } = await supabase.storage
         .from("backups")
