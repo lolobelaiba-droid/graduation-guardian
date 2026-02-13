@@ -146,34 +146,34 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
     // ───── Official Header ─────
     doc.setFont("Amiri", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.text(processText("الجمهورية الجزائرية الديمقراطية الشعبية"), PW / 2, y, { align: "center" });
     y += 5;
     doc.setFont("Amiri", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.text(processText("وزارة التعليم العالي والبحث العلمي"), PW / 2, y, { align: "center" });
     y += 5;
 
     doc.setFont("Amiri", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.text(processText(settings?.universityName || "جامعة العربي بن مهيدي- أم البواقي-"), PW / 2, y, { align: "center" });
     y += 5;
 
     doc.setFont("Amiri", "normal");
-    doc.setFontSize(6.5);
+    doc.setFontSize(8.5);
     const subTitle = "نيابة المديرية للتكوين العالي في الطور الثالث والتأهيل الجامعي والبحث العلمي والتكوين العالي فيما بعد التدرج";
     doc.text(processText(subTitle), PW / 2, y, { align: "center", maxWidth: PW - M * 2 });
     y += 10;
 
     doc.setFont("Amiri", "bold");
-    doc.setFontSize(13);
+    doc.setFontSize(15);
     doc.setTextColor(66, 133, 244);
     doc.text(processText("تقرير الأداء في التكوين الدكتورالي"), PW / 2, y, { align: "center" });
     doc.setTextColor(0, 0, 0);
     y += 7;
 
     doc.setFont("Amiri", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     if (data.facultyName) {
       doc.text(processText(`كلية/معهد: ${data.facultyName}`), PW - M, y, { align: "right" });
     } else {
@@ -257,7 +257,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     const sectionTitle = (title: string) => {
       checkPage(12);
       doc.setFont("Amiri", "bold");
-      doc.setFontSize(9);
+      doc.setFontSize(11);
       doc.setFillColor(66, 133, 244);
       doc.rect(M, y - 1.5, PW - M * 2, 6.5, "F");
       doc.setTextColor(255, 255, 255);
@@ -289,23 +289,23 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       doc.circle(gaugeX, gaugeY, gaugeR, "S");
 
       doc.setFont("Amiri", "bold");
-      doc.setFontSize(16);
+      doc.setFontSize(18);
       doc.setTextColor(0, 0, 0);
       doc.text(toWesternNumerals(kpiVal) + "", gaugeX, gaugeY + 1, { align: "center" });
-      doc.setFontSize(7);
+      doc.setFontSize(9);
       doc.text("/ 100", gaugeX, gaugeY + 5.5, { align: "center" });
-      doc.setFontSize(6.5);
+      doc.setFontSize(8.5);
       doc.setFont("Amiri", "normal");
       doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 4, { align: "center" });
 
       // Period under gauge - two lines: title then date range
       doc.setTextColor(100, 100, 100);
       doc.setFont("Amiri", "bold");
-      doc.setFontSize(5.5);
+      doc.setFontSize(7.5);
       doc.text(processText("الفترة الزمنية"), gaugeX, gaugeY + gaugeR + 8, { align: "center" });
 
       doc.setFont("Amiri", "normal");
-      doc.setFontSize(5);
+      doc.setFontSize(7);
       const now = new Date();
       const yrStart = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
       const yrEnd = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
@@ -359,7 +359,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
       // Title
       doc.setFont("Amiri", "bold");
-      doc.setFontSize(7);
+      doc.setFontSize(9);
       doc.text(processText("شرح المعايير الفرعية:"), PW - M, y, { align: "right" });
       let cy = y + 4;
 
@@ -376,28 +376,28 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         else if (val >= 50) doc.setTextColor(234, 179, 8);
         else doc.setTextColor(239, 68, 68);
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(10);
+        doc.setFontSize(12);
         doc.text(toWesternNumerals(val) + "%", criteriaX + criteriaW - 2, cy + 5, { align: "right" });
 
         // Weight badge
         doc.setTextColor(100, 100, 100);
-        doc.setFontSize(5);
+        doc.setFontSize(7);
         doc.text(c.weight, criteriaX + criteriaW - 2, cy + 9.5, { align: "right" });
 
         // Title
         doc.setTextColor(0, 0, 0);
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(6.5);
+        doc.setFontSize(8.5);
         doc.text(processText(c.title), criteriaX + criteriaW - 18, cy + 4, { align: "right" });
 
         // Description
         doc.setFont("Amiri", "normal");
-        doc.setFontSize(5.5);
+        doc.setFontSize(7.5);
         doc.setTextColor(80, 80, 80);
         doc.text(processText(c.desc), criteriaX + criteriaW - 18, cy + 8, { align: "right" });
 
         // Formula
-        doc.setFontSize(4.5);
+        doc.setFontSize(6.5);
         doc.setTextColor(140, 140, 140);
         doc.text(processText(c.formula), criteriaX + criteriaW - 18, cy + 11.5, { align: "right" });
 
@@ -413,7 +413,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       doc.line(M, y, PW - M, y);
       y += 4;
       doc.setFont("Amiri", "bold");
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.text(processText("لوحة المؤشرات المختصرة"), PW - M, y, { align: "right" });
       y += 5;
 
@@ -507,7 +507,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         
         // Card title (top-right, bold, colored like primary)
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(6);
+        doc.setFontSize(8);
         doc.setTextColor(66, 133, 244);
         doc.text(processText(card.title), cardRight - 3, cardTop + 5, { align: "right" });
         doc.setTextColor(0, 0, 0);
@@ -524,12 +524,12 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
           const iy = itemStartY + ii * itemRowH;
           // Value (bold, left side)
           doc.setFont("Amiri", "bold");
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.setTextColor(0, 0, 0);
           doc.text(item.value, cardLeft + 4, iy + 1, { align: "left" });
           // Label (normal, right side)
           doc.setFont("Amiri", "normal");
-          doc.setFontSize(6);
+          doc.setFontSize(8);
           doc.setTextColor(120, 120, 120);
           doc.text(processText(item.label), cardRight - 3, iy + 1, { align: "right" });
           doc.setTextColor(0, 0, 0);
@@ -557,7 +557,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         ) => {
           // Title above chart
           doc.setFont("Amiri", "bold");
-          doc.setFontSize(6.5);
+          doc.setFontSize(8.5);
           doc.setTextColor(66, 133, 244);
           doc.text(processText(title), centerX, centerY - radius - 3, { align: "center" });
           doc.setTextColor(0, 0, 0);
@@ -569,7 +569,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
             doc.setLineWidth(0.3);
             doc.circle(centerX, centerY, radius, "S");
             doc.setFont("Amiri", "normal");
-            doc.setFontSize(6);
+            doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
             doc.text("0", centerX, centerY + 1.5, { align: "center" });
             doc.setTextColor(0, 0, 0);
@@ -627,7 +627,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
           // Total in center
           doc.setFont("Amiri", "bold");
-          doc.setFontSize(9);
+          doc.setFontSize(11);
           doc.setTextColor(0, 0, 0);
           doc.text(toWesternNumerals(total), centerX, centerY + 2, { align: "center" });
 
@@ -637,7 +637,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
             doc.setFillColor(slice.color[0], slice.color[1], slice.color[2]);
             doc.rect(centerX + 8, ly - 1.5, 3, 3, "F");
             doc.setFont("Amiri", "normal");
-            doc.setFontSize(5.5);
+            doc.setFontSize(7.5);
             doc.setTextColor(60, 60, 60);
             const pct = total > 0 ? ((slice.value / total) * 100).toFixed(0) : "0";
             doc.text(`${processText(slice.label)} (${toWesternNumerals(pct)}%)`, centerX + 5, ly + 0.5, { align: "right" });
@@ -659,7 +659,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
         // Section label
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(7);
+        doc.setFontSize(9);
         doc.setTextColor(66, 133, 244);
         doc.text(processText("المسجلين في الدكتوراه"), rightX - halfW / 2, y, { align: "center" });
         doc.setTextColor(0, 0, 0);
@@ -679,7 +679,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         const defChartX2 = leftX + halfW / 4 + 2; // Status distribution
 
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(7);
+        doc.setFontSize(9);
         doc.setTextColor(66, 133, 244);
         doc.text(processText("المناقشين"), leftX + halfW / 2 + 2, y, { align: "center" });
         doc.setTextColor(0, 0, 0);
@@ -732,13 +732,13 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
         // Title
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(7);
+        doc.setFontSize(9);
         doc.setTextColor(color.r, color.g, color.b);
         doc.text(processText(insight.title), PW - M - 5, y + 5, { align: "right" });
 
         // Body text
         doc.setFont("Amiri", "normal");
-        doc.setFontSize(6);
+        doc.setFontSize(8);
         doc.setTextColor(60, 60, 60);
         const textLines = doc.splitTextToSize(processText(insight.text), PW - M * 2 - 10);
         doc.text(textLines, PW - M - 5, y + 9, { align: "right" });
