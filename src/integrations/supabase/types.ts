@@ -405,6 +405,7 @@ export type Database = {
           professional_email: string | null
           province: string | null
           research_lab_ar: string | null
+          scientific_council_date: string | null
           signature_title: string | null
           specialty_ar: string
           specialty_fr: string | null
@@ -435,6 +436,7 @@ export type Database = {
           professional_email?: string | null
           province?: string | null
           research_lab_ar?: string | null
+          scientific_council_date?: string | null
           signature_title?: string | null
           specialty_ar: string
           specialty_fr?: string | null
@@ -465,6 +467,7 @@ export type Database = {
           professional_email?: string | null
           province?: string | null
           research_lab_ar?: string | null
+          scientific_council_date?: string | null
           signature_title?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
@@ -546,6 +549,7 @@ export type Database = {
           registration_number: string | null
           registration_type: string | null
           research_lab_ar: string | null
+          scientific_council_date: string | null
           signature_title: string | null
           specialty_ar: string
           specialty_fr: string | null
@@ -595,6 +599,7 @@ export type Database = {
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          scientific_council_date?: string | null
           signature_title?: string | null
           specialty_ar: string
           specialty_fr?: string | null
@@ -644,6 +649,7 @@ export type Database = {
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          scientific_council_date?: string | null
           signature_title?: string | null
           specialty_ar?: string
           specialty_fr?: string | null
@@ -819,6 +825,7 @@ export type Database = {
           registration_number: string | null
           registration_type: string | null
           research_lab_ar: string | null
+          scientific_council_date: string | null
           signature_title: string | null
           specialty_ar: string
           specialty_fr: string | null
@@ -868,6 +875,7 @@ export type Database = {
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          scientific_council_date?: string | null
           signature_title?: string | null
           specialty_ar: string
           specialty_fr?: string | null
@@ -917,6 +925,7 @@ export type Database = {
           registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
+          scientific_council_date?: string | null
           signature_title?: string | null
           specialty_ar?: string
           specialty_fr?: string | null

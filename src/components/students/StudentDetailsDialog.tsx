@@ -222,6 +222,9 @@ export default function StudentDetailsDialog({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
             <DetailRow label="تاريخ المناقشة" value={formatDefenseDateValue(student.defense_date)} />
             <DetailRow label="تاريخ الشهادة" value={formatCertificateDateValue(student.certificate_date)} />
+            {student.scientific_council_date && (
+              <DetailRow label="تاريخ المصادقة في المجلس العلمي" value={formatDefenseDateValue(student.scientific_council_date)} />
+            )}
             <DetailRow label="تاريخ الإنشاء" value={formatSystemDate(student.created_at)} />
             <DetailRow label="آخر تحديث" value={formatSystemDate(student.updated_at)} />
           </div>
