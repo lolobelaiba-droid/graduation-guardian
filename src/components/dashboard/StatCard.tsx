@@ -43,17 +43,17 @@ export function StatCard({
           className
         )}
       >
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm flex-shrink-0">
-            <Icon className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium opacity-90 leading-tight">{title}</p>
+        <div className="relative z-10 flex flex-col items-center text-center gap-2">
+          <p className="text-xs font-medium opacity-90 leading-tight">{title}</p>
+          <div className="flex items-center gap-2">
             <p className="text-2xl font-bold">{typeof value === 'number' ? toWesternNumerals(value) : value}</p>
-            {subtitle && (
-              <p className="text-xs opacity-75">{subtitle}</p>
-            )}
+            <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm flex-shrink-0">
+              <Icon className="h-5 w-5" />
+            </div>
           </div>
+          {subtitle && (
+            <p className="text-xs opacity-75">{subtitle}</p>
+          )}
         </div>
       </div>
     );
