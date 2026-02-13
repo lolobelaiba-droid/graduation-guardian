@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import { Loader2, Users, GraduationCap, Clock, Award, BookOpen, Building, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp } from "lucide-react";
+import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { usePhdLmdStudents, usePhdScienceStudents } from "@/hooks/usePhdStudents";
 import { usePhdLmdCertificates, usePhdScienceCertificates } from "@/hooks/useCertificates";
 import { toWesternNumerals } from "@/lib/numerals";
@@ -89,7 +89,6 @@ export default function Reports() {
     };
   }, [filteredRegistered, filteredDefended]);
 
-  // Chart data
   const regTypeData = useMemo(() => [
     { name: "د.ل.م.د", value: filteredRegistered.filter(s => s._type === 'phd_lmd').length },
     { name: "د.علوم", value: filteredRegistered.filter(s => s._type === 'phd_science').length },
@@ -118,7 +117,6 @@ export default function Reports() {
     return [{ name: "منتظم", value: regular }, { name: "متأخر", value: delayed }];
   }, [filteredDefended]);
 
-  // Admin actions
   const adminActions = useMemo(() => {
     return filteredDefended
       .map(s => ({
@@ -134,7 +132,6 @@ export default function Reports() {
       .sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
   }, [filteredDefended]);
 
-  // Jury stats
   const extractTitle = (fullName: string) => {
     const trimmed = fullName.trim();
     for (const t of academicTitles) {
@@ -206,17 +203,45 @@ export default function Reports() {
   const defLmdCount = filteredDefended.filter(s => s._type === 'phd_lmd').length;
   const defSciCount = filteredDefended.filter(s => s._type === 'phd_science').length;
 
+  // Build export data for any faculty
+  const buildExportData = (faculty?: string): ReportExportData => {
+    const reg = faculty ? allRegistered.filter(s => s.faculty_ar === faculty) : allRegistered;
+    const def = faculty ? allDefended.filter(s => s.faculty_ar === faculty) : allDefended;
+    const calcAvg = (students: any[]) => {
+      const valid = students.filter(s => s.registration_count).map(s => s.registration_count as number);
+      return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
+    };
+    const rLmd = reg.filter(s => s._type === 'phd_lmd');
+    const rSci = reg.filter(s => s._type === 'phd_science');
+    const dLmd = def.filter(s => s._type === 'phd_lmd');
+    const dSci = def.filter(s => s._type === 'phd_science');
+    const kpiData = calculateKpi({
+      totalRegistered: reg.length + def.length, totalDefended: def.length,
+      defendedStudents: def.map(s => ({ registration_count: (s as any).registration_count, first_registration_year: (s as any).first_registration_year, defense_date: (s as any).defense_date, scientific_council_date: (s as any).scientific_council_date, _type: s._type })),
+    });
+    const adminActs = def.map(s => ({ name: s.full_name_ar, type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم', supervisor: (s as any).supervisor_ar || '', status: getRegistrationStatus((s as any).registration_count, s._type), councilDate: (s as any).scientific_council_date || '', defenseDate: (s as any).defense_date || '', processingTime: calcProcessingTime((s as any).scientific_council_date, (s as any).defense_date) })).filter(s => s.processingTime !== null).sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
+    const juryMap: Record<string, any> = {};
+    const addJ = (fn: string, role: string) => { if (!fn?.trim()) return; const { title, cleanName } = extractTitle(fn); const k = cleanName.toLowerCase(); if (!juryMap[k]) juryMap[k] = { name: cleanName, title, supervisor: 0, president: 0, member: 0, coSupervisor: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; juryMap[k][role]++; };
+    def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor'); addJ((s as any).co_supervisor_ar, 'coSupervisor'); addJ((s as any).jury_president_ar, 'president'); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { if (m.trim()) addJ(m.trim(), 'member'); }); });
+    const juryStatsD = Object.values(juryMap).map((v: any) => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor })).sort((a: any, b: any) => b.total - a.total);
+    const engT = def.filter(s => (s as any).thesis_language === 'english').map(s => ({ name: s.full_name_ar, branch: (s as any).branch_ar || '', specialty: s.specialty_ar, supervisor: (s as any).supervisor_ar || '', thesisTitle: (s as any).thesis_title_ar || '', defenseDate: (s as any).defense_date || '' }));
+    const labM: Record<string, number> = {}; def.forEach(s => { const lab = (s as any).research_lab_ar; if (lab) labM[lab] = (labM[lab] || 0) + 1; });
+    const labS = Object.entries(labM).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+    const assistP = def.filter(s => { const st = (s as any).employment_status || ''; return st.includes('أستاذ مساعد') || st.includes('مساعد أ') || st.includes('مساعد ب'); }).map(s => ({ name: s.full_name_ar, branch: (s as any).branch_ar || '', specialty: s.specialty_ar, supervisor: (s as any).supervisor_ar || '', defenseDate: (s as any).defense_date || '', employmentStatus: (s as any).employment_status || '' }));
+    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP };
+  };
+
   return (
-    <div className="space-y-5 w-full" dir="rtl">
-      {/* Header + Filter */}
-      <Card>
-        <CardContent className="p-4">
+    <div className="space-y-6 w-full" dir="rtl">
+      {/* Header */}
+      <Card className="shadow-sm">
+        <CardContent className="p-5">
           <ReportHeader facultyName={selectedFaculty !== "all" ? selectedFaculty : undefined} />
         </CardContent>
       </Card>
 
       <div className="flex items-center gap-3 flex-wrap">
-        <label className="text-sm font-medium text-muted-foreground">تصفية حسب الكلية:</label>
+        <label className="text-sm font-semibold text-foreground">تصفية حسب الكلية:</label>
         <Select value={selectedFaculty} onValueChange={setSelectedFaculty}>
           <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -225,23 +250,17 @@ export default function Reports() {
           </SelectContent>
         </Select>
         <div className="mr-auto">
-          <ExportReportPdfDialog data={{
-            facultyName: selectedFaculty !== "all" ? selectedFaculty : undefined,
-            kpi, registeredCount: filteredRegistered.length, defendedCount: filteredDefended.length,
-            registeredLmd: regLmdCount, registeredScience: regSciCount,
-            defendedLmd: defLmdCount, defendedScience: defSciCount,
-            avgRegAll: avgRegYears.regAll, avgRegLmd: avgRegYears.regLmd, avgRegScience: avgRegYears.regScience,
-            avgDefAll: avgRegYears.defAll, avgDefLmd: avgRegYears.defLmd, avgDefScience: avgRegYears.defScience,
-            registeredStudents: filteredRegistered, defendedStudents: filteredDefended,
-            adminActions, juryStats, englishTheses, labStats, assistantProfessors,
-          }} />
+          <ExportReportPdfDialog
+            currentData={buildExportData(selectedFaculty !== "all" ? selectedFaculty : undefined)}
+            faculties={faculties}
+            buildExportData={buildExportData}
+          />
         </div>
       </div>
 
-      {/* ═══════ الصفحة الأولى: مؤشر الأداء + لوحة المؤشرات ═══════ */}
-      <Card>
+      {/* مؤشر الأداء + لوحة المؤشرات */}
+      <Card className="shadow-sm">
         <CardContent className="p-6">
-          {/* KPI Gauge + Sub KPIs */}
           <div className="flex flex-col xl:flex-row items-center gap-6 mb-6">
             <div className="flex-shrink-0">
               <KpiGauge value={kpi.general} label="مؤشر الأداء العام" size={180} />
@@ -254,91 +273,52 @@ export default function Reports() {
             </div>
           </div>
 
-          {/* لوحة المؤشرات المختصرة */}
           <div className="border-t pt-5">
             <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
               لوحة المؤشرات المختصرة
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* المسجلين */}
-              <DashboardCard
-                title="عدد المسجلين في الدكتوراه"
-                icon={<Users className="h-4 w-4" />}
-                items={[
-                  { label: "الإجمالي", value: filteredRegistered.length },
-                  { label: "ل.م.د", value: regLmdCount },
-                  { label: "علوم", value: regSciCount },
-                ]}
-              />
-              {/* متوسط المسجلين */}
-              <DashboardCard
-                title="متوسط سنوات التسجيل (المسجلين)"
-                icon={<Clock className="h-4 w-4" />}
-                items={[
-                  { label: "المتوسط العام", value: avgRegYears.regAll.toFixed(1) },
-                  { label: "ل.م.د", value: avgRegYears.regLmd.toFixed(1) },
-                  { label: "علوم", value: avgRegYears.regScience.toFixed(1) },
-                ]}
-              />
-              {/* المناقشين */}
-              <DashboardCard
-                title="عدد المناقشين"
-                icon={<GraduationCap className="h-4 w-4" />}
-                items={[
-                  { label: "الإجمالي", value: filteredDefended.length },
-                  { label: "ل.م.د", value: defLmdCount },
-                  { label: "علوم", value: defSciCount },
-                ]}
-              />
-              {/* متوسط المناقشين */}
-              <DashboardCard
-                title="متوسط مدة التسجيل (المناقشين)"
-                icon={<TrendingUp className="h-4 w-4" />}
-                items={[
-                  { label: "المتوسط العام", value: avgRegYears.defAll.toFixed(1) },
-                  { label: "ل.م.د", value: avgRegYears.defLmd.toFixed(1) },
-                  { label: "علوم", value: avgRegYears.defScience.toFixed(1) },
-                ]}
-              />
+              <DashboardCard title="عدد المسجلين في الدكتوراه" icon={<Users className="h-4 w-4" />} items={[{ label: "الإجمالي", value: filteredRegistered.length }, { label: "ل.م.د", value: regLmdCount }, { label: "علوم", value: regSciCount }]} />
+              <DashboardCard title="متوسط سنوات التسجيل (المسجلين)" icon={<Clock className="h-4 w-4" />} items={[{ label: "المتوسط العام", value: avgRegYears.regAll.toFixed(1) }, { label: "ل.م.د", value: avgRegYears.regLmd.toFixed(1) }, { label: "علوم", value: avgRegYears.regScience.toFixed(1) }]} />
+              <DashboardCard title="عدد المناقشين" icon={<GraduationCap className="h-4 w-4" />} items={[{ label: "الإجمالي", value: filteredDefended.length }, { label: "ل.م.د", value: defLmdCount }, { label: "علوم", value: defSciCount }]} />
+              <DashboardCard title="متوسط مدة التسجيل (المناقشين)" icon={<TrendingUp className="h-4 w-4" />} items={[{ label: "المتوسط العام", value: avgRegYears.defAll.toFixed(1) }, { label: "ل.م.د", value: avgRegYears.defLmd.toFixed(1) }, { label: "علوم", value: avgRegYears.defScience.toFixed(1) }]} />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* ═══════ التقرير المفصل ═══════ */}
-
-      {/* أولا: الطلبة المسجلين */}
+      {/* أولا: المسجلين */}
       <SectionHeader title="أولا: إحصائيات عامة حول الطلبة المسجلين حاليا" icon={<Users className="h-5 w-5" />} />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2">
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="p-0">
               <div className="max-h-[500px] overflow-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">الشعبة</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">التخصص</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">نوع الدكتوراه</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">سنة أول تسجيل</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">حالة التسجيل</TableHead>
+                    <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                      <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                      <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                      <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                      <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                      <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                      <TableHead className="text-center text-xs font-bold text-foreground">سنة أول تسجيل</TableHead>
+                      <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredRegistered.map((s, i) => {
                       const status = getRegistrationStatus((s as any).registration_count, s._type);
                       return (
-                        <TableRow key={s.id || i}>
-                          <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                          <TableCell className="text-[11px] font-medium">{s.full_name_ar}</TableCell>
-                          <TableCell className="text-[11px]">{(s as any).branch_ar || '-'}</TableCell>
-                          <TableCell className="text-[11px]">{s.specialty_ar}</TableCell>
-                          <TableCell className="text-center text-[11px]">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
-                          <TableCell className="text-center text-[11px]">{(s as any).first_registration_year ? toWesternNumerals((s as any).first_registration_year) : '-'}</TableCell>
-                          <TableCell className="text-center">
+                        <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
+                          <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                          <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                          <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
+                          <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
+                          <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                          <TableCell className="text-center text-xs py-2.5">{(s as any).first_registration_year ? toWesternNumerals((s as any).first_registration_year) : '-'}</TableCell>
+                          <TableCell className="text-center py-2.5">
                             <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
                               {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
                             </Badge>
@@ -358,41 +338,41 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* ثانيا: الطلبة المناقشين */}
+      {/* ثانيا: المناقشين */}
       <SectionHeader title="ثانيا: إحصائيات عامة حول الطلبة المناقشين" icon={<GraduationCap className="h-5 w-5" />} />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2">
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="p-0">
               <div className="max-h-[500px] overflow-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">الشعبة</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">التخصص</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">نوع الدكتوراه</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">حالة التسجيل</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">تاريخ المناقشة</TableHead>
+                    <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                      <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                      <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                      <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                      <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                      <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                      <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
+                      <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredDefended.map((s, i) => {
                       const status = getRegistrationStatus((s as any).registration_count, s._type);
                       return (
-                        <TableRow key={s.id || i}>
-                          <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                          <TableCell className="text-[11px] font-medium">{s.full_name_ar}</TableCell>
-                          <TableCell className="text-[11px]">{(s as any).branch_ar || '-'}</TableCell>
-                          <TableCell className="text-[11px]">{s.specialty_ar}</TableCell>
-                          <TableCell className="text-center text-[11px]">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
-                          <TableCell className="text-center">
+                        <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
+                          <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                          <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                          <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
+                          <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
+                          <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                          <TableCell className="text-center py-2.5">
                             <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
                               {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-center text-[11px]">{(s as any).defense_date ? formatDate((s as any).defense_date) : '-'}</TableCell>
+                          <TableCell className="text-center text-xs py-2.5">{(s as any).defense_date ? formatDate((s as any).defense_date) : '-'}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -409,82 +389,82 @@ export default function Reports() {
       </div>
 
       {/* إحصائيات العضوية */}
-      {juryStats.length > 0 && (
-        <>
-          <SectionHeader title="إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)" icon={<UserCheck className="h-5 w-5" />} />
-          <Card>
-            <CardContent className="p-0">
-              <div className="max-h-[500px] overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                      <TableHead className="text-right text-[11px] font-bold">الرتبة</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">مشرف</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">مشرف مساعد</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">رئيس لجنة</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">عضو لجنة</TableHead>
-                      <TableHead className="text-center text-[11px] font-bold">المجموع</TableHead>
+      <SectionHeader title="إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)" icon={<UserCheck className="h-5 w-5" />} />
+      <Card className="shadow-sm">
+        <CardContent className="p-0">
+          {juryStats.length > 0 ? (
+            <div className="max-h-[500px] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                    <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-foreground">الرتبة</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">مشرف</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">مشرف مساعد</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">رئيس لجنة</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">عضو لجنة</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">المجموع</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {juryStats.map((s, i) => (
+                    <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
+                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                      <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.title}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s.supervisor > 0 ? toWesternNumerals(s.supervisor) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s.coSupervisor > 0 ? toWesternNumerals(s.coSupervisor) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s.president > 0 ? toWesternNumerals(s.president) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s.member > 0 ? toWesternNumerals(s.member) : '-'}</TableCell>
+                      <TableCell className="text-center py-2.5">
+                        <Badge variant="outline" className="bg-primary/10 text-primary text-xs">{toWesternNumerals(s.total)}</Badge>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {juryStats.map((s, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                        <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
-                        <TableCell className="text-[11px]">{s.title}</TableCell>
-                        <TableCell className="text-center text-[11px]">{s.supervisor > 0 ? toWesternNumerals(s.supervisor) : '-'}</TableCell>
-                        <TableCell className="text-center text-[11px]">{s.coSupervisor > 0 ? toWesternNumerals(s.coSupervisor) : '-'}</TableCell>
-                        <TableCell className="text-center text-[11px]">{s.president > 0 ? toWesternNumerals(s.president) : '-'}</TableCell>
-                        <TableCell className="text-center text-[11px]">{s.member > 0 ? toWesternNumerals(s.member) : '-'}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="bg-primary/10 text-primary text-[11px]">{toWesternNumerals(s.total)}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground text-sm">لا توجد بيانات</div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ثالثا: الإجراءات الإدارية */}
       <SectionHeader title="ثالثا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
-      <Card>
+      <Card className="shadow-sm">
         <CardContent className="p-0">
           {adminActions.length > 0 ? (
             <div className="max-h-[500px] overflow-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">المشرف</TableHead>
-                    <TableHead className="text-center text-[11px] font-bold">النوع</TableHead>
-                    <TableHead className="text-center text-[11px] font-bold">الحالة</TableHead>
-                    <TableHead className="text-center text-[11px] font-bold">تاريخ المصادقة</TableHead>
-                    <TableHead className="text-center text-[11px] font-bold">تاريخ المناقشة</TableHead>
-                    <TableHead className="text-center text-[11px] font-bold">مدة المعالجة</TableHead>
+                  <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                    <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-foreground">المشرف</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">النوع</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المصادقة</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground">مدة المعالجة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {adminActions.map((s, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                      <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
-                      <TableCell className="text-[11px]">{s.supervisor}</TableCell>
-                      <TableCell className="text-center text-[11px]">{s.type}</TableCell>
-                      <TableCell className="text-center">
+                    <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
+                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                      <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.supervisor}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s.type}</TableCell>
+                      <TableCell className="text-center py-2.5">
                         <Badge variant={s.status === 'regular' ? 'default' : 'destructive'} className="text-[10px]">
                           {s.status === 'regular' ? 'منتظم' : s.status === 'delayed' ? 'متأخر' : '-'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center text-[11px]">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
-                      <TableCell className="text-center text-[11px]">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
-                      <TableCell className="text-center text-[11px] font-medium">
+                      <TableCell className="text-center text-xs py-2.5">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5 font-medium">
                         {s.processingTime ? `${toWesternNumerals(s.processingTime.months)} شهر ${toWesternNumerals(s.processingTime.days)} يوم` : '-'}
                       </TableCell>
                     </TableRow>
@@ -500,31 +480,31 @@ export default function Reports() {
 
       {/* رابعا: المناقشات بالإنجليزية */}
       <SectionHeader title="رابعا: المناقشات باللغة الإنجليزية" icon={<Globe className="h-5 w-5" />} />
-      <Card>
+      <Card className="shadow-sm">
         <CardContent className="p-0">
           {englishTheses.length > 0 ? (
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                  <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                  <TableHead className="text-right text-[11px] font-bold">الشعبة</TableHead>
-                  <TableHead className="text-right text-[11px] font-bold">التخصص</TableHead>
-                  <TableHead className="text-right text-[11px] font-bold">المشرف</TableHead>
-                  <TableHead className="text-right text-[11px] font-bold">عنوان الأطروحة</TableHead>
-                  <TableHead className="text-center text-[11px] font-bold">تاريخ المناقشة</TableHead>
+                <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                  <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">المشرف</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">عنوان الأطروحة</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {englishTheses.map((s, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                    <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
-                    <TableCell className="text-[11px]">{s.branch}</TableCell>
-                    <TableCell className="text-[11px]">{s.specialty}</TableCell>
-                    <TableCell className="text-[11px]">{s.supervisor}</TableCell>
-                    <TableCell className="text-[11px] max-w-[250px] truncate">{s.thesisTitle}</TableCell>
-                    <TableCell className="text-center text-[11px]">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
+                  <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
+                    <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                    <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
+                    <TableCell className="text-xs py-2.5">{s.branch}</TableCell>
+                    <TableCell className="text-xs py-2.5">{s.specialty}</TableCell>
+                    <TableCell className="text-xs py-2.5">{s.supervisor}</TableCell>
+                    <TableCell className="text-xs py-2.5 max-w-[250px] truncate">{s.thesisTitle}</TableCell>
+                    <TableCell className="text-center text-xs py-2.5">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -536,72 +516,72 @@ export default function Reports() {
       </Card>
 
       {/* خامسا: المخابر */}
-      {labStats.length > 0 && (
-        <>
-          <SectionHeader title="خامسا: عدد المناقشات حسب مخابر البحث" icon={<FlaskConical className="h-5 w-5" />} />
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">مخبر البحث</TableHead>
-                    <TableHead className="text-center text-[11px] font-bold">عدد المناقشين</TableHead>
+      <SectionHeader title="خامسا: عدد المناقشات حسب مخابر البحث" icon={<FlaskConical className="h-5 w-5" />} />
+      <Card className="shadow-sm">
+        <CardContent className="p-0">
+          {labStats.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                  <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">مخبر البحث</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">عدد المناقشين</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {labStats.map((s, i) => (
+                  <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
+                    <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                    <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
+                    <TableCell className="text-center py-2.5">
+                      <Badge variant="outline" className="bg-primary/10 text-primary text-xs">{toWesternNumerals(s.count)}</Badge>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {labStats.map((s, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                      <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-primary/10 text-primary text-[11px]">{toWesternNumerals(s.count)}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </>
-      )}
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground text-sm">لا توجد بيانات</div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* سادسا: الأساتذة المساعدين */}
-      {assistantProfessors.length > 0 && (
-        <>
-          <SectionHeader title="سادسا: الأساتذة المساعدين المناقشين" icon={<Award className="h-5 w-5" />} />
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="text-right text-[11px] font-bold">#</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">الاسم واللقب</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">الحالة الوظيفية</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">الشعبة</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">التخصص</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold">المشرف</TableHead>
-                    <TableHead className="text-center text-[11px] font-bold">تاريخ المناقشة</TableHead>
+      <SectionHeader title="سادسا: الأساتذة المساعدين المناقشين" icon={<Award className="h-5 w-5" />} />
+      <Card className="shadow-sm">
+        <CardContent className="p-0">
+          {assistantProfessors.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                  <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الحالة الوظيفية</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">المشرف</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {assistantProfessors.map((s, i) => (
+                  <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
+                    <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                    <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
+                    <TableCell className="text-xs py-2.5">{s.employmentStatus}</TableCell>
+                    <TableCell className="text-xs py-2.5">{s.branch}</TableCell>
+                    <TableCell className="text-xs py-2.5">{s.specialty}</TableCell>
+                    <TableCell className="text-xs py-2.5">{s.supervisor}</TableCell>
+                    <TableCell className="text-center text-xs py-2.5">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {assistantProfessors.map((s, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-[11px]">{toWesternNumerals(i + 1)}</TableCell>
-                      <TableCell className="text-[11px] font-medium">{s.name}</TableCell>
-                      <TableCell className="text-[11px]">{s.employmentStatus}</TableCell>
-                      <TableCell className="text-[11px]">{s.branch}</TableCell>
-                      <TableCell className="text-[11px]">{s.specialty}</TableCell>
-                      <TableCell className="text-[11px]">{s.supervisor}</TableCell>
-                      <TableCell className="text-center text-[11px]">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </>
-      )}
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground text-sm">لا توجد بيانات</div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -613,7 +593,7 @@ function SubKpiCard({ value, label, weight }: { value: number; label: string; we
     <Card className="border-primary/20">
       <CardContent className="p-3 text-center">
         <div className="text-lg font-bold text-primary">{toWesternNumerals(Math.round(value))}%</div>
-        <p className="text-[11px] text-muted-foreground mt-1">{label}</p>
+        <p className="text-xs text-muted-foreground mt-1">{label}</p>
         <Badge variant="outline" className="mt-1 text-[10px]">{weight}</Badge>
       </CardContent>
     </Card>
@@ -626,11 +606,11 @@ function DashboardCard({ title, icon, items }: { title: string; icon: React.Reac
       <CardContent className="p-3">
         <div className="flex items-center gap-2 mb-2 text-primary">
           {icon}
-          <span className="text-[11px] font-bold leading-tight">{title}</span>
+          <span className="text-xs font-bold leading-tight">{title}</span>
         </div>
         <div className="space-y-1.5">
           {items.map((item, i) => (
-            <div key={i} className="flex justify-between items-center text-[11px]">
+            <div key={i} className="flex justify-between items-center text-xs">
               <span className="text-muted-foreground">{item.label}</span>
               <span className="font-bold text-foreground">{typeof item.value === 'number' ? toWesternNumerals(item.value) : toWesternNumerals(item.value)}</span>
             </div>
@@ -645,7 +625,7 @@ function MiniPieChart({ title, data, useStatusColors }: { title: string; data: {
   return (
     <Card>
       <CardHeader className="pb-1 pt-3 px-3">
-        <CardTitle className="text-[11px]">{title}</CardTitle>
+        <CardTitle className="text-xs">{title}</CardTitle>
       </CardHeader>
       <CardContent className="px-3 pb-3">
         <ResponsiveContainer width="100%" height={140}>
