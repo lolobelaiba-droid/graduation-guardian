@@ -112,31 +112,38 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     doc.setFont("Amiri", "bold");
     doc.setFontSize(9);
     doc.text(processText("الجمهورية الجزائرية الديمقراطية الشعبية"), PW / 2, y, { align: "center" });
-    y += 4.5;
+    y += 5;
     doc.setFont("Amiri", "normal");
     doc.setFontSize(8);
     doc.text(processText("وزارة التعليم العالي والبحث العلمي"), PW / 2, y, { align: "center" });
     y += 5;
 
     doc.setFont("Amiri", "bold");
-    doc.setFontSize(11);
-    doc.text(processText(settings?.universityName || "جامعة العربي بن مهيدي أم البواقي"), PW / 2, y, { align: "center" });
-    y += 6;
-
-    doc.setFontSize(12);
-    doc.text(processText("تقرير الأداء في التكوين"), PW / 2, y, { align: "center" });
-    y += 4.5;
-
-    if (data.facultyName) {
-      doc.setFontSize(9);
-      doc.text(processText(`كلية/معهد: ${data.facultyName}`), PW / 2, y, { align: "center" });
-      y += 4.5;
-    }
-
-    doc.setDrawColor(66, 133, 244);
-    doc.setLineWidth(0.5);
-    doc.line(M, y, PW - M, y);
+    doc.setFontSize(10);
+    doc.text(processText(settings?.universityName || "جامعة العربي بن مهيدي- أم البواقي-"), PW / 2, y, { align: "center" });
     y += 5;
+
+    doc.setFont("Amiri", "normal");
+    doc.setFontSize(6.5);
+    const subTitle = "نيابة المديرية للتكوين العالي في الطور الثالث والتأهيل الجامعي والبحث العلمي والتكوين العالي فيما بعد التدرج";
+    doc.text(processText(subTitle), PW / 2, y, { align: "center", maxWidth: PW - M * 2 });
+    y += 10;
+
+    doc.setFont("Amiri", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(66, 133, 244);
+    doc.text(processText("تقرير الأداء في التكوين الدكتورالي"), PW / 2, y, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    y += 7;
+
+    doc.setFont("Amiri", "bold");
+    doc.setFontSize(9);
+    if (data.facultyName) {
+      doc.text(processText(`كلية/معهد: ${data.facultyName}`), PW - M, y, { align: "right" });
+    } else {
+      doc.text(processText("التقرير العام للجامعة"), PW - M, y, { align: "right" });
+    }
+    y += 8;
 
     // ───── HELPER: Draw table ─────
     const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
