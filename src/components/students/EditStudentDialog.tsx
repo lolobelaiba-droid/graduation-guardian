@@ -732,7 +732,7 @@ export default function EditStudentDialog({
                   control={form.control}
                   name={"supervisor_ar" as keyof FormValues}
                   render={({ field }) => (
-                    <FormItem className="md:col-span-2">
+                    <FormItem>
                       <FormLabel>اسم ولقب المشرف *</FormLabel>
                       <FormControl>
                         <AcademicTitleInput
