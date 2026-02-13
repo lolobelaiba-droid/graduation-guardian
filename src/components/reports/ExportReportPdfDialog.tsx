@@ -5,7 +5,7 @@ import { Download, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,43 +19,34 @@ import type { KpiResult } from "@/lib/kpi-calculator";
 export interface ReportExportData {
   facultyName?: string;
   kpi: KpiResult;
-  // Counts
   registeredCount: number;
   defendedCount: number;
   registeredLmd: number;
   registeredScience: number;
   defendedLmd: number;
   defendedScience: number;
-  // Averages
   avgRegAll: number;
   avgRegLmd: number;
   avgRegScience: number;
   avgDefAll: number;
   avgDefLmd: number;
   avgDefScience: number;
-  // Registered students
   registeredStudents: any[];
-  // Defended students
   defendedStudents: any[];
-  // Admin actions
   adminActions: {
     name: string; type: string; supervisor: string; status: string;
     councilDate: string; defenseDate: string;
     processingTime: { months: number; days: number; totalDays: number } | null;
   }[];
-  // Jury stats
   juryStats: {
     name: string; title: string; supervisor: number; coSupervisor: number;
     president: number; member: number; total: number;
   }[];
-  // English theses
   englishTheses: {
     name: string; branch: string; specialty: string; supervisor: string;
     thesisTitle: string; defenseDate: string;
   }[];
-  // Lab stats
   labStats: { name: string; count: number }[];
-  // Assistant professors
   assistantProfessors: {
     name: string; employmentStatus: string; branch: string; specialty: string;
     supervisor: string; defenseDate: string;
@@ -65,14 +56,14 @@ export interface ReportExportData {
 type SectionKey = "kpi" | "registered" | "defended" | "jury" | "admin" | "english" | "labs" | "assistants";
 
 const sectionLabels: Record<SectionKey, string> = {
-  kpi: "مؤشر الأداء العام والإحصائيات",
-  registered: "الطلبة المسجلين",
-  defended: "الطلبة المناقشين",
+  kpi: "مؤشر الأداء العام ولوحة المؤشرات",
+  registered: "أولا: الطلبة المسجلين",
+  defended: "ثانيا: الطلبة المناقشين",
   jury: "إحصائيات العضوية",
-  admin: "الإجراءات الإدارية",
-  english: "المناقشات باللغة الإنجليزية",
-  labs: "عدد المناقشات حسب مخابر البحث",
-  assistants: "الأساتذة المساعدين المناقشين",
+  admin: "ثالثا: الإجراءات الإدارية",
+  english: "رابعا: المناقشات باللغة الإنجليزية",
+  labs: "خامسا: عدد المناقشات حسب مخابر البحث",
+  assistants: "سادسا: الأساتذة المساعدين المناقشين",
 };
 
 // ─── Component ───────────────────────────────────────────────────────
@@ -81,9 +72,9 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
   const [isExporting, setIsExporting] = useState(false);
   const { data: settings } = useUniversitySettings();
 
-  const [selectedSections, setSelectedSections] = useState<SectionKey[]>([
-    "kpi", "registered", "defended", "jury", "admin", "english", "labs", "assistants",
-  ]);
+  const [selectedSections, setSelectedSections] = useState<SectionKey[]>(
+    Object.keys(sectionLabels) as SectionKey[]
+  );
 
   const toggleSection = (key: SectionKey) => {
     setSelectedSections(prev =>
@@ -96,7 +87,8 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", putOnlyUsedFonts: true });
+      // ── Landscape A4 ──
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", putOnlyUsedFonts: true });
 
       // Load fonts
       const fontData = await loadFontFile("/fonts/Amiri-Regular.ttf");
@@ -112,13 +104,13 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
 
       doc.setFont("Amiri", "normal");
 
-      const PW = doc.internal.pageSize.getWidth();
-      const PH = doc.internal.pageSize.getHeight();
-      const M = 15;
-      let y = 15;
+      const PW = doc.internal.pageSize.getWidth();   // 297
+      const PH = doc.internal.pageSize.getHeight();   // 210
+      const M = 12;
+      let y = 12;
 
       const checkPage = (needed: number) => {
-        if (y + needed > PH - 15) { doc.addPage(); y = 15; }
+        if (y + needed > PH - 12) { doc.addPage(); y = 12; }
       };
 
       // ───── Official Header ─────
@@ -129,220 +121,198 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
       doc.setFont("Amiri", "normal");
       doc.setFontSize(9);
       doc.text(processText("وزارة التعليم العالي والبحث العلمي"), PW / 2, y, { align: "center" });
-      y += 7;
-
-      doc.setFont("Amiri", "bold");
-      doc.setFontSize(13);
-      doc.text(processText(settings?.universityName || "جامعة العربي بن مهيدي أم البواقي"), PW / 2, y, { align: "center" });
-      y += 8;
-
-      doc.setFontSize(15);
-      doc.text(processText("تقرير الأداء في التكوين"), PW / 2, y, { align: "center" });
       y += 6;
 
+      doc.setFont("Amiri", "bold");
+      doc.setFontSize(12);
+      doc.text(processText(settings?.universityName || "جامعة العربي بن مهيدي أم البواقي"), PW / 2, y, { align: "center" });
+      y += 7;
+
+      doc.setFontSize(14);
+      doc.text(processText("تقرير الأداء في التكوين"), PW / 2, y, { align: "center" });
+      y += 5;
+
       if (data.facultyName) {
-        doc.setFontSize(11);
+        doc.setFontSize(10);
         doc.text(processText(`كلية/معهد: ${data.facultyName}`), PW / 2, y, { align: "center" });
-        y += 6;
+        y += 5;
       }
 
-      // Separator line
       doc.setDrawColor(66, 133, 244);
       doc.setLineWidth(0.5);
       doc.line(M, y, PW - M, y);
-      y += 8;
+      y += 6;
 
       // ───── HELPER: Draw table ─────
-      const drawTable = (
-        headers: string[],
-        rows: string[][],
-        colWidths?: number[],
-      ) => {
+      const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
         const tableW = PW - M * 2;
         const cols = colWidths || headers.map(() => tableW / headers.length);
 
         const drawHeader = (startY: number) => {
           doc.setFont("Amiri", "bold");
-          doc.setFontSize(8);
+          doc.setFontSize(7);
           doc.setFillColor(220, 230, 245);
-          doc.rect(M, startY, tableW, 7, "F");
+          doc.rect(M, startY, tableW, 6, "F");
           let hx = PW - M;
           headers.forEach((h, i) => {
-            doc.text(processText(h), hx - cols[i] / 2, startY + 5, { align: "center" });
+            doc.text(processText(h), hx - cols[i] / 2, startY + 4.2, { align: "center" });
             hx -= cols[i];
           });
           doc.setFont("Amiri", "normal");
-          return startY + 7;
+          return startY + 6;
         };
 
         y = drawHeader(y);
-        doc.setFontSize(7);
+        doc.setFontSize(6.5);
 
         rows.forEach(row => {
-          if (y > PH - 15) {
-            doc.addPage();
-            y = 15;
+          if (y > PH - 12) {
+            doc.addPage(); y = 12;
             y = drawHeader(y);
-            doc.setFontSize(7);
+            doc.setFontSize(6.5);
           }
-
           let cx = PW - M;
           row.forEach((cell, i) => {
-            const maxChars = Math.floor(cols[i] / 1.4);
+            const maxChars = Math.floor(cols[i] / 1.2);
             const txt = processText(cell);
             const truncated = txt.length > maxChars ? txt.substring(0, maxChars) + "…" : txt;
-            doc.text(truncated, cx - cols[i] / 2, y + 5, { align: "center" });
+            doc.text(truncated, cx - cols[i] / 2, y + 4, { align: "center" });
             cx -= cols[i];
           });
           doc.setDrawColor(210, 210, 210);
-          doc.line(M, y + 7, PW - M, y + 7);
-          y += 7;
+          doc.line(M, y + 5.5, PW - M, y + 5.5);
+          y += 5.5;
         });
-        y += 4;
+        y += 3;
       };
 
       const sectionTitle = (title: string) => {
-        checkPage(15);
+        checkPage(12);
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(12);
-        // Draw a colored bar behind the title
+        doc.setFontSize(10);
         doc.setFillColor(66, 133, 244);
-        doc.rect(M, y - 3, PW - M * 2, 8, "F");
+        doc.rect(M, y - 2, PW - M * 2, 7, "F");
         doc.setTextColor(255, 255, 255);
         doc.text(processText(title), PW / 2, y + 2.5, { align: "center" });
         doc.setTextColor(0, 0, 0);
-        y += 10;
+        y += 9;
         doc.setFont("Amiri", "normal");
       };
 
-      // ───── KPI Section ─────
+      // ───── KPI Section (Page 1) ─────
       if (selectedSections.includes("kpi")) {
-        checkPage(60);
+        checkPage(50);
         sectionTitle("مؤشر الأداء العام");
 
-        // Draw KPI gauge as a circle
+        // KPI circle
         const gaugeX = PW / 2;
-        const gaugeY = y + 20;
-        const gaugeR = 18;
-
-        // Background circle
+        const gaugeY = y + 15;
+        const gaugeR = 14;
         doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(3);
+        doc.setLineWidth(2.5);
         doc.circle(gaugeX, gaugeY, gaugeR, "S");
 
-        // Colored arc (simplified as colored circle outline)
         const kpiVal = Math.round(data.kpi.general);
         if (kpiVal > 90) doc.setDrawColor(34, 197, 94);
         else if (kpiVal > 75) doc.setDrawColor(59, 130, 246);
         else if (kpiVal > 50) doc.setDrawColor(234, 179, 8);
         else doc.setDrawColor(239, 68, 68);
-
-        doc.setLineWidth(3);
-        // Draw a partial circle (approximate with arc)
-        const endAngle = (data.kpi.general / 100) * 360;
-        // jsPDF doesn't have arc, so draw full colored circle at the percentage opacity
+        doc.setLineWidth(2.5);
         doc.circle(gaugeX, gaugeY, gaugeR, "S");
 
-        // KPI value text
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(20);
-        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(16);
         doc.text(toWesternNumerals(kpiVal) + "%", gaugeX, gaugeY + 2, { align: "center" });
+        doc.setFontSize(7);
+        doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 4, { align: "center" });
+        y = gaugeY + gaugeR + 8;
 
-        doc.setFontSize(8);
-        doc.text(processText("مؤشر الأداء العام"), gaugeX, gaugeY + gaugeR + 5, { align: "center" });
-        y = gaugeY + gaugeR + 10;
-
-        // Sub-KPIs
+        // Sub-KPIs row
         doc.setFont("Amiri", "normal");
-        doc.setFontSize(9);
+        doc.setFontSize(8);
         const subKpis = [
           { label: "الفعالية التدفقية (30%)", value: data.kpi.flowEffectiveness },
           { label: "سرعة الإنجاز (25%)", value: data.kpi.speedOfAchievement },
           { label: "الجودة الزمنية (25%)", value: data.kpi.timeQuality },
           { label: "الفعالية الإدارية (20%)", value: data.kpi.administrativeEffectiveness },
         ];
-
-        checkPage(25);
+        checkPage(15);
         const kpiColW = (PW - M * 2) / 4;
         subKpis.forEach((sk, i) => {
           const cx = PW - M - i * kpiColW - kpiColW / 2;
           doc.setFont("Amiri", "bold");
-          doc.setFontSize(12);
-          doc.text(toWesternNumerals(Math.round(sk.value)) + "%", cx, y + 5, { align: "center" });
+          doc.setFontSize(11);
+          doc.text(toWesternNumerals(Math.round(sk.value)) + "%", cx, y + 4, { align: "center" });
           doc.setFont("Amiri", "normal");
-          doc.setFontSize(7);
-          doc.text(processText(sk.label), cx, y + 10, { align: "center" });
+          doc.setFontSize(6);
+          doc.text(processText(sk.label), cx, y + 8, { align: "center" });
         });
-        y += 16;
+        y += 14;
 
-        // Quick stats
+        // Dashboard summary
         checkPage(30);
         doc.setDrawColor(200, 200, 200);
         doc.line(M, y, PW - M, y);
-        y += 5;
+        y += 4;
         doc.setFont("Amiri", "bold");
-        doc.setFontSize(10);
-        doc.text(processText("إحصائيات سريعة"), PW - M, y, { align: "right" });
-        y += 6;
-        doc.setFont("Amiri", "normal");
         doc.setFontSize(9);
+        doc.text(processText("لوحة المؤشرات المختصرة"), PW - M, y, { align: "right" });
+        y += 5;
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(8);
 
         const statsLines = [
-          `عدد طلبة الدكتوراه المسجلين: ${toWesternNumerals(data.registeredCount)} (ل.م.د: ${toWesternNumerals(data.registeredLmd)}، علوم: ${toWesternNumerals(data.registeredScience)})`,
+          `عدد المسجلين في الدكتوراه: ${toWesternNumerals(data.registeredCount)} (ل.م.د: ${toWesternNumerals(data.registeredLmd)}، علوم: ${toWesternNumerals(data.registeredScience)})`,
           `متوسط سنوات التسجيل للمسجلين: ${toWesternNumerals(data.avgRegAll.toFixed(1))} (ل.م.د: ${toWesternNumerals(data.avgRegLmd.toFixed(1))}، علوم: ${toWesternNumerals(data.avgRegScience.toFixed(1))})`,
           `عدد المناقشين: ${toWesternNumerals(data.defendedCount)} (ل.م.د: ${toWesternNumerals(data.defendedLmd)}، علوم: ${toWesternNumerals(data.defendedScience)})`,
           `متوسط مدة التسجيل للمناقشين: ${toWesternNumerals(data.avgDefAll.toFixed(1))} (ل.م.د: ${toWesternNumerals(data.avgDefLmd.toFixed(1))}، علوم: ${toWesternNumerals(data.avgDefScience.toFixed(1))})`,
         ];
         statsLines.forEach(line => {
           doc.text(processText(line), PW - M, y, { align: "right" });
-          y += 6;
+          y += 5;
         });
-        y += 4;
+        y += 3;
       }
 
-      // ───── Registered Students ─────
+      // ───── أولا: Registered Students ─────
       if (selectedSections.includes("registered") && data.registeredStudents.length > 0) {
+        doc.addPage(); y = 12;
         sectionTitle("أولا: إحصائيات عامة حول الطلبة المسجلين حاليا");
         const headers = ["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "سنة أول تسجيل", "حالة التسجيل"];
         const tableW = PW - M * 2;
-        const cols = [8, 35, 25, 25, 20, 22, 20].map(p => (p / 155) * tableW);
-        const rows = data.registeredStudents.map((s: any, i: number) => {
-          const regStatus = getStatusLabel(s.registration_count, s._type);
-          return [
-            toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
-            s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
-            s.first_registration_year ? toWesternNumerals(s.first_registration_year) : "-",
-            regStatus,
-          ];
-        });
+        const cols = [8, 50, 40, 40, 28, 30, 28].map(p => (p / 224) * tableW);
+        const rows = data.registeredStudents.map((s: any, i: number) => [
+          toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
+          s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
+          s.first_registration_year ? toWesternNumerals(s.first_registration_year) : "-",
+          getStatusLabel(s.registration_count, s._type),
+        ]);
         drawTable(headers, rows, cols);
       }
 
-      // ───── Defended Students ─────
+      // ───── ثانيا: Defended Students ─────
       if (selectedSections.includes("defended") && data.defendedStudents.length > 0) {
+        doc.addPage(); y = 12;
         sectionTitle("ثانيا: إحصائيات عامة حول الطلبة المناقشين");
         const headers = ["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "حالة التسجيل", "تاريخ المناقشة"];
         const tableW = PW - M * 2;
-        const cols = [8, 35, 25, 25, 20, 18, 24].map(p => (p / 155) * tableW);
-        const rows = data.defendedStudents.map((s: any, i: number) => {
-          const regStatus = getStatusLabel(s.registration_count, s._type);
-          return [
-            toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
-            s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
-            regStatus,
-            s.defense_date ? toWesternNumerals(formatDateDDMMYYYY(s.defense_date)) : "-",
-          ];
-        });
+        const cols = [8, 50, 40, 40, 28, 25, 30].map(p => (p / 221) * tableW);
+        const rows = data.defendedStudents.map((s: any, i: number) => [
+          toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
+          s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
+          getStatusLabel(s.registration_count, s._type),
+          s.defense_date ? toWesternNumerals(formatDateDDMMYYYY(s.defense_date)) : "-",
+        ]);
         drawTable(headers, rows, cols);
       }
 
-      // ───── Jury Stats ─────
+      // ───── إحصائيات العضوية ─────
       if (selectedSections.includes("jury") && data.juryStats.length > 0) {
-        sectionTitle("إحصائيات العضوية (مشرف/رئيس لجنة/عضو لجنة)");
+        doc.addPage(); y = 12;
+        sectionTitle("إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)");
         const headers = ["#", "الاسم واللقب", "الرتبة", "مشرف", "مشرف مساعد", "رئيس لجنة", "عضو لجنة", "المجموع"];
         const tableW = PW - M * 2;
-        const cols = [7, 35, 18, 14, 18, 16, 16, 14].map(p => (p / 138) * tableW);
+        const cols = [8, 55, 30, 22, 28, 25, 25, 22].map(p => (p / 215) * tableW);
         const rows = data.juryStats.map((s, i) => [
           toWesternNumerals(i + 1), s.name, s.title,
           s.supervisor > 0 ? toWesternNumerals(s.supervisor) : "-",
@@ -354,14 +324,15 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
         drawTable(headers, rows, cols);
       }
 
-      // ───── Administrative Actions ─────
+      // ───── ثالثا: Administrative Actions ─────
       if (selectedSections.includes("admin") && data.adminActions.length > 0) {
+        doc.addPage(); y = 12;
         sectionTitle("ثالثا: الإجراءات الإدارية");
-        const headers = ["#", "الاسم واللقب", "النوع", "المشرف", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"];
+        const headers = ["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"];
         const tableW = PW - M * 2;
-        const cols = [7, 30, 14, 25, 14, 22, 22, 22].map(p => (p / 156) * tableW);
+        const cols = [8, 45, 40, 20, 20, 30, 30, 30].map(p => (p / 223) * tableW);
         const rows = data.adminActions.map((s, i) => [
-          toWesternNumerals(i + 1), s.name, s.type, s.supervisor,
+          toWesternNumerals(i + 1), s.name, s.supervisor, s.type,
           s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
           s.councilDate ? toWesternNumerals(formatDateDDMMYYYY(s.councilDate)) : "-",
           s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
@@ -370,12 +341,13 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
         drawTable(headers, rows, cols);
       }
 
-      // ───── English Theses ─────
+      // ───── رابعا: English Theses ─────
       if (selectedSections.includes("english") && data.englishTheses.length > 0) {
+        doc.addPage(); y = 12;
         sectionTitle("رابعا: المناقشات باللغة الإنجليزية");
         const headers = ["#", "الاسم واللقب", "الشعبة", "التخصص", "المشرف", "عنوان الأطروحة", "تاريخ المناقشة"];
         const tableW = PW - M * 2;
-        const cols = [7, 28, 20, 20, 25, 40, 20].map(p => (p / 160) * tableW);
+        const cols = [8, 40, 30, 30, 40, 70, 28].map(p => (p / 246) * tableW);
         const rows = data.englishTheses.map((s, i) => [
           toWesternNumerals(i + 1), s.name, s.branch, s.specialty, s.supervisor,
           s.thesisTitle,
@@ -384,24 +356,26 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
         drawTable(headers, rows, cols);
       }
 
-      // ───── Lab Stats ─────
+      // ───── خامسا: Lab Stats ─────
       if (selectedSections.includes("labs") && data.labStats.length > 0) {
+        doc.addPage(); y = 12;
         sectionTitle("خامسا: عدد المناقشات حسب مخابر البحث");
         const headers = ["#", "مخبر البحث", "عدد المناقشين"];
         const tableW = PW - M * 2;
-        const cols = [10, 110, 30].map(p => (p / 150) * tableW);
+        const cols = [12, 180, 40].map(p => (p / 232) * tableW);
         const rows = data.labStats.map((s, i) => [
           toWesternNumerals(i + 1), s.name, toWesternNumerals(s.count),
         ]);
         drawTable(headers, rows, cols);
       }
 
-      // ───── Assistant Professors ─────
+      // ───── سادسا: Assistant Professors ─────
       if (selectedSections.includes("assistants") && data.assistantProfessors.length > 0) {
+        doc.addPage(); y = 12;
         sectionTitle("سادسا: الأساتذة المساعدين المناقشين");
         const headers = ["#", "الاسم واللقب", "الحالة الوظيفية", "الشعبة", "التخصص", "المشرف", "تاريخ المناقشة"];
         const tableW = PW - M * 2;
-        const cols = [7, 30, 22, 22, 22, 30, 22].map(p => (p / 155) * tableW);
+        const cols = [8, 45, 35, 35, 35, 45, 30].map(p => (p / 233) * tableW);
         const rows = data.assistantProfessors.map((s, i) => [
           toWesternNumerals(i + 1), s.name, s.employmentStatus, s.branch,
           s.specialty, s.supervisor,
@@ -410,16 +384,16 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
         drawTable(headers, rows, cols);
       }
 
-      // ───── Footer ─────
+      // ───── Footer on all pages ─────
       const totalPages = doc.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
         doc.setFont("Amiri", "normal");
-        doc.setFontSize(7);
+        doc.setFontSize(6);
         doc.setTextColor(150, 150, 150);
         doc.text(
           processText(`مديرية الدراسات العليا والبحث العلمي - صفحة ${toWesternNumerals(p)} من ${toWesternNumerals(totalPages)}`),
-          PW / 2, PH - 7, { align: "center" }
+          PW / 2, PH - 5, { align: "center" }
         );
         doc.setTextColor(0, 0, 0);
       }
@@ -447,6 +421,7 @@ export default function ExportReportPdfDialog({ data }: { data: ReportExportData
       <DialogContent className="max-w-lg max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="text-right">إعدادات تصدير تقرير الأداء</DialogTitle>
+          <DialogDescription className="text-right">اختر الأقسام التي تريد تضمينها في ملف PDF</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[50vh] pr-2">
@@ -486,13 +461,8 @@ function formatDateDDMMYYYY(dateStr: string): string {
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
-  } catch {
-    return dateStr;
-  }
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  } catch { return dateStr; }
 }
 
 function getStatusLabel(regCount: number | null | undefined, type: string): string {
