@@ -16,6 +16,7 @@ import { toWesternNumerals } from "@/lib/numerals";
 import { loadFontFile, arrayBufferToBase64 } from "@/lib/arabicFonts";
 import { processTextForPdf } from "@/lib/pdf/arabicTextUtils";
 import type { KpiResult } from "@/lib/kpi-calculator";
+import type { InsightCard } from "@/lib/strategic-insights";
 
 // ─── Types ───────────────────────────────────────────────────────────
 export interface ReportExportData {
@@ -53,13 +54,15 @@ export interface ReportExportData {
     name: string; employmentStatus: string; branch: string; specialty: string;
     supervisor: string; defenseDate: string;
   }[];
+  insights?: InsightCard[];
 }
 
-type SectionKey = "kpi" | "registered" | "defended" | "jury" | "admin" | "english" | "labs" | "assistants";
+type SectionKey = "kpi" | "insights" | "registered" | "defended" | "jury" | "admin" | "english" | "labs" | "assistants";
 type ExportMode = "general" | "faculty" | "full";
 
 const sectionLabels: Record<SectionKey, string> = {
   kpi: "مؤشر الأداء العام ولوحة المؤشرات",
+  insights: "التشخيص وتحليل النتائج",
   registered: "أولا: الطلبة المسجلين",
   defended: "ثانيا: الطلبة المناقشين",
   jury: "إحصائيات العضوية",
@@ -391,6 +394,53 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         });
       });
       y += cardH + 5;
+    }
+
+    // ───── Strategic Insights ─────
+    if (selectedSections.includes("insights") && data.insights && data.insights.length > 0) {
+      checkPage(15);
+      sectionTitle("التشخيص وتحليل النتائج");
+
+      const insightColors: Record<string, { r: number; g: number; b: number; bgR: number; bgG: number; bgB: number; label: string }> = {
+        warning: { r: 220, g: 38, b: 38, bgR: 254, bgG: 242, bgB: 242, label: "تنبيه" },
+        success: { r: 22, g: 163, b: 74, bgR: 240, bgG: 253, bgB: 244, label: "إشادة" },
+        info: { r: 37, g: 99, b: 235, bgR: 239, bgG: 246, bgB: 255, label: "معلومة" },
+        strategy: { r: 147, g: 51, b: 234, bgR: 250, bgG: 245, bgB: 255, label: "تحليل استراتيجي" },
+        recommendation: { r: 217, g: 119, b: 6, bgR: 255, bgG: 251, bgB: 235, label: "توصية" },
+      };
+
+      data.insights.forEach((insight) => {
+        const color = insightColors[insight.type] || insightColors.info;
+        const insightCardH = 16;
+        checkPage(insightCardH + 3);
+
+        // Background
+        doc.setFillColor(color.bgR, color.bgG, color.bgB);
+        doc.setDrawColor(color.r, color.g, color.b);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(M, y, PW - M * 2, insightCardH, 1.5, 1.5, "FD");
+
+        // Color bar on right
+        doc.setFillColor(color.r, color.g, color.b);
+        doc.rect(PW - M - 3, y, 3, insightCardH, "F");
+
+        // Title
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(7);
+        doc.setTextColor(color.r, color.g, color.b);
+        doc.text(processText(insight.title), PW - M - 5, y + 5, { align: "right" });
+
+        // Body text
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(6);
+        doc.setTextColor(60, 60, 60);
+        const textLines = doc.splitTextToSize(processText(insight.text), PW - M * 2 - 10);
+        doc.text(textLines, PW - M - 5, y + 9, { align: "right" });
+
+        doc.setTextColor(0, 0, 0);
+        y += insightCardH + 3;
+      });
+      y += 2;
     }
 
     // ───── Registered Students ─────

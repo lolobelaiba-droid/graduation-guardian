@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp } from "lucide-react";
+import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp, AlertTriangle, CheckCircle2, Lightbulb, Brain, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { usePhdLmdStudents, usePhdScienceStudents } from "@/hooks/usePhdStudents
 import { usePhdLmdCertificates, usePhdScienceCertificates } from "@/hooks/useCertificates";
 import { toWesternNumerals } from "@/lib/numerals";
 import { calculateKpi, calcProcessingTime, getRegistrationStatus } from "@/lib/kpi-calculator";
+import { generateStrategicInsights, type InsightCard } from "@/lib/strategic-insights";
 import { KpiGauge } from "@/components/reports/KpiGauge";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { SectionHeader } from "@/components/reports/SectionHeader";
@@ -186,6 +187,25 @@ export default function Reports() {
     }));
   }, [filteredDefended]);
 
+  const strategicInsights = useMemo(() => {
+    let delayedDef = 0, countedDef = 0;
+    filteredDefended.forEach(s => {
+      const st = getRegistrationStatus((s as any).registration_count, s._type);
+      if (st === 'delayed') delayedDef++;
+      if (st !== 'unknown') countedDef++;
+    });
+    return generateStrategicInsights({
+      kpi,
+      avgRegYearsLmd: avgRegYears.regLmd,
+      avgRegYearsScience: avgRegYears.regScience,
+      avgDefYearsLmd: avgRegYears.defLmd,
+      avgDefYearsScience: avgRegYears.defScience,
+      englishThesesCount: englishTheses.length,
+      assistantProfessorsCount: assistantProfessors.length,
+      delayedDefendedPercent: countedDef > 0 ? (delayedDef / countedDef) * 100 : 0,
+    });
+  }, [kpi, avgRegYears, filteredDefended, englishTheses, assistantProfessors]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -228,7 +248,17 @@ export default function Reports() {
     const labM: Record<string, number> = {}; def.forEach(s => { const lab = (s as any).research_lab_ar; if (lab) labM[lab] = (labM[lab] || 0) + 1; });
     const labS = Object.entries(labM).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
     const assistP = def.filter(s => { const st = (s as any).employment_status || ''; return st.includes('أستاذ مساعد') || st.includes('مساعد أ') || st.includes('مساعد ب'); }).map(s => ({ name: s.full_name_ar, branch: (s as any).branch_ar || '', specialty: s.specialty_ar, supervisor: (s as any).supervisor_ar || '', defenseDate: (s as any).defense_date || '', employmentStatus: (s as any).employment_status || '' }));
-    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP };
+    // Generate insights for this dataset
+    let delayedD = 0, countedD = 0;
+    def.forEach(s => { const st = getRegistrationStatus((s as any).registration_count, s._type); if (st === 'delayed') delayedD++; if (st !== 'unknown') countedD++; });
+    const insightsData = generateStrategicInsights({
+      kpi: kpiData,
+      avgRegYearsLmd: calcAvg(rLmd), avgRegYearsScience: calcAvg(rSci),
+      avgDefYearsLmd: calcAvg(dLmd), avgDefYearsScience: calcAvg(dSci),
+      englishThesesCount: engT.length, assistantProfessorsCount: assistP.length,
+      delayedDefendedPercent: countedD > 0 ? (delayedD / countedD) * 100 : 0,
+    });
+    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP, insights: insightsData };
   };
 
   return (
@@ -299,6 +329,21 @@ export default function Reports() {
               <KpiGauge value={kpi.general} label="مؤشر الأداء العام" size={180} />
             </div>
           </div>
+
+          {/* التشخيص الاستراتيجي */}
+          {strategicInsights.length > 0 && (
+            <div className="border-t pt-5 mb-5">
+              <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" />
+                التشخيص وتحليل النتائج
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {strategicInsights.map((insight, i) => (
+                  <InsightCardUI key={i} insight={insight} />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="border-t pt-5">
             <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
@@ -687,5 +732,27 @@ function MiniPieChart({ title, data, useStatusColors }: { title: string; data: {
         </ResponsiveContainer>
       </CardContent>
     </Card>
+  );
+}
+
+function InsightCardUI({ insight }: { insight: InsightCard }) {
+  const config = {
+    warning: { icon: <AlertTriangle className="h-4 w-4" />, bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-200 dark:border-red-800", iconColor: "text-red-600", titleColor: "text-red-700 dark:text-red-400" },
+    success: { icon: <CheckCircle2 className="h-4 w-4" />, bg: "bg-green-50 dark:bg-green-950/30", border: "border-green-200 dark:border-green-800", iconColor: "text-green-600", titleColor: "text-green-700 dark:text-green-400" },
+    info: { icon: <Info className="h-4 w-4" />, bg: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", iconColor: "text-blue-600", titleColor: "text-blue-700 dark:text-blue-400" },
+    strategy: { icon: <Brain className="h-4 w-4" />, bg: "bg-purple-50 dark:bg-purple-950/30", border: "border-purple-200 dark:border-purple-800", iconColor: "text-purple-600", titleColor: "text-purple-700 dark:text-purple-400" },
+    recommendation: { icon: <Lightbulb className="h-4 w-4" />, bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", iconColor: "text-amber-600", titleColor: "text-amber-700 dark:text-amber-400" },
+  }[insight.type];
+
+  return (
+    <div className={`rounded-lg border p-3 ${config.bg} ${config.border}`}>
+      <div className="flex items-start gap-2">
+        <div className={`flex-shrink-0 mt-0.5 ${config.iconColor}`}>{config.icon}</div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-xs font-bold ${config.titleColor}`}>{insight.title}</p>
+          <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{insight.text}</p>
+        </div>
+      </div>
+    </div>
   );
 }
