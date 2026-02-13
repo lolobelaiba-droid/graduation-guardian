@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { toWesternNumerals } from "@/lib/numerals";
 import { loadFontFile, arrayBufferToBase64 } from "@/lib/arabicFonts";
-import { processTextForPdf } from "@/lib/pdf/arabicTextUtils";
+import { processTextForPdf, shapeArabicText } from "@/lib/pdf/arabicTextUtils";
 import type { KpiResult } from "@/lib/kpi-calculator";
 import { getRegistrationStatus } from "@/lib/kpi-calculator";
 import type { InsightCard } from "@/lib/strategic-insights";
@@ -813,7 +813,14 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
         s.councilDate ? toWesternNumerals(formatDateDDMMYYYY(s.councilDate)) : "-",
         s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
-        s.processingTime ? processText(`${String(s.processingTime.months).padStart(2, '0')} شهر و ${String(s.processingTime.days).padStart(2, '0')} يوم`) : "-",
+        s.processingTime ? (() => {
+          const m = String(s.processingTime!.months).padStart(2, '0');
+          const d = String(s.processingTime!.days).padStart(2, '0');
+          const shapedMonth = shapeArabicText("شهر");
+          const shapedAnd = shapeArabicText("و");
+          const shapedDay = shapeArabicText("يوم");
+          return `${shapedDay} ${d} ${shapedAnd} ${shapedMonth} ${m}`;
+        })() : "-",
       ]);
       drawTable(["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
     }
