@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 import jsPDF from "jspdf";
-import { Download, FileText, Loader2, Building, BookOpen } from "lucide-react";
+import { Download, FileText, Loader2, Building, BookOpen, CalendarDays } from "lucide-react";
+import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -89,6 +90,8 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
   const [selectedSections, setSelectedSections] = useState<SectionKey[]>(
     Object.keys(sectionLabels) as SectionKey[]
   );
+  const [periodFrom, setPeriodFrom] = useState("");
+  const [periodTo, setPeriodTo] = useState("");
 
   const toggleSection = (key: SectionKey) => {
     setSelectedSections(prev =>
@@ -146,7 +149,18 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     } else {
       doc.text(processText("التقرير العام للجامعة"), PW - M, y, { align: "right" });
     }
-    y += 8;
+    y += 6;
+
+    // Period line
+    if (periodFrom || periodTo) {
+      doc.setFont("Amiri", "normal");
+      doc.setFontSize(8);
+      const fromDisplay = periodFrom ? toWesternNumerals(formatDateDDMMYYYY(periodFrom)) : "...";
+      const toDisplay = periodTo ? toWesternNumerals(formatDateDDMMYYYY(periodTo)) : "...";
+      doc.text(processText(`الفترة: من ${fromDisplay} إلى ${toDisplay}`), PW - M, y, { align: "right" });
+      y += 6;
+    }
+    y += 2;
 
     // ───── HELPER: Draw table ─────
     const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
@@ -673,6 +687,24 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
                 </Select>
               </div>
             )}
+
+            {/* Period selection */}
+            <div>
+              <Label className="mb-2 block font-semibold text-sm flex items-center gap-1.5">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                الفترة الزمنية (اختياري):
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">من تاريخ</Label>
+                  <DateInput value={periodFrom} onChange={setPeriodFrom} placeholder="dd/mm/yyyy" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">إلى تاريخ</Label>
+                  <DateInput value={periodTo} onChange={setPeriodTo} placeholder="dd/mm/yyyy" />
+                </div>
+              </div>
+            </div>
 
             {/* Section selection */}
             <div>
