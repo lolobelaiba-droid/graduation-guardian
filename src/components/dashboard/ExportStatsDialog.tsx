@@ -649,7 +649,8 @@ export function ExportStatsDialog() {
 
             // Process members
             const membersStr = (record as any).jury_members_ar || "";
-            const members = membersStr.split(/[،,]/).map((m: string) => m.trim()).filter(Boolean);
+            // Split by common separators: Arabic comma, Latin comma, dash, newline, semicolon
+            const members = membersStr.split(/[،,;\n]|\s-\s|\s–\s/).map((m: string) => m.trim()).filter(Boolean);
             
             members.forEach((member: string) => {
               if (!member) return;
