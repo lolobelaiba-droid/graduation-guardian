@@ -144,18 +144,19 @@ export default function Reports() {
   };
 
   const juryStats = useMemo(() => {
-    const map: Record<string, { name: string; title: string; supervisor: number; president: number; member: number; coSupervisor: number }> = {};
-    const addEntry = (fullName: string, role: 'supervisor' | 'president' | 'member' | 'coSupervisor') => {
+    const map: Record<string, { name: string; title: string; university: string; supervisor: number; president: number; member: number; coSupervisor: number }> = {};
+    const addEntry = (fullName: string, role: 'supervisor' | 'president' | 'member' | 'coSupervisor', university?: string) => {
       if (!fullName?.trim()) return;
       const { title, cleanName } = extractTitle(fullName);
       const key = cleanName.toLowerCase();
-      if (!map[key]) map[key] = { name: cleanName, title, supervisor: 0, president: 0, member: 0, coSupervisor: 0 };
+      if (!map[key]) map[key] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0 };
       if (!map[key].title && title) map[key].title = title;
+      if (!map[key].university && university) map[key].university = university;
       map[key][role]++;
     };
     filteredDefended.forEach(s => {
-      addEntry((s as any).supervisor_ar, 'supervisor');
-      addEntry((s as any).co_supervisor_ar, 'coSupervisor');
+      addEntry((s as any).supervisor_ar, 'supervisor', (s as any).supervisor_university);
+      addEntry((s as any).co_supervisor_ar, 'coSupervisor', (s as any).co_supervisor_university);
       addEntry((s as any).jury_president_ar, 'president');
       ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { if (m.trim()) addEntry(m.trim(), 'member'); });
     });
@@ -241,8 +242,8 @@ export default function Reports() {
     });
     const adminActs = def.map(s => ({ name: s.full_name_ar, type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم', supervisor: (s as any).supervisor_ar || '', status: getRegistrationStatus((s as any).registration_count, s._type), councilDate: (s as any).scientific_council_date || '', defenseDate: (s as any).defense_date || '', processingTime: calcProcessingTime((s as any).scientific_council_date, (s as any).defense_date) })).filter(s => s.processingTime !== null).sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
     const juryMap: Record<string, any> = {};
-    const addJ = (fn: string, role: string) => { if (!fn?.trim()) return; const { title, cleanName } = extractTitle(fn); const k = cleanName.toLowerCase(); if (!juryMap[k]) juryMap[k] = { name: cleanName, title, supervisor: 0, president: 0, member: 0, coSupervisor: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; juryMap[k][role]++; };
-    def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor'); addJ((s as any).co_supervisor_ar, 'coSupervisor'); addJ((s as any).jury_president_ar, 'president'); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { if (m.trim()) addJ(m.trim(), 'member'); }); });
+    const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const { title, cleanName } = extractTitle(fn); const k = cleanName.toLowerCase(); if (!juryMap[k]) juryMap[k] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; if (!juryMap[k].university && university) juryMap[k].university = university; juryMap[k][role]++; };
+    def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor', (s as any).supervisor_university); addJ((s as any).co_supervisor_ar, 'coSupervisor', (s as any).co_supervisor_university); addJ((s as any).jury_president_ar, 'president'); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { if (m.trim()) addJ(m.trim(), 'member'); }); });
     const juryStatsD = Object.values(juryMap).map((v: any) => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor })).sort((a: any, b: any) => b.total - a.total);
     const engT = def.filter(s => (s as any).thesis_language === 'english').map(s => ({ name: s.full_name_ar, branch: (s as any).branch_ar || '', specialty: s.specialty_ar, supervisor: (s as any).supervisor_ar || '', thesisTitle: (s as any).thesis_title_ar || '', defenseDate: (s as any).defense_date || '' }));
     const labM: Record<string, number> = {}; def.forEach(s => { const lab = (s as any).research_lab_ar; if (lab) labM[lab] = (labM[lab] || 0) + 1; });
@@ -469,14 +470,15 @@ export default function Reports() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-primary/5 border-b-2 border-primary/20">
-                    <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-foreground w-[30px]">#</TableHead>
                     <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
                     <TableHead className="text-right text-xs font-bold text-foreground">الرتبة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">مشرف</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">مشرف مساعد</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">رئيس لجنة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">عضو لجنة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">المجموع</TableHead>
+                    <TableHead className="text-right text-xs font-bold text-foreground">الجامعة</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[45px]">مشرف</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[55px]">م.مساعد</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[55px]">رئيس ل.</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">عضو ل.</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">المجموع</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -485,6 +487,7 @@ export default function Reports() {
                       <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
                       <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
                       <TableCell className="text-xs py-2.5">{s.title}</TableCell>
+                      <TableCell className="text-xs py-2.5 text-muted-foreground">{s.university || '-'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s.supervisor > 0 ? toWesternNumerals(s.supervisor) : '-'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s.coSupervisor > 0 ? toWesternNumerals(s.coSupervisor) : '-'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s.president > 0 ? toWesternNumerals(s.president) : '-'}</TableCell>
