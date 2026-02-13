@@ -102,8 +102,22 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
   const processText = (text: string) => processTextForPdf(text || "", { language: "ar" }).text;
 
+  // ─── Load logo as base64 for PDF ─────
+  const loadLogoBase64 = async (url: string): Promise<string | null> => {
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch { return null; }
+  };
+
   // ─── Generate one report into the doc ─────
-  const generateReport = (doc: jsPDF, data: ReportExportData, isFirstReport: boolean) => {
+  const generateReport = (doc: jsPDF, data: ReportExportData, isFirstReport: boolean, logoBase64: string | null) => {
     const PW = doc.internal.pageSize.getWidth();   // 210 portrait
     const PH = doc.internal.pageSize.getHeight();   // 297
     const M = 15;
@@ -114,6 +128,21 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     const checkPage = (needed: number) => {
       if (y + needed > PH - 15) { doc.addPage(); y = 15; }
     };
+
+    // ───── University Logo (top-left with circle) ─────
+    if (logoBase64) {
+      const logoR = 10; // radius in mm
+      const logoX = M + logoR; // center X
+      const logoY = y + logoR; // center Y
+      // Draw circle border
+      doc.setDrawColor(66, 133, 244);
+      doc.setLineWidth(0.6);
+      doc.circle(logoX, logoY, logoR + 0.5, "S");
+      // Clip logo into circle area (draw as square, circle visually frames it)
+      try {
+        doc.addImage(logoBase64, "PNG", logoX - logoR, logoY - logoR, logoR * 2, logoR * 2);
+      } catch { /* ignore logo errors */ }
+    }
 
     // ───── Official Header ─────
     doc.setFont("Amiri", "bold");
@@ -869,8 +898,14 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         fileName = "تقرير_الأداء_الكامل";
       }
 
+      // Load university logo
+      let logoBase64: string | null = null;
+      if (settings?.universityLogo) {
+        logoBase64 = await loadLogoBase64(settings.universityLogo);
+      }
+
       dataSets.forEach((data, i) => {
-        generateReport(doc, data, i === 0);
+        generateReport(doc, data, i === 0, logoBase64);
       });
 
       // Footer on all pages
