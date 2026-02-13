@@ -506,7 +506,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ───── Registered Students ─────
-    if (selectedSections.includes("registered") && data.registeredStudents.length > 0) {
+    if (selectedSections.includes("registered")) {
       checkPage(15);
       sectionTitle("أولا: إحصائيات عامة حول الطلبة المسجلين حاليا");
       const tableW = PW - M * 2;
@@ -521,7 +521,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ───── Defended Students ─────
-    if (selectedSections.includes("defended") && data.defendedStudents.length > 0) {
+    if (selectedSections.includes("defended")) {
       checkPage(15);
       sectionTitle("ثانيا: إحصائيات عامة حول الطلبة المناقشين");
       const tableW = PW - M * 2;
@@ -536,7 +536,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ───── Jury Stats ─────
-    if (selectedSections.includes("jury") && data.juryStats.length > 0) {
+    if (selectedSections.includes("jury")) {
       checkPage(15);
       sectionTitle("إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)");
       const tableW = PW - M * 2;
@@ -553,7 +553,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ───── Administrative Actions ─────
-    if (selectedSections.includes("admin") && data.adminActions.length > 0) {
+    if (selectedSections.includes("admin")) {
       checkPage(15);
       sectionTitle("ثالثا: الإجراءات الإدارية");
       const tableW = PW - M * 2;
@@ -569,7 +569,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ───── English Theses ─────
-    if (selectedSections.includes("english") && data.englishTheses.length > 0) {
+    if (selectedSections.includes("english")) {
       checkPage(15);
       sectionTitle("رابعا: المناقشات باللغة الإنجليزية");
       const tableW = PW - M * 2;
@@ -583,7 +583,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ───── Lab Stats ─────
-    if (selectedSections.includes("labs") && data.labStats.length > 0) {
+    if (selectedSections.includes("labs")) {
       checkPage(15);
       sectionTitle("خامسا: عدد المناقشات حسب مخابر البحث");
       const tableW = PW - M * 2;
@@ -595,7 +595,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ───── Assistant Professors ─────
-    if (selectedSections.includes("assistants") && data.assistantProfessors.length > 0) {
+    if (selectedSections.includes("assistants")) {
       checkPage(15);
       sectionTitle("سادسا: الأساتذة المساعدين المناقشين");
       const tableW = PW - M * 2;
