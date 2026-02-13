@@ -213,7 +213,8 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         // Calculate row height based on longest cell content
         let maxLines = 1;
         const cellLines: string[][] = row.map((cell, i) => {
-          const txt = processText(cell);
+          // Skip processText for cells prefixed with \u200B (pre-processed marker)
+          const txt = cell.startsWith('\u200B') ? cell.slice(1) : processText(cell);
           const colW = cols[i] - 2; // padding
           const lines = doc.splitTextToSize(txt, colW);
           if (lines.length > maxLines) maxLines = lines.length;
@@ -813,7 +814,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
         s.councilDate ? toWesternNumerals(formatDateDDMMYYYY(s.councilDate)) : "-",
         s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
-        s.processingTime ? `\u202D${String(s.processingTime.months).padStart(2, '0')} ${shapeArabicText("شهر")} ${shapeArabicText("و")} ${String(s.processingTime.days).padStart(2, '0')} ${shapeArabicText("يوم")}\u202C` : "-",
+        s.processingTime ? '\u200B' + shapeArabicText("يوم") + ' ' + String(s.processingTime.days).padStart(2, '0') + ' ' + shapeArabicText("و") + ' ' + shapeArabicText("شهر") + ' ' + String(s.processingTime.months).padStart(2, '0') : "-",
       ]);
       drawTable(["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
     }
