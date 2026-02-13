@@ -35,6 +35,8 @@ interface ElectronAPI {
   getPlatform: () => string;
   isElectron: boolean;
 
+  saveFile?: (defaultFileName: string, content: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+
   getPrinters?: () => Promise<
     Array<{
       name: string;

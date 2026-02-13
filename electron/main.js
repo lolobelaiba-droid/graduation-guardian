@@ -158,6 +158,38 @@ function createWindow() {
 // Printer / Print IPC
 // =====================
 
+// =====================
+// File Save IPC (for backup)
+// =====================
+
+function registerFileHandlers() {
+  ipcMain.handle('file:saveDialog', async (_event, payload) => {
+    try {
+      const { defaultFileName, content } = payload || {};
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'حفظ النسخة الاحتياطية',
+        defaultPath: path.join(app.getPath('documents'), defaultFileName || 'backup.json'),
+        filters: [
+          { name: 'JSON Files', extensions: ['json'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (result.canceled || !result.filePath) {
+        return { success: false, error: 'cancelled' };
+      }
+
+      fs.writeFileSync(result.filePath, content, 'utf8');
+      return { success: true, filePath: result.filePath };
+    } catch (e) {
+      console.error('Failed to save file:', e);
+      return { success: false, error: String(e?.message || e) };
+    }
+  });
+
+  console.log('File IPC handlers registered');
+}
+
 function registerPrinterHandlers() {
   ipcMain.handle('printers:list', async () => {
     const win = BrowserWindow.getFocusedWindow() || mainWindow;
@@ -284,6 +316,7 @@ app.whenReady().then(() => {
   
   // Register all IPC handlers
   registerDatabaseHandlers();
+  registerFileHandlers();
   registerPrinterHandlers();
   
   createWindow();
