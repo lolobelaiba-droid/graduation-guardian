@@ -507,11 +507,174 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       });
       const totalRows = Math.ceil(dashboardCards.length / cardCols);
       y += totalRows * (cardH + cardGapY) + 3;
+
+      // ───── Mini Charts: Registered (right) | Defended (left) ─────
+      const chartAreaH = PH - 15 - y; // remaining space on page 1
+      if (chartAreaH > 30) {
+        doc.setDrawColor(200, 200, 200);
+        doc.line(M, y, PW - M, y);
+        y += 3;
+
+        const halfW = (PW - M * 2 - 4) / 2; // 4mm gap between halves
+        const rightX = PW - M; // right half starts here
+        const leftX = M; // left half starts here
+
+        // Helper: draw a simple donut/pie chart
+        const drawPieChart = (
+          centerX: number, centerY: number, radius: number,
+          slices: { label: string; value: number; color: [number, number, number] }[],
+          title: string
+        ) => {
+          // Title above chart
+          doc.setFont("Amiri", "bold");
+          doc.setFontSize(6.5);
+          doc.setTextColor(66, 133, 244);
+          doc.text(processText(title), centerX, centerY - radius - 3, { align: "center" });
+          doc.setTextColor(0, 0, 0);
+
+          const total = slices.reduce((s, sl) => s + sl.value, 0);
+          if (total === 0) {
+            // Empty chart - draw gray circle
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.3);
+            doc.circle(centerX, centerY, radius, "S");
+            doc.setFont("Amiri", "normal");
+            doc.setFontSize(6);
+            doc.setTextColor(150, 150, 150);
+            doc.text("0", centerX, centerY + 1.5, { align: "center" });
+            doc.setTextColor(0, 0, 0);
+            return;
+          }
+
+          // Draw pie slices using filled sectors
+          let startAngle = -Math.PI / 2; // start from top
+          slices.forEach((slice) => {
+            if (slice.value <= 0) return;
+            const sweepAngle = (slice.value / total) * 2 * Math.PI;
+            const endAngle = startAngle + sweepAngle;
+
+            // Draw filled arc segment using lines
+            doc.setFillColor(slice.color[0], slice.color[1], slice.color[2]);
+            doc.setDrawColor(255, 255, 255);
+            doc.setLineWidth(0.5);
+
+            // Build path as triangle fan
+            const steps = Math.max(12, Math.ceil(sweepAngle / 0.1));
+            const points: [number, number][] = [[centerX, centerY]];
+            for (let s = 0; s <= steps; s++) {
+              const a = startAngle + (sweepAngle * s) / steps;
+              points.push([centerX + radius * Math.cos(a), centerY + radius * Math.sin(a)]);
+            }
+
+            // Draw as filled polygon using triangle method
+            for (let t = 1; t < points.length - 1; t++) {
+              doc.triangle(
+                points[0][0], points[0][1],
+                points[t][0], points[t][1],
+                points[t + 1][0], points[t + 1][1],
+                "F"
+              );
+            }
+
+            startAngle = endAngle;
+          });
+
+          // Draw white center for donut effect
+          doc.setFillColor(255, 255, 255);
+          const innerR = radius * 0.5;
+          // Approximate circle with many triangles
+          const cSteps = 36;
+          for (let i = 0; i < cSteps; i++) {
+            const a1 = (i / cSteps) * 2 * Math.PI;
+            const a2 = ((i + 1) / cSteps) * 2 * Math.PI;
+            doc.triangle(
+              centerX, centerY,
+              centerX + innerR * Math.cos(a1), centerY + innerR * Math.sin(a1),
+              centerX + innerR * Math.cos(a2), centerY + innerR * Math.sin(a2),
+              "F"
+            );
+          }
+
+          // Total in center
+          doc.setFont("Amiri", "bold");
+          doc.setFontSize(9);
+          doc.setTextColor(0, 0, 0);
+          doc.text(toWesternNumerals(total), centerX, centerY + 2, { align: "center" });
+
+          // Legend below chart
+          let ly = centerY + radius + 4;
+          slices.forEach((slice) => {
+            doc.setFillColor(slice.color[0], slice.color[1], slice.color[2]);
+            doc.rect(centerX + 8, ly - 1.5, 3, 3, "F");
+            doc.setFont("Amiri", "normal");
+            doc.setFontSize(5.5);
+            doc.setTextColor(60, 60, 60);
+            const pct = total > 0 ? ((slice.value / total) * 100).toFixed(0) : "0";
+            doc.text(`${processText(slice.label)} (${toWesternNumerals(pct)}%)`, centerX + 5, ly + 0.5, { align: "right" });
+            doc.setTextColor(0, 0, 0);
+            ly += 5;
+          });
+        };
+
+        // Calculate stats for charts
+        const regRegular = data.registeredStudents.filter((s: any) => getRegistrationStatus(s.registration_count, s._type) === 'regular').length;
+        const defRegular = data.defendedStudents.filter((s: any) => getRegistrationStatus(s.registration_count, s._type) === 'regular').length;
+
+        const chartR = Math.min(12, (chartAreaH - 25) / 2.5);
+        const chartCenterY = y + chartR + 8;
+
+        // RIGHT SIDE: Registered students charts
+        const regChartX1 = rightX - halfW / 4; // Type distribution
+        const regChartX2 = rightX - (3 * halfW) / 4; // Status distribution
+
+        // Section label
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(7);
+        doc.setTextColor(66, 133, 244);
+        doc.text(processText("المسجلين في الدكتوراه"), rightX - halfW / 2, y, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+
+        drawPieChart(regChartX1, chartCenterY, chartR, [
+          { label: "د.ل.م.د", value: data.registeredLmd, color: [66, 133, 244] },
+          { label: "د.علوم", value: data.registeredScience, color: [52, 211, 153] },
+        ], "توزيع النوع");
+
+        drawPieChart(regChartX2, chartCenterY, chartR, [
+          { label: "منتظم", value: regRegular, color: [34, 197, 94] },
+          { label: "متأخر", value: regDelayed, color: [239, 68, 68] },
+        ], "حالة التسجيل");
+
+        // LEFT SIDE: Defended students charts
+        const defChartX1 = leftX + (3 * halfW) / 4 + 2; // Type distribution
+        const defChartX2 = leftX + halfW / 4 + 2; // Status distribution
+
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(7);
+        doc.setTextColor(66, 133, 244);
+        doc.text(processText("المناقشين"), leftX + halfW / 2 + 2, y, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+
+        drawPieChart(defChartX1, chartCenterY, chartR, [
+          { label: "د.ل.م.د", value: data.defendedLmd, color: [66, 133, 244] },
+          { label: "د.علوم", value: data.defendedScience, color: [52, 211, 153] },
+        ], "توزيع النوع");
+
+        drawPieChart(defChartX2, chartCenterY, chartR, [
+          { label: "منتظم", value: defRegular, color: [34, 197, 94] },
+          { label: "متأخر", value: defDelayed, color: [239, 68, 68] },
+        ], "حالة التسجيل");
+
+        // Vertical separator between two halves
+        doc.setDrawColor(210, 210, 210);
+        doc.setLineWidth(0.3);
+        doc.line(PW / 2, y - 2, PW / 2, chartCenterY + chartR + 18);
+      }
     }
 
-    // ───── Strategic Insights ─────
+    // ═══════ PAGE 2: Strategic Insights ═══════
     if (selectedSections.includes("insights") && data.insights && data.insights.length > 0) {
-      checkPage(15);
+      doc.addPage();
+      y = 15;
       sectionTitle("التشخيص وتحليل النتائج");
 
       const insightColors: Record<string, { r: number; g: number; b: number; bgR: number; bgG: number; bgB: number; label: string }> = {
@@ -554,6 +717,13 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         y += insightCardH + 3;
       });
       y += 2;
+    }
+
+    // ═══════ PAGE 3+: Tables and Statistics ═══════
+    const hasTablesSection = selectedSections.some(s => ["registered", "defended", "jury", "admin", "english", "labs", "assistants"].includes(s));
+    if (hasTablesSection) {
+      doc.addPage();
+      y = 15;
     }
 
     // ───── Registered Students ─────
