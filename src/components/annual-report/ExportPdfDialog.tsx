@@ -146,20 +146,18 @@ export default function ExportPdfDialog({ data }: ExportPdfDialogProps) {
 
       // ===== تحميل الخطوط بنفس آلية طباعة الشهادات =====
       // Regular font
-      const fontData = await loadFontFile("Amiri-Regular.ttf");
+      const fontData = await loadFontFile("/fonts/Amiri-Regular.ttf");
+      if (!fontData) throw new Error("فشل تحميل ملف الخط Amiri-Regular.ttf");
       const base64Font = arrayBufferToBase64(fontData);
       doc.addFileToVFS("Amiri-Regular.ttf", base64Font);
-      // المعامل الخامس هو Identity-H لدعم Unicode/Arabic (jsPDF v4)
-      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal", undefined as any, "Identity-H");
+      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal", undefined, "Identity-H");
 
       // Bold font
-      try {
-        const boldData = await loadFontFile("Amiri-Bold.ttf");
+      const boldData = await loadFontFile("/fonts/Amiri-Bold.ttf");
+      if (boldData) {
         const base64Bold = arrayBufferToBase64(boldData);
         doc.addFileToVFS("Amiri-Bold.ttf", base64Bold);
-        doc.addFont("Amiri-Bold.ttf", "Amiri", "bold", undefined as any, "Identity-H");
-      } catch {
-        // Bold not available, will use normal
+        doc.addFont("Amiri-Bold.ttf", "Amiri", "bold", undefined, "Identity-H");
       }
 
       doc.setFont("Amiri", "normal");
