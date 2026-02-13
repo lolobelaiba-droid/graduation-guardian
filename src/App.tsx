@@ -13,7 +13,7 @@ import PrintCertificates from "@/pages/PrintCertificates";
 import ActivityLog from "@/pages/ActivityLog";
 import Settings from "@/pages/Settings";
 import Notes from "@/pages/Notes";
-import AnnualReport from "@/pages/AnnualReport";
+
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
 
@@ -53,7 +53,7 @@ const App = () => {
             <Route path="/activity" element={<ActivityLog />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/notes" element={<Notes />} />
-            <Route path="/annual-report" element={<AnnualReport />} />
+            
             <Route path="/reports" element={<Reports />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
