@@ -209,6 +209,42 @@ function registerDatabaseHandlers() {
     }
   });
 
+  ipcMain.handle('db:saveBackupToFolder', async (_, maxCount) => {
+    try {
+      const result = db.saveBackupToFolder(maxCount);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:listBackups', async () => {
+    try {
+      const data = db.listBackups();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:loadBackupFromFolder', async (_, fileName) => {
+    try {
+      const data = db.loadBackupFromFolder(fileName);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:deleteBackupFromFolder', async (_, fileName) => {
+    try {
+      const result = db.deleteBackupFromFolder(fileName);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   // ============================================
   // معلومات قاعدة البيانات
   // ============================================

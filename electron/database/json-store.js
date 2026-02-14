@@ -461,6 +461,14 @@ function deleteOldActivities(daysOld) {
 // عمليات النسخ الاحتياطي والاستعادة
 // ============================================
 
+function getBackupsDir() {
+  var dir = path.join(getDataDir(), 'backups');
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
 function exportAllData() {
   return {
     version: '2.0',
@@ -491,7 +499,6 @@ function exportAllData() {
 function importAllData(backupData) {
   var data = backupData.data;
   
-  // قائمة بجميع الجداول القابلة للاستيراد
   var tableNames = [
     'phd_lmd_certificates',
     'phd_science_certificates',
@@ -519,6 +526,75 @@ function importAllData(backupData) {
     }
   });
   
+  return { success: true };
+}
+
+/**
+ * حفظ نسخة احتياطية في مجلد النسخ الداخلي
+ */
+function saveBackupToFolder(maxCount) {
+  var backupData = exportAllData();
+  var dir = getBackupsDir();
+  var now = new Date();
+  var fileName = 'backup_' + now.toISOString().replace(/[:.]/g, '-') + '.json';
+  var filePath = path.join(dir, fileName);
+  
+  fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2), 'utf8');
+  
+  // حذف النسخ القديمة إذا تجاوزت الحد
+  var max = maxCount || 10;
+  var files = fs.readdirSync(dir)
+    .filter(function(f) { return f.endsWith('.json'); })
+    .sort()
+    .reverse();
+  
+  if (files.length > max) {
+    files.slice(max).forEach(function(f) {
+      try { fs.unlinkSync(path.join(dir, f)); } catch(e) { /* ignore */ }
+    });
+  }
+  
+  return { fileName: fileName, path: filePath, created_at: now.toISOString() };
+}
+
+/**
+ * قائمة النسخ الاحتياطية المحفوظة
+ */
+function listBackups() {
+  var dir = getBackupsDir();
+  if (!fs.existsSync(dir)) return [];
+  
+  var files = fs.readdirSync(dir)
+    .filter(function(f) { return f.endsWith('.json'); })
+    .map(function(f) {
+      var stat = fs.statSync(path.join(dir, f));
+      return { name: f, created_at: stat.mtime.toISOString() };
+    })
+    .sort(function(a, b) { return b.created_at.localeCompare(a.created_at); });
+  
+  return files;
+}
+
+/**
+ * تحميل نسخة احتياطية من المجلد
+ */
+function loadBackupFromFolder(fileName) {
+  var filePath = path.join(getBackupsDir(), fileName);
+  if (!fs.existsSync(filePath)) {
+    throw new Error('ملف النسخة الاحتياطية غير موجود: ' + fileName);
+  }
+  var content = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(content);
+}
+
+/**
+ * حذف نسخة احتياطية
+ */
+function deleteBackupFromFolder(fileName) {
+  var filePath = path.join(getBackupsDir(), fileName);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
   return { success: true };
 }
 
@@ -561,5 +637,9 @@ module.exports = {
   
   // النسخ الاحتياطي
   exportAllData: exportAllData,
-  importAllData: importAllData
+  importAllData: importAllData,
+  saveBackupToFolder: saveBackupToFolder,
+  listBackups: listBackups,
+  loadBackupFromFolder: loadBackupFromFolder,
+  deleteBackupFromFolder: deleteBackupFromFolder
 };
