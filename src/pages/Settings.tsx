@@ -652,17 +652,19 @@ export default function Settings() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-4 py-4">
-            <Button
-              variant="outline"
-              className="h-auto py-4 flex flex-col items-center gap-2"
-              onClick={handleRestoreFromFolder}
-            >
-              <FolderOpen className="h-8 w-8 text-primary" />
-              <span className="font-semibold">من مجلد النسخ الاحتياطية</span>
-              <span className="text-xs text-muted-foreground">
-                عرض النسخ المحفوظة مسبقاً مرتبة حسب التاريخ
-              </span>
-            </Button>
+            {!isElectron() && (
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex flex-col items-center gap-2"
+                onClick={handleRestoreFromFolder}
+              >
+                <FolderOpen className="h-8 w-8 text-primary" />
+                <span className="font-semibold">من مجلد النسخ الاحتياطية</span>
+                <span className="text-xs text-muted-foreground">
+                  عرض النسخ المحفوظة مسبقاً مرتبة حسب التاريخ
+                </span>
+              </Button>
+            )}
             <Button
               variant="outline"
               className="h-auto py-4 flex flex-col items-center gap-2"
