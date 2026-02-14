@@ -61,27 +61,8 @@ export function getDbClient() {
       }
     }
     
-    // إنشاء proxy يعالج الدوال المفقودة بدون crash
-    return new Proxy(db, {
-      get(target, prop: string) {
-        const value = (target as unknown as Record<string, unknown>)[prop];
-        if (typeof value === 'function') {
-          return value.bind(target);
-        }
-        // إذا كانت الدالة مفقودة، نُرجع دالة بديلة تُرجع خطأ واضح
-        if (REQUIRED_DB_METHODS.includes(prop)) {
-          console.error(`[DB Client] Method "${prop}" is not available. Update your Electron files!`);
-          return (..._args: unknown[]) => {
-            return Promise.resolve({ 
-              success: false, 
-              error: `Method "${prop}" is not available in your Electron version. Please rebuild the desktop app with updated files.`,
-              data: null 
-            });
-          };
-        }
-        return value;
-      }
-    });
+    // إرجاع الكائن مباشرة بدون Proxy لتجنب تعارض contextBridge
+    return db;
   }
   return null; // في الويب، استخدم Supabase مباشرة
 }
