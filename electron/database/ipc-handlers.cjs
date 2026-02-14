@@ -5,7 +5,7 @@
 
 const { ipcMain } = require('electron');
 // استخدام JSON Store بدلاً من better-sqlite3
-const db = require('./json-store');
+const db = require('./json-store.cjs');
 
 /**
  * تسجيل جميع معالجات IPC

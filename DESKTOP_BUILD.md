@@ -77,10 +77,10 @@ Output:
 
 | File | Purpose |
 |------|---------|
-| `electron/main.js` | Electron main process |
-| `electron/preload.js` | Preload script (IPC bridge) |
-| `electron/database/json-store.js` | JSON-based data storage |
-| `electron/database/ipc-handlers.js` | IPC handlers for database |
+| `electron/main.cjs` | Electron main process |
+| `electron/preload.cjs` | Preload script (IPC bridge) |
+| `electron/database/json-store.cjs` | JSON-based data storage |
+| `electron/database/ipc-handlers.cjs` | IPC handlers for database |
 | `electron-builder.json` | Build configuration |
 
 ## Data Location
@@ -166,7 +166,7 @@ The application uses JSON files for data storage instead of SQLite:
 ```
 React App (Renderer Process)
         ↓
-   IPC Bridge (preload.js)
+   IPC Bridge (preload.cjs)
         ↓
   JSON Store (main process)
         ↓
@@ -175,9 +175,9 @@ React App (Renderer Process)
 
 ### Adding new database operations
 
-1. Add the operation in `electron/database/json-store.js`
-2. Add IPC handler in `electron/database/ipc-handlers.js`
-3. Expose in `electron/preload.js`
+1. Add the operation in `electron/database/json-store.cjs`
+2. Add IPC handler in `electron/database/ipc-handlers.cjs`
+3. Expose in `electron/preload.cjs`
 4. Add TypeScript types in `src/types/electron-api.d.ts`
 5. Use in service layer `src/lib/database/`
 

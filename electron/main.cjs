@@ -14,8 +14,8 @@ try {
 }
 
 // Database imports - استخدام JSON Store بدلاً من SQLite
-const db = require('./database/json-store');
-const { registerDatabaseHandlers } = require('./database/ipc-handlers');
+const db = require('./database/json-store.cjs');
+const { registerDatabaseHandlers } = require('./database/ipc-handlers.cjs');
 
 let mainWindow;
 
@@ -31,7 +31,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
     },
     // RTL-friendly title bar
     titleBarStyle: 'default',
