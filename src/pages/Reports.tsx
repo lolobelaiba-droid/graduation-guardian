@@ -16,6 +16,7 @@ import { SectionHeader } from "@/components/reports/SectionHeader";
 import ExportReportPdfDialog from "@/components/reports/ExportReportPdfDialog";
 import type { ReportExportData } from "@/components/reports/ExportReportPdfDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { useQuery } from "@tanstack/react-query";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
@@ -32,6 +33,14 @@ export default function Reports() {
   const { data: academicTitles = [] } = useQuery({
     queryKey: ["academic_titles_report"],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.getAll('academic_titles');
+        if (result.success) {
+          return (result.data || []) as { abbreviation: string; full_name: string }[];
+        }
+        return [];
+      }
       const { data } = await supabase.from("academic_titles").select("abbreviation, full_name");
       return data || [];
     },
