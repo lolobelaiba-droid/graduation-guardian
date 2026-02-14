@@ -2,6 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.university.certificates",
   "productName": "نظام الشهادات الجامعية",
+  "extraMetadata": {
+    "main": "electron/main.cjs"
+  },
   "directories": {
     "output": "release",
     "buildResources": "build"
@@ -9,7 +12,7 @@
   "files": [
     "dist/**/*",
     "electron/**/*",
-    "!electron/database/database.js",
+    "!electron/database/database.cjs",
     "!electron/database/schema.sql"
   ],
   "extraResources": [

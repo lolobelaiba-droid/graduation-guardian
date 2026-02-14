@@ -57,7 +57,7 @@ export function getDbClient() {
       console.log('[DB Client] Available methods:', available.length, '/', REQUIRED_DB_METHODS.length);
       if (missing.length > 0) {
         console.error('[DB Client] ⚠️ MISSING METHODS:', missing.join(', '));
-        console.error('[DB Client] ⚠️ تأكد من تحديث ملفات electron/preload.js و electron/database/ipc-handlers.js');
+        console.error('[DB Client] ⚠️ تأكد من تحديث ملفات electron/preload.cjs و electron/database/ipc-handlers.cjs');
       }
     }
     
