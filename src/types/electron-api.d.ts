@@ -26,6 +26,10 @@ interface DbOperations {
   
   exportAllData: () => Promise<{ success: boolean; data?: unknown; error?: string }>;
   importAllData: (backupData: unknown) => Promise<{ success: boolean; error?: string }>;
+  saveBackupToFolder: (maxCount?: number) => Promise<{ success: boolean; data?: { fileName: string; path: string; created_at: string }; error?: string }>;
+  listBackups: () => Promise<{ success: boolean; data?: Array<{ name: string; created_at: string }>; error?: string }>;
+  loadBackupFromFolder: (fileName: string) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+  deleteBackupFromFolder: (fileName: string) => Promise<{ success: boolean; error?: string }>;
   
   getPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
 }

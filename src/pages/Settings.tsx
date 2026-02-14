@@ -280,10 +280,13 @@ export default function Settings() {
       if (exportError || !backupData) throw exportError || new Error("فشل التصدير");
 
       if (isElectron()) {
-        // In desktop mode, use native save dialog
-        const saved = await BackupService.downloadBackupFile(backupData);
-        if (saved) {
-          toast.success("تم حفظ النسخة الاحتياطية بنجاح");
+        const db = getDbClient()!;
+        const maxCount = parseInt(backupCount) || 10;
+        const result = await db.saveBackupToFolder(maxCount);
+        if (result.success) {
+          toast.success("تم حفظ النسخة الاحتياطية بنجاح في مجلد البرنامج");
+        } else {
+          throw new Error(result.error || "فشل الحفظ");
         }
         return;
       }
@@ -323,10 +326,21 @@ export default function Settings() {
     }
   };
 
-  const loadSavedBackups = async () => {
+   const loadSavedBackups = async () => {
     if (isElectron()) {
-      toast.info("في نسخة سطح المكتب، استخدم استعادة من ملف على الكمبيوتر");
-      handleRestoreFromComputer();
+      try {
+        const db = getDbClient()!;
+        const result = await db.listBackups();
+        if (result.success && result.data) {
+          setSavedBackups(result.data as { name: string; created_at: string }[]);
+          setShowBackupsList(true);
+        } else {
+          toast.error("فشل في تحميل قائمة النسخ الاحتياطية");
+        }
+      } catch (error) {
+        console.error("Error loading local backups:", error);
+        toast.error("حدث خطأ أثناء تحميل قائمة النسخ الاحتياطية");
+      }
       return;
     }
     try {
@@ -371,6 +385,24 @@ export default function Settings() {
 
   const restoreFromStorage = async (fileName: string) => {
     try {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.loadBackupFromFolder(fileName);
+        if (!result.success || !result.data) {
+          toast.error("فشل في قراءة النسخة الاحتياطية");
+          return;
+        }
+        const backupData = result.data as { version?: string; data?: Record<string, unknown[]>; created_at?: string };
+        if (!backupData.data) {
+          toast.error("ملف النسخة الاحتياطية غير صالح");
+          return;
+        }
+        await prepareRestoreConfirmation(backupData.data as BackupData['data'], backupData.created_at);
+        setShowBackupsList(false);
+        setShowRestoreConfirm(true);
+        return;
+      }
+
       const { data, error } = await supabase.storage
         .from("backups")
         .download(fileName);
@@ -396,6 +428,15 @@ export default function Settings() {
 
   const deleteBackupFromStorage = async (fileName: string) => {
     try {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.deleteBackupFromFolder(fileName);
+        if (result.success) {
+          setSavedBackups((prev) => prev.filter((b) => b.name !== fileName));
+          toast.success("تم حذف النسخة الاحتياطية");
+        }
+        return;
+      }
       const { error } = await supabase.storage.from("backups").remove([fileName]);
       if (error) throw error;
       setSavedBackups((prev) => prev.filter((b) => b.name !== fileName));
@@ -652,19 +693,17 @@ export default function Settings() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-4 py-4">
-            {!isElectron() && (
-              <Button
-                variant="outline"
-                className="h-auto py-4 flex flex-col items-center gap-2"
-                onClick={handleRestoreFromFolder}
-              >
-                <FolderOpen className="h-8 w-8 text-primary" />
-                <span className="font-semibold">من مجلد النسخ الاحتياطية</span>
-                <span className="text-xs text-muted-foreground">
-                  عرض النسخ المحفوظة مسبقاً مرتبة حسب التاريخ
-                </span>
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="h-auto py-4 flex flex-col items-center gap-2"
+              onClick={handleRestoreFromFolder}
+            >
+              <FolderOpen className="h-8 w-8 text-primary" />
+              <span className="font-semibold">من مجلد النسخ الاحتياطية</span>
+              <span className="text-xs text-muted-foreground">
+                عرض النسخ المحفوظة مسبقاً مرتبة حسب التاريخ
+              </span>
+            </Button>
             <Button
               variant="outline"
               className="h-auto py-4 flex flex-col items-center gap-2"

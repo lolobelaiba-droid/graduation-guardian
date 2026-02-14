@@ -80,6 +80,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:exportAllData'),
     importAllData: (backupData) => 
       ipcRenderer.invoke('db:importAllData', backupData),
+    saveBackupToFolder: (maxCount) =>
+      ipcRenderer.invoke('db:saveBackupToFolder', maxCount),
+    listBackups: () =>
+      ipcRenderer.invoke('db:listBackups'),
+    loadBackupFromFolder: (fileName) =>
+      ipcRenderer.invoke('db:loadBackupFromFolder', fileName),
+    deleteBackupFromFolder: (fileName) =>
+      ipcRenderer.invoke('db:deleteBackupFromFolder', fileName),
     
     // معلومات
     getPath: () => 

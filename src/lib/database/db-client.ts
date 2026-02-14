@@ -29,7 +29,8 @@ const REQUIRED_DB_METHODS = [
   'getUserSetting', 'setUserSetting', 'getAllUserSettings',
   'getTemplateWithFields', 'getFieldsByTemplateId',
   'getDropdownOptionsByType', 'deleteOldActivities',
-  'exportAllData', 'importAllData', 'getPath'
+  'exportAllData', 'importAllData', 'getPath',
+  'saveBackupToFolder', 'listBackups', 'loadBackupFromFolder', 'deleteBackupFromFolder'
 ];
 
 let _diagnosticLogged = false;
