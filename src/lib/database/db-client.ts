@@ -22,10 +22,65 @@ export interface DbListResult<T> {
   count?: number;
 }
 
+// قائمة الدوال المطلوبة من واجهة قاعدة البيانات
+const REQUIRED_DB_METHODS = [
+  'getAll', 'getById', 'insert', 'update', 'delete', 'deleteAll', 'search',
+  'getSetting', 'setSetting', 'getAllSettings',
+  'getUserSetting', 'setUserSetting', 'getAllUserSettings',
+  'getTemplateWithFields', 'getFieldsByTemplateId',
+  'getDropdownOptionsByType', 'deleteOldActivities',
+  'exportAllData', 'importAllData', 'getPath'
+];
+
+let _diagnosticLogged = false;
+
 // الحصول على واجهة قاعدة البيانات المناسبة
 export function getDbClient() {
   if (isElectron() && window.electronAPI?.db) {
-    return window.electronAPI.db;
+    const db = window.electronAPI.db;
+    
+    // تشخيص: طباعة الدوال المتوفرة مرة واحدة
+    if (!_diagnosticLogged) {
+      _diagnosticLogged = true;
+      const available: string[] = [];
+      const missing: string[] = [];
+      REQUIRED_DB_METHODS.forEach(method => {
+        if (typeof (db as unknown as Record<string, unknown>)[method] === 'function') {
+          available.push(method);
+        } else {
+          missing.push(method);
+        }
+      });
+      
+      console.log('[DB Client] Electron mode detected');
+      console.log('[DB Client] Available methods:', available.length, '/', REQUIRED_DB_METHODS.length);
+      if (missing.length > 0) {
+        console.error('[DB Client] ⚠️ MISSING METHODS:', missing.join(', '));
+        console.error('[DB Client] ⚠️ تأكد من تحديث ملفات electron/preload.js و electron/database/ipc-handlers.js');
+      }
+    }
+    
+    // إنشاء proxy يعالج الدوال المفقودة بدون crash
+    return new Proxy(db, {
+      get(target, prop: string) {
+        const value = (target as unknown as Record<string, unknown>)[prop];
+        if (typeof value === 'function') {
+          return value.bind(target);
+        }
+        // إذا كانت الدالة مفقودة، نُرجع دالة بديلة تُرجع خطأ واضح
+        if (REQUIRED_DB_METHODS.includes(prop)) {
+          console.error(`[DB Client] Method "${prop}" is not available. Update your Electron files!`);
+          return (..._args: unknown[]) => {
+            return Promise.resolve({ 
+              success: false, 
+              error: `Method "${prop}" is not available in your Electron version. Please rebuild the desktop app with updated files.`,
+              data: null 
+            });
+          };
+        }
+        return value;
+      }
+    });
   }
   return null; // في الويب، استخدم Supabase مباشرة
 }
