@@ -8,6 +8,16 @@ const loadedFonts = new Set<string>();
 /**
  * Dynamically load a font into the browser using FontFace API
  */
+/**
+ * Resolve font URL for Electron's file:// protocol
+ */
+function resolveElectronFontUrl(url: string): string {
+  const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+  if (!isFileProtocol || !url.startsWith('/')) return url;
+  // Convert absolute /fonts/... to relative ./fonts/...
+  return '.' + url;
+}
+
 async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
   if (!font.url || font.isSystem) return true; // System fonts don't need loading
   
@@ -15,15 +25,43 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
   if (loadedFonts.has(fontKey)) return true; // Already loaded
   
   try {
-    // Create FontFace and load it
-    const fontFace = new FontFace(
-      font.family,
-      `url(${font.url})`,
-      {
-        style: font.style === 'italic' ? 'italic' : 'normal',
-        weight: font.style === 'bold' ? 'bold' : 'normal',
+    const resolvedUrl = resolveElectronFontUrl(font.url);
+    
+    // For custom fonts from remote URLs, fetch as ArrayBuffer first
+    // This handles both local and remote fonts uniformly
+    const response = await fetch(resolvedUrl);
+    if (!response.ok) {
+      // Try alternative paths for packaged Electron app
+      const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+      if (isFileProtocol && font.url.startsWith('/fonts/')) {
+        const fileName = font.url.replace('/fonts/', '');
+        const altPaths = [`../fonts/${fileName}`, `../../fonts/${fileName}`];
+        for (const alt of altPaths) {
+          try {
+            const altResponse = await fetch(alt);
+            if (altResponse.ok) {
+              const buffer = await altResponse.arrayBuffer();
+              const fontFace = new FontFace(font.family, buffer, {
+                style: font.style === 'italic' ? 'italic' : 'normal',
+                weight: font.style === 'bold' ? 'bold' : 'normal',
+              });
+              const loaded = await fontFace.load();
+              document.fonts.add(loaded);
+              loadedFonts.add(fontKey);
+              logger.log(`[FontLoader] Loaded font (alt path): ${font.family} (${font.style})`);
+              return true;
+            }
+          } catch { /* try next */ }
+        }
       }
-    );
+      throw new Error(`Failed to fetch font: ${resolvedUrl}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const fontFace = new FontFace(font.family, buffer, {
+      style: font.style === 'italic' ? 'italic' : 'normal',
+      weight: font.style === 'bold' ? 'bold' : 'normal',
+    });
     
     const loadedFont = await fontFace.load();
     document.fonts.add(loadedFont);
