@@ -36,6 +36,7 @@ interface DbOperations {
   // التخزين المحلي للملفات
   cacheRemoteFile: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string; fileName: string; cached: boolean }; error?: string }>;
   getCachedFileUrl: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string }; error?: string }>;
+  saveLocalFile: (fileBuffer: number[], fileName: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string; fileName: string }; error?: string }>;
 }
 
 interface ElectronAPI {

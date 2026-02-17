@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient, wrapElectronListResult } from "@/lib/database/db-client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface CustomFont {
@@ -233,6 +234,13 @@ export function FontManagement() {
   const { data: customFonts = [], isLoading } = useQuery({
     queryKey: ["custom_fonts"],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient();
+        if (!db) return [];
+        const result = await db.getAll('custom_fonts', 'created_at', 'desc');
+        const wrapped = wrapElectronListResult<CustomFont>(result as { success: boolean; data?: CustomFont[]; error?: string });
+        return wrapped.data || [];
+      }
       const { data, error } = await supabase
         .from("custom_fonts")
         .select("*")
@@ -245,17 +253,19 @@ export function FontManagement() {
   // Delete font mutation
   const deleteFont = useMutation({
     mutationFn: async (fontId: string) => {
+      if (isElectron()) {
+        const db = getDbClient();
+        if (!db) throw new Error("DB not available");
+        await db.delete('custom_fonts', fontId);
+        return;
+      }
       const font = customFonts.find(f => f.id === fontId);
       if (font?.font_url) {
-        // Extract file path from URL
         const urlParts = font.font_url.split("/");
         const fileName = urlParts[urlParts.length - 1];
         const filePath = `fonts/${fileName}`;
-        
-        // Delete from storage
         await supabase.storage.from("custom-fonts").remove([filePath]);
       }
-      
       const { error } = await supabase
         .from("custom_fonts")
         .delete()
@@ -305,48 +315,71 @@ export function FontManagement() {
     setIsUploading(true);
 
     try {
-      // Generate unique filename
       const timestamp = Date.now();
       const ext = selectedFile.name.split(".").pop();
       const fileName = `${parsedFont.fontFamily}_${timestamp}.${ext}`;
-      const filePath = `fonts/${fileName}`;
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("custom-fonts")
-        .upload(filePath, selectedFile);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("custom-fonts")
-        .getPublicUrl(filePath);
 
       // Use overrides if set, otherwise use parsed values
       const isArabic = isArabicOverride !== null ? isArabicOverride : parsedFont.isArabic;
       const effectiveStyle = styleOverride !== null ? styleOverride : parsedFont.fontStyle;
       const effectiveWeight = effectiveStyle === 'bold' ? 'bold' : 'normal';
 
-      // For bold variants, ensure the font_name includes a style suffix
       let saveFontName = parsedFont.fontName;
       if (effectiveStyle === 'bold' && !saveFontName.includes('Bold') && !saveFontName.includes('عريض')) {
         saveFontName = `${parsedFont.fontName} Bold`;
       }
 
-      // Save to database
-      const { error: dbError } = await supabase
-        .from("custom_fonts")
-        .insert({
+      let fontUrl: string;
+
+      if (isElectron()) {
+        // Electron: save font file locally
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const result = await (window.electronAPI!.db as any).saveLocalFile(
+          Array.from(new Uint8Array(arrayBuffer)),
+          fileName,
+          'fonts'
+        );
+        if (!result.success || !result.data?.localUrl) {
+          throw new Error(result.error || 'Failed to save font locally');
+        }
+        fontUrl = result.data.localUrl;
+
+        // Save to local DB
+        const db = getDbClient();
+        if (!db) throw new Error("DB not available");
+        await db.insert('custom_fonts', {
           font_name: saveFontName,
           font_family: parsedFont.fontFamily,
-          font_url: urlData.publicUrl,
+          font_url: fontUrl,
           is_arabic: isArabic,
           font_weight: effectiveWeight,
           font_style: effectiveStyle,
         });
+      } else {
+        // Web: upload to Supabase Storage
+        const filePath = `fonts/${fileName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("custom-fonts")
+          .upload(filePath, selectedFile);
+        if (uploadError) throw uploadError;
 
-      if (dbError) throw dbError;
+        const { data: urlData } = supabase.storage
+          .from("custom-fonts")
+          .getPublicUrl(filePath);
+        fontUrl = urlData.publicUrl;
+
+        const { error: dbError } = await supabase
+          .from("custom_fonts")
+          .insert({
+            font_name: saveFontName,
+            font_family: parsedFont.fontFamily,
+            font_url: fontUrl,
+            is_arabic: isArabic,
+            font_weight: effectiveWeight,
+            font_style: effectiveStyle,
+          });
+        if (dbError) throw dbError;
+      }
 
       // Reset form
       setParsedFont(null);
