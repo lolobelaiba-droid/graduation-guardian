@@ -599,6 +599,129 @@ function deleteBackupFromFolder(fileName) {
 }
 
 // ============================================
+// نظام التخزين المحلي للملفات (Cache)
+// ============================================
+
+/**
+ * الحصول على مجلد التخزين المحلي للملفات
+ */
+function getCacheDir(subFolder) {
+  var dir = path.join(getDataDir(), 'cache', subFolder || '');
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+/**
+ * تحميل ملف من URL وحفظه محلياً
+ * يُستخدم لتخزين الخطوط والخلفيات من Supabase Storage
+ */
+function cacheRemoteFile(remoteUrl, subFolder) {
+  var https = require('https');
+  var http = require('http');
+  
+  return new Promise(function(resolve, reject) {
+    try {
+      if (!remoteUrl || typeof remoteUrl !== 'string') {
+        return reject(new Error('Invalid URL'));
+      }
+
+      // استخراج اسم الملف من الرابط
+      var urlObj = new (require('url').URL)(remoteUrl);
+      var urlPath = urlObj.pathname;
+      var fileName = path.basename(urlPath);
+      if (!fileName || fileName === '/') {
+        fileName = 'file_' + Date.now();
+      }
+      
+      var cacheFolder = getCacheDir(subFolder || 'files');
+      var localPath = path.join(cacheFolder, fileName);
+
+      // إذا كان الملف موجوداً محلياً، أرجع المسار مباشرة
+      if (fs.existsSync(localPath)) {
+        return resolve({ localPath: localPath, fileName: fileName, cached: true });
+      }
+
+      // تحميل الملف
+      var protocol = remoteUrl.startsWith('https') ? https : http;
+      
+      var request = protocol.get(remoteUrl, function(response) {
+        // التعامل مع إعادة التوجيه
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          // إعادة محاولة مع الرابط الجديد
+          cacheRemoteFile(response.headers.location, subFolder).then(resolve).catch(reject);
+          return;
+        }
+        
+        if (response.statusCode !== 200) {
+          return reject(new Error('HTTP ' + response.statusCode));
+        }
+
+        var fileStream = fs.createWriteStream(localPath);
+        response.pipe(fileStream);
+        
+        fileStream.on('finish', function() {
+          fileStream.close();
+          resolve({ localPath: localPath, fileName: fileName, cached: false });
+        });
+        
+        fileStream.on('error', function(err) {
+          // حذف الملف الناقص
+          try { fs.unlinkSync(localPath); } catch(e) {}
+          reject(err);
+        });
+      });
+
+      request.on('error', function(err) {
+        reject(err);
+      });
+      
+      // مهلة 15 ثانية
+      request.setTimeout(15000, function() {
+        request.destroy();
+        reject(new Error('Timeout'));
+      });
+    } catch(err) {
+      reject(err);
+    }
+  });
+}
+
+/**
+ * التحقق مما إذا كان الملف مخزناً محلياً
+ */
+function getCachedFilePath(remoteUrl, subFolder) {
+  try {
+    if (!remoteUrl || typeof remoteUrl !== 'string') return null;
+    
+    var urlObj = new (require('url').URL)(remoteUrl);
+    var urlPath = urlObj.pathname;
+    var fileName = path.basename(urlPath);
+    if (!fileName || fileName === '/') return null;
+    
+    var cacheFolder = getCacheDir(subFolder || 'files');
+    var localPath = path.join(cacheFolder, fileName);
+    
+    if (fs.existsSync(localPath)) {
+      return localPath;
+    }
+    return null;
+  } catch(err) {
+    return null;
+  }
+}
+
+/**
+ * الحصول على المسار المحلي كـ file:// URL
+ */
+function getLocalFileUrl(localPath) {
+  if (!localPath) return null;
+  // تحويل المسار إلى file:// URL
+  return require('url').pathToFileURL(localPath).toString();
+}
+
+// ============================================
 // تصدير الوحدة
 // ============================================
 
@@ -641,5 +764,11 @@ module.exports = {
   saveBackupToFolder: saveBackupToFolder,
   listBackups: listBackups,
   loadBackupFromFolder: loadBackupFromFolder,
-  deleteBackupFromFolder: deleteBackupFromFolder
+  deleteBackupFromFolder: deleteBackupFromFolder,
+  
+  // التخزين المحلي للملفات
+  cacheRemoteFile: cacheRemoteFile,
+  getCachedFilePath: getCachedFilePath,
+  getLocalFileUrl: getLocalFileUrl,
+  getCacheDir: getCacheDir
 };

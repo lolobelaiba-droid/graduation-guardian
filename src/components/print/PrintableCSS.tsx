@@ -18,6 +18,8 @@ import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCert
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { getFontByName } from "@/lib/arabicFonts";
+import { useCachedImageUrl } from "@/hooks/useCachedImageUrl";
+import { CachedBackgroundImg } from "@/components/print/CachedBackgroundImg";
 import type { DateFormatSettings } from "@/lib/dateFormats";
 
 interface PrintableCSSProps {
@@ -140,8 +142,8 @@ export function PrintableCSS({
     >
       {/* Background image - hidden during print, only used for field alignment */}
       {template.background_image_url && (
-        <img
-          src={template.background_image_url}
+        <CachedBackgroundImg
+          remoteUrl={template.background_image_url}
           alt=""
           data-print-hide
           style={{

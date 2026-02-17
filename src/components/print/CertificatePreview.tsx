@@ -7,6 +7,8 @@ import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCert
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { getFontByName } from "@/lib/arabicFonts";
+import { useCachedImageUrl } from "@/hooks/useCachedImageUrl";
+import { CachedBackgroundImg } from "@/components/print/CachedBackgroundImg";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -517,8 +519,8 @@ export function CertificatePreview({
         >
           {/* Background image with offset and separate X/Y scale - matches FullPreviewDialog */}
           {template.background_image_url && (
-            <img
-              src={template.background_image_url}
+            <CachedBackgroundImg
+              remoteUrl={template.background_image_url}
               alt="خلفية الشهادة"
               className="absolute pointer-events-none"
               style={{

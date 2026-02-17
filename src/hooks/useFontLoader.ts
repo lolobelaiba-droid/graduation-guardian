@@ -1,37 +1,46 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getFontByName, getAllFonts, type FontConfig } from '@/lib/arabicFonts';
 import { logger } from '@/lib/logger';
+import { cacheFontAsset } from '@/lib/database/asset-cache';
 
 // Track loaded fonts globally to avoid duplicate loading
 const loadedFonts = new Set<string>();
 
-/**
- * Dynamically load a font into the browser using FontFace API
- */
 /**
  * Resolve font URL for Electron's file:// protocol
  */
 function resolveElectronFontUrl(url: string): string {
   const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
   if (!isFileProtocol || !url.startsWith('/')) return url;
-  // Convert absolute /fonts/... to relative ./fonts/...
   return '.' + url;
 }
 
+/**
+ * Check if URL is remote (needs internet)
+ */
+function isRemoteUrl(url: string): boolean {
+  return url.startsWith('http://') || url.startsWith('https://');
+}
+
 async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
-  if (!font.url || font.isSystem) return true; // System fonts don't need loading
+  if (!font.url || font.isSystem) return true;
   
   const fontKey = `${font.family}:${font.style}`;
-  if (loadedFonts.has(fontKey)) return true; // Already loaded
+  if (loadedFonts.has(fontKey)) return true;
   
   try {
-    const resolvedUrl = resolveElectronFontUrl(font.url);
+    let urlToFetch = font.url;
     
-    // For custom fonts from remote URLs, fetch as ArrayBuffer first
-    // This handles both local and remote fonts uniformly
-    const response = await fetch(resolvedUrl);
+    // للخطوط المخصصة من الإنترنت: استخدم التخزين المحلي في Electron
+    if (isRemoteUrl(font.url)) {
+      urlToFetch = await cacheFontAsset(font.url);
+    } else {
+      urlToFetch = resolveElectronFontUrl(font.url);
+    }
+    
+    const response = await fetch(urlToFetch);
     if (!response.ok) {
-      // Try alternative paths for packaged Electron app
+      // Try alternative paths for packaged Electron app (local fonts only)
       const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
       if (isFileProtocol && font.url.startsWith('/fonts/')) {
         const fileName = font.url.replace('/fonts/', '');
@@ -54,7 +63,7 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
           } catch { /* try next */ }
         }
       }
-      throw new Error(`Failed to fetch font: ${resolvedUrl}`);
+      throw new Error(`Failed to fetch font: ${urlToFetch}`);
     }
     
     const buffer = await response.arrayBuffer();

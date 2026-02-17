@@ -257,6 +257,40 @@ function registerDatabaseHandlers() {
     }
   });
 
+  // ============================================
+  // التخزين المحلي للملفات (Cache)
+  // ============================================
+
+  ipcMain.handle('db:cacheRemoteFile', async (_, remoteUrl, subFolder) => {
+    try {
+      const result = await db.cacheRemoteFile(remoteUrl, subFolder);
+      // إرجاع file:// URL للملف المحلي
+      const localUrl = db.getLocalFileUrl(result.localPath);
+      return { success: true, data: { localPath: result.localPath, localUrl: localUrl, fileName: result.fileName, cached: result.cached } };
+    } catch (error) {
+      // إذا فشل التحميل، تحقق من وجود نسخة محلية
+      const cachedPath = db.getCachedFilePath(remoteUrl, subFolder);
+      if (cachedPath) {
+        const localUrl = db.getLocalFileUrl(cachedPath);
+        return { success: true, data: { localPath: cachedPath, localUrl: localUrl, cached: true } };
+      }
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:getCachedFileUrl', async (_, remoteUrl, subFolder) => {
+    try {
+      const cachedPath = db.getCachedFilePath(remoteUrl, subFolder);
+      if (cachedPath) {
+        const localUrl = db.getLocalFileUrl(cachedPath);
+        return { success: true, data: { localPath: cachedPath, localUrl: localUrl } };
+      }
+      return { success: false, error: 'File not cached' };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   console.log('Database IPC handlers registered');
 }
 
