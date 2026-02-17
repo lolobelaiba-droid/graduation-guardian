@@ -32,6 +32,10 @@ interface DbOperations {
   deleteBackupFromFolder: (fileName: string) => Promise<{ success: boolean; error?: string }>;
   
   getPath: () => Promise<{ success: boolean; data?: string; error?: string }>;
+  
+  // التخزين المحلي للملفات
+  cacheRemoteFile: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string; fileName: string; cached: boolean }; error?: string }>;
+  getCachedFileUrl: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string }; error?: string }>;
 }
 
 interface ElectronAPI {

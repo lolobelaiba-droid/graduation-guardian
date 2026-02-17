@@ -16,6 +16,8 @@ import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { getFontByName } from "@/lib/arabicFonts";
+import { useCachedImageUrl } from "@/hooks/useCachedImageUrl";
+import { CachedBackgroundImg } from "@/components/print/CachedBackgroundImg";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 
 // Default A4 dimensions in mm (fallback)
@@ -921,8 +923,8 @@ export function FullPreviewDialog({
             >
               {/* Background image with offset and separate X/Y scale */}
               {template.background_image_url && (
-                <img
-                  src={template.background_image_url}
+                <CachedBackgroundImg
+                  remoteUrl={template.background_image_url}
                   alt="خلفية الشهادة"
                   className="absolute pointer-events-none"
                   style={{

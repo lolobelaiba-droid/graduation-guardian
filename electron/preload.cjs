@@ -92,5 +92,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // معلومات
     getPath: () => 
       ipcRenderer.invoke('db:getPath'),
+    
+    // التخزين المحلي للملفات (Cache)
+    cacheRemoteFile: (remoteUrl, subFolder) =>
+      ipcRenderer.invoke('db:cacheRemoteFile', remoteUrl, subFolder),
+    getCachedFileUrl: (remoteUrl, subFolder) =>
+      ipcRenderer.invoke('db:getCachedFileUrl', remoteUrl, subFolder),
   },
 });
