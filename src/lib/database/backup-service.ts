@@ -245,6 +245,23 @@ export class BackupService {
       // Tables with unique constraints that need upsert
       const UPSERT_TABLES = ['settings', 'user_settings', 'dropdown_options'];
       
+      // Known columns per table to filter out unknown fields from backup data
+      const TABLE_COLUMNS: Record<string, string[] | null> = {
+        academic_titles: ['id', 'abbreviation', 'full_name', 'display_order', 'created_at'],
+      };
+
+      const cleanBatchData = (tableName: string, batch: Record<string, unknown>[]) => {
+        const allowedCols = TABLE_COLUMNS[tableName];
+        if (!allowedCols) return batch; // no filtering needed
+        return batch.map(row => {
+          const cleaned: Record<string, unknown> = {};
+          for (const col of allowedCols) {
+            if (col in row) cleaned[col] = row[col];
+          }
+          return cleaned;
+        });
+      };
+
       const restoreTable = async (tableName: string, data: unknown[] | undefined) => {
         const label = TABLE_LABELS[tableName] || tableName;
         const count = data?.length || 0;
@@ -255,7 +272,7 @@ export class BackupService {
         const useUpsert = UPSERT_TABLES.includes(tableName);
         
         for (let i = 0; i < data.length; i += BATCH_SIZE) {
-          const batch = data.slice(i, i + BATCH_SIZE);
+          const batch = cleanBatchData(tableName, data.slice(i, i + BATCH_SIZE) as Record<string, unknown>[]);
           let error;
           
           if (useUpsert) {
