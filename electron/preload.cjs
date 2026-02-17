@@ -98,5 +98,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:cacheRemoteFile', remoteUrl, subFolder),
     getCachedFileUrl: (remoteUrl, subFolder) =>
       ipcRenderer.invoke('db:getCachedFileUrl', remoteUrl, subFolder),
+    saveLocalFile: (fileBuffer, fileName, subFolder) =>
+      ipcRenderer.invoke('db:saveLocalFile', fileBuffer, fileName, subFolder),
   },
 });

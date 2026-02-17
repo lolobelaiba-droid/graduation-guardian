@@ -599,6 +599,25 @@ function deleteBackupFromFolder(fileName) {
 }
 
 // ============================================
+// حفظ ملفات محلية (رفع من المستخدم مباشرة)
+// ============================================
+
+/**
+ * حفظ ملف مرفوع من المستخدم محلياً (مثل خط TTF)
+ * يُرجع المسار المحلي و file:// URL
+ */
+function saveLocalFile(fileBuffer, fileName, subFolder) {
+  var dir = path.join(getDataDir(), 'cache', subFolder || 'files');
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  var localPath = path.join(dir, fileName);
+  fs.writeFileSync(localPath, Buffer.from(fileBuffer));
+  var localUrl = require('url').pathToFileURL(localPath).toString();
+  return { localPath: localPath, localUrl: localUrl, fileName: fileName };
+}
+
+// ============================================
 // نظام التخزين المحلي للملفات (Cache)
 // ============================================
 
@@ -770,5 +789,6 @@ module.exports = {
   cacheRemoteFile: cacheRemoteFile,
   getCachedFilePath: getCachedFilePath,
   getLocalFileUrl: getLocalFileUrl,
-  getCacheDir: getCacheDir
+  getCacheDir: getCacheDir,
+  saveLocalFile: saveLocalFile
 };

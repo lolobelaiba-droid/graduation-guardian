@@ -291,6 +291,16 @@ function registerDatabaseHandlers() {
     }
   });
 
+  // حفظ ملف محلي (رفع من المستخدم)
+  ipcMain.handle('db:saveLocalFile', async (_, fileBuffer, fileName, subFolder) => {
+    try {
+      const result = db.saveLocalFile(fileBuffer, fileName, subFolder);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   console.log('Database IPC handlers registered');
 }
 
