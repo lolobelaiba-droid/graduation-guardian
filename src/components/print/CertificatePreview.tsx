@@ -131,6 +131,7 @@ export function CertificatePreview({
 
   // Use template-specific paper dimensions
   const getTemplatePaperDimensions = useMemo(() => {
+    if (!template) return { width: 210, height: 297, marginTop: 0, marginBottom: 0, marginRight: 0, marginLeft: 0 };
     const paperSize = ((template as any).print_paper_size || template.page_size || 'a4').toLowerCase();
     let width: number;
     let height: number;
