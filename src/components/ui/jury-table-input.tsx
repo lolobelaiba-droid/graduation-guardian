@@ -327,7 +327,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   };
 
   const isFixed = (role: JuryRole) =>
-    role === "president" || role === "supervisor" || role === "co_supervisor";
+    role === "president" || role === "co_supervisor";
 
   return (
     <div className={cn("w-full space-y-2", className)}>
@@ -392,28 +392,34 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                     }
                     placeholder="—"
                     dir="rtl"
-                    readOnly={isFixed(row.role) && row.role !== "president"}
                   />
                 </td>
 
                 {/* Name */}
                 <td className="py-1.5 px-2 align-middle">
-                  {isFixed(row.role) && row.role !== "president" ? (
+                  {row.role === "co_supervisor" ? (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-foreground font-medium truncate max-w-[160px]">{row.name || "—"}</span>
                       <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded whitespace-nowrap">
-                        {row.role === "supervisor" ? "من بيانات المشرف" : "من بيانات المشرف المساعد"}
+                        من بيانات المشرف المساعد
                       </span>
                     </div>
                   ) : (
-                    <AutocompleteInput
-                      value={row.name}
-                      onValueChange={(v) => updateRow(row.id, { name: v })}
-                      suggestions={nameSuggestions}
-                      placeholder="الاسم واللقب"
-                      className="h-8 text-xs"
-                      dir="rtl"
-                    />
+                    <div className="relative">
+                      <AutocompleteInput
+                        value={row.name}
+                        onValueChange={(v) => updateRow(row.id, { name: v })}
+                        suggestions={nameSuggestions}
+                        placeholder="الاسم واللقب"
+                        className="h-8 text-xs"
+                        dir="rtl"
+                      />
+                      {row.role === "supervisor" && (
+                        <span className="absolute -top-2 end-1 text-[9px] text-muted-foreground bg-muted px-1 rounded leading-tight">
+                          تلقائي
+                        </span>
+                      )}
+                    </div>
                   )}
                 </td>
 
@@ -423,9 +429,12 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                     <span className={cn(
                       "text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap",
                       row.role === "president" ? "bg-primary/10 text-primary" :
-                      row.role === "supervisor" ? "bg-secondary text-secondary-foreground" :
                       "bg-accent text-accent-foreground"
                     )}>
+                      {JURY_ROLE_LABELS[row.role]}
+                    </span>
+                  ) : row.role === "supervisor" ? (
+                    <span className="text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap bg-secondary text-secondary-foreground">
                       {JURY_ROLE_LABELS[row.role]}
                     </span>
                   ) : (
@@ -451,7 +460,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
 
                 {/* Rank */}
                 <td className="py-1.5 px-2 align-middle">
-                  {isFixed(row.role) && row.role !== "president" ? (
+                  {row.role === "co_supervisor" ? (
                     <span className="text-xs text-muted-foreground truncate block max-w-[140px]">
                       {row.rankLabel || "—"}
                     </span>
@@ -482,7 +491,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
 
                 {/* University */}
                 <td className="py-1.5 px-2 align-middle">
-                  {isFixed(row.role) && row.role !== "president" ? (
+                  {row.role === "co_supervisor" ? (
                     <span className="text-xs text-muted-foreground truncate block max-w-[140px]">
                       {row.university || "—"}
                     </span>
@@ -500,7 +509,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
 
                 {/* Delete */}
                 <td className="py-1.5 px-1 align-middle">
-                  {!isFixed(row.role) ? (
+                  {!isFixed(row.role) && row.role !== "supervisor" ? (
                     <Button
                       type="button"
                       variant="ghost"
