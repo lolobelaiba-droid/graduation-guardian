@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { useAcademicTitles } from "@/hooks/useAcademicTitles";
+import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
 
 // ======== Types ========
 
@@ -34,6 +36,7 @@ export interface AcademicRank {
   abbreviation: string;
 }
 
+// Fallback static ranks if DB is not loaded
 export const DEFAULT_ACADEMIC_RANKS: AcademicRank[] = [
   { label: "أستاذ التعليم العالي", abbreviation: "أ.ت.ع" },
   { label: "أستاذ محاضر أ", abbreviation: "أ.م.أ" },
@@ -53,13 +56,6 @@ export interface JuryMember {
 
 // ======== Serialization ========
 
-/**
- * Converts jury rows into the two string fields stored in the DB:
- *   jury_president_ar  → the president row (role=president)
- *   jury_members_ar    → remaining rows joined by " - "
- *
- * Each member is formatted as: "الرتبة الاسم"
- */
 export function serializeJury(members: JuryMember[]): {
   jury_president_ar: string;
   jury_members_ar: string;
@@ -79,33 +75,33 @@ export function serializeJury(members: JuryMember[]): {
   };
 }
 
-/**
- * Parses the stored strings back into JuryMember rows for editing.
- * The president string goes to role=president, members string is split by " - ".
- */
 export function parseJury(
   juryPresidentAr: string,
-  juryMembersAr: string
+  juryMembersAr: string,
+  supervisorAr?: string,
+  supervisorUniversity?: string,
+  coSupervisorAr?: string,
+  coSupervisorUniversity?: string,
+  ranks?: AcademicRank[]
 ): JuryMember[] {
   const makeId = () => Math.random().toString(36).slice(2);
+  const effectiveRanks = ranks && ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS;
 
   const parseMember = (raw: string, role: JuryRole): JuryMember => {
     const trimmed = raw.trim();
-    // Try to match a known abbreviation at the start
-    const knownAbbr = DEFAULT_ACADEMIC_RANKS.find((r) =>
+    const knownRank = effectiveRanks.find((r) =>
       trimmed.startsWith(r.abbreviation + " ")
     );
-    if (knownAbbr) {
+    if (knownRank) {
       return {
         id: makeId(),
         role,
-        name: trimmed.slice(knownAbbr.abbreviation.length + 1).trim(),
-        rankLabel: knownAbbr.label,
-        rankAbbreviation: knownAbbr.abbreviation,
+        name: trimmed.slice(knownRank.abbreviation.length + 1).trim(),
+        rankLabel: knownRank.label,
+        rankAbbreviation: knownRank.abbreviation,
         university: "",
       };
     }
-    // Fallback: first token might be an abbreviation
     const parts = trimmed.split(" ");
     const maybeAbbr = parts[0] || "";
     const rest = parts.slice(1).join(" ");
@@ -121,10 +117,27 @@ export function parseJury(
 
   const rows: JuryMember[] = [];
 
+  // Row 1: President (always)
   if (juryPresidentAr?.trim()) {
     rows.push(parseMember(juryPresidentAr.trim(), "president"));
+  } else {
+    rows.push({ id: makeId(), role: "president", name: "", rankLabel: "", rankAbbreviation: "", university: "" });
   }
 
+  // Row 2: Supervisor (auto from supervisor fields)
+  const supParsed = supervisorAr?.trim() ? parseMember(supervisorAr.trim(), "supervisor") : null;
+  const supRow: JuryMember = supParsed
+    ? { ...supParsed, role: "supervisor", university: supervisorUniversity || "" }
+    : { id: makeId(), role: "supervisor", name: "", rankLabel: "", rankAbbreviation: "", university: supervisorUniversity || "" };
+  rows.push(supRow);
+
+  // Row 3: Co-supervisor (auto, only if present)
+  if (coSupervisorAr?.trim()) {
+    const coSupParsed = parseMember(coSupervisorAr.trim(), "co_supervisor");
+    rows.push({ ...coSupParsed, role: "co_supervisor", university: coSupervisorUniversity || "" });
+  }
+
+  // Remaining rows: other jury members from jury_members_ar
   if (juryMembersAr?.trim()) {
     const parts = juryMembersAr
       .split(/\s*-\s*/)
@@ -142,17 +155,20 @@ interface RankCellProps {
   rankLabel: string;
   rankAbbreviation: string;
   onChange: (label: string, abbreviation: string) => void;
+  ranks: AcademicRank[];
 }
 
 const RankCell: React.FC<RankCellProps> = ({
   rankLabel,
   rankAbbreviation,
   onChange,
+  ranks,
 }) => {
   const [customAbbr, setCustomAbbr] = React.useState(rankAbbreviation);
+  const effectiveRanks = ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS;
 
   const handleSelectRank = (label: string) => {
-    const found = DEFAULT_ACADEMIC_RANKS.find((r) => r.label === label);
+    const found = effectiveRanks.find((r) => r.label === label);
     const abbr = found ? found.abbreviation : customAbbr;
     setCustomAbbr(abbr);
     onChange(label, abbr);
@@ -163,19 +179,18 @@ const RankCell: React.FC<RankCellProps> = ({
     onChange(rankLabel, e.target.value);
   };
 
-  // Sync external abbreviation changes
   React.useEffect(() => {
     setCustomAbbr(rankAbbreviation);
   }, [rankAbbreviation]);
 
   return (
-    <div className="flex flex-col gap-1 min-w-[160px]">
+    <div className="flex flex-col gap-1 min-w-[150px]">
       <Select value={rankLabel} onValueChange={handleSelectRank}>
         <SelectTrigger className="h-8 text-xs">
           <SelectValue placeholder="اختر الرتبة" />
         </SelectTrigger>
         <SelectContent>
-          {DEFAULT_ACADEMIC_RANKS.map((r) => (
+          {effectiveRanks.map((r) => (
             <SelectItem key={r.label} value={r.label}>
               <span className="flex items-center gap-2">
                 <span className="font-mono text-xs bg-muted px-1 rounded">
@@ -187,30 +202,22 @@ const RankCell: React.FC<RankCellProps> = ({
           ))}
         </SelectContent>
       </Select>
-      {/* Editable abbreviation */}
-      <Input
-        className="h-7 text-xs font-mono text-center"
-        value={customAbbr}
-        onChange={handleAbbrChange}
-        placeholder="الاختصار"
-        dir="rtl"
-      />
     </div>
   );
 };
 
-// ======== Main Component ========
+// ======== Main JuryTableInput Component ========
 
 export interface JuryTableInputProps {
-  /** Existing president string (from DB) */
   presidentValue: string;
-  /** Existing members string (from DB) */
   membersValue: string;
-  /** Called whenever the jury changes; receives serialized president + members */
   onChange: (president: string, members: string) => void;
-  /** Suggestions for name autocomplete */
+  /** supervisor fields for auto-population */
+  supervisorAr?: string;
+  supervisorUniversity?: string;
+  coSupervisorAr?: string;
+  coSupervisorUniversity?: string;
   nameSuggestions?: string[];
-  /** University suggestions */
   universitySuggestions?: string[];
   className?: string;
 }
@@ -219,47 +226,67 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   presidentValue,
   membersValue,
   onChange,
+  supervisorAr = "",
+  supervisorUniversity = "",
+  coSupervisorAr = "",
+  coSupervisorUniversity = "",
   nameSuggestions = [],
   universitySuggestions = [],
   className,
 }) => {
-  const [rows, setRows] = React.useState<JuryMember[]>(() => {
-    const parsed = parseJury(presidentValue, membersValue);
-    // If empty (new form), start with one president row
-    if (parsed.length === 0) {
-      return [{
-        id: Math.random().toString(36).slice(2),
-        role: "president",
-        name: "",
-        rankLabel: "",
-        rankAbbreviation: "",
-        university: "",
-      }];
-    }
-    return parsed;
-  });
+  const { titles, isLoading: ranksLoading } = useAcademicTitles();
+  const [manageOpen, setManageOpen] = React.useState(false);
 
-  // Sync from outside only on initial mount or if both values change (e.g. reset form)
+  const ranks: AcademicRank[] = React.useMemo(
+    () => titles.map((t) => ({ label: t.full_name, abbreviation: t.abbreviation })),
+    [titles]
+  );
+
+  const [rows, setRows] = React.useState<JuryMember[]>(() =>
+    parseJury(presidentValue, membersValue, supervisorAr, supervisorUniversity, coSupervisorAr, coSupervisorUniversity, ranks)
+  );
+
   const prevPresidentRef = React.useRef(presidentValue);
   const prevMembersRef = React.useRef(membersValue);
+  const prevSupRef = React.useRef(supervisorAr);
+  const prevCoSupRef = React.useRef(coSupervisorAr);
 
+  // Sync from outside when values change
   React.useEffect(() => {
-    if (
+    const changed =
       presidentValue !== prevPresidentRef.current ||
-      membersValue !== prevMembersRef.current
-    ) {
+      membersValue !== prevMembersRef.current ||
+      supervisorAr !== prevSupRef.current ||
+      coSupervisorAr !== prevCoSupRef.current;
+
+    if (changed) {
       prevPresidentRef.current = presidentValue;
       prevMembersRef.current = membersValue;
-      const parsed = parseJury(presidentValue, membersValue);
-      if (parsed.length > 0 || presidentValue || membersValue) {
-        setRows(parsed);
-      }
+      prevSupRef.current = supervisorAr;
+      prevCoSupRef.current = coSupervisorAr;
+
+      setRows(
+        parseJury(
+          presidentValue,
+          membersValue,
+          supervisorAr,
+          supervisorUniversity,
+          coSupervisorAr,
+          coSupervisorUniversity,
+          ranks
+        )
+      );
     }
-  }, [presidentValue, membersValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presidentValue, membersValue, supervisorAr, coSupervisorAr]);
 
   const notifyChange = React.useCallback(
     (newRows: JuryMember[]) => {
-      const { jury_president_ar, jury_members_ar } = serializeJury(newRows);
+      // For serialization: exclude supervisor/co_supervisor rows (they are saved separately)
+      const forSerial = newRows.filter(
+        (r) => r.role !== "supervisor" && r.role !== "co_supervisor"
+      );
+      const { jury_president_ar, jury_members_ar } = serializeJury(forSerial);
       prevPresidentRef.current = jury_president_ar;
       prevMembersRef.current = jury_members_ar;
       onChange(jury_president_ar, jury_members_ar);
@@ -299,49 +326,54 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
     });
   };
 
+  const isFixed = (role: JuryRole) =>
+    role === "president" || role === "supervisor" || role === "co_supervisor";
+
   return (
     <div className={cn("w-full space-y-2", className)}>
+      {/* Header with manage button */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          الصف 1 = رئيس اللجنة، الصف 2 = المشرف (تلقائي)، الصف 3 = المشرف المساعد (تلقائي إن وجد)
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => setManageOpen(true)}
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+          إدارة الرتب
+        </Button>
+      </div>
+
       {/* Table */}
       <div className="overflow-x-auto rounded-md border border-border">
         <table className="w-full text-sm" dir="rtl">
           <thead>
             <tr className="bg-muted/60 border-b border-border">
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-8">
-                #
-              </th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-36">
-                الصفة
-              </th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">
-                الاسم واللقب
-              </th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-48">
-                الرتبة
-              </th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">
-                جامعة الانتماء
-              </th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-8">#</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">الاسم واللقب</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-32">الصفة</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-44">الرتبة</th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">جامعة الانتماء</th>
               <th className="py-2 px-1 w-8" />
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="text-center py-6 text-muted-foreground text-xs"
-                >
-                  لا يوجد أعضاء، اضغط &quot;إضافة عضو&quot; لبدء الإدخال
-                </td>
-              </tr>
-            )}
             {rows.map((row, index) => (
               <tr
                 key={row.id}
-              className={cn(
+                className={cn(
                   "border-b border-border last:border-0",
                   row.role === "president"
                     ? "bg-primary/5"
+                    : row.role === "supervisor"
+                    ? "bg-secondary/30"
+                    : row.role === "co_supervisor"
+                    ? "bg-accent/30"
                     : "hover:bg-muted/30"
                 )}
               >
@@ -350,78 +382,124 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                   {index + 1}
                 </td>
 
-                {/* Role */}
-                <td className="py-1.5 px-2 align-middle">
-                  <Select
-                    value={row.role}
-                    onValueChange={(v) =>
-                      updateRow(row.id, { role: v as JuryRole })
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(
-                        Object.entries(JURY_ROLE_LABELS) as [JuryRole, string][]
-                      ).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-
                 {/* Name */}
                 <td className="py-1.5 px-2 align-middle">
-                  <AutocompleteInput
-                    value={row.name}
-                    onValueChange={(v) => updateRow(row.id, { name: v })}
-                    suggestions={nameSuggestions}
-                    placeholder="الاسم واللقب"
-                    className="h-8 text-xs"
-                    dir="rtl"
-                  />
+                  {isFixed(row.role) && row.role !== "president" ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-foreground font-medium truncate max-w-[160px]">{row.name || "—"}</span>
+                      <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded whitespace-nowrap">
+                        {row.role === "supervisor" ? "من بيانات المشرف" : "من بيانات المشرف المساعد"}
+                      </span>
+                    </div>
+                  ) : (
+                    <AutocompleteInput
+                      value={row.name}
+                      onValueChange={(v) => updateRow(row.id, { name: v })}
+                      suggestions={nameSuggestions}
+                      placeholder="الاسم واللقب"
+                      className="h-8 text-xs"
+                      dir="rtl"
+                    />
+                  )}
+                </td>
+
+                {/* Role */}
+                <td className="py-1.5 px-2 align-middle">
+                  {isFixed(row.role) ? (
+                    <span className={cn(
+                      "text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap",
+                      row.role === "president" ? "bg-primary/10 text-primary" :
+                      row.role === "supervisor" ? "bg-secondary text-secondary-foreground" :
+                      "bg-accent text-accent-foreground"
+                    )}>
+                      {JURY_ROLE_LABELS[row.role]}
+                    </span>
+                  ) : (
+                    <Select
+                      value={row.role}
+                      onValueChange={(v) => updateRow(row.id, { role: v as JuryRole })}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.entries(JURY_ROLE_LABELS) as [JuryRole, string][])
+                          .filter(([v]) => v !== "president" && v !== "supervisor" && v !== "co_supervisor")
+                          .map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </td>
 
                 {/* Rank */}
                 <td className="py-1.5 px-2 align-middle">
-                  <RankCell
-                    rankLabel={row.rankLabel}
-                    rankAbbreviation={row.rankAbbreviation}
-                    onChange={(label, abbr) =>
-                      updateRow(row.id, {
-                        rankLabel: label,
-                        rankAbbreviation: abbr,
-                      })
+                  {isFixed(row.role) && row.role !== "president" ? (
+                    <span className="text-xs text-muted-foreground truncate block max-w-[140px]">
+                      {row.rankLabel || "—"}
+                    </span>
+                  ) : (
+                    <RankCell
+                      rankLabel={row.rankLabel}
+                      rankAbbreviation={row.rankAbbreviation}
+                      onChange={(label, abbr) =>
+                        updateRow(row.id, { rankLabel: label, rankAbbreviation: abbr })
+                      }
+                      ranks={ranks}
+                    />
+                  )}
+                </td>
+
+                {/* Abbreviation - separate column */}
+                <td className="py-1.5 px-2 align-middle">
+                  <Input
+                    className="h-8 text-xs font-mono text-center w-16"
+                    value={row.rankAbbreviation}
+                    onChange={(e) =>
+                      updateRow(row.id, { rankAbbreviation: e.target.value })
                     }
+                    placeholder="الاختصار"
+                    dir="rtl"
+                    readOnly={isFixed(row.role) && row.role !== "president"}
                   />
                 </td>
 
                 {/* University */}
                 <td className="py-1.5 px-2 align-middle">
-                  <AutocompleteInput
-                    value={row.university}
-                    onValueChange={(v) => updateRow(row.id, { university: v })}
-                    suggestions={universitySuggestions}
-                    placeholder="جامعة الانتماء"
-                    className="h-8 text-xs"
-                    dir="rtl"
-                  />
+                  {isFixed(row.role) && row.role !== "president" ? (
+                    <span className="text-xs text-muted-foreground truncate block max-w-[140px]">
+                      {row.university || "—"}
+                    </span>
+                  ) : (
+                    <AutocompleteInput
+                      value={row.university}
+                      onValueChange={(v) => updateRow(row.id, { university: v })}
+                      suggestions={universitySuggestions}
+                      placeholder="جامعة الانتماء"
+                      className="h-8 text-xs"
+                      dir="rtl"
+                    />
+                  )}
                 </td>
 
                 {/* Delete */}
                 <td className="py-1.5 px-1 align-middle">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => removeRow(row.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  {!isFixed(row.role) ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => removeRow(row.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : (
+                    <div className="h-7 w-7" />
+                  )}
                 </td>
               </tr>
             ))}
@@ -446,7 +524,10 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         <div className="rounded-md bg-muted/40 border border-border p-2 text-xs space-y-1" dir="rtl">
           <p className="text-muted-foreground font-medium text-[11px] mb-1">معاينة البيانات المحفوظة:</p>
           {(() => {
-            const { jury_president_ar, jury_members_ar } = serializeJury(rows);
+            const forSerial = rows.filter(
+              (r) => r.role !== "supervisor" && r.role !== "co_supervisor"
+            );
+            const { jury_president_ar, jury_members_ar } = serializeJury(forSerial);
             return (
               <>
                 {jury_president_ar && (
@@ -466,8 +547,282 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
           })()}
         </div>
       )}
+
+      <ManageAcademicTitlesDialog />
     </div>
   );
 };
 
 JuryTableInput.displayName = "JuryTableInput";
+
+// ======== SupervisorTableInput ========
+
+export interface SupervisorPerson {
+  name: string;
+  rankLabel: string;
+  rankAbbreviation: string;
+  university: string;
+}
+
+export interface SupervisorTableInputProps {
+  supervisorValue: string;
+  supervisorUniversity: string;
+  coSupervisorValue: string;
+  coSupervisorUniversity: string;
+  onSupervisorChange: (name: string, university: string) => void;
+  onCoSupervisorChange: (name: string, university: string) => void;
+  nameSuggestions?: string[];
+  universitySuggestions?: string[];
+  className?: string;
+  showCoSupervisor?: boolean;
+}
+
+function parseSupervisorString(raw: string, ranks: AcademicRank[]): SupervisorPerson {
+  const trimmed = raw?.trim() || "";
+  const effectiveRanks = ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS;
+  const knownRank = effectiveRanks.find((r) => trimmed.startsWith(r.abbreviation + " "));
+  if (knownRank) {
+    return {
+      name: trimmed.slice(knownRank.abbreviation.length + 1).trim(),
+      rankLabel: knownRank.label,
+      rankAbbreviation: knownRank.abbreviation,
+      university: "",
+    };
+  }
+  return { name: trimmed, rankLabel: "", rankAbbreviation: "", university: "" };
+}
+
+function serializeSupervisor(p: SupervisorPerson): string {
+  const abbr = p.rankAbbreviation?.trim();
+  const name = p.name?.trim();
+  return abbr && name ? `${abbr} ${name}` : name || abbr || "";
+}
+
+export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
+  supervisorValue,
+  supervisorUniversity,
+  coSupervisorValue,
+  coSupervisorUniversity,
+  onSupervisorChange,
+  onCoSupervisorChange,
+  nameSuggestions = [],
+  universitySuggestions = [],
+  className,
+  showCoSupervisor = true,
+}) => {
+  const { titles } = useAcademicTitles();
+  const [manageOpen, setManageOpen] = React.useState(false);
+
+  const ranks: AcademicRank[] = React.useMemo(
+    () => titles.map((t) => ({ label: t.full_name, abbreviation: t.abbreviation })),
+    [titles]
+  );
+
+  const [supervisor, setSupervisor] = React.useState<SupervisorPerson>(() => ({
+    ...parseSupervisorString(supervisorValue, ranks),
+    university: supervisorUniversity,
+  }));
+
+  const [coSupervisor, setCoSupervisor] = React.useState<SupervisorPerson>(() => ({
+    ...parseSupervisorString(coSupervisorValue, ranks),
+    university: coSupervisorUniversity,
+  }));
+
+  // Sync from outside
+  const prevSupRef = React.useRef(supervisorValue);
+  const prevCoSupRef = React.useRef(coSupervisorValue);
+
+  React.useEffect(() => {
+    if (supervisorValue !== prevSupRef.current) {
+      prevSupRef.current = supervisorValue;
+      setSupervisor({ ...parseSupervisorString(supervisorValue, ranks), university: supervisorUniversity });
+    }
+  }, [supervisorValue, supervisorUniversity, ranks]);
+
+  React.useEffect(() => {
+    if (coSupervisorValue !== prevCoSupRef.current) {
+      prevCoSupRef.current = coSupervisorValue;
+      setCoSupervisor({ ...parseSupervisorString(coSupervisorValue, ranks), university: coSupervisorUniversity });
+    }
+  }, [coSupervisorValue, coSupervisorUniversity, ranks]);
+
+  const handleSupervisorChange = (patch: Partial<SupervisorPerson>) => {
+    setSupervisor((prev) => {
+      const next = { ...prev, ...patch };
+      onSupervisorChange(serializeSupervisor(next), next.university);
+      return next;
+    });
+  };
+
+  const handleCoSupervisorChange = (patch: Partial<SupervisorPerson>) => {
+    setCoSupervisor((prev) => {
+      const next = { ...prev, ...patch };
+      onCoSupervisorChange(serializeSupervisor(next), next.university);
+      return next;
+    });
+  };
+
+  const handleRankSelect = (
+    label: string,
+    handler: (patch: Partial<SupervisorPerson>) => void
+  ) => {
+    const found = (ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS).find((r) => r.label === label);
+    handler({ rankLabel: label, rankAbbreviation: found?.abbreviation || "" });
+  };
+
+  const effectiveRanks = ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS;
+
+  return (
+    <div className={cn("w-full space-y-2", className)}>
+      <div className="flex items-center justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => setManageOpen(true)}
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+          إدارة الرتب
+        </Button>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full text-sm" dir="rtl">
+          <thead>
+            <tr className="bg-muted/60 border-b border-border">
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-24">الصفة</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">الاسم واللقب</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-44">الرتبة</th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">جامعة الانتماء</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Supervisor row */}
+            <tr className="border-b border-border bg-secondary/30">
+              <td className="py-1.5 px-2 align-middle">
+                <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded-md whitespace-nowrap">
+                  المشرف *
+                </span>
+              </td>
+              <td className="py-1.5 px-2 align-middle">
+                <AutocompleteInput
+                  value={supervisor.name}
+                  onValueChange={(v) => handleSupervisorChange({ name: v })}
+                  suggestions={nameSuggestions}
+                  placeholder="اسم ولقب المشرف"
+                  className="h-8 text-xs"
+                  dir="rtl"
+                />
+              </td>
+              <td className="py-1.5 px-2 align-middle">
+                <Select
+                  value={supervisor.rankLabel}
+                  onValueChange={(v) => handleRankSelect(v, handleSupervisorChange)}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="اختر الرتبة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {effectiveRanks.map((r) => (
+                      <SelectItem key={r.label} value={r.label}>
+                        <span className="flex items-center gap-2">
+                          <span className="font-mono text-xs bg-muted px-1 rounded">{r.abbreviation}</span>
+                          {r.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </td>
+              <td className="py-1.5 px-2 align-middle">
+                <Input
+                  className="h-8 text-xs font-mono text-center w-16"
+                  value={supervisor.rankAbbreviation}
+                  onChange={(e) => handleSupervisorChange({ rankAbbreviation: e.target.value })}
+                  placeholder="الاختصار"
+                  dir="rtl"
+                />
+              </td>
+              <td className="py-1.5 px-2 align-middle">
+                <AutocompleteInput
+                  value={supervisor.university}
+                  onValueChange={(v) => handleSupervisorChange({ university: v })}
+                  suggestions={universitySuggestions}
+                  placeholder="جامعة الانتماء"
+                  className="h-8 text-xs"
+                  dir="rtl"
+                />
+              </td>
+            </tr>
+
+            {/* Co-supervisor row */}
+            {showCoSupervisor && (
+              <tr className="bg-accent/30">
+                <td className="py-1.5 px-2 align-middle">
+                  <span className="text-xs font-medium bg-accent text-accent-foreground px-2 py-1 rounded-md whitespace-nowrap">
+                    المشرف المساعد
+                  </span>
+                </td>
+                <td className="py-1.5 px-2 align-middle">
+                  <AutocompleteInput
+                    value={coSupervisor.name}
+                    onValueChange={(v) => handleCoSupervisorChange({ name: v })}
+                    suggestions={nameSuggestions}
+                    placeholder="اسم ولقب المشرف المساعد (اختياري)"
+                    className="h-8 text-xs"
+                    dir="rtl"
+                  />
+                </td>
+                <td className="py-1.5 px-2 align-middle">
+                  <Select
+                    value={coSupervisor.rankLabel}
+                    onValueChange={(v) => handleRankSelect(v, handleCoSupervisorChange)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="اختر الرتبة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {effectiveRanks.map((r) => (
+                        <SelectItem key={r.label} value={r.label}>
+                          <span className="flex items-center gap-2">
+                            <span className="font-mono text-xs bg-muted px-1 rounded">{r.abbreviation}</span>
+                            {r.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="py-1.5 px-2 align-middle">
+                  <Input
+                    className="h-8 text-xs font-mono text-center w-16"
+                    value={coSupervisor.rankAbbreviation}
+                    onChange={(e) => handleCoSupervisorChange({ rankAbbreviation: e.target.value })}
+                    placeholder="الاختصار"
+                    dir="rtl"
+                  />
+                </td>
+                <td className="py-1.5 px-2 align-middle">
+                  <AutocompleteInput
+                    value={coSupervisor.university}
+                    onValueChange={(v) => handleCoSupervisorChange({ university: v })}
+                    suggestions={universitySuggestions}
+                    placeholder="جامعة الانتماء"
+                    className="h-8 text-xs"
+                    dir="rtl"
+                  />
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <ManageAcademicTitlesDialog />
+    </div>
+  );
+};
+
+SupervisorTableInput.displayName = "SupervisorTableInput";
