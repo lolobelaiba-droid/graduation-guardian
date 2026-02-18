@@ -158,12 +158,26 @@ export function parseJury(
   }
 
   // Remaining rows: other jury members from jury_members_ar
+  // Skip entries that match the supervisor or co-supervisor to avoid duplicates
   if (juryMembersAr?.trim()) {
+    const supName = supRow.name?.trim().toLowerCase() || "";
+    const coSupName = coSupervisorAr?.trim() ? (() => {
+      const parsed = parseMember(coSupervisorAr.trim(), "co_supervisor");
+      return parsed.name?.trim().toLowerCase() || "";
+    })() : "";
+
     const parts = juryMembersAr
       .split(/\s*-\s*/)
       .map((s) => s.trim())
       .filter(Boolean);
-    parts.forEach((p) => rows.push(parseMember(p, "examiner")));
+    parts.forEach((p) => {
+      const parsed = parseMember(p, "examiner");
+      const pName = parsed.name?.trim().toLowerCase() || "";
+      // Skip if this member matches supervisor or co-supervisor
+      if (supName && pName === supName) return;
+      if (coSupName && pName === coSupName) return;
+      rows.push(parsed);
+    });
   }
 
   return rows;
@@ -325,11 +339,30 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
 
   const notifyChange = React.useCallback(
     (newRows: JuryMember[]) => {
-      // For serialization: exclude supervisor/co_supervisor rows (they are saved separately)
-      const forSerial = newRows.filter(
-        (r) => r.role !== "supervisor" && r.role !== "co_supervisor"
+      // Serialize: president goes to jury_president_ar
+      // All others (including supervisor & co_supervisor) go to jury_members_ar
+      // Order: supervisor → co_supervisor → examiners/invited
+      const president = newRows.find((r) => r.role === "president");
+      const supervisor = newRows.find((r) => r.role === "supervisor");
+      const coSupervisor = newRows.find((r) => r.role === "co_supervisor");
+      const others = newRows.filter(
+        (r) => r.role !== "president" && r.role !== "supervisor" && r.role !== "co_supervisor"
       );
-      const { jury_president_ar, jury_members_ar } = serializeJury(forSerial);
+
+      const formatMember = (m: JuryMember) => {
+        const abbr = m.rankAbbreviation?.trim();
+        const name = m.name?.trim();
+        return abbr && name ? `${abbr} ${name}` : name || abbr || "";
+      };
+
+      const membersOrdered: JuryMember[] = [];
+      if (supervisor && supervisor.name?.trim()) membersOrdered.push(supervisor);
+      if (coSupervisor && coSupervisor.name?.trim()) membersOrdered.push(coSupervisor);
+      membersOrdered.push(...others);
+
+      const jury_president_ar = president ? formatMember(president) : "";
+      const jury_members_ar = membersOrdered.map(formatMember).filter(Boolean).join(" - ");
+
       prevPresidentRef.current = jury_president_ar;
       prevMembersRef.current = jury_members_ar;
       onChange(jury_president_ar, jury_members_ar);
@@ -597,10 +630,23 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         <div className="rounded-md bg-muted/40 border border-border p-2 text-xs space-y-1" dir="rtl">
           <p className="text-muted-foreground font-medium text-[11px] mb-1">معاينة البيانات المحفوظة:</p>
           {(() => {
-            const forSerial = rows.filter(
-              (r) => r.role !== "supervisor" && r.role !== "co_supervisor"
+            const formatMember = (m: JuryMember) => {
+              const abbr = m.rankAbbreviation?.trim();
+              const name = m.name?.trim();
+              return abbr && name ? `${abbr} ${name}` : name || abbr || "";
+            };
+            const president = rows.find((r) => r.role === "president");
+            const supervisor = rows.find((r) => r.role === "supervisor");
+            const coSupervisor = rows.find((r) => r.role === "co_supervisor");
+            const others = rows.filter(
+              (r) => r.role !== "president" && r.role !== "supervisor" && r.role !== "co_supervisor"
             );
-            const { jury_president_ar, jury_members_ar } = serializeJury(forSerial);
+            const membersOrdered: JuryMember[] = [];
+            if (supervisor && supervisor.name?.trim()) membersOrdered.push(supervisor);
+            if (coSupervisor && coSupervisor.name?.trim()) membersOrdered.push(coSupervisor);
+            membersOrdered.push(...others);
+            const jury_president_ar = president ? formatMember(president) : "";
+            const jury_members_ar = membersOrdered.map(formatMember).filter(Boolean).join(" - ");
             return (
               <>
                 {jury_president_ar && (
