@@ -229,6 +229,10 @@ export interface JuryTableInputProps {
   className?: string;
   findProfessor?: (name: string) => ProfessorInfo | undefined;
   onProfessorDataChange?: (name: string, rankLabel?: string, rankAbbreviation?: string, university?: string) => void;
+  /** Called when the supervisor row is edited inside the jury table */
+  onSupervisorChange?: (name: string, university: string) => void;
+  /** Called when the co-supervisor row is edited inside the jury table */
+  onCoSupervisorChange?: (name: string, university: string) => void;
 }
 
 export const JuryTableInput: React.FC<JuryTableInputProps> = ({
@@ -244,6 +248,8 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   className,
   findProfessor,
   onProfessorDataChange,
+  onSupervisorChange,
+  onCoSupervisorChange,
 }) => {
   const { titles, isLoading: ranksLoading } = useAcademicTitles();
   const [manageOpen, setManageOpen] = React.useState(false);
@@ -313,6 +319,19 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         // Save professor data when rank or university changes
         if (onProfessorDataChange && updated.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
           onProfessorDataChange(updated.name, updated.rankLabel, updated.rankAbbreviation, updated.university);
+        }
+        // Propagate supervisor/co-supervisor changes back to form
+        if (updated.role === "supervisor" && onSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
+          const serialized = updated.rankAbbreviation?.trim() && updated.name?.trim()
+            ? `${updated.rankAbbreviation.trim()} ${updated.name.trim()}`
+            : updated.name?.trim() || "";
+          onSupervisorChange(serialized, updated.university || "");
+        }
+        if (updated.role === "co_supervisor" && onCoSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
+          const serialized = updated.rankAbbreviation?.trim() && updated.name?.trim()
+            ? `${updated.rankAbbreviation.trim()} ${updated.name.trim()}`
+            : updated.name?.trim() || "";
+          onCoSupervisorChange(serialized, updated.university || "");
         }
         return updated;
       });
