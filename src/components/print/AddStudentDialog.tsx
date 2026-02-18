@@ -893,7 +893,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                                 presidentField.onChange(president);
                                 membersField.onChange(members);
                               }}
-                              supervisorAr={form.watch('supervisor_ar') || ''}
+                              supervisorAr={String(form.watch('supervisor_ar') || '')}
                               supervisorUniversity={''}
                               coSupervisorAr={''}
                               coSupervisorUniversity={''}
