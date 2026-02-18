@@ -150,10 +150,16 @@ export function useProfessors() {
  * إزالة اختصار الرتبة من بداية الاسم إن وجد
  */
 function stripAbbreviation(name: string): string {
+  // Common abbreviation patterns (ordered longest first)
   const abbrPatterns = [
+    /^أ\s*\.?\s*ت\s*\.?\s*ع\s*/,   // أ.ت.ع
+    /^أ\s*\.?\s*م\s*\.?\s*أ\s*/,   // أ.م.أ
+    /^أ\s*\.?\s*م\s*\.?\s*ب\s*/,   // أ.م.ب
+    /^أ\s*\.?\s*م\s*\.?\s*س\s*\.?\s*أ\s*/, // أ.م.س.أ
+    /^أ\s*\.?\s*م\s*\.?\s*س\s*\.?\s*ب\s*/, // أ.م.س.ب
     /^أ\s*د\.\s*/,
-    /^د\.\s*/,
     /^م\s*ب\.\s*/,
+    /^د\.\s*/,
     /^Pr\.\s*/i,
     /^Dr\.\s*/i,
     /^Prof\.\s*/i,
