@@ -195,6 +195,16 @@ CREATE TABLE IF NOT EXISTS print_history (
     FOREIGN KEY (template_id) REFERENCES certificate_templates(id) ON DELETE SET NULL
 );
 
+-- جدول الأساتذة
+CREATE TABLE IF NOT EXISTS professors (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+    full_name TEXT NOT NULL UNIQUE,
+    rank_label TEXT,
+    rank_abbreviation TEXT,
+    university TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
 -- إنشاء الفهارس لتحسين الأداء
 CREATE INDEX IF NOT EXISTS idx_phd_lmd_student_number ON phd_lmd_certificates(student_number);
 CREATE INDEX IF NOT EXISTS idx_phd_lmd_full_name_ar ON phd_lmd_certificates(full_name_ar);
@@ -206,3 +216,4 @@ CREATE INDEX IF NOT EXISTS idx_templates_type ON certificate_templates(certifica
 CREATE INDEX IF NOT EXISTS idx_template_fields_template ON certificate_template_fields(template_id);
 CREATE INDEX IF NOT EXISTS idx_activity_log_date ON activity_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_dropdown_options_type ON dropdown_options(option_type);
+CREATE INDEX IF NOT EXISTS idx_professors_name ON professors(full_name);

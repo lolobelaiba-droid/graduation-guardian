@@ -1104,16 +1104,25 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          rank_abbreviation: string | null
+          rank_label: string | null
+          university: string | null
         }
         Insert: {
           created_at?: string
           full_name: string
           id?: string
+          rank_abbreviation?: string | null
+          rank_label?: string | null
+          university?: string | null
         }
         Update: {
           created_at?: string
           full_name?: string
           id?: string
+          rank_abbreviation?: string | null
+          rank_label?: string | null
+          university?: string | null
         }
         Relationships: []
       }

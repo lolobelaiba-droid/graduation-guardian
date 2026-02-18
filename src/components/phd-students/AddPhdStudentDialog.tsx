@@ -139,7 +139,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar'
   ]);
 
-  const { professors, ensureProfessor } = useProfessors();
+  const { professorNames, ensureProfessor, findProfessor } = useProfessors();
 
   // Update selected type when prop changes
   useEffect(() => {
@@ -807,8 +807,9 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                                     coSupField.onChange(name);
                                     coSupUniField.onChange(university);
                                   }}
-                                  nameSuggestions={professors}
-                                  universitySuggestions={[]}
+                                  nameSuggestions={professorNames}
+                                  findProfessor={findProfessor}
+                                  onProfessorDataChange={ensureProfessor}
                                 />
                               </FormControl>
                               <FormMessage />

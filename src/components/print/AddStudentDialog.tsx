@@ -153,7 +153,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
     'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
-  const { professors, ensureProfessor } = useProfessors();
+  const { professorNames, ensureProfessor, findProfessor } = useProfessors();
 
   // Update selected type when prop changes
   useEffect(() => {
@@ -798,8 +798,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                           coSupervisorUniversity={''}
                           onSupervisorChange={(name) => supervisorField.onChange(name)}
                           onCoSupervisorChange={() => {}}
-                          nameSuggestions={professors}
-                          universitySuggestions={[]}
+                          nameSuggestions={professorNames}
+                          findProfessor={findProfessor}
+                          onProfessorDataChange={ensureProfessor}
                           showCoSupervisor={false}
                         />
                       </FormControl>
@@ -909,8 +910,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                               supervisorUniversity={''}
                               coSupervisorAr={''}
                               coSupervisorUniversity={''}
-                              nameSuggestions={professors}
-                              universitySuggestions={suggestions?.supervisor_ar || []}
+                              nameSuggestions={professorNames}
+                              findProfessor={findProfessor}
+                              onProfessorDataChange={ensureProfessor}
                             />
                           </FormControl>
                           <FormMessage />

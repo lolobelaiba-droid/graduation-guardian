@@ -197,7 +197,7 @@ export default function EditStudentDialog({
     'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
-  const { professors, ensureProfessor } = useProfessors();
+  const { professorNames, ensureProfessor, findProfessor } = useProfessors();
 
   const getSchema = () => {
     switch (certificateType) {
@@ -770,8 +770,9 @@ export default function EditStudentDialog({
                                       coSupField.onChange(name);
                                       coSupUniField.onChange(university);
                                     }}
-                                    nameSuggestions={professors}
-                                    universitySuggestions={[]}
+                                    nameSuggestions={professorNames}
+                                    findProfessor={findProfessor}
+                                    onProfessorDataChange={ensureProfessor}
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -862,8 +863,9 @@ export default function EditStudentDialog({
                               supervisorUniversity={(form.watch('supervisor_university' as keyof FormValues) as string) || ''}
                               coSupervisorAr={(form.watch('co_supervisor_ar' as keyof FormValues) as string) || ''}
                               coSupervisorUniversity={(form.watch('co_supervisor_university' as keyof FormValues) as string) || ''}
-                              nameSuggestions={professors}
-                              universitySuggestions={suggestions?.supervisor_ar || []}
+                              nameSuggestions={professorNames}
+                              findProfessor={findProfessor}
+                              onProfessorDataChange={ensureProfessor}
                             />
                           </FormControl>
                           <FormMessage />
