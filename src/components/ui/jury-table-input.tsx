@@ -379,18 +379,12 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         if (onProfessorDataChange && updated.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
           onProfessorDataChange(updated.name, updated.rankLabel, updated.rankAbbreviation, updated.university);
         }
-        // Propagate supervisor/co-supervisor changes back to form
+        // Propagate supervisor/co-supervisor changes back to form (name only, no abbreviation)
         if (updated.role === "supervisor" && onSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
-          const serialized = updated.rankAbbreviation?.trim() && updated.name?.trim()
-            ? `${updated.rankAbbreviation.trim()} ${updated.name.trim()}`
-            : updated.name?.trim() || "";
-          onSupervisorChange(serialized, updated.university || "");
+          onSupervisorChange(updated.name?.trim() || "", updated.university || "");
         }
         if (updated.role === "co_supervisor" && onCoSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
-          const serialized = updated.rankAbbreviation?.trim() && updated.name?.trim()
-            ? `${updated.rankAbbreviation.trim()} ${updated.name.trim()}`
-            : updated.name?.trim() || "";
-          onCoSupervisorChange(serialized, updated.university || "");
+          onCoSupervisorChange(updated.name?.trim() || "", updated.university || "");
         }
         return updated;
       });
@@ -781,21 +775,35 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   React.useEffect(() => {
     if (supervisorValue !== prevSupRef.current) {
       prevSupRef.current = supervisorValue;
-      setSupervisor({ ...parseSupervisorString(supervisorValue, ranks), university: supervisorUniversity });
+      const parsed = parseSupervisorString(supervisorValue, ranks);
+      setSupervisor((prev) => ({
+        ...parsed,
+        // Preserve existing rank if the new value has no abbreviation (clean name from form)
+        rankLabel: parsed.rankLabel || prev.rankLabel,
+        rankAbbreviation: parsed.rankAbbreviation || prev.rankAbbreviation,
+        university: supervisorUniversity,
+      }));
     }
   }, [supervisorValue, supervisorUniversity, ranks]);
 
   React.useEffect(() => {
     if (coSupervisorValue !== prevCoSupRef.current) {
       prevCoSupRef.current = coSupervisorValue;
-      setCoSupervisor({ ...parseSupervisorString(coSupervisorValue, ranks), university: coSupervisorUniversity });
+      const parsed = parseSupervisorString(coSupervisorValue, ranks);
+      setCoSupervisor((prev) => ({
+        ...parsed,
+        rankLabel: parsed.rankLabel || prev.rankLabel,
+        rankAbbreviation: parsed.rankAbbreviation || prev.rankAbbreviation,
+        university: coSupervisorUniversity,
+      }));
     }
   }, [coSupervisorValue, coSupervisorUniversity, ranks]);
 
   const handleSupervisorChange = (patch: Partial<SupervisorPerson>) => {
     setSupervisor((prev) => {
       const next = { ...prev, ...patch };
-      onSupervisorChange(serializeSupervisor(next), next.university);
+      // Pass only the clean name (no abbreviation) to the form field
+      onSupervisorChange(next.name?.trim() || "", next.university);
       // Save professor data when rank or university changes
       if (onProfessorDataChange && next.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
         onProfessorDataChange(next.name, next.rankLabel, next.rankAbbreviation, next.university);
@@ -807,7 +815,8 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   const handleCoSupervisorChange = (patch: Partial<SupervisorPerson>) => {
     setCoSupervisor((prev) => {
       const next = { ...prev, ...patch };
-      onCoSupervisorChange(serializeSupervisor(next), next.university);
+      // Pass only the clean name (no abbreviation) to the form field
+      onCoSupervisorChange(next.name?.trim() || "", next.university);
       // Save professor data when rank or university changes
       if (onProfessorDataChange && next.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
         onProfessorDataChange(next.name, next.rankLabel, next.rankAbbreviation, next.university);
