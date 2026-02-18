@@ -12,8 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
-import { JuryTableInput } from "@/components/ui/jury-table-input";
-import { AcademicTitleInput } from "@/components/ui/academic-title-input";
+import { JuryTableInput, SupervisorTableInput } from "@/components/ui/jury-table-input";
 import { DateInput } from "@/components/ui/date-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -728,72 +727,51 @@ export default function EditStudentDialog({
             {isPhdType && (
             <div className="space-y-4">
               <h3 className="font-semibold text-primary">المشرف ومخبر البحث</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name={"supervisor_ar" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>اسم ولقب المشرف *</FormLabel>
-                      <FormControl>
-                        <AcademicTitleInput
-                          {...field}
-                          value={(field.value as string) || ""}
-                          suggestions={suggestions?.supervisor_ar || []}
-                          dir="auto"
-                          placeholder="اختر الرتبة ثم اكتب الاسم"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={"supervisor_university" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>جامعة انتماء المشرف</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={(field.value as string) || ""} placeholder="جامعة انتماء المشرف" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={"co_supervisor_ar" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>مساعد المشرف</FormLabel>
-                      <FormControl>
-                        <AcademicTitleInput
-                          value={(field.value as string) || ""}
-                          onChange={field.onChange}
-                          suggestions={suggestions?.supervisor_ar || []}
-                          dir="auto"
-                          placeholder="اختر الرتبة ثم اكتب الاسم"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={"co_supervisor_university" as keyof FormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={(field.value as string) || ""} placeholder="جامعة انتماء مساعد المشرف" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name={"supervisor_ar" as keyof FormValues}
+                render={({ field: supField }) => (
+                  <FormField
+                    control={form.control}
+                    name={"supervisor_university" as keyof FormValues}
+                    render={({ field: supUniField }) => (
+                      <FormField
+                        control={form.control}
+                        name={"co_supervisor_ar" as keyof FormValues}
+                        render={({ field: coSupField }) => (
+                          <FormField
+                            control={form.control}
+                            name={"co_supervisor_university" as keyof FormValues}
+                            render={({ field: coSupUniField }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <SupervisorTableInput
+                                    supervisorValue={(supField.value as string) || ""}
+                                    supervisorUniversity={(supUniField.value as string) || ""}
+                                    coSupervisorValue={(coSupField.value as string) || ""}
+                                    coSupervisorUniversity={(coSupUniField.value as string) || ""}
+                                    onSupervisorChange={(name, university) => {
+                                      supField.onChange(name);
+                                      supUniField.onChange(university);
+                                    }}
+                                    onCoSupervisorChange={(name, university) => {
+                                      coSupField.onChange(name);
+                                      coSupUniField.onChange(university);
+                                    }}
+                                    nameSuggestions={suggestions?.supervisor_ar || []}
+                                    universitySuggestions={[]}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      />
+                    )}
+                  />
+                )}
+              />
             </div>
             )}
 

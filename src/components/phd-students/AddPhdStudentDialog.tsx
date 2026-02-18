@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
-import { AcademicTitleInput } from "@/components/ui/academic-title-input";
+import { SupervisorTableInput } from "@/components/ui/jury-table-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -769,92 +769,54 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
             {/* Supervisor */}
             <SectionHeader title="المشرف / Directeur de thèse" />
             
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="supervisor_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>اسم ولقب المشرف *</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        suggestions={suggestions?.supervisor_ar || []}
-                        dir="auto"
-                        placeholder="اختر الرتبة ثم اكتب الاسم"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="supervisor_university"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>جامعة انتماء المشرف</FormLabel>
-                    <FormControl>
-                      <DropdownWithAdd
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        optionType="university"
-                        placeholder="اختر أو أضف جامعة المشرف"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Co-Supervisor */}
-            <SectionHeader title="مساعد المشرف / Co-Directeur (اختياري)" />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="co_supervisor_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>اسم ولقب مساعد المشرف</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        value={field.value || ''}
-                        suggestions={[
-                          ...(suggestions?.co_supervisor_ar || []),
-                          ...(suggestions?.supervisor_ar || []),
-                        ]}
-                        dir="auto"
-                        placeholder="اختر الرتبة ثم اكتب الاسم (اختياري)"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="co_supervisor_university"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
-                    <FormControl>
-                      <DropdownWithAdd
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        optionType="university"
-                        placeholder="اختر أو أضف جامعة مساعد المشرف"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="supervisor_ar"
+              render={({ field: supField }) => (
+                <FormField
+                  control={form.control}
+                  name="supervisor_university"
+                  render={({ field: supUniField }) => (
+                    <FormField
+                      control={form.control}
+                      name="co_supervisor_ar"
+                      render={({ field: coSupField }) => (
+                        <FormField
+                          control={form.control}
+                          name="co_supervisor_university"
+                          render={({ field: coSupUniField }) => (
+                            <FormItem>
+                              <FormControl>
+                                <SupervisorTableInput
+                                  supervisorValue={supField.value || ''}
+                                  supervisorUniversity={supUniField.value || ''}
+                                  coSupervisorValue={coSupField.value || ''}
+                                  coSupervisorUniversity={coSupUniField.value || ''}
+                                  onSupervisorChange={(name, university) => {
+                                    supField.onChange(name);
+                                    supUniField.onChange(university);
+                                  }}
+                                  onCoSupervisorChange={(name, university) => {
+                                    coSupField.onChange(name);
+                                    coSupUniField.onChange(university);
+                                  }}
+                                  nameSuggestions={[
+                                    ...(suggestions?.supervisor_ar || []),
+                                    ...(suggestions?.co_supervisor_ar || []),
+                                  ]}
+                                  universitySuggestions={[]}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    />
+                  )}
+                />
+              )}
+            />
 
             {/* Thesis Title */}
             <SectionHeader title="عنوان الأطروحة" />

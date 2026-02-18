@@ -21,8 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
-import { JuryTableInput } from "@/components/ui/jury-table-input";
-import { AcademicTitleInput } from "@/components/ui/academic-title-input";
+import { JuryTableInput, SupervisorTableInput } from "@/components/ui/jury-table-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -774,19 +773,22 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
             {showPhdOnlyFields && (
               <>
                 <SectionHeader title="المشرف / Directeur de thèse" />
-                
                 <FormField
                   control={form.control}
                   name="supervisor_ar"
-                  render={({ field }) => (
+                  render={({ field: supervisorField }) => (
                     <FormItem>
-                      <FormLabel>اسم ولقب المشرف *</FormLabel>
                       <FormControl>
-                        <AcademicTitleInput
-                          {...field}
-                          suggestions={suggestions?.supervisor_ar || []}
-                          dir="auto"
-                          placeholder="اختر الرتبة ثم اكتب الاسم"
+                        <SupervisorTableInput
+                          supervisorValue={supervisorField.value || ''}
+                          supervisorUniversity={''}
+                          coSupervisorValue={''}
+                          coSupervisorUniversity={''}
+                          onSupervisorChange={(name) => supervisorField.onChange(name)}
+                          onCoSupervisorChange={() => {}}
+                          nameSuggestions={suggestions?.supervisor_ar || []}
+                          universitySuggestions={[]}
+                          showCoSupervisor={false}
                         />
                       </FormControl>
                       <FormMessage />
