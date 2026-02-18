@@ -354,10 +354,10 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
           <thead>
             <tr className="bg-muted/60 border-b border-border">
               <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-8">#</th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">الاسم واللقب</th>
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-32">الصفة</th>
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-44">الرتبة</th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">جامعة الانتماء</th>
               <th className="py-2 px-1 w-8" />
             </tr>
@@ -380,6 +380,20 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 {/* Number */}
                 <td className="py-1.5 px-2 text-center text-muted-foreground font-mono text-xs align-middle">
                   {index + 1}
+                </td>
+
+                {/* Abbreviation - before name */}
+                <td className="py-1.5 px-2 align-middle">
+                  <Input
+                    className="h-8 text-xs font-mono text-center w-16"
+                    value={row.rankAbbreviation}
+                    onChange={(e) =>
+                      updateRow(row.id, { rankAbbreviation: e.target.value })
+                    }
+                    placeholder="—"
+                    dir="rtl"
+                    readOnly={isFixed(row.role) && row.role !== "president"}
+                  />
                 </td>
 
                 {/* Name */}
@@ -442,29 +456,28 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                       {row.rankLabel || "—"}
                     </span>
                   ) : (
-                    <RankCell
-                      rankLabel={row.rankLabel}
-                      rankAbbreviation={row.rankAbbreviation}
-                      onChange={(label, abbr) =>
-                        updateRow(row.id, { rankLabel: label, rankAbbreviation: abbr })
-                      }
-                      ranks={ranks}
-                    />
+                    <Select
+                      value={row.rankLabel}
+                      onValueChange={(label) => {
+                        const found = (ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS).find((r) => r.label === label);
+                        updateRow(row.id, { rankLabel: label, rankAbbreviation: found?.abbreviation || row.rankAbbreviation });
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="اختر الرتبة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS).map((r) => (
+                          <SelectItem key={r.label} value={r.label}>
+                            <span className="flex items-center gap-2">
+                              <span className="font-mono text-xs bg-muted px-1 rounded">{r.abbreviation}</span>
+                              {r.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
-                </td>
-
-                {/* Abbreviation - separate column */}
-                <td className="py-1.5 px-2 align-middle">
-                  <Input
-                    className="h-8 text-xs font-mono text-center w-16"
-                    value={row.rankAbbreviation}
-                    onChange={(e) =>
-                      updateRow(row.id, { rankAbbreviation: e.target.value })
-                    }
-                    placeholder="الاختصار"
-                    dir="rtl"
-                    readOnly={isFixed(row.role) && row.role !== "president"}
-                  />
                 </td>
 
                 {/* University */}
@@ -692,9 +705,9 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
           <thead>
             <tr className="bg-muted/60 border-b border-border">
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-24">الصفة</th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">الاسم واللقب</th>
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-44">الرتبة</th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">جامعة الانتماء</th>
             </tr>
           </thead>
@@ -705,6 +718,15 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                 <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded-md whitespace-nowrap">
                   المشرف *
                 </span>
+              </td>
+              <td className="py-1.5 px-2 align-middle">
+                <Input
+                  className="h-8 text-xs font-mono text-center w-16"
+                  value={supervisor.rankAbbreviation}
+                  onChange={(e) => handleSupervisorChange({ rankAbbreviation: e.target.value })}
+                  placeholder="—"
+                  dir="rtl"
+                />
               </td>
               <td className="py-1.5 px-2 align-middle">
                 <AutocompleteInput
@@ -737,15 +759,6 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                 </Select>
               </td>
               <td className="py-1.5 px-2 align-middle">
-                <Input
-                  className="h-8 text-xs font-mono text-center w-16"
-                  value={supervisor.rankAbbreviation}
-                  onChange={(e) => handleSupervisorChange({ rankAbbreviation: e.target.value })}
-                  placeholder="الاختصار"
-                  dir="rtl"
-                />
-              </td>
-              <td className="py-1.5 px-2 align-middle">
                 <AutocompleteInput
                   value={supervisor.university}
                   onValueChange={(v) => handleSupervisorChange({ university: v })}
@@ -764,6 +777,15 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                   <span className="text-xs font-medium bg-accent text-accent-foreground px-2 py-1 rounded-md whitespace-nowrap">
                     المشرف المساعد
                   </span>
+                </td>
+                <td className="py-1.5 px-2 align-middle">
+                  <Input
+                    className="h-8 text-xs font-mono text-center w-16"
+                    value={coSupervisor.rankAbbreviation}
+                    onChange={(e) => handleCoSupervisorChange({ rankAbbreviation: e.target.value })}
+                    placeholder="—"
+                    dir="rtl"
+                  />
                 </td>
                 <td className="py-1.5 px-2 align-middle">
                   <AutocompleteInput
@@ -794,15 +816,6 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-                </td>
-                <td className="py-1.5 px-2 align-middle">
-                  <Input
-                    className="h-8 text-xs font-mono text-center w-16"
-                    value={coSupervisor.rankAbbreviation}
-                    onChange={(e) => handleCoSupervisorChange({ rankAbbreviation: e.target.value })}
-                    placeholder="الاختصار"
-                    dir="rtl"
-                  />
                 </td>
                 <td className="py-1.5 px-2 align-middle">
                   <AutocompleteInput
