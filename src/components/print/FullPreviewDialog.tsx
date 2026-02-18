@@ -102,6 +102,7 @@ export function FullPreviewDialog({
     startY: number;
     fieldStartX: number;
     fieldStartY: number;
+    isRtl: boolean;
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
@@ -111,6 +112,7 @@ export function FullPreviewDialog({
     fieldId: string;
     startX: number;
     startWidth: number;
+    isRtl: boolean;
   } | null>(null);
   const [localFieldWidths, setLocalFieldWidths] = useState<Record<string, number>>({});
 
@@ -409,6 +411,8 @@ export function FullPreviewDialog({
     setSelectedFieldId(field.id);
     
     const currentPos = localFieldPositions[field.id] || { x: field.position_x, y: field.position_y };
+    const dateDir = getDateFieldDirection(field.field_key);
+    const fieldIsRtl = dateDir !== undefined ? dateDir === 'rtl' : field.is_rtl === true;
     
     setDragState({
       fieldId: field.id,
@@ -416,14 +420,17 @@ export function FullPreviewDialog({
       startY: e.clientY,
       fieldStartX: currentPos.x,
       fieldStartY: currentPos.y,
+      isRtl: fieldIsRtl,
     });
     setDragPreview({ x: currentPos.x, y: currentPos.y });
-  }, [onFieldMove, localFieldPositions]);
+  }, [onFieldMove, localFieldPositions, getDateFieldDirection]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !canvasRef.current) return;
 
-    const deltaX = (e.clientX - dragState.startX) / (SCALE * ZOOM);
+    // For RTL fields, moving mouse right should decrease position_x (anchor moves left visually)
+    const rawDeltaX = (e.clientX - dragState.startX) / (SCALE * ZOOM);
+    const deltaX = dragState.isRtl ? -rawDeltaX : rawDeltaX;
     const deltaY = (e.clientY - dragState.startY) / (SCALE * ZOOM);
 
     // Calculate new position (round to 0.5mm for precision)
@@ -513,17 +520,22 @@ export function FullPreviewDialog({
     e.stopPropagation();
     
     const currentWidth = localFieldWidths[field.id] ?? field.field_width ?? 80;
+    const dateDir = getDateFieldDirection(field.field_key);
+    const fieldIsRtl = dateDir !== undefined ? dateDir === 'rtl' : field.is_rtl === true;
     setResizeState({
       fieldId: field.id,
       startX: e.clientX,
       startWidth: currentWidth,
+      isRtl: fieldIsRtl,
     });
-  }, [onFieldResize, localFieldWidths]);
+  }, [onFieldResize, localFieldWidths, getDateFieldDirection]);
 
   const handleResizeMove = useCallback((e: React.MouseEvent) => {
     if (!resizeState) return;
     
-    const deltaX = (e.clientX - resizeState.startX) / (SCALE * ZOOM);
+    // For RTL fields, dragging left (negative rawDeltaX) should increase width
+    const rawDeltaX = (e.clientX - resizeState.startX) / (SCALE * ZOOM);
+    const deltaX = resizeState.isRtl ? -rawDeltaX : rawDeltaX;
     const newWidth = Math.max(20, Math.round((resizeState.startWidth + deltaX) * 2) / 2);
     
     setLocalFieldWidths(prev => ({
@@ -1051,7 +1063,9 @@ export function FullPreviewDialog({
                       isDragging && "cursor-grabbing z-20"
                     )}
                     style={{
-                      left: `${position.x * SCALE}px`,
+                      ...(effectiveDirection === 'rtl'
+                        ? { right: `${(width - position.x) * SCALE}px` }
+                        : { left: `${position.x * SCALE}px` }),
                       top: `${position.y * SCALE}px`,
                       transition: isDragging ? 'none' : 'all 0.15s ease-out',
                     }}
