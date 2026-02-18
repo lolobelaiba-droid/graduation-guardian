@@ -104,6 +104,7 @@ export function CertificatePreview({
     startY: number;
     fieldStartX: number;
     fieldStartY: number;
+    isRtl: boolean;
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
   
@@ -112,6 +113,7 @@ export function CertificatePreview({
     fieldId: string;
     startX: number;
     startWidth: number;
+    isRtl: boolean;
   } | null>(null);
 
   // Load fonts dynamically for preview - version forces re-render when fonts load
@@ -331,6 +333,9 @@ export function CertificatePreview({
     e.stopPropagation();
     
     onFieldClick(field.id);
+
+    const dateDir = getDateFieldDirection(field.field_key);
+    const fieldIsRtl = dateDir !== undefined ? dateDir === 'rtl' : field.is_rtl === true;
     
     setDragState({
       fieldId: field.id,
@@ -338,14 +343,17 @@ export function CertificatePreview({
       startY: e.clientY,
       fieldStartX: field.position_x,
       fieldStartY: field.position_y,
+      isRtl: fieldIsRtl,
     });
     setDragPreview({ x: field.position_x, y: field.position_y });
-  }, [onFieldDrag, onFieldClick]);
+  }, [onFieldDrag, onFieldClick, getDateFieldDirection]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !canvasRef.current) return;
 
-    const deltaX = (e.clientX - dragState.startX) / SCALE;
+    // For RTL fields, moving mouse right should decrease position_x (anchor moves left visually)
+    const rawDeltaX = (e.clientX - dragState.startX) / SCALE;
+    const deltaX = dragState.isRtl ? -rawDeltaX : rawDeltaX;
     const deltaY = (e.clientY - dragState.startY) / SCALE;
 
     // Calculate new position (round to 0.5mm for precision)
@@ -387,17 +395,23 @@ export function CertificatePreview({
     e.stopPropagation();
     
     const currentWidth = field.field_width || 80; // default 80mm
+    const dateDir = getDateFieldDirection(field.field_key);
+    const fieldIsRtl = dateDir !== undefined ? dateDir === 'rtl' : field.is_rtl === true;
+
     setResizeState({
       fieldId: field.id,
       startX: e.clientX,
       startWidth: currentWidth,
+      isRtl: fieldIsRtl,
     });
-  }, [onFieldResize]);
+  }, [onFieldResize, getDateFieldDirection]);
 
   const handleResizeMove = useCallback((e: React.MouseEvent) => {
     if (!resizeState) return;
     
-    const deltaX = (e.clientX - resizeState.startX) / SCALE;
+    // For RTL fields, dragging left (negative deltaX) should increase width
+    const rawDeltaX = (e.clientX - resizeState.startX) / SCALE;
+    const deltaX = resizeState.isRtl ? -rawDeltaX : rawDeltaX;
     const newWidth = Math.max(20, Math.round((resizeState.startWidth + deltaX) * 2) / 2);
     
     // Update locally by finding the field element and setting its width
@@ -628,7 +642,9 @@ export function CertificatePreview({
                   isDragging && "cursor-grabbing z-20 opacity-80"
                 )}
                 style={{
-                  left: `${position.x * SCALE}px`,
+                  ...(fieldDirection === 'rtl'
+                    ? { right: `${(width - position.x) * SCALE}px` }
+                    : { left: `${position.x * SCALE}px` }),
                   top: `${position.y * SCALE}px`,
                   transition: isDragging ? 'none' : 'all 0.15s ease-out',
                 }}

@@ -176,7 +176,9 @@ export function PrintableCSS({
             key={field.id}
             style={{
               position: 'absolute',
-              left: `${field.position_x}mm`,
+              ...(fieldDirection === 'rtl'
+                ? { right: `${pageWidthMm - field.position_x}mm` }
+                : { left: `${field.position_x}mm` }),
               top: `${field.position_y}mm`,
               fontSize: `${field.font_size}pt`,
               fontFamily: getFontFamilyCSS(field.font_name),
