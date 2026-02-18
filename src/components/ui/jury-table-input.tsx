@@ -75,6 +75,16 @@ export function serializeJury(members: JuryMember[]): {
   };
 }
 
+// Legacy abbreviation patterns that may exist in DB data but not in the academic_titles table
+const LEGACY_ABBR_PATTERNS: { pattern: RegExp; abbreviation: string }[] = [
+  { pattern: /^أ\s*د\.\s*/, abbreviation: "أ.ت.ع" },
+  { pattern: /^م\s*ب\.\s*/, abbreviation: "أ.م.ب" },
+  { pattern: /^د\.\s*/, abbreviation: "" },
+  { pattern: /^Pr\.\s*/i, abbreviation: "" },
+  { pattern: /^Dr\.\s*/i, abbreviation: "" },
+  { pattern: /^Prof\.\s*/i, abbreviation: "" },
+];
+
 export function parseJury(
   juryPresidentAr: string,
   juryMembersAr: string,
@@ -89,28 +99,44 @@ export function parseJury(
 
   const parseMember = (raw: string, role: JuryRole): JuryMember => {
     const trimmed = raw.trim();
-    const knownRank = effectiveRanks.find((r) =>
-      trimmed.startsWith(r.abbreviation + " ")
-    );
-    if (knownRank) {
-      return {
-        id: makeId(),
-        role,
-        name: trimmed.slice(knownRank.abbreviation.length + 1).trim(),
-        rankLabel: knownRank.label,
-        rankAbbreviation: knownRank.abbreviation,
-        university: "",
-      };
+    
+    // Try exact match with known ranks (longest abbreviation first)
+    const sortedRanks = [...effectiveRanks].sort((a, b) => b.abbreviation.length - a.abbreviation.length);
+    for (const r of sortedRanks) {
+      if (trimmed.startsWith(r.abbreviation + " ")) {
+        return {
+          id: makeId(),
+          role,
+          name: trimmed.slice(r.abbreviation.length + 1).trim(),
+          rankLabel: r.label,
+          rankAbbreviation: r.abbreviation,
+          university: "",
+        };
+      }
     }
-    const parts = trimmed.split(" ");
-    const maybeAbbr = parts[0] || "";
-    const rest = parts.slice(1).join(" ");
+
+    // Try legacy patterns
+    for (const lp of LEGACY_ABBR_PATTERNS) {
+      if (lp.pattern.test(trimmed)) {
+        const cleanName = trimmed.replace(lp.pattern, "").trim();
+        const matchedRank = lp.abbreviation ? effectiveRanks.find(r => r.abbreviation === lp.abbreviation) : undefined;
+        return {
+          id: makeId(),
+          role,
+          name: cleanName,
+          rankLabel: matchedRank?.label || "",
+          rankAbbreviation: matchedRank?.abbreviation || "",
+          university: "",
+        };
+      }
+    }
+
     return {
       id: makeId(),
       role,
-      name: rest || trimmed,
+      name: trimmed,
       rankLabel: "",
-      rankAbbreviation: maybeAbbr && rest ? maybeAbbr : "",
+      rankAbbreviation: "",
       university: "",
     };
   };
@@ -626,18 +652,42 @@ export interface SupervisorTableInputProps {
   onProfessorDataChange?: (name: string, rankLabel?: string, rankAbbreviation?: string, university?: string) => void;
 }
 
+
+
 function parseSupervisorString(raw: string, ranks: AcademicRank[]): SupervisorPerson {
   const trimmed = raw?.trim() || "";
+  if (!trimmed) return { name: "", rankLabel: "", rankAbbreviation: "", university: "" };
+
   const effectiveRanks = ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS;
-  const knownRank = effectiveRanks.find((r) => trimmed.startsWith(r.abbreviation + " "));
-  if (knownRank) {
-    return {
-      name: trimmed.slice(knownRank.abbreviation.length + 1).trim(),
-      rankLabel: knownRank.label,
-      rankAbbreviation: knownRank.abbreviation,
-      university: "",
-    };
+
+  // First try exact match with known ranks (longest abbreviation first)
+  const sortedRanks = [...effectiveRanks].sort((a, b) => b.abbreviation.length - a.abbreviation.length);
+  for (const r of sortedRanks) {
+    if (trimmed.startsWith(r.abbreviation + " ")) {
+      return {
+        name: trimmed.slice(r.abbreviation.length + 1).trim(),
+        rankLabel: r.label,
+        rankAbbreviation: r.abbreviation,
+        university: "",
+      };
+    }
   }
+
+  // Try legacy patterns
+  for (const lp of LEGACY_ABBR_PATTERNS) {
+    if (lp.pattern.test(trimmed)) {
+      const cleanName = trimmed.replace(lp.pattern, "").trim();
+      // Try to find a matching rank for the legacy abbreviation
+      const matchedRank = lp.abbreviation ? effectiveRanks.find(r => r.abbreviation === lp.abbreviation) : undefined;
+      return {
+        name: cleanName,
+        rankLabel: matchedRank?.label || "",
+        rankAbbreviation: matchedRank?.abbreviation || "",
+        university: "",
+      };
+    }
+  }
+
   return { name: trimmed, rankLabel: "", rankAbbreviation: "", university: "" };
 }
 
