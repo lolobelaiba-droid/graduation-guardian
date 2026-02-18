@@ -33,6 +33,7 @@ import {
 } from "@/hooks/usePhdStudents";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
+import { useProfessors } from "@/hooks/useProfessors";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 import type { PhdStudentType, PhdStudent, PhdLmdStudent } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
@@ -148,6 +149,8 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
   const { data: suggestions } = useMultipleFieldSuggestions([
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar'
   ]);
+
+  const { ensureProfessor } = useProfessors();
 
   const getSchema = () => {
     return studentType === 'phd_lmd' ? phdLmdSchema : phdScienceSchema;
@@ -348,6 +351,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
       return;
     }
     
+    // حفظ أسماء الأساتذة في قاعدة البيانات
+    if (data.supervisor_ar) ensureProfessor(data.supervisor_ar);
+    if (data.co_supervisor_ar) ensureProfessor(data.co_supervisor_ar);
+
     try {
       const submitData = {
         ...data,

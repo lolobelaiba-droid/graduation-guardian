@@ -41,6 +41,7 @@ import {
 } from "@/types/certificates";
 import { DropdownWithAdd } from "./DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
+import { useProfessors } from "@/hooks/useProfessors";
 
 // توليد السنوات الجامعية من 2000/2001 إلى 2024/2025
 const generateAcademicYears = (): string[] => {
@@ -152,6 +153,8 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
     'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
+  const { professors, ensureProfessor } = useProfessors();
+
   // Update selected type when prop changes
   useEffect(() => {
     setSelectedType(initialCertificateType);
@@ -226,6 +229,15 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
 
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
     try {
+      // حفظ أسماء الأساتذة في قاعدة البيانات
+      const d = data as Record<string, unknown>;
+      if (d.supervisor_ar) ensureProfessor(String(d.supervisor_ar));
+      if (d.co_supervisor_ar) ensureProfessor(String(d.co_supervisor_ar));
+      if (d.jury_president_ar) ensureProfessor(String(d.jury_president_ar));
+      if (d.jury_members_ar) {
+        String(d.jury_members_ar).split(/\s*-\s*/).forEach(m => ensureProfessor(m));
+      }
+
       // Remove field_ar/field_fr for master type (doesn't have these columns)
       const { field_ar, field_fr, ...restData } = data;
       
@@ -786,7 +798,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                           coSupervisorUniversity={''}
                           onSupervisorChange={(name) => supervisorField.onChange(name)}
                           onCoSupervisorChange={() => {}}
-                          nameSuggestions={suggestions?.supervisor_ar || []}
+                          nameSuggestions={professors}
                           universitySuggestions={[]}
                           showCoSupervisor={false}
                         />
@@ -897,10 +909,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                               supervisorUniversity={''}
                               coSupervisorAr={''}
                               coSupervisorUniversity={''}
-                              nameSuggestions={[
-                                ...(suggestions?.jury_president_ar || []),
-                                ...(suggestions?.jury_members_ar || []),
-                              ]}
+                              nameSuggestions={professors}
                               universitySuggestions={suggestions?.supervisor_ar || []}
                             />
                           </FormControl>
