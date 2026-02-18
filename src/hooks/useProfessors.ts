@@ -10,6 +10,70 @@ export interface Professor {
   university: string | null;
 }
 
+interface AcademicTitleEntry {
+  abbreviation: string;
+  full_name: string;
+}
+
+/** Cache for academic title abbreviations used in stripping */
+let cachedAbbreviations: string[] | null = null;
+
+async function loadAbbreviations(): Promise<string[]> {
+  if (cachedAbbreviations) return cachedAbbreviations;
+
+  try {
+    if (isElectron()) {
+      const db = getDbClient()!;
+      const result = await db.getAll('academic_titles', 'display_order', 'ASC');
+      if (result.success && result.data) {
+        cachedAbbreviations = (result.data as AcademicTitleEntry[]).map(t => t.abbreviation);
+        return cachedAbbreviations;
+      }
+    } else {
+      const { data } = await supabase
+        .from('academic_titles')
+        .select('abbreviation')
+        .order('display_order');
+      if (data) {
+        cachedAbbreviations = data.map(t => t.abbreviation);
+        return cachedAbbreviations;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load abbreviations for professor name stripping:', e);
+  }
+  return [];
+}
+
+/** Invalidate the abbreviation cache (call when academic titles change) */
+export function invalidateAbbreviationCache() {
+  cachedAbbreviations = null;
+}
+
+/**
+ * إزالة اختصار الرتبة من بداية الاسم إن وجد
+ * يعتمد فقط على الاختصارات المحفوظة في جدول academic_titles
+ */
+function stripAbbreviationSync(name: string, abbreviations: string[]): string {
+  if (!name || abbreviations.length === 0) return name;
+
+  // Sort by length descending so longer abbreviations match first
+  const sorted = [...abbreviations].sort((a, b) => b.length - a.length);
+
+  for (const abbr of sorted) {
+    if (!abbr) continue;
+    // Escape special regex characters in the abbreviation
+    const escaped = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Match abbreviation at start, optionally followed by space or dot
+    const pattern = new RegExp(`^${escaped}\\s*`);
+    if (pattern.test(name)) {
+      const stripped = name.replace(pattern, '').trim();
+      if (stripped) return stripped;
+    }
+  }
+  return name;
+}
+
 async function fetchProfessors(): Promise<Professor[]> {
   if (isElectron()) {
     const db = getDbClient()!;
@@ -35,10 +99,11 @@ interface UpsertProfessorData {
 }
 
 async function upsertProfessor(data: UpsertProfessorData): Promise<void> {
+  const abbreviations = await loadAbbreviations();
   const trimmed = data.full_name.trim();
   if (!trimmed) return;
 
-  const cleanName = stripAbbreviation(trimmed);
+  const cleanName = stripAbbreviationSync(trimmed, abbreviations);
   if (!cleanName) return;
 
   // Build update object with only explicitly provided fields
@@ -116,10 +181,11 @@ export function useProfessors() {
   /**
    * يضيف أو يحدّث الأستاذ في قاعدة البيانات
    */
-  const ensureProfessor = (name: string, rankLabel?: string, rankAbbreviation?: string, university?: string) => {
+  const ensureProfessor = async (name: string, rankLabel?: string, rankAbbreviation?: string, university?: string) => {
+    const abbreviations = await loadAbbreviations();
     const trimmed = name.trim();
     if (!trimmed) return;
-    const cleanName = stripAbbreviation(trimmed);
+    const cleanName = stripAbbreviationSync(trimmed, abbreviations);
     if (!cleanName) return;
     
     // Don't save if name matches an existing professor and no new data provided
@@ -138,37 +204,16 @@ export function useProfessors() {
    * البحث عن أستاذ بالاسم وإرجاع بياناته الكاملة
    */
   const findProfessor = (name: string): Professor | undefined => {
-    const cleanName = stripAbbreviation(name.trim());
+    // Try exact match first
+    const exact = professors.find(p => p.full_name === name.trim());
+    if (exact) return exact;
+    
+    // Try without abbreviation - but we need sync access, so use cached abbreviations
+    const abbrs = cachedAbbreviations || [];
+    const cleanName = stripAbbreviationSync(name.trim(), abbrs);
     if (!cleanName) return undefined;
     return professors.find(p => p.full_name === cleanName);
   };
 
   return { professors, professorNames, ensureProfessor, findProfessor };
-}
-
-/**
- * إزالة اختصار الرتبة من بداية الاسم إن وجد
- */
-function stripAbbreviation(name: string): string {
-  // Common abbreviation patterns (ordered longest first)
-  const abbrPatterns = [
-    /^أ\s*\.?\s*ت\s*\.?\s*ع\s*/,   // أ.ت.ع
-    /^أ\s*\.?\s*م\s*\.?\s*أ\s*/,   // أ.م.أ
-    /^أ\s*\.?\s*م\s*\.?\s*ب\s*/,   // أ.م.ب
-    /^أ\s*\.?\s*م\s*\.?\s*س\s*\.?\s*أ\s*/, // أ.م.س.أ
-    /^أ\s*\.?\s*م\s*\.?\s*س\s*\.?\s*ب\s*/, // أ.م.س.ب
-    /^أ\s*د\.\s*/,
-    /^م\s*ب\.\s*/,
-    /^د\.\s*/,
-    /^Pr\.\s*/i,
-    /^Dr\.\s*/i,
-    /^Prof\.\s*/i,
-  ];
-  
-  for (const pattern of abbrPatterns) {
-    if (pattern.test(name)) {
-      return name.replace(pattern, '').trim();
-    }
-  }
-  return name;
 }
