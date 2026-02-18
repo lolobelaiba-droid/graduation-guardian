@@ -146,7 +146,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
   const { data: inscriptionOptions = [] } = useBilingualDropdownOptions("inscription_status");
   
   const { data: suggestions } = useMultipleFieldSuggestions([
-    'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar'
+    'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar'
   ]);
 
   const getSchema = () => {
@@ -854,7 +854,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                       <AcademicTitleInput
                         {...field}
                         value={field.value || ''}
-                        suggestions={suggestions?.supervisor_ar || []}
+                        suggestions={[
+                          ...(suggestions?.co_supervisor_ar || []),
+                          ...(suggestions?.supervisor_ar || []),
+                        ]}
                         dir="auto"
                         placeholder="اختياري"
                       />

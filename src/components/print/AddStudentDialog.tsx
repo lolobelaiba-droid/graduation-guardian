@@ -808,12 +808,11 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                       <FormItem>
                         <FormLabel>عنوان الأطروحة *</FormLabel>
                         <FormControl>
-                          <Textarea 
+                        <Textarea 
                             {...field} 
                             rows={2} 
                             placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
                             dir="auto"
-                            className="text-right"
                           />
                         </FormControl>
                         <FormMessage />
