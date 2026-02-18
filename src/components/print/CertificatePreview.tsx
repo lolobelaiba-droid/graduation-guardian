@@ -351,9 +351,7 @@ export function CertificatePreview({
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !canvasRef.current) return;
 
-    // For RTL fields, moving mouse right should decrease position_x (anchor moves left visually)
-    const rawDeltaX = (e.clientX - dragState.startX) / SCALE;
-    const deltaX = dragState.isRtl ? -rawDeltaX : rawDeltaX;
+    const deltaX = (e.clientX - dragState.startX) / SCALE;
     const deltaY = (e.clientY - dragState.startY) / SCALE;
 
     // Calculate new position (round to 0.5mm for precision)
