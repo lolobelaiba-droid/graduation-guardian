@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
-import { JuryMembersInput } from "@/components/ui/jury-members-input";
+import { JuryTableInput } from "@/components/ui/jury-table-input";
 import { AcademicTitleInput } from "@/components/ui/academic-title-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -874,47 +874,36 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
             {showJuryFields && (
               <>
                 <SectionHeader title="لجنة المناقشة" />
-                
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="jury_president_ar"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>رئيس اللجنة *</FormLabel>
-                        <FormControl>
-                          <AcademicTitleInput
-                            value={field.value || ''}
-                            onChange={field.onChange}
-                            suggestions={suggestions?.jury_president_ar || []}
-                            placeholder="اكتب الرتبة (أد، د) ثم الاسم"
-                            dir="auto"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="jury_members_ar"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>أعضاء اللجنة *</FormLabel>
-                        <FormControl>
-                          <JuryMembersInput
-                            value={field.value || ''}
-                            onChange={field.onChange}
-                            suggestions={suggestions?.jury_members_ar || []}
-                            dir="auto"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="jury_president_ar"
+                  render={({ field: presidentField }) => (
+                    <FormField
+                      control={form.control}
+                      name="jury_members_ar"
+                      render={({ field: membersField }) => (
+                        <FormItem>
+                          <FormControl>
+                            <JuryTableInput
+                              presidentValue={presidentField.value || ''}
+                              membersValue={membersField.value || ''}
+                              onChange={(president, members) => {
+                                presidentField.onChange(president);
+                                membersField.onChange(members);
+                              }}
+                              nameSuggestions={[
+                                ...(suggestions?.jury_president_ar || []),
+                                ...(suggestions?.jury_members_ar || []),
+                              ]}
+                              universitySuggestions={suggestions?.supervisor_ar || []}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                />
               </>
             )}
 
