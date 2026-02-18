@@ -176,7 +176,7 @@ export function PrintableCSS({
             key={field.id}
             style={{
               position: 'absolute',
-              ...(fieldDirection === 'rtl'
+              ...(field.text_align === 'right'
                 ? { right: `${pageWidthMm - field.position_x}mm` }
                 : { left: `${field.position_x}mm` }),
               top: `${field.position_y}mm`,
