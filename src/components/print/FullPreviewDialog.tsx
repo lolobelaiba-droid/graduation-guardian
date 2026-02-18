@@ -272,6 +272,14 @@ export function FullPreviewDialog({
     return undefined;
   }, [dateFormatSettings]);
 
+  // Determine if a field should be anchored from the right (RTL) or left (LTR)
+  // Based on field_key suffix: _fr/_en fields are always LTR anchored regardless of is_rtl in DB
+  const isRtlAnchor = useCallback((fieldKey: string, fieldIsRtl: boolean): boolean => {
+    if (fieldKey.endsWith('_fr') || fieldKey.endsWith('_en')) return false;
+    if (fieldKey.endsWith('_ar')) return true;
+    return fieldIsRtl;
+  }, []);
+
   const handleBackgroundMove = (direction: 'up' | 'down' | 'left' | 'right') => {
     setHasBackgroundChanges(true);
     switch (direction) {
@@ -411,7 +419,7 @@ export function FullPreviewDialog({
     setSelectedFieldId(field.id);
     
     const currentPos = localFieldPositions[field.id] || { x: field.position_x, y: field.position_y };
-    const fieldIsRtl = field.is_rtl;
+    const fieldIsRtl = isRtlAnchor(field.field_key, field.is_rtl);
 
     
     setDragState({
@@ -518,7 +526,7 @@ export function FullPreviewDialog({
     e.stopPropagation();
     
     const currentWidth = localFieldWidths[field.id] ?? field.field_width ?? 80;
-    const fieldIsRtl = field.is_rtl;
+    const fieldIsRtl = isRtlAnchor(field.field_key, field.is_rtl);
 
     setResizeState({
       fieldId: field.id,
@@ -1050,6 +1058,8 @@ export function FullPreviewDialog({
                 // Get text direction for date fields from settings
                 const dateDirection = getDateFieldDirection(field.field_key);
                 const effectiveDirection = dateDirection !== undefined ? dateDirection : (field.is_rtl ? 'rtl' : 'ltr');
+                // Determine anchor based on field_key suffix (reliable regardless of DB is_rtl value)
+                const anchorRtl = isRtlAnchor(field.field_key, field.is_rtl);
                 
                 return (
                   <div
@@ -1061,7 +1071,7 @@ export function FullPreviewDialog({
                       isDragging && "cursor-grabbing z-20"
                     )}
                     style={{
-                      ...(field.is_rtl
+                      ...(anchorRtl
                         ? { right: `${(width - position.x) * SCALE}px` }
                         : { left: `${position.x * SCALE}px` }),
                       top: `${position.y * SCALE}px`,
@@ -1112,7 +1122,7 @@ export function FullPreviewDialog({
                           <div
                             className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                             style={{
-                              [field.is_rtl ? 'left' : 'right']: '-6px',
+                              [anchorRtl ? 'left' : 'right']: '-6px',
                             }}
                             onMouseDown={(e) => {
                               e.stopPropagation();
@@ -1124,7 +1134,7 @@ export function FullPreviewDialog({
                           <div
                             className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                             style={{
-                              [field.is_rtl ? 'right' : 'left']: '-6px',
+                              [anchorRtl ? 'right' : 'left']: '-6px',
                             }}
                             onMouseDown={(e) => {
                               e.stopPropagation();
@@ -1134,13 +1144,13 @@ export function FullPreviewDialog({
                           />
                           {/* Corner handles */}
                           <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.is_rtl ? 'left' : 'right']: '-6px' }} />
+                            style={{ [anchorRtl ? 'left' : 'right']: '-6px' }} />
                           <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.is_rtl ? 'right' : 'left']: '-6px' }} />
+                            style={{ [anchorRtl ? 'right' : 'left']: '-6px' }} />
                           <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.is_rtl ? 'left' : 'right']: '-6px' }} />
+                            style={{ [anchorRtl ? 'left' : 'right']: '-6px' }} />
                           <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.is_rtl ? 'right' : 'left']: '-6px' }} />
+                            style={{ [anchorRtl ? 'right' : 'left']: '-6px' }} />
                         </>
                       )}
                     </div>

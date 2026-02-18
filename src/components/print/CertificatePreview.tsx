@@ -184,6 +184,14 @@ export function CertificatePreview({
     return fieldKey.startsWith('static_text_');
   }, []);
 
+  // Determine if a field should be anchored from the right (RTL) or left (LTR)
+  // Based on field_key suffix: _fr/_en fields are always LTR anchored
+  const isRtlAnchor = useCallback((fieldKey: string, fieldIsRtl: boolean): boolean => {
+    if (fieldKey.endsWith('_fr') || fieldKey.endsWith('_en')) return false;
+    if (fieldKey.endsWith('_ar')) return true;
+    return fieldIsRtl;
+  }, []);
+
   // Check if a field should be resizable (long text fields)
   const isResizableField = useCallback((fieldKey: string): boolean => {
     return fieldKey.startsWith('thesis_title') || 
@@ -335,7 +343,7 @@ export function CertificatePreview({
     onFieldClick(field.id);
 
 
-    const fieldIsRtl = field.is_rtl;
+    const fieldIsRtl = isRtlAnchor(field.field_key, field.is_rtl);
     
     setDragState({
       fieldId: field.id,
@@ -393,7 +401,7 @@ export function CertificatePreview({
     e.stopPropagation();
     
     const currentWidth = field.field_width || 80; // default 80mm
-    const fieldIsRtl = field.is_rtl;
+    const fieldIsRtl = isRtlAnchor(field.field_key, field.is_rtl);
 
 
     setResizeState({
@@ -624,7 +632,10 @@ export function CertificatePreview({
             const resizable = isResizableField(field.field_key);
             const hasWidth = field.field_width != null;
             
-            // Determine field direction - use date settings for Arabic date fields
+            // Determine anchor direction based on field_key suffix (most reliable)
+            const anchorRtl = isRtlAnchor(field.field_key, field.is_rtl);
+            
+            // Determine field text direction - use date settings for Arabic date fields
             const dateDirection = getDateFieldDirection(field.field_key);
             const fieldDirection = dateDirection !== undefined 
               ? dateDirection 
@@ -640,7 +651,7 @@ export function CertificatePreview({
                   isDragging && "cursor-grabbing z-20 opacity-80"
                 )}
                 style={{
-                  ...(field.is_rtl
+                  ...(anchorRtl
                     ? { right: `${(width - position.x) * SCALE}px` }
                     : { left: `${position.x * SCALE}px` }),
                   top: `${position.y * SCALE}px`,
@@ -694,7 +705,7 @@ export function CertificatePreview({
                       <div
                         className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                         style={{
-                          [field.is_rtl ? 'left' : 'right']: '-6px',
+                          [anchorRtl ? 'left' : 'right']: '-6px',
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
@@ -706,7 +717,7 @@ export function CertificatePreview({
                       <div
                         className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                         style={{
-                          [field.is_rtl ? 'right' : 'left']: '-6px',
+                          [anchorRtl ? 'right' : 'left']: '-6px',
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
@@ -716,19 +727,19 @@ export function CertificatePreview({
                       />
                       {/* Top-right corner handle */}
                       <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [field.is_rtl ? 'left' : 'right']: '-6px' }}
+                        style={{ [anchorRtl ? 'left' : 'right']: '-6px' }}
                       />
                       {/* Top-left corner handle */}
                       <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [field.is_rtl ? 'right' : 'left']: '-6px' }}
+                        style={{ [anchorRtl ? 'right' : 'left']: '-6px' }}
                       />
                       {/* Bottom-right corner handle */}
                       <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [field.is_rtl ? 'left' : 'right']: '-6px' }}
+                        style={{ [anchorRtl ? 'left' : 'right']: '-6px' }}
                       />
                       {/* Bottom-left corner handle */}
                       <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [field.is_rtl ? 'right' : 'left']: '-6px' }}
+                        style={{ [anchorRtl ? 'right' : 'left']: '-6px' }}
                       />
                     </>
                   )}

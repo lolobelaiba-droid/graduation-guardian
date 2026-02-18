@@ -118,6 +118,13 @@ export function PrintableCSS({
     return undefined;
   }, [dateFormatSettings]);
 
+  // Determine anchor based on field_key suffix (reliable regardless of DB is_rtl value)
+  const isRtlAnchor = useCallback((fieldKey: string, fieldIsRtl: boolean): boolean => {
+    if (fieldKey.endsWith('_fr') || fieldKey.endsWith('_en')) return false;
+    if (fieldKey.endsWith('_ar')) return true;
+    return fieldIsRtl;
+  }, []);
+
   const visibleFields = useMemo(() => fields.filter(f => f.is_visible), [fields]);
 
   // Font size conversion: the font_size is stored in points for PDF.
@@ -176,7 +183,7 @@ export function PrintableCSS({
             key={field.id}
             style={{
               position: 'absolute',
-              ...(field.is_rtl
+              ...(isRtlAnchor(field.field_key, field.is_rtl)
                 ? { right: `${pageWidthMm - field.position_x}mm` }
                 : { left: `${field.position_x}mm` }),
               top: `${field.position_y}mm`,
