@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import { toWesternNumerals } from "@/lib/numerals";
@@ -17,11 +17,11 @@ export interface StatCardProps {
   compact?: boolean;
 }
 
-const variantStyles = {
-  blue: "stat-gradient-blue",
-  green: "stat-gradient-green",
-  orange: "stat-gradient-orange",
-  purple: "stat-gradient-purple",
+const variantInlineStyles: Record<string, React.CSSProperties> = {
+  blue:   { background: "linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(217, 91%, 50%) 100%)" },
+  green:  { background: "linear-gradient(135deg, hsl(160, 84%, 39%) 0%, hsl(160, 84%, 30%) 100%)" },
+  orange: { background: "linear-gradient(135deg, hsl(38,  92%, 50%) 0%, hsl(38,  92%, 40%) 100%)" },
+  purple: { background: "linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(262, 83%, 48%) 100%)" },
 };
 
 export function StatCard({
@@ -34,14 +34,16 @@ export function StatCard({
   className,
   compact = false,
 }: StatCardProps) {
+  const gradientStyle = variantInlineStyles[variant];
+
   if (compact) {
     return (
       <div
         className={cn(
           "relative overflow-hidden rounded-xl p-4 text-white shadow-card transition-transform duration-300 hover:scale-[1.02]",
-          variantStyles[variant],
           className
         )}
+        style={gradientStyle}
       >
         <div className="relative z-10 flex flex-col items-center text-center gap-2">
           <p className="text-xs font-medium opacity-90 leading-tight">{title}</p>
@@ -63,9 +65,9 @@ export function StatCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl p-6 text-white shadow-elevated transition-transform duration-300 hover:scale-[1.02]",
-        variantStyles[variant],
         className
       )}
+      style={gradientStyle}
     >
       {/* Background Pattern */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10">
