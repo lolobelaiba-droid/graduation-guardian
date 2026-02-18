@@ -1052,8 +1052,9 @@ export function FullPreviewDialog({
                 const hasChange = fieldChanges.some(c => c.fieldId === field.id);
                 const value = getFieldValue(field.field_key, field);
                 const resizable = isResizableField(field.field_key);
-                const effectiveWidth = localFieldWidths[field.id] ?? field.field_width;
-                const hasWidth = effectiveWidth != null;
+                // Use mm-based width to match CertificatePreview (field_width in mm * SCALE px/mm)
+                const effectiveWidthMm = localFieldWidths[field.id] ?? field.field_width;
+                const hasWidth = effectiveWidthMm != null;
                 
                 // Get text direction for date fields from settings
                 const dateDirection = getDateFieldDirection(field.field_key);
@@ -1096,12 +1097,12 @@ export function FullPreviewDialog({
                         direction: effectiveDirection,
                         whiteSpace: hasWidth ? 'normal' : 'nowrap',
                         wordWrap: hasWidth ? 'break-word' : undefined,
-                        width: hasWidth ? `${effectiveWidth! * SCALE}px` : undefined,
+                        width: hasWidth ? `${effectiveWidthMm! * SCALE}px` : undefined,
                         lineHeight: hasWidth ? '1.4' : undefined,
                         padding: '0',
                       }}
                       onMouseDown={(e) => showFieldControls && handleFieldMouseDown(e, field)}
-                      title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${effectiveWidth}مم` : ''}`}
+                      title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${effectiveWidthMm}مم` : ''}`}
                     >
                       {isSelected && showFieldControls && !isDragging && (
                         <GripVertical className="inline-block h-3 w-3 ml-1 text-primary" />
