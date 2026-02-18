@@ -334,8 +334,8 @@ export function CertificatePreview({
     
     onFieldClick(field.id);
 
-    const dateDir = getDateFieldDirection(field.field_key);
-    const fieldIsRtl = dateDir !== undefined ? dateDir === 'rtl' : field.is_rtl === true;
+
+    const fieldIsRtl = field.text_align === 'right';
     
     setDragState({
       fieldId: field.id,
@@ -393,8 +393,8 @@ export function CertificatePreview({
     e.stopPropagation();
     
     const currentWidth = field.field_width || 80; // default 80mm
-    const dateDir = getDateFieldDirection(field.field_key);
-    const fieldIsRtl = dateDir !== undefined ? dateDir === 'rtl' : field.is_rtl === true;
+    const fieldIsRtl = field.text_align === 'right';
+
 
     setResizeState({
       fieldId: field.id,
@@ -640,7 +640,7 @@ export function CertificatePreview({
                   isDragging && "cursor-grabbing z-20 opacity-80"
                 )}
                 style={{
-                  ...(fieldDirection === 'rtl'
+                  ...(field.text_align === 'right'
                     ? { right: `${(width - position.x) * SCALE}px` }
                     : { left: `${position.x * SCALE}px` }),
                   top: `${position.y * SCALE}px`,
@@ -694,7 +694,7 @@ export function CertificatePreview({
                       <div
                         className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                         style={{
-                          [fieldDirection === 'rtl' ? 'left' : 'right']: '-6px',
+                          [field.text_align === 'right' ? 'left' : 'right']: '-6px',
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
@@ -706,7 +706,7 @@ export function CertificatePreview({
                       <div
                         className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                         style={{
-                          [fieldDirection === 'rtl' ? 'right' : 'left']: '-6px',
+                          [field.text_align === 'right' ? 'right' : 'left']: '-6px',
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
@@ -715,24 +715,20 @@ export function CertificatePreview({
                         title="اسحب لتغيير العرض"
                       />
                       {/* Top-right corner handle */}
-                      <div
-                        className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [fieldDirection === 'rtl' ? 'left' : 'right']: '-6px' }}
+                      <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [field.text_align === 'right' ? 'left' : 'right']: '-6px' }}
                       />
                       {/* Top-left corner handle */}
-                      <div
-                        className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [fieldDirection === 'rtl' ? 'right' : 'left']: '-6px' }}
+                      <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [field.text_align === 'right' ? 'right' : 'left']: '-6px' }}
                       />
                       {/* Bottom-right corner handle */}
-                      <div
-                        className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [fieldDirection === 'rtl' ? 'left' : 'right']: '-6px' }}
+                      <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [field.text_align === 'right' ? 'left' : 'right']: '-6px' }}
                       />
                       {/* Bottom-left corner handle */}
-                      <div
-                        className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                        style={{ [fieldDirection === 'rtl' ? 'right' : 'left']: '-6px' }}
+                      <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
+                        style={{ [field.text_align === 'right' ? 'right' : 'left']: '-6px' }}
                       />
                     </>
                   )}
