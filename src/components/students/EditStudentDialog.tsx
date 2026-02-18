@@ -40,6 +40,7 @@ import {
 } from "@/hooks/useCertificates";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
+import { useProfessors } from "@/hooks/useProfessors";
 import { academicYears } from "@/components/print/AddStudentDialog";
 
 // PhD LMD schema
@@ -196,6 +197,8 @@ export default function EditStudentDialog({
     'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
+  const { professors, ensureProfessor } = useProfessors();
+
   const getSchema = () => {
     switch (certificateType) {
       case "phd_lmd": return phdLmdSchema;
@@ -285,6 +288,15 @@ export default function EditStudentDialog({
 
   const onSubmit = (data: FormValues) => {
     if (!student) return;
+
+    // حفظ أسماء الأساتذة في قاعدة البيانات
+    const d = data as Record<string, unknown>;
+    if (d.supervisor_ar) ensureProfessor(String(d.supervisor_ar));
+    if (d.co_supervisor_ar) ensureProfessor(String(d.co_supervisor_ar));
+    if (d.jury_president_ar) ensureProfessor(String(d.jury_president_ar));
+    if (d.jury_members_ar) {
+      String(d.jury_members_ar).split(/\s*-\s*/).forEach(m => ensureProfessor(m));
+    }
 
     const handleSuccess = () => {
       onOpenChange(false);
@@ -758,7 +770,7 @@ export default function EditStudentDialog({
                                       coSupField.onChange(name);
                                       coSupUniField.onChange(university);
                                     }}
-                                    nameSuggestions={suggestions?.supervisor_ar || []}
+                                    nameSuggestions={professors}
                                     universitySuggestions={[]}
                                   />
                                 </FormControl>
@@ -850,10 +862,7 @@ export default function EditStudentDialog({
                               supervisorUniversity={(form.watch('supervisor_university' as keyof FormValues) as string) || ''}
                               coSupervisorAr={(form.watch('co_supervisor_ar' as keyof FormValues) as string) || ''}
                               coSupervisorUniversity={(form.watch('co_supervisor_university' as keyof FormValues) as string) || ''}
-                              nameSuggestions={[
-                                ...(suggestions?.jury_president_ar || []),
-                                ...(suggestions?.jury_members_ar || []),
-                              ]}
+                              nameSuggestions={professors}
                               universitySuggestions={suggestions?.supervisor_ar || []}
                             />
                           </FormControl>

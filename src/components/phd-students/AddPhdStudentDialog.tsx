@@ -34,6 +34,7 @@ import {
 } from "@/hooks/usePhdStudents";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
+import { useProfessors } from "@/hooks/useProfessors";
 import type { PhdStudentType } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
 import { calculateRegistrationDetails, getDefaultInscriptionStatus, getCurrentYearLabel } from "@/lib/registration-calculation";
@@ -137,6 +138,8 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
   const { data: suggestions } = useMultipleFieldSuggestions([
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar'
   ]);
+
+  const { professors, ensureProfessor } = useProfessors();
 
   // Update selected type when prop changes
   useEffect(() => {
@@ -270,6 +273,10 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
     if (!validateBilingualFields()) {
       return;
     }
+
+    // حفظ أسماء الأساتذة في قاعدة البيانات
+    if (data.supervisor_ar) ensureProfessor(data.supervisor_ar);
+    if (data.co_supervisor_ar) ensureProfessor(data.co_supervisor_ar);
 
     try {
       // Add bilingual dropdown values
@@ -800,10 +807,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                                     coSupField.onChange(name);
                                     coSupUniField.onChange(university);
                                   }}
-                                  nameSuggestions={[
-                                    ...(suggestions?.supervisor_ar || []),
-                                    ...(suggestions?.co_supervisor_ar || []),
-                                  ]}
+                                  nameSuggestions={professors}
                                   universitySuggestions={[]}
                                 />
                               </FormControl>

@@ -1099,6 +1099,24 @@ export type Database = {
           },
         ]
       }
+      professors: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
