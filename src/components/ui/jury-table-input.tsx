@@ -36,13 +36,17 @@ export interface AcademicRank {
   abbreviation: string;
 }
 
-// Fallback static ranks if DB is not loaded
-export const DEFAULT_ACADEMIC_RANKS: AcademicRank[] = [
-  { label: "أستاذ التعليم العالي", abbreviation: "أ.ت.ع" },
-  { label: "أستاذ محاضر أ", abbreviation: "أ.م.أ" },
-  { label: "أستاذ محاضر ب", abbreviation: "أ.م.ب" },
-  { label: "أستاذ مساعد أ", abbreviation: "أ.م.س.أ" },
-  { label: "أستاذ مساعد ب", abbreviation: "أ.م.س.ب" },
+// Fallback static ranks – these MUST match the abbreviations in the academic_titles DB table
+export const DEFAULT_ACADEMIC_RANKS: AcademicRank[] = [];
+
+// Legacy abbreviation patterns that may exist in old data.
+// Maps legacy abbreviation → rank label so we can look up the correct DB abbreviation dynamically.
+const LEGACY_ABBR_PATTERNS: { pattern: RegExp; rankLabel: string }[] = [
+  { pattern: /^أ\.ت\.ع\s+/, rankLabel: "أستاذ التعليم العالي" },
+  { pattern: /^أ\.م\.أ\s+/, rankLabel: "أستاذ محاضر أ" },
+  { pattern: /^أ\.م\.ب\s+/, rankLabel: "أستاذ محاضر ب" },
+  { pattern: /^أ\.م\.س\.أ\s+/, rankLabel: "أستاذ مساعد أ" },
+  { pattern: /^أ\.م\.س\.ب\s+/, rankLabel: "أستاذ مساعد ب" },
 ];
 
 export interface JuryMember {
@@ -75,16 +79,6 @@ export function serializeJury(members: JuryMember[]): {
   };
 }
 
-// Legacy abbreviation patterns that may exist in DB data but not in the academic_titles table
-const LEGACY_ABBR_PATTERNS: { pattern: RegExp; abbreviation: string }[] = [
-  { pattern: /^أ\s*د\.\s*/, abbreviation: "أ.ت.ع" },
-  { pattern: /^م\s*ب\.\s*/, abbreviation: "أ.م.ب" },
-  { pattern: /^د\.\s*/, abbreviation: "" },
-  { pattern: /^Pr\.\s*/i, abbreviation: "" },
-  { pattern: /^Dr\.\s*/i, abbreviation: "" },
-  { pattern: /^Prof\.\s*/i, abbreviation: "" },
-];
-
 export function parseJury(
   juryPresidentAr: string,
   juryMembersAr: string,
@@ -115,16 +109,16 @@ export function parseJury(
       }
     }
 
-    // Try legacy patterns
+    // Try legacy patterns (map legacy abbreviation → rank label → correct DB abbreviation)
     for (const lp of LEGACY_ABBR_PATTERNS) {
       if (lp.pattern.test(trimmed)) {
         const cleanName = trimmed.replace(lp.pattern, "").trim();
-        const matchedRank = lp.abbreviation ? effectiveRanks.find(r => r.abbreviation === lp.abbreviation) : undefined;
+        const matchedRank = lp.rankLabel ? effectiveRanks.find(r => r.label === lp.rankLabel) : undefined;
         return {
           id: makeId(),
           role,
           name: cleanName,
-          rankLabel: matchedRank?.label || "",
+          rankLabel: matchedRank?.label || lp.rankLabel || "",
           rankAbbreviation: matchedRank?.abbreviation || "",
           university: "",
         };
@@ -294,9 +288,15 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   const prevSupRef = React.useRef(supervisorAr);
   const prevCoSupRef = React.useRef(coSupervisorAr);
 
-  // Sync from outside when values change
+  // Sync from outside when values change OR when ranks load from DB
+  const prevRanksLenRef = React.useRef(ranks.length);
+
   React.useEffect(() => {
+    const ranksJustLoaded = ranks.length > 0 && prevRanksLenRef.current === 0;
+    prevRanksLenRef.current = ranks.length;
+
     const changed =
+      ranksJustLoaded ||
       presidentValue !== prevPresidentRef.current ||
       membersValue !== prevMembersRef.current ||
       supervisorAr !== prevSupRef.current ||
@@ -321,7 +321,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presidentValue, membersValue, supervisorAr, coSupervisorAr]);
+  }, [presidentValue, membersValue, supervisorAr, coSupervisorAr, ranks]);
 
   const notifyChange = React.useCallback(
     (newRows: JuryMember[]) => {
@@ -673,15 +673,14 @@ function parseSupervisorString(raw: string, ranks: AcademicRank[]): SupervisorPe
     }
   }
 
-  // Try legacy patterns
+  // Try legacy patterns (map legacy abbreviation → rank label → correct DB abbreviation)
   for (const lp of LEGACY_ABBR_PATTERNS) {
     if (lp.pattern.test(trimmed)) {
       const cleanName = trimmed.replace(lp.pattern, "").trim();
-      // Try to find a matching rank for the legacy abbreviation
-      const matchedRank = lp.abbreviation ? effectiveRanks.find(r => r.abbreviation === lp.abbreviation) : undefined;
+      const matchedRank = lp.rankLabel ? effectiveRanks.find(r => r.label === lp.rankLabel) : undefined;
       return {
         name: cleanName,
-        rankLabel: matchedRank?.label || "",
+        rankLabel: matchedRank?.label || lp.rankLabel || "",
         rankAbbreviation: matchedRank?.abbreviation || "",
         university: "",
       };
