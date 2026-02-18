@@ -60,18 +60,26 @@ function stripAbbreviationSync(name: string, abbreviations: string[]): string {
   // Sort by length descending so longer abbreviations match first
   const sorted = [...abbreviations].sort((a, b) => b.length - a.length);
 
-  for (const abbr of sorted) {
-    if (!abbr) continue;
-    // Escape special regex characters in the abbreviation
-    const escaped = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Match abbreviation at start, optionally followed by space or dot
-    const pattern = new RegExp(`^${escaped}\\s*`);
-    if (pattern.test(name)) {
-      const stripped = name.replace(pattern, '').trim();
-      if (stripped) return stripped;
+  // Loop to strip multiple stacked abbreviations (e.g. "أ د. أ د. name")
+  let result = name;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const abbr of sorted) {
+      if (!abbr) continue;
+      const escaped = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(`^${escaped}\\s*`);
+      if (pattern.test(result)) {
+        const stripped = result.replace(pattern, '').trim();
+        if (stripped && stripped !== result) {
+          result = stripped;
+          changed = true;
+          break; // restart from longest abbreviation
+        }
+      }
     }
   }
-  return name;
+  return result;
 }
 
 async function fetchProfessors(): Promise<Professor[]> {
