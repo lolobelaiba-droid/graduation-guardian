@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Plus, Trash2, Loader2 } from "lucide-react";
+import { Settings, Plus, Trash2, Loader2, Pencil, Check, X } from "lucide-react";
 import { useAcademicTitles, AcademicTitle } from "@/hooks/useAcademicTitles";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -18,17 +18,24 @@ interface ManageAcademicTitlesDialogProps {
   onTitlesChange?: () => void;
 }
 
+interface EditingState {
+  id: string;
+  fullName: string;
+  abbreviation: string;
+}
+
 export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProps> = ({ trigger, onTitlesChange }) => {
-  const { titles, isLoading, addTitle, deleteTitle } = useAcademicTitles();
+  const { titles, isLoading, addTitle, updateTitle, deleteTitle } = useAcademicTitles();
   const [isOpen, setIsOpen] = React.useState(false);
   const [newFullName, setNewFullName] = React.useState("");
   const [newAbbreviation, setNewAbbreviation] = React.useState("");
   const [isAdding, setIsAdding] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [savingId, setSavingId] = React.useState<string | null>(null);
+  const [editing, setEditing] = React.useState<EditingState | null>(null);
 
   const handleAdd = async () => {
     if (!newFullName.trim() || !newAbbreviation.trim()) return;
-
     setIsAdding(true);
     const result = await addTitle(newFullName.trim(), newAbbreviation.trim());
     if (result) {
@@ -42,13 +49,31 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     const success = await deleteTitle(id);
-    if (success) {
-      onTitlesChange?.();
-    }
+    if (success) onTitlesChange?.();
     setDeletingId(null);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleEditStart = (title: AcademicTitle) => {
+    setEditing({ id: title.id, fullName: title.full_name, abbreviation: title.abbreviation });
+  };
+
+  const handleEditCancel = () => setEditing(null);
+
+  const handleEditSave = async () => {
+    if (!editing || !editing.fullName.trim() || !editing.abbreviation.trim()) return;
+    setSavingId(editing.id);
+    const success = await updateTitle(editing.id, editing.fullName.trim(), editing.abbreviation.trim());
+    if (success) onTitlesChange?.();
+    setSavingId(null);
+    setEditing(null);
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") { e.preventDefault(); handleEditSave(); }
+    if (e.key === "Escape") handleEditCancel();
+  };
+
+  const handleAddKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && newFullName.trim() && newAbbreviation.trim()) {
       e.preventDefault();
       handleAdd();
@@ -79,8 +104,8 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
                   id="fullName"
                   value={newFullName}
                   onChange={(e) => setNewFullName(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="مثال: أستاذ التعليم العالي / Professeur"
+                  onKeyDown={handleAddKeyDown}
+                  placeholder="مثال: أستاذ التعليم العالي"
                   className="text-sm"
                   dir="auto"
                 />
@@ -91,7 +116,7 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
                   id="abbreviation"
                   value={newAbbreviation}
                   onChange={(e) => setNewAbbreviation(e.target.value)}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={handleAddKeyDown}
                   placeholder="مثال: أد / Pr"
                   className="text-sm"
                   dir="auto"
@@ -104,11 +129,7 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
               size="sm"
               className="w-full"
             >
-              {isAdding ? (
-                <Loader2 className="h-4 w-4 animate-spin ml-2" />
-              ) : (
-                <Plus className="h-4 w-4 ml-2" />
-              )}
+              {isAdding ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Plus className="h-4 w-4 ml-2" />}
               إضافة رتبة
             </Button>
           </div>
@@ -121,40 +142,101 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : titles.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                لا توجد رتب علمية
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-4">لا توجد رتب علمية</p>
             ) : (
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="h-[220px]">
                 <div className="space-y-2 pl-2">
-                  {titles.map((title) => (
-                    <div
-                      key={title.id}
-                      className="flex items-center justify-between gap-2 p-2 bg-background rounded-md border"
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-medium shrink-0">
-                          {title.abbreviation}
-                        </span>
-                        <span className="text-sm truncate text-muted-foreground">
-                          {title.full_name}
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(title.id)}
-                        disabled={deletingId === title.id}
+                  {titles.map((title) => {
+                    const isEditing = editing?.id === title.id;
+                    const isSaving = savingId === title.id;
+
+                    if (isEditing) {
+                      return (
+                        <div
+                          key={title.id}
+                          className="flex items-center gap-2 p-2 bg-primary/5 rounded-md border border-primary/30"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Input
+                              value={editing.abbreviation}
+                              onChange={(e) => setEditing(prev => prev ? { ...prev, abbreviation: e.target.value } : null)}
+                              onKeyDown={handleEditKeyDown}
+                              className="text-xs h-7 w-20 shrink-0 font-medium"
+                              dir="auto"
+                              autoFocus
+                            />
+                            <Input
+                              value={editing.fullName}
+                              onChange={(e) => setEditing(prev => prev ? { ...prev, fullName: e.target.value } : null)}
+                              onKeyDown={handleEditKeyDown}
+                              className="text-xs h-7 flex-1 min-w-0"
+                              dir="auto"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={handleEditSave}
+                              disabled={isSaving || !editing.fullName.trim() || !editing.abbreviation.trim()}
+                              title="حفظ"
+                            >
+                              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={handleEditCancel}
+                              title="إلغاء"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={title.id}
+                        className="flex items-center justify-between gap-2 p-2 bg-background rounded-md border hover:border-border/80 group"
                       >
-                        {deletingId === title.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium shrink-0">
+                            {title.abbreviation}
+                          </span>
+                          <span className="text-sm truncate text-muted-foreground">{title.full_name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditStart(title)}
+                            title="تعديل"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(title.id)}
+                            disabled={deletingId === title.id}
+                            title="حذف"
+                          >
+                            {deletingId === title.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             )}
