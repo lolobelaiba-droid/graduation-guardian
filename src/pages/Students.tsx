@@ -142,9 +142,13 @@ export default function Students() {
   };
 
   const handleDeleteClick = (student: Certificate, type: CertificateType) => {
-    setStudentToDelete(student);
-    setDeleteType(type);
-    setDeleteDialogOpen(true);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setStudentToDelete(student);
+        setDeleteType(type);
+        setDeleteDialogOpen(true);
+      }, 100);
+    });
   };
 
   const handleDeletePermanently = () => {
@@ -180,13 +184,21 @@ export default function Students() {
   };
 
   const handleViewDetails = (student: Certificate) => {
-    setSelectedStudent(student);
-    setDetailsDialogOpen(true);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setSelectedStudent(student);
+        setDetailsDialogOpen(true);
+      }, 100);
+    });
   };
 
   const handleEditStudent = (student: Certificate) => {
-    setStudentToEdit(student);
-    setEditDialogOpen(true);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setStudentToEdit(student);
+        setEditDialogOpen(true);
+      }, 100);
+    });
   };
 
   const handleExportExcel = () => {
@@ -418,7 +430,7 @@ export default function Students() {
                           </TableCell>
                           <TableCell>{formatCertificateDate(student.defense_date)}</TableCell>
                           <TableCell>
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <MoreHorizontal className="h-4 w-4" />
@@ -427,21 +439,30 @@ export default function Students() {
                               <DropdownMenuContent align="start">
                                 <DropdownMenuItem 
                                   className="gap-2"
-                                  onClick={() => handleViewDetails(student)}
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleViewDetails(student);
+                                  }}
                                 >
                                   <Eye className="h-4 w-4" />
                                   عرض التفاصيل
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   className="gap-2"
-                                  onClick={() => handleEditStudent(student)}
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleEditStudent(student);
+                                  }}
                                 >
                                   <Edit className="h-4 w-4" />
                                   تعديل
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="gap-2 text-destructive"
-                                  onClick={() => handleDeleteClick(student, selectedCertType)}
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleDeleteClick(student, selectedCertType);
+                                  }}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                   حذف
