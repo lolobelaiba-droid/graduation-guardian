@@ -411,7 +411,7 @@ export function FullPreviewDialog({
     setSelectedFieldId(field.id);
     
     const currentPos = localFieldPositions[field.id] || { x: field.position_x, y: field.position_y };
-    const fieldIsRtl = field.text_align === 'right';
+    const fieldIsRtl = field.is_rtl;
 
     
     setDragState({
@@ -518,7 +518,7 @@ export function FullPreviewDialog({
     e.stopPropagation();
     
     const currentWidth = localFieldWidths[field.id] ?? field.field_width ?? 80;
-    const fieldIsRtl = field.text_align === 'right';
+    const fieldIsRtl = field.is_rtl;
 
     setResizeState({
       fieldId: field.id,
@@ -1061,7 +1061,7 @@ export function FullPreviewDialog({
                       isDragging && "cursor-grabbing z-20"
                     )}
                     style={{
-                      ...(field.text_align === 'right'
+                      ...(field.is_rtl
                         ? { right: `${(width - position.x) * SCALE}px` }
                         : { left: `${position.x * SCALE}px` }),
                       top: `${position.y * SCALE}px`,
@@ -1112,7 +1112,7 @@ export function FullPreviewDialog({
                           <div
                             className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                             style={{
-                              [field.text_align === 'right' ? 'left' : 'right']: '-6px',
+                              [field.is_rtl ? 'left' : 'right']: '-6px',
                             }}
                             onMouseDown={(e) => {
                               e.stopPropagation();
@@ -1120,11 +1120,11 @@ export function FullPreviewDialog({
                             }}
                             title="اسحب لتغيير العرض"
                           />
-                          {/* Left edge handle */}
+                           {/* Left edge handle */}
                           <div
                             className="absolute top-1/2 -translate-y-1/2 w-3 h-6 cursor-ew-resize bg-background border-2 border-primary rounded-sm shadow-sm hover:bg-primary/20 transition-colors z-10"
                             style={{
-                              [field.text_align === 'right' ? 'right' : 'left']: '-6px',
+                              [field.is_rtl ? 'right' : 'left']: '-6px',
                             }}
                             onMouseDown={(e) => {
                               e.stopPropagation();
@@ -1134,13 +1134,13 @@ export function FullPreviewDialog({
                           />
                           {/* Corner handles */}
                           <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.text_align === 'right' ? 'left' : 'right']: '-6px' }} />
+                            style={{ [field.is_rtl ? 'left' : 'right']: '-6px' }} />
                           <div className="absolute -top-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.text_align === 'right' ? 'right' : 'left']: '-6px' }} />
+                            style={{ [field.is_rtl ? 'right' : 'left']: '-6px' }} />
                           <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.text_align === 'right' ? 'left' : 'right']: '-6px' }} />
+                            style={{ [field.is_rtl ? 'left' : 'right']: '-6px' }} />
                           <div className="absolute -bottom-1.5 w-3 h-3 bg-background border-2 border-primary rounded-sm pointer-events-none z-10"
-                            style={{ [field.text_align === 'right' ? 'right' : 'left']: '-6px' }} />
+                            style={{ [field.is_rtl ? 'right' : 'left']: '-6px' }} />
                         </>
                       )}
                     </div>
