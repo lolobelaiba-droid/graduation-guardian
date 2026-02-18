@@ -866,6 +866,14 @@ export default function EditStudentDialog({
                               nameSuggestions={professorNames}
                               findProfessor={findProfessor}
                               onProfessorDataChange={ensureProfessor}
+                              onSupervisorChange={(name, university) => {
+                                form.setValue('supervisor_ar' as keyof FormValues, name as never);
+                                form.setValue('supervisor_university' as keyof FormValues, university as never);
+                              }}
+                              onCoSupervisorChange={(name, university) => {
+                                form.setValue('co_supervisor_ar' as keyof FormValues, name as never);
+                                form.setValue('co_supervisor_university' as keyof FormValues, university as never);
+                              }}
                             />
                           </FormControl>
                           <FormMessage />

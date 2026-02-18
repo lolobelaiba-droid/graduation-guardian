@@ -906,13 +906,21 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                                 presidentField.onChange(president);
                                 membersField.onChange(members);
                               }}
-                              supervisorAr={String(form.watch('supervisor_ar') || '')}
-                              supervisorUniversity={''}
-                              coSupervisorAr={''}
-                              coSupervisorUniversity={''}
+                              supervisorAr={String((form.watch as any)('supervisor_ar') || '')}
+                              supervisorUniversity={String((form.getValues as any)('supervisor_university') || '')}
+                              coSupervisorAr={String((form.getValues as any)('co_supervisor_ar') || '')}
+                              coSupervisorUniversity={String((form.getValues as any)('co_supervisor_university') || '')}
                               nameSuggestions={professorNames}
                               findProfessor={findProfessor}
                               onProfessorDataChange={ensureProfessor}
+                              onSupervisorChange={(name, university) => {
+                                (form.setValue as any)('supervisor_ar', name);
+                                (form.setValue as any)('supervisor_university', university);
+                              }}
+                              onCoSupervisorChange={(name, university) => {
+                                (form.setValue as any)('co_supervisor_ar', name);
+                                (form.setValue as any)('co_supervisor_university', university);
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
