@@ -463,10 +463,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                       <SelectContent>
                         {(ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS).map((r) => (
                           <SelectItem key={r.label} value={r.label}>
-                            <span className="flex items-center gap-2">
-                              <span className="font-mono text-xs bg-muted px-1 rounded">{r.abbreviation}</span>
-                              {r.label}
-                            </span>
+                            {r.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -736,10 +733,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                   <SelectContent>
                     {effectiveRanks.map((r) => (
                       <SelectItem key={r.label} value={r.label}>
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-xs bg-muted px-1 rounded">{r.abbreviation}</span>
-                          {r.label}
-                        </span>
+                        {r.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -795,10 +789,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                     <SelectContent>
                       {effectiveRanks.map((r) => (
                         <SelectItem key={r.label} value={r.label}>
-                          <span className="flex items-center gap-2">
-                            <span className="font-mono text-xs bg-muted px-1 rounded">{r.abbreviation}</span>
-                            {r.label}
-                          </span>
+                          {r.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
