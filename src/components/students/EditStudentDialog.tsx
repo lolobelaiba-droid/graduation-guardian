@@ -846,6 +846,10 @@ export default function EditStudentDialog({
                                 presidentField.onChange(president);
                                 membersField.onChange(members);
                               }}
+                              supervisorAr={(form.watch('supervisor_ar' as keyof FormValues) as string) || ''}
+                              supervisorUniversity={(form.watch('supervisor_university' as keyof FormValues) as string) || ''}
+                              coSupervisorAr={(form.watch('co_supervisor_ar' as keyof FormValues) as string) || ''}
+                              coSupervisorUniversity={(form.watch('co_supervisor_university' as keyof FormValues) as string) || ''}
                               nameSuggestions={[
                                 ...(suggestions?.jury_president_ar || []),
                                 ...(suggestions?.jury_members_ar || []),
