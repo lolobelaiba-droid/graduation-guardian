@@ -208,6 +208,13 @@ const RankCell: React.FC<RankCellProps> = ({
 
 // ======== Main JuryTableInput Component ========
 
+export interface ProfessorInfo {
+  full_name: string;
+  rank_label?: string | null;
+  rank_abbreviation?: string | null;
+  university?: string | null;
+}
+
 export interface JuryTableInputProps {
   presidentValue: string;
   membersValue: string;
@@ -220,6 +227,8 @@ export interface JuryTableInputProps {
   nameSuggestions?: string[];
   universitySuggestions?: string[];
   className?: string;
+  findProfessor?: (name: string) => ProfessorInfo | undefined;
+  onProfessorDataChange?: (name: string, rankLabel?: string, rankAbbreviation?: string, university?: string) => void;
 }
 
 export const JuryTableInput: React.FC<JuryTableInputProps> = ({
@@ -233,6 +242,8 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   nameSuggestions = [],
   universitySuggestions = [],
   className,
+  findProfessor,
+  onProfessorDataChange,
 }) => {
   const { titles, isLoading: ranksLoading } = useAcademicTitles();
   const [manageOpen, setManageOpen] = React.useState(false);
@@ -296,7 +307,15 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
 
   const updateRow = (id: string, patch: Partial<JuryMember>) => {
     setRows((prev) => {
-      const next = prev.map((r) => (r.id === id ? { ...r, ...patch } : r));
+      const next = prev.map((r) => {
+        if (r.id !== id) return r;
+        const updated = { ...r, ...patch };
+        // Save professor data when rank or university changes
+        if (onProfessorDataChange && updated.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
+          onProfessorDataChange(updated.name, updated.rankLabel, updated.rankAbbreviation, updated.university);
+        }
+        return updated;
+      });
       notifyChange(next);
       return next;
     });
@@ -400,7 +419,19 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                   <div className="relative">
                     <AutocompleteInput
                       value={row.name}
-                      onValueChange={(v) => updateRow(row.id, { name: v })}
+                      onValueChange={(v) => {
+                        const patch: Partial<JuryMember> = { name: v };
+                        // Auto-fill rank and university from professor database
+                        if (findProfessor) {
+                          const prof = findProfessor(v);
+                          if (prof) {
+                            if (prof.rank_label) patch.rankLabel = prof.rank_label;
+                            if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
+                            if (prof.university) patch.university = prof.university;
+                          }
+                        }
+                        updateRow(row.id, patch);
+                      }}
                       suggestions={nameSuggestions}
                       placeholder="الاسم واللقب"
                       className="h-8 text-xs"
@@ -572,6 +603,8 @@ export interface SupervisorTableInputProps {
   universitySuggestions?: string[];
   className?: string;
   showCoSupervisor?: boolean;
+  findProfessor?: (name: string) => ProfessorInfo | undefined;
+  onProfessorDataChange?: (name: string, rankLabel?: string, rankAbbreviation?: string, university?: string) => void;
 }
 
 function parseSupervisorString(raw: string, ranks: AcademicRank[]): SupervisorPerson {
@@ -606,6 +639,8 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   universitySuggestions = [],
   className,
   showCoSupervisor = true,
+  findProfessor,
+  onProfessorDataChange,
 }) => {
   const { titles } = useAcademicTitles();
   const [manageOpen, setManageOpen] = React.useState(false);
@@ -647,6 +682,10 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
     setSupervisor((prev) => {
       const next = { ...prev, ...patch };
       onSupervisorChange(serializeSupervisor(next), next.university);
+      // Save professor data when rank or university changes
+      if (onProfessorDataChange && next.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
+        onProfessorDataChange(next.name, next.rankLabel, next.rankAbbreviation, next.university);
+      }
       return next;
     });
   };
@@ -655,6 +694,10 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
     setCoSupervisor((prev) => {
       const next = { ...prev, ...patch };
       onCoSupervisorChange(serializeSupervisor(next), next.university);
+      // Save professor data when rank or university changes
+      if (onProfessorDataChange && next.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
+        onProfessorDataChange(next.name, next.rankLabel, next.rankAbbreviation, next.university);
+      }
       return next;
     });
   };
@@ -715,7 +758,18 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
               <td className="py-1.5 px-2 align-middle">
                 <AutocompleteInput
                   value={supervisor.name}
-                  onValueChange={(v) => handleSupervisorChange({ name: v })}
+                  onValueChange={(v) => {
+                    const patch: Partial<SupervisorPerson> = { name: v };
+                    if (findProfessor) {
+                      const prof = findProfessor(v);
+                      if (prof) {
+                        if (prof.rank_label) patch.rankLabel = prof.rank_label;
+                        if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
+                        if (prof.university) patch.university = prof.university;
+                      }
+                    }
+                    handleSupervisorChange(patch);
+                  }}
                   suggestions={nameSuggestions}
                   placeholder="اسم ولقب المشرف"
                   className="h-8 text-xs"
@@ -771,7 +825,18 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                 <td className="py-1.5 px-2 align-middle">
                   <AutocompleteInput
                     value={coSupervisor.name}
-                    onValueChange={(v) => handleCoSupervisorChange({ name: v })}
+                    onValueChange={(v) => {
+                      const patch: Partial<SupervisorPerson> = { name: v };
+                      if (findProfessor) {
+                        const prof = findProfessor(v);
+                        if (prof) {
+                          if (prof.rank_label) patch.rankLabel = prof.rank_label;
+                          if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
+                          if (prof.university) patch.university = prof.university;
+                        }
+                      }
+                      handleCoSupervisorChange(patch);
+                    }}
                     suggestions={nameSuggestions}
                     placeholder="اسم ولقب المشرف المساعد (اختياري)"
                     className="h-8 text-xs"

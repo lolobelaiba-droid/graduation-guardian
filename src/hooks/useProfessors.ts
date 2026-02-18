@@ -2,43 +2,78 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 
-/**
- * Hook لإدارة قاعدة بيانات الأساتذة
- * - جلب جميع الأساتذة للاقتراحات
- * - إضافة أستاذ جديد تلقائياً عند إدخال اسم غير موجود
- */
+export interface Professor {
+  id: string;
+  full_name: string;
+  rank_label: string | null;
+  rank_abbreviation: string | null;
+  university: string | null;
+}
 
-async function fetchProfessors(): Promise<string[]> {
+async function fetchProfessors(): Promise<Professor[]> {
   if (isElectron()) {
     const db = getDbClient()!;
     const result = await db.getAll('professors', 'full_name', 'asc');
     if (!result.success || !result.data) return [];
-    return (result.data as Array<{ full_name: string }>).map(r => r.full_name);
+    return result.data as Professor[];
   }
 
   const { data, error } = await supabase
     .from('professors')
-    .select('full_name')
+    .select('id, full_name, rank_label, rank_abbreviation, university')
     .order('full_name');
   
   if (error || !data) return [];
-  return data.map(r => r.full_name);
+  return data as Professor[];
 }
 
-async function addProfessor(fullName: string): Promise<void> {
-  const trimmed = fullName.trim();
+interface UpsertProfessorData {
+  full_name: string;
+  rank_label?: string;
+  rank_abbreviation?: string;
+  university?: string;
+}
+
+async function upsertProfessor(data: UpsertProfessorData): Promise<void> {
+  const trimmed = data.full_name.trim();
   if (!trimmed) return;
+
+  const cleanName = stripAbbreviation(trimmed);
+  if (!cleanName) return;
 
   if (isElectron()) {
     const db = getDbClient()!;
-    await db.insert('professors', { full_name: trimmed });
+    // Check if exists
+    const existing = await db.getAll('professors', 'full_name', 'asc');
+    const found = (existing.data as Professor[] || []).find(p => p.full_name === cleanName);
+    if (found) {
+      // Update rank/university if provided
+      const updates: Record<string, string> = {};
+      if (data.rank_label) updates.rank_label = data.rank_label;
+      if (data.rank_abbreviation) updates.rank_abbreviation = data.rank_abbreviation;
+      if (data.university) updates.university = data.university;
+      if (Object.keys(updates).length > 0) {
+        await db.update('professors', found.id, updates);
+      }
+    } else {
+      await db.insert('professors', {
+        full_name: cleanName,
+        rank_label: data.rank_label || null,
+        rank_abbreviation: data.rank_abbreviation || null,
+        university: data.university || null,
+      });
+    }
     return;
   }
 
-  // upsert to avoid duplicates
   await supabase
     .from('professors')
-    .upsert({ full_name: trimmed }, { onConflict: 'full_name' });
+    .upsert({
+      full_name: cleanName,
+      rank_label: data.rank_label || null,
+      rank_abbreviation: data.rank_abbreviation || null,
+      university: data.university || null,
+    }, { onConflict: 'full_name' });
 }
 
 export function useProfessors() {
@@ -50,35 +85,46 @@ export function useProfessors() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const addMutation = useMutation({
-    mutationFn: addProfessor,
+  const professorNames = professors.map(p => p.full_name);
+
+  const upsertMutation = useMutation({
+    mutationFn: upsertProfessor,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['professors'] });
     },
   });
 
   /**
-   * يضيف الأستاذ إلى قاعدة البيانات إذا لم يكن موجوداً
+   * يضيف أو يحدّث الأستاذ في قاعدة البيانات
    */
-  const ensureProfessor = (name: string) => {
+  const ensureProfessor = (name: string, rankLabel?: string, rankAbbreviation?: string, university?: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    // تحقق مما إذا كان الاسم موجوداً بالفعل (بدون الاختصار)
-    const nameWithoutAbbr = stripAbbreviation(trimmed);
-    if (nameWithoutAbbr && !professors.includes(nameWithoutAbbr)) {
-      addMutation.mutate(nameWithoutAbbr);
-    }
+    const cleanName = stripAbbreviation(trimmed);
+    if (!cleanName) return;
+    upsertMutation.mutate({
+      full_name: cleanName,
+      rank_label: rankLabel,
+      rank_abbreviation: rankAbbreviation,
+      university: university,
+    });
   };
 
-  return { professors, ensureProfessor };
+  /**
+   * البحث عن أستاذ بالاسم وإرجاع بياناته الكاملة
+   */
+  const findProfessor = (name: string): Professor | undefined => {
+    const cleanName = stripAbbreviation(name.trim());
+    return professors.find(p => p.full_name === cleanName);
+  };
+
+  return { professors, professorNames, ensureProfessor, findProfessor };
 }
 
 /**
  * إزالة اختصار الرتبة من بداية الاسم إن وجد
- * مثال: "أ د. أحمد محمد" -> "أحمد محمد"
  */
 function stripAbbreviation(name: string): string {
-  // Common abbreviation patterns
   const abbrPatterns = [
     /^أ\s*د\.\s*/,
     /^د\.\s*/,

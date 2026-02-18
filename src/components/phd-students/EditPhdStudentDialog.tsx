@@ -150,7 +150,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar'
   ]);
 
-  const { ensureProfessor } = useProfessors();
+  const { professorNames, ensureProfessor, findProfessor } = useProfessors();
 
   const getSchema = () => {
     return studentType === 'phd_lmd' ? phdLmdSchema : phdScienceSchema;
