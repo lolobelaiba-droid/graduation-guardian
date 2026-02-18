@@ -135,7 +135,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
   
   // Fetch suggestions for autocomplete fields
   const { data: suggestions } = useMultipleFieldSuggestions([
-    'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar'
+    'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar'
   ]);
 
   // Update selected type when prop changes
@@ -823,7 +823,10 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                       <AcademicTitleInput
                         {...field}
                         value={field.value || ''}
-                        suggestions={suggestions?.supervisor_ar || []}
+                        suggestions={[
+                          ...(suggestions?.co_supervisor_ar || []),
+                          ...(suggestions?.supervisor_ar || []),
+                        ]}
                         dir="auto"
                         placeholder="اختر الرتبة ثم اكتب الاسم (اختياري)"
                       />
@@ -869,7 +872,6 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                         rows={2} 
                         placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
                         dir="auto"
-                        className="text-right"
                       />
                     </FormControl>
                     <FormMessage />

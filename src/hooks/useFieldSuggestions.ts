@@ -7,7 +7,8 @@ type FieldSuggestionKey =
   | 'branch_fr' 
   | 'specialty_ar' 
   | 'specialty_fr' 
-  | 'supervisor_ar' 
+  | 'supervisor_ar'
+  | 'co_supervisor_ar'
   | 'jury_president_ar' 
   | 'jury_members_ar';
 
@@ -16,8 +17,8 @@ type CertificateTable = typeof CERTIFICATE_TABLES[number];
 
 // Define which fields exist on which tables
 const TABLE_FIELDS: Record<CertificateTable, FieldSuggestionKey[]> = {
-  phd_lmd_certificates: ['branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'jury_president_ar', 'jury_members_ar'],
-  phd_science_certificates: ['branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'jury_president_ar', 'jury_members_ar'],
+  phd_lmd_certificates: ['branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar', 'jury_president_ar', 'jury_members_ar'],
+  phd_science_certificates: ['branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar', 'co_supervisor_ar', 'jury_president_ar', 'jury_members_ar'],
   master_certificates: ['branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'supervisor_ar'],
 };
 
@@ -88,6 +89,7 @@ export function useMultipleFieldSuggestions(fieldKeys: FieldSuggestionKey[]) {
         specialty_ar: [],
         specialty_fr: [],
         supervisor_ar: [],
+        co_supervisor_ar: [],
         jury_president_ar: [],
         jury_members_ar: [],
       };
