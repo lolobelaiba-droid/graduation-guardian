@@ -248,6 +248,7 @@ export class BackupService {
       // Known columns per table to filter out unknown fields from backup data
       const TABLE_COLUMNS: Record<string, string[] | null> = {
         academic_titles: ['id', 'abbreviation', 'full_name', 'display_order', 'created_at'],
+        activity_log: ['id', 'activity_type', 'entity_id', 'entity_type', 'description', 'created_by', 'created_at'],
       };
 
       const cleanBatchData = (tableName: string, batch: Record<string, unknown>[]) => {
