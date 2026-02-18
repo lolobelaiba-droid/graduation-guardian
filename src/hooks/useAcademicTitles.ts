@@ -85,6 +85,37 @@ export const useAcademicTitles = () => {
     }
   }, [titles]);
 
+  const updateTitle = useCallback(async (id: string, fullName: string, abbreviation: string) => {
+    try {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        const result = await db.update('academic_titles', id, {
+          full_name: fullName,
+          abbreviation: abbreviation,
+        });
+        if (!result.success) throw new Error(result.error);
+        setTitles(prev => prev.map(t => t.id === id ? { ...t, full_name: fullName, abbreviation } : t));
+        toast.success("تم تعديل الرتبة بنجاح");
+        return true;
+      }
+
+      const { error } = await supabase
+        .from("academic_titles")
+        .update({ full_name: fullName, abbreviation })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTitles(prev => prev.map(t => t.id === id ? { ...t, full_name: fullName, abbreviation } : t));
+      toast.success("تم تعديل الرتبة بنجاح");
+      return true;
+    } catch (error) {
+      console.error("Error updating academic title:", error);
+      toast.error("فشل في تعديل الرتبة");
+      return false;
+    }
+  }, []);
+
   const deleteTitle = useCallback(async (id: string) => {
     try {
       if (isElectron()) {
@@ -121,6 +152,7 @@ export const useAcademicTitles = () => {
     titles,
     isLoading,
     addTitle,
+    updateTitle,
     deleteTitle,
     refetch: fetchTitles,
   };
