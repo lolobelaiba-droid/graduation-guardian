@@ -814,7 +814,12 @@ export function CreateCertificateFromPhdDialog({
                     <FormItem>
                       <FormLabel>الجامعة</FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ''} placeholder="اسم الجامعة بالعربية" />
+                        <DropdownWithAdd
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          optionType="university"
+                          placeholder="اختر أو أدخل اسم الجامعة"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

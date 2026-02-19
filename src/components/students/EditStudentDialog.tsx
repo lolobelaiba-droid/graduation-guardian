@@ -41,6 +41,7 @@ import {
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
+import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { academicYears } from "@/components/print/AddStudentDialog";
 
 // PhD LMD schema
@@ -198,6 +199,7 @@ export default function EditStudentDialog({
   ]);
 
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
+  const { universityNames } = useUniversityOptions();
 
   const getSchema = () => {
     switch (certificateType) {
@@ -523,7 +525,12 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>الجامعة (عربي)</FormLabel>
                       <FormControl>
-                        <Input {...field} value={(field.value as string) || ""} placeholder="اسم الجامعة بالعربية" />
+                        <DropdownWithAdd
+                          value={(field.value as string) || ""}
+                          onChange={field.onChange}
+                          optionType="university"
+                          placeholder="اختر أو أدخل اسم الجامعة"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -771,6 +778,7 @@ export default function EditStudentDialog({
                                       coSupUniField.onChange(university);
                                     }}
                                     nameSuggestions={professorNames}
+                                    universitySuggestions={universityNames}
                                     findProfessor={findProfessor}
                                     onProfessorDataChange={ensureProfessor}
                                   />
@@ -864,6 +872,7 @@ export default function EditStudentDialog({
                               coSupervisorAr={(form.watch('co_supervisor_ar' as keyof FormValues) as string) || ''}
                               coSupervisorUniversity={(form.watch('co_supervisor_university' as keyof FormValues) as string) || ''}
                               nameSuggestions={professorNames}
+                              universitySuggestions={universityNames}
                               findProfessor={findProfessor}
                               onProfessorDataChange={ensureProfessor}
                               onSupervisorChange={(name, university) => {

@@ -42,6 +42,7 @@ import {
 import { DropdownWithAdd } from "./DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
+import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 
 // توليد السنوات الجامعية من 2000/2001 إلى 2024/2025
 const generateAcademicYears = (): string[] => {
@@ -154,6 +155,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
   ]);
 
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
+  const { universityNames } = useUniversityOptions();
 
   // Update selected type when prop changes
   useEffect(() => {
@@ -573,7 +575,12 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>الجامعة (عربي)</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder="اسم الجامعة بالعربية" />
+                      <DropdownWithAdd
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        optionType="university"
+                        placeholder="اختر أو أدخل اسم الجامعة"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -799,6 +806,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                           onSupervisorChange={(name) => supervisorField.onChange(name)}
                           onCoSupervisorChange={() => {}}
                           nameSuggestions={professorNames}
+                          universitySuggestions={universityNames}
                           findProfessor={findProfessor}
                           onProfessorDataChange={ensureProfessor}
                           showCoSupervisor={false}
@@ -911,6 +919,7 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                               coSupervisorAr={String((form.getValues as any)('co_supervisor_ar') || '')}
                               coSupervisorUniversity={String((form.getValues as any)('co_supervisor_university') || '')}
                               nameSuggestions={professorNames}
+                              universitySuggestions={universityNames}
                               findProfessor={findProfessor}
                               onProfessorDataChange={ensureProfessor}
                               onSupervisorChange={(name, university) => {
