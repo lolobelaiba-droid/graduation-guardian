@@ -160,11 +160,14 @@ export function parseJury(
   // Remaining rows: other jury members from jury_members_ar
   // Skip entries that match the supervisor or co-supervisor to avoid duplicates
   if (juryMembersAr?.trim()) {
-    const supName = supRow.name?.trim().toLowerCase() || "";
-    const coSupName = coSupervisorAr?.trim() ? (() => {
-      const parsed = parseMember(coSupervisorAr.trim(), "co_supervisor");
-      return parsed.name?.trim().toLowerCase() || "";
-    })() : "";
+    // Clean supervisor name (strip abbreviation if present)
+    const supClean = supervisorAr?.trim() || "";
+    const supParsed = supClean ? parseMember(supClean, "supervisor") : null;
+    const supName = (supParsed?.name || supClean).trim().toLowerCase();
+
+    const coSupClean = coSupervisorAr?.trim() || "";
+    const coSupParsed = coSupClean ? parseMember(coSupClean, "co_supervisor") : null;
+    const coSupName = (coSupParsed?.name || coSupClean).trim().toLowerCase();
 
     const parts = juryMembersAr
       .split(/\s*-\s*/)
@@ -173,9 +176,11 @@ export function parseJury(
     parts.forEach((p) => {
       const parsed = parseMember(p, "examiner");
       const pName = parsed.name?.trim().toLowerCase() || "";
+      const pRaw = p.trim().toLowerCase();
       // Skip if this member matches supervisor or co-supervisor
-      if (supName && pName === supName) return;
-      if (coSupName && pName === coSupName) return;
+      // Use multiple strategies: exact parsed name match, or raw string ends with clean name
+      if (supName && (pName === supName || pRaw.endsWith(supName))) return;
+      if (coSupName && (pName === coSupName || pRaw.endsWith(coSupName))) return;
       rows.push(parsed);
     });
   }
@@ -384,39 +389,48 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   }, [presidentValue, membersValue, supervisorAr, coSupervisorAr, ranks]);
 
   // Enrich rows with professor data (rank, university) from the professor registry
-  // This runs after initial parse and whenever findProfessor data becomes available
-  const prevProfCountRef = React.useRef(0);
+  // Also cleans names from embedded abbreviations using the professor's clean name
+  const enrichmentDoneRef = React.useRef(false);
   React.useEffect(() => {
     if (!findProfessor) return;
-    // Only run when professor data count changes (i.e., data loaded or updated)
     const currentCount = (nameSuggestions || []).length;
     if (currentCount === 0) return;
-    if (currentCount === prevProfCountRef.current) return;
-    prevProfCountRef.current = currentCount;
+    // Run once when professor data becomes available
+    if (enrichmentDoneRef.current) return;
+    enrichmentDoneRef.current = true;
 
     setRows((prev) => {
-      let changed = false;
+      let anyChanged = false;
       const enriched = prev.map((row) => {
         if (!row.name?.trim()) return row;
         const prof = findProfessor(row.name);
         if (!prof) return row;
-        // Only fill in missing rank/university data, don't overwrite existing
         const updates: Partial<JuryMember> = {};
+        let rowChanged = false;
+        // Use clean name from professor DB (strips embedded abbreviations)
+        if (row.name !== prof.full_name) {
+          updates.name = prof.full_name;
+          rowChanged = true;
+        }
         if (!row.rankLabel && prof.rank_label) {
           updates.rankLabel = prof.rank_label;
-          changed = true;
+          rowChanged = true;
         }
         if (!row.rankAbbreviation && prof.rank_abbreviation) {
           updates.rankAbbreviation = prof.rank_abbreviation;
-          changed = true;
+          rowChanged = true;
         }
         if (!row.university && prof.university) {
           updates.university = prof.university;
-          changed = true;
+          rowChanged = true;
         }
-        return changed ? { ...row, ...updates } : row;
+        if (rowChanged) {
+          anyChanged = true;
+          return { ...row, ...updates };
+        }
+        return row;
       });
-      if (!changed) return prev;
+      if (!anyChanged) return prev;
       // Don't call notifyChange here to avoid circular updates - this is just UI enrichment
       return enriched;
     });
