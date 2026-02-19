@@ -1,7 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ManageUniversitiesDialog } from "@/components/ui/manage-universities-dialog";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { Check, ChevronDown } from "lucide-react";
@@ -27,6 +26,7 @@ export const UniversityAutocomplete: React.FC<UniversityAutocompleteProps> = ({
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const listRef = React.useRef<HTMLDivElement>(null);
 
   // Sync with external value
   React.useEffect(() => {
@@ -77,11 +77,25 @@ export const UniversityAutocomplete: React.FC<UniversityAutocompleteProps> = ({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setHighlightedIndex(prev => prev < filtered.length - 1 ? prev + 1 : prev);
+        setHighlightedIndex(prev => {
+          const next = prev < filtered.length - 1 ? prev + 1 : prev;
+          requestAnimationFrame(() => {
+            listRef.current?.querySelector(`[data-index="${next}"]`)?.scrollIntoView({ block: "nearest" });
+          });
+          return next;
+        });
         break;
       case "ArrowUp":
         e.preventDefault();
-        setHighlightedIndex(prev => prev > 0 ? prev - 1 : -1);
+        setHighlightedIndex(prev => {
+          const next = prev > 0 ? prev - 1 : -1;
+          if (next >= 0) {
+            requestAnimationFrame(() => {
+              listRef.current?.querySelector(`[data-index="${next}"]`)?.scrollIntoView({ block: "nearest" });
+            });
+          }
+          return next;
+        });
         break;
       case "Enter":
         e.preventDefault();
@@ -126,32 +140,31 @@ export const UniversityAutocomplete: React.FC<UniversityAutocompleteProps> = ({
 
         {isOpen && filtered.length > 0 && (
           <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95">
-            <ScrollArea className="max-h-[220px]">
-              <div className="p-1">
-                {filtered.map((name, index) => (
-                  <button
-                    key={name}
-                    type="button"
-                    className={cn(
-                      "relative flex w-full cursor-default select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors",
-                      highlightedIndex === index
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted hover:text-foreground",
-                      value === name && "text-primary font-medium"
-                    )}
-                    onClick={() => handleSelect(name)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                  >
-                    <span className="truncate flex-1" dir={dir}>
-                      {name}
-                    </span>
-                    {value === name && (
-                      <Check className="h-4 w-4 mr-auto shrink-0 text-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
+            <div ref={listRef} className="max-h-[220px] overflow-y-auto p-1">
+              {filtered.map((name, index) => (
+                <button
+                  key={name}
+                  type="button"
+                  data-index={index}
+                  className={cn(
+                    "relative flex w-full cursor-default select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors",
+                    highlightedIndex === index
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted hover:text-foreground",
+                    value === name && "text-primary font-medium"
+                  )}
+                  onClick={() => handleSelect(name)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <span className="truncate flex-1" dir={dir}>
+                    {name}
+                  </span>
+                  {value === name && (
+                    <Check className="h-4 w-4 mr-auto shrink-0 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
