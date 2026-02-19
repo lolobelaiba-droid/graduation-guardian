@@ -818,6 +818,22 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.processingTime ? '\u200B' + shapeArabicText("يوم") + ' ' + String(s.processingTime.days).padStart(2, '0') + ' ' + shapeArabicText("و") + ' ' + shapeArabicText("شهر") + ' ' + String(s.processingTime.months).padStart(2, '0') : "-",
       ]);
       drawTable(["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
+
+      // Average processing time
+      if (data.adminActions.length > 0) {
+        const totalDays = data.adminActions.reduce((sum, s) => sum + (s.processingTime?.totalDays || 0), 0);
+        const avgTotalDays = Math.round(totalDays / data.adminActions.length);
+        const avgMonths = Math.floor(avgTotalDays / 30);
+        const avgDays = avgTotalDays % 30;
+        const avgText = shapeArabicText("متوسط مدة المعالجة الإدارية:") + "  " + String(avgMonths).padStart(2, '0') + " " + shapeArabicText("شهر") + " " + String(avgDays).padStart(2, '0') + " " + shapeArabicText("يوم");
+        checkPage(12);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(13);
+        doc.setTextColor(0, 51, 102);
+        doc.text(avgText, PW - M, y, { align: "right" });
+        y += 10;
+        doc.setTextColor(0, 0, 0);
+      }
     }
 
     // ───── English Theses ─────
