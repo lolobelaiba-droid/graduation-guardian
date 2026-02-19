@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
 
@@ -37,6 +36,7 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const listRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setInputValue(value || "");
@@ -84,11 +84,25 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setHighlightedIndex(prev => prev < filtered.length - 1 ? prev + 1 : prev);
+        setHighlightedIndex(prev => {
+          const next = prev < filtered.length - 1 ? prev + 1 : prev;
+          requestAnimationFrame(() => {
+            listRef.current?.querySelector(`[data-index="${next}"]`)?.scrollIntoView({ block: "nearest" });
+          });
+          return next;
+        });
         break;
       case "ArrowUp":
         e.preventDefault();
-        setHighlightedIndex(prev => prev > 0 ? prev - 1 : -1);
+        setHighlightedIndex(prev => {
+          const next = prev > 0 ? prev - 1 : -1;
+          if (next >= 0) {
+            requestAnimationFrame(() => {
+              listRef.current?.querySelector(`[data-index="${next}"]`)?.scrollIntoView({ block: "nearest" });
+            });
+          }
+          return next;
+        });
         break;
       case "Enter":
         e.preventDefault();
@@ -132,32 +146,31 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
 
       {isOpen && filtered.length > 0 && (
         <div className="absolute z-[100] mt-1 w-full min-w-[280px] rounded-md border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
-          <ScrollArea className="max-h-[200px]">
-            <div className="p-1">
-              {filtered.map((name, index) => (
-                <button
-                  key={name}
-                  type="button"
-                  className={cn(
-                    "relative flex w-full cursor-default select-none items-center rounded-sm px-2.5 py-1.5 text-xs outline-none transition-colors",
-                    highlightedIndex === index
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-muted hover:text-foreground",
-                    value === name && "text-primary font-medium"
-                  )}
-                  onClick={() => handleSelect(name)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                >
-                  <span className="truncate flex-1" dir="rtl">
-                    {name}
-                  </span>
-                  {value === name && (
-                    <Check className="h-3 w-3 mr-auto shrink-0 text-primary" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
+          <div ref={listRef} className="max-h-[200px] overflow-y-auto p-1">
+            {filtered.map((name, index) => (
+              <button
+                key={name}
+                type="button"
+                data-index={index}
+                className={cn(
+                  "relative flex w-full cursor-default select-none items-center rounded-sm px-2.5 py-1.5 text-xs outline-none transition-colors",
+                  highlightedIndex === index
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-muted hover:text-foreground",
+                  value === name && "text-primary font-medium"
+                )}
+                onClick={() => handleSelect(name)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+              >
+                <span className="truncate flex-1" dir="rtl">
+                  {name}
+                </span>
+                {value === name && (
+                  <Check className="h-3 w-3 mr-auto shrink-0 text-primary" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
