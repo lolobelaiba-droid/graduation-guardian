@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
-import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp, AlertTriangle, CheckCircle2, Lightbulb, Brain, Info, Search } from "lucide-react";
+import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp, AlertTriangle, CheckCircle2, Lightbulb, Brain, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
-import { extractKeywords, analyzeTopicTrends } from "@/lib/arabic-keywords";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { usePhdLmdStudents, usePhdScienceStudents } from "@/hooks/usePhdStudents";
 import { usePhdLmdCertificates, usePhdScienceCertificates } from "@/hooks/useCertificates";
 import { toWesternNumerals } from "@/lib/numerals";
@@ -233,30 +232,6 @@ export default function Reports() {
       delayedDefendedPercent: countedDef > 0 ? (delayedDef / countedDef) * 100 : 0,
     });
   }, [kpi, avgRegYears, filteredDefended, englishTheses, assistantProfessors]);
-
-  // ─── تحليل الكلمات المفتاحية ───
-  const allThesisTitles = useMemo(() => {
-    const titles: string[] = [];
-    [...filteredRegistered, ...filteredDefended].forEach(s => {
-      const title = (s as any).thesis_title_ar || (s as any).thesis_title_fr || '';
-      if (title) titles.push(title);
-    });
-    return titles;
-  }, [filteredRegistered, filteredDefended]);
-
-  const keywordStats = useMemo(() => extractKeywords(allThesisTitles, 20), [allThesisTitles]);
-
-  const topicTrendData = useMemo(() => {
-    const top5Keywords = keywordStats.slice(0, 5).map(k => k.keyword);
-    if (top5Keywords.length === 0) return [];
-    const data = filteredDefended.map(s => ({
-      title: (s as any).thesis_title_ar || (s as any).thesis_title_fr || '',
-      year: (s as any).defense_date || '',
-    }));
-    return analyzeTopicTrends(data, top5Keywords);
-  }, [filteredDefended, keywordStats]);
-
-  const TREND_COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -713,77 +688,6 @@ export default function Reports() {
           )}
         </CardContent>
       </Card>
-
-      {/* سابعا: تحليل الكلمات المفتاحية للأطروحات */}
-      <SectionHeader title="سابعا: تحليل الكلمات المفتاحية في عناوين الأطروحات" icon={<Search className="h-5 w-5" />} />
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          {keywordStats.length > 0 ? (
-            <div className="max-h-[500px] overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-primary/5 border-b-2 border-primary/20">
-                    <TableHead className="text-right text-xs font-bold text-foreground w-[40px]">#</TableHead>
-                    <TableHead className="text-right text-xs font-bold text-foreground">الكلمة المفتاحية</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground w-[100px]">عدد الأطروحات</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground w-[100px]">النسبة</TableHead>
-                    <TableHead className="text-right text-xs font-bold text-foreground">مؤشر التكرار</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {keywordStats.map((k, i) => (
-                    <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
-                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
-                      <TableCell className="text-xs py-2.5 font-bold">{k.keyword}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5">
-                        <Badge variant="outline" className="bg-primary/10 text-primary text-xs">{toWesternNumerals(k.count)}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{toWesternNumerals(k.percentage)}%</TableCell>
-                      <TableCell className="py-2.5">
-                        <div className="w-full bg-muted rounded-full h-2.5">
-                          <div
-                            className="bg-primary h-2.5 rounded-full transition-all"
-                            style={{ width: `${Math.min(k.percentage * 2, 100)}%` }}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="p-6 text-center text-muted-foreground text-sm">لا توجد عناوين أطروحات كافية للتحليل</div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ثامنا: تطور المواضيع البحثية عبر السنوات */}
-      {topicTrendData.length > 0 && (
-        <>
-          <SectionHeader title="ثامنا: تطور المواضيع البحثية عبر السنوات" icon={<TrendingUp className="h-5 w-5" />} />
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
-              <p className="text-xs text-muted-foreground mb-4">يوضح الرسم البياني تطور أكثر 5 كلمات مفتاحية شيوعاً في عناوين الأطروحات حسب سنة المناقشة</p>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={topicTrendData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', direction: 'rtl' }}
-                    labelStyle={{ fontWeight: 'bold' }}
-                  />
-                  <Legend wrapperStyle={{ direction: 'rtl', fontSize: '12px' }} />
-                  {keywordStats.slice(0, 5).map((k, i) => (
-                    <Bar key={k.keyword} dataKey={k.keyword} fill={TREND_COLORS[i % TREND_COLORS.length]} radius={[4, 4, 0, 0]} />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </>
-      )}
     </div>
   );
 }
