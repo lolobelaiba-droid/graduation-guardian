@@ -383,6 +383,45 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presidentValue, membersValue, supervisorAr, coSupervisorAr, ranks]);
 
+  // Enrich rows with professor data (rank, university) from the professor registry
+  // This runs after initial parse and whenever findProfessor data becomes available
+  const prevProfCountRef = React.useRef(0);
+  React.useEffect(() => {
+    if (!findProfessor) return;
+    // Only run when professor data count changes (i.e., data loaded or updated)
+    const currentCount = (nameSuggestions || []).length;
+    if (currentCount === 0) return;
+    if (currentCount === prevProfCountRef.current) return;
+    prevProfCountRef.current = currentCount;
+
+    setRows((prev) => {
+      let changed = false;
+      const enriched = prev.map((row) => {
+        if (!row.name?.trim()) return row;
+        const prof = findProfessor(row.name);
+        if (!prof) return row;
+        // Only fill in missing rank/university data, don't overwrite existing
+        const updates: Partial<JuryMember> = {};
+        if (!row.rankLabel && prof.rank_label) {
+          updates.rankLabel = prof.rank_label;
+          changed = true;
+        }
+        if (!row.rankAbbreviation && prof.rank_abbreviation) {
+          updates.rankAbbreviation = prof.rank_abbreviation;
+          changed = true;
+        }
+        if (!row.university && prof.university) {
+          updates.university = prof.university;
+          changed = true;
+        }
+        return changed ? { ...row, ...updates } : row;
+      });
+      if (!changed) return prev;
+      // Don't call notifyChange here to avoid circular updates - this is just UI enrichment
+      return enriched;
+    });
+  }, [findProfessor, nameSuggestions]);
+
   const notifyChange = React.useCallback(
     (newRows: JuryMember[]) => {
       // Serialize: president goes to jury_president_ar
@@ -857,6 +896,35 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
       }));
     }
   }, [coSupervisorValue, coSupervisorUniversity, ranks]);
+
+  // Enrich supervisor/co-supervisor with professor data on load
+  React.useEffect(() => {
+    if (!findProfessor) return;
+    
+    setSupervisor((prev) => {
+      if (!prev.name?.trim() || (prev.rankLabel && prev.rankAbbreviation)) return prev;
+      const prof = findProfessor(prev.name);
+      if (!prof) return prev;
+      return {
+        ...prev,
+        rankLabel: prev.rankLabel || prof.rank_label || "",
+        rankAbbreviation: prev.rankAbbreviation || prof.rank_abbreviation || "",
+        university: prev.university || prof.university || "",
+      };
+    });
+
+    setCoSupervisor((prev) => {
+      if (!prev.name?.trim() || (prev.rankLabel && prev.rankAbbreviation)) return prev;
+      const prof = findProfessor(prev.name);
+      if (!prof) return prev;
+      return {
+        ...prev,
+        rankLabel: prev.rankLabel || prof.rank_label || "",
+        rankAbbreviation: prev.rankAbbreviation || prof.rank_abbreviation || "",
+        university: prev.university || prof.university || "",
+      };
+    });
+  }, [findProfessor, nameSuggestions]);
 
   const handleSupervisorChange = (patch: Partial<SupervisorPerson>) => {
     setSupervisor((prev) => {
