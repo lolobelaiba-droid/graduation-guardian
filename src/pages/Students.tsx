@@ -147,7 +147,7 @@ export default function Students() {
         setStudentToDelete(student);
         setDeleteType(type);
         setDeleteDialogOpen(true);
-      }, 100);
+      }, 250);
     });
   };
 
@@ -188,7 +188,7 @@ export default function Students() {
       setTimeout(() => {
         setSelectedStudent(student);
         setDetailsDialogOpen(true);
-      }, 100);
+      }, 250);
     });
   };
 
@@ -197,7 +197,7 @@ export default function Students() {
       setTimeout(() => {
         setStudentToEdit(student);
         setEditDialogOpen(true);
-      }, 100);
+      }, 250);
     });
   };
 
