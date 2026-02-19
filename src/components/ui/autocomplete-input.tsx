@@ -1,7 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AutocompleteInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   suggestions: string[];
@@ -16,13 +15,12 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
     const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
     const containerRef = React.useRef<HTMLDivElement>(null);
     const inputRef = React.useRef<HTMLInputElement>(null);
+    const listRef = React.useRef<HTMLDivElement>(null);
 
-    // Sync input value with prop
     React.useEffect(() => {
       setInputValue(value?.toString() || "");
     }, [value]);
 
-    // Filter suggestions based on input
     const filteredSuggestions = React.useMemo(() => {
       if (!inputValue.trim()) return suggestions.slice(0, 10);
       const lower = inputValue.toLowerCase();
@@ -31,24 +29,27 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
         .slice(0, 10);
     }, [suggestions, inputValue]);
 
-    // Handle click outside
     React.useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
           setIsOpen(false);
         }
       };
-
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const scrollToIndex = (index: number) => {
+      requestAnimationFrame(() => {
+        listRef.current?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({ block: "nearest" });
+      });
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
       setInputValue(newValue);
       setIsOpen(true);
       setHighlightedIndex(-1);
-      
       onChange?.(e);
       onValueChange?.(newValue);
     };
@@ -56,13 +57,10 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
     const handleSelect = (suggestion: string) => {
       setInputValue(suggestion);
       setIsOpen(false);
-      
-      // Create a synthetic event for onChange
       const syntheticEvent = {
         target: { value: suggestion },
         currentTarget: { value: suggestion },
       } as React.ChangeEvent<HTMLInputElement>;
-      
       onChange?.(syntheticEvent);
       onValueChange?.(suggestion);
     };
@@ -79,13 +77,19 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setHighlightedIndex(prev => 
-            prev < filteredSuggestions.length - 1 ? prev + 1 : prev
-          );
+          setHighlightedIndex(prev => {
+            const next = prev < filteredSuggestions.length - 1 ? prev + 1 : prev;
+            scrollToIndex(next);
+            return next;
+          });
           break;
         case "ArrowUp":
           e.preventDefault();
-          setHighlightedIndex(prev => prev > 0 ? prev - 1 : -1);
+          setHighlightedIndex(prev => {
+            const next = prev > 0 ? prev - 1 : -1;
+            if (next >= 0) scrollToIndex(next);
+            return next;
+          });
           break;
         case "Enter":
           e.preventDefault();
@@ -110,7 +114,6 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       <div ref={containerRef} className="relative w-full">
         <Input
           ref={(node) => {
-            // Handle both refs
             if (typeof ref === 'function') {
               ref(node);
             } else if (ref) {
@@ -128,13 +131,14 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
         />
         
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-md">
-            <ScrollArea className="max-h-[200px]">
+          <div className="absolute z-[100] w-full mt-1 bg-popover border border-border rounded-md shadow-lg">
+            <div ref={listRef} className="max-h-[200px] overflow-y-auto">
               {filteredSuggestions.length > 0 ? (
                 <div className="p-1">
                   {filteredSuggestions.map((suggestion, index) => (
                     <div
                       key={suggestion}
+                      data-index={index}
                       className={cn(
                         "px-3 py-2 cursor-pointer rounded-sm text-sm",
                         "hover:bg-accent hover:text-accent-foreground",
@@ -152,7 +156,7 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
                   {emptyMessage}
                 </div>
               ) : null}
-            </ScrollArea>
+            </div>
           </div>
         )}
       </div>
