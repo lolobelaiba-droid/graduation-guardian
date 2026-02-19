@@ -232,6 +232,28 @@ const RankCell: React.FC<RankCellProps> = ({
   const [customAbbr, setCustomAbbr] = React.useState(rankAbbreviation);
   const effectiveRanks = ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS;
 
+  // Auto-resolve rankLabel from abbreviation when label is missing but abbreviation exists
+  const resolvedLabel = React.useMemo(() => {
+    if (rankLabel) return rankLabel;
+    if (!rankAbbreviation || effectiveRanks.length === 0) return "";
+    const match = effectiveRanks.find((r) => r.abbreviation === rankAbbreviation);
+    return match?.label || "";
+  }, [rankLabel, rankAbbreviation, effectiveRanks]);
+
+  // Notify parent of resolved label if it was auto-resolved
+  const resolvedOnceRef = React.useRef(false);
+  React.useEffect(() => {
+    if (resolvedLabel && !rankLabel && rankAbbreviation && !resolvedOnceRef.current) {
+      resolvedOnceRef.current = true;
+      onChange(resolvedLabel, rankAbbreviation);
+    }
+  }, [resolvedLabel, rankLabel, rankAbbreviation, onChange]);
+
+  // Reset the ref when the row changes (different abbreviation)
+  React.useEffect(() => {
+    resolvedOnceRef.current = false;
+  }, [rankAbbreviation]);
+
   const handleSelectRank = (label: string) => {
     const found = effectiveRanks.find((r) => r.label === label);
     const abbr = found ? found.abbreviation : customAbbr;
@@ -250,7 +272,7 @@ const RankCell: React.FC<RankCellProps> = ({
 
   return (
     <div className="flex flex-col gap-1 min-w-[150px]">
-      <Select value={rankLabel} onValueChange={handleSelectRank}>
+      <Select value={resolvedLabel} onValueChange={handleSelectRank}>
         <SelectTrigger className="h-8 text-xs">
           <SelectValue placeholder="اختر الرتبة" />
         </SelectTrigger>
@@ -400,8 +422,9 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       return;
     }
 
-    // Reset enrichment flag so professor data can re-enrich after re-parse
+    // Reset enrichment and rank resolution flags so they can re-run after re-parse
     enrichmentDoneRef.current = false;
+    rankResolutionDoneRef.current = false;
     setRows(
       parseJury(
         presidentValue,
@@ -463,6 +486,27 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       return enriched;
     });
   }, [findProfessor, nameSuggestions]);
+
+  // Auto-resolve rankLabel from abbreviation when ranks are available but labels are missing
+  const rankResolutionDoneRef = React.useRef(false);
+  React.useEffect(() => {
+    if (ranks.length === 0) return;
+    if (rankResolutionDoneRef.current) return;
+    rankResolutionDoneRef.current = true;
+    setRows((prev) => {
+      let anyChanged = false;
+      const resolved = prev.map((row) => {
+        if (row.rankLabel || !row.rankAbbreviation) return row;
+        const match = ranks.find((r) => r.abbreviation === row.rankAbbreviation);
+        if (match) {
+          anyChanged = true;
+          return { ...row, rankLabel: match.label };
+        }
+        return row;
+      });
+      return anyChanged ? resolved : prev;
+    });
+  }, [ranks]);
 
   const notifyChange = React.useCallback(
     (newRows: JuryMember[]) => {
