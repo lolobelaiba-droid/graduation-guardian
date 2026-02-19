@@ -612,12 +612,14 @@ export function ExportStatsDialog() {
           const professorStats: Record<string, { 
             asPresident: number; 
             asMember: number; 
+            asInvited: number;
             asSupervisor: number;
             asCoSupervisor: number;
             total: number;
             faculties: Set<string>;
             presidentDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
             memberDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
+            invitedDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
             supervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
             coSupervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
           }> = {};
@@ -625,9 +627,9 @@ export function ExportStatsDialog() {
           const ensureProfessor = (name: string) => {
             if (!professorStats[name]) {
               professorStats[name] = { 
-                asPresident: 0, asMember: 0, asSupervisor: 0, asCoSupervisor: 0, total: 0, 
+                asPresident: 0, asMember: 0, asInvited: 0, asSupervisor: 0, asCoSupervisor: 0, total: 0, 
                 faculties: new Set(),
-                presidentDetails: [], memberDetails: [], supervisorDetails: [], coSupervisorDetails: [] 
+                presidentDetails: [], memberDetails: [], invitedDetails: [], supervisorDetails: [], coSupervisorDetails: [] 
               };
             }
           };
@@ -660,23 +662,31 @@ export function ExportStatsDialog() {
             
             members.forEach((member: string) => {
               if (!member) return;
+              // Detect invited role from (مدعو) suffix
+              const isInvited = member.includes('(مدعو)');
+              const memberCleanForDedup = member.replace(/\s*\(مدعو\)\s*$/, '').trim();
               // Skip if this member matches supervisor or co_supervisor (they're tracked separately)
-              const memberLower = member.trim().toLowerCase();
-              const memberClean = extractTitleAndName(member).name.toLowerCase();
+              const memberLower = memberCleanForDedup.trim().toLowerCase();
+              const memberClean = extractTitleAndName(memberCleanForDedup).name.toLowerCase();
               if (supervisorName && (memberLower.endsWith(supervisorName) || memberClean === supervisorName)) return;
               if (coSupervisorName && (memberLower.endsWith(coSupervisorName) || memberClean === coSupervisorName)) return;
               
-              ensureProfessor(member);
-              professorStats[member].asMember++;
-              professorStats[member].total++;
-              if (faculty) professorStats[member].faculties.add(faculty);
-              professorStats[member].memberDetails.push({
-                student: record.full_name_ar,
-                specialty: record.specialty_ar,
-                faculty,
-                type: record.certificate_type,
-                date: record.defense_date,
-              });
+              // Use cleaned name (without مدعو suffix) as key
+              const cleanedMember = memberCleanForDedup;
+              ensureProfessor(cleanedMember);
+              if (isInvited) {
+                professorStats[cleanedMember].asInvited++;
+                professorStats[cleanedMember].invitedDetails.push({
+                  student: record.full_name_ar, specialty: record.specialty_ar, faculty, type: record.certificate_type, date: record.defense_date,
+                });
+              } else {
+                professorStats[cleanedMember].asMember++;
+                professorStats[cleanedMember].memberDetails.push({
+                  student: record.full_name_ar, specialty: record.specialty_ar, faculty, type: record.certificate_type, date: record.defense_date,
+                });
+              }
+              professorStats[cleanedMember].total++;
+              if (faculty) professorStats[cleanedMember].faculties.add(faculty);
             });
 
             // Process supervisor from PhD records
@@ -744,7 +754,8 @@ export function ExportStatsDialog() {
                 "مشرف": stats.asSupervisor,
                 "مشرف مساعد": stats.asCoSupervisor,
                 "رئيس لجنة": stats.asPresident,
-                "عضو/مدعو": stats.asMember,
+                "عضو": stats.asMember,
+                "مدعو": stats.asInvited,
                 "المجموع": stats.total,
               };
             });
@@ -799,7 +810,7 @@ export function ExportStatsDialog() {
                 memberDetails.push({
                   "الأستاذ": cleanName,
                   "الرتبة": title,
-                  "الدور": "عضو/مدعو",
+                  "الدور": "عضو",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
                   "التخصص": detail.specialty,
@@ -829,18 +840,40 @@ export function ExportStatsDialog() {
               });
             });
 
-          // Create workbook with five sheets
+          // Create invited details sheet
+          const invitedDetails: any[] = [];
+          Object.entries(professorStats)
+            .sort((a, b) => b[1].asInvited - a[1].asInvited)
+            .forEach(([professor, stats]) => {
+              const { title, name: cleanName } = extractTitleAndName(professor);
+              stats.invitedDetails.forEach((detail) => {
+                invitedDetails.push({
+                  "الأستاذ": cleanName,
+                  "الرتبة": title,
+                  "الدور": "مدعو",
+                  "اسم الطالب": detail.student,
+                  "الكلية": detail.faculty,
+                  "التخصص": detail.specialty,
+                  "نوع الشهادة": detail.type,
+                  "تاريخ المناقشة": detail.date,
+                });
+              });
+            });
+
+          // Create workbook with six sheets
           const wb = XLSX.utils.book_new();
           const wsSummary = XLSX.utils.json_to_sheet(summaryData);
           const wsSupervisor = XLSX.utils.json_to_sheet(supervisorDetails);
           const wsCoSupervisor = XLSX.utils.json_to_sheet(coSupervisorDetails);
           const wsPresident = XLSX.utils.json_to_sheet(presidentDetails);
           const wsMember = XLSX.utils.json_to_sheet(memberDetails);
+          const wsInvited = XLSX.utils.json_to_sheet(invitedDetails);
           XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص الأساتذة");
           XLSX.utils.book_append_sheet(wb, wsSupervisor, "تفاصيل الإشراف");
           XLSX.utils.book_append_sheet(wb, wsCoSupervisor, "تفاصيل الإشراف المساعد");
           XLSX.utils.book_append_sheet(wb, wsPresident, "تفاصيل رئاسة اللجان");
-          XLSX.utils.book_append_sheet(wb, wsMember, "تفاصيل عضوية اللجان");
+          XLSX.utils.book_append_sheet(wb, wsMember, "تفاصيل العضوية");
+          XLSX.utils.book_append_sheet(wb, wsInvited, "تفاصيل المدعوين");
           XLSX.writeFile(wb, `إحصائيات_اللجان_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
 
           toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(professorStats).length)} أستاذ بنجاح`);
@@ -960,7 +993,9 @@ export function ExportStatsDialog() {
                 const mLower = member.trim().toLowerCase();
                 if (supLower && (mLower.endsWith(supLower) || mLower === supLower)) return;
                 if (coSupLower && (mLower.endsWith(coSupLower) || mLower === coSupLower)) return;
-                explodedRecords.push({ ...record, _professor_name: member, _jury_role: "عضو/مدعو" });
+                const isInvited = member.includes('(مدعو)');
+                const memberClean = member.replace(/\s*\(مدعو\)\s*$/, '').trim();
+                explodedRecords.push({ ...record, _professor_name: memberClean, _jury_role: isInvited ? "مدعو" : "عضو" });
               });
             });
             processedData = explodedRecords;

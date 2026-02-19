@@ -236,7 +236,12 @@ export function serializeJury(members: JuryMember[]): {
   const formatMember = (m: JuryMember) => {
     const abbr = m.rankAbbreviation?.trim();
     const name = m.name?.trim();
-    return abbr && name ? `${abbr} ${name}` : name || abbr || "";
+    let formatted = abbr && name ? `${abbr} ${name}` : name || abbr || "";
+    // Append (مدعو) suffix for invited members to preserve role in serialized data
+    if (formatted && m.role === "invited") {
+      formatted += " (مدعو)";
+    }
+    return formatted;
   };
 
   const president = members.find((m) => m.role === "president");
@@ -261,7 +266,14 @@ export function parseJury(
   const effectiveRanks = ranks && ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS;
 
   const parseMember = (raw: string, role: JuryRole): JuryMember => {
-    const trimmed = raw.trim();
+    let trimmed = raw.trim();
+    
+    // Detect (مدعو) suffix to restore invited role
+    let detectedRole = role;
+    if (trimmed.endsWith("(مدعو)")) {
+      detectedRole = "invited";
+      trimmed = trimmed.replace(/\s*\(مدعو\)\s*$/, "").trim();
+    }
     
     // Try exact match with known ranks (longest abbreviation first)
     const sortedRanks = [...effectiveRanks].sort((a, b) => b.abbreviation.length - a.abbreviation.length);
@@ -269,7 +281,7 @@ export function parseJury(
       if (trimmed.startsWith(r.abbreviation + " ")) {
         return {
           id: makeId(),
-          role,
+          role: detectedRole,
           name: trimmed.slice(r.abbreviation.length + 1).trim(),
           rankLabel: r.label,
           rankAbbreviation: r.abbreviation,
@@ -285,7 +297,7 @@ export function parseJury(
         const matchedRank = lp.rankLabel ? effectiveRanks.find(r => r.label === lp.rankLabel) : undefined;
         return {
           id: makeId(),
-          role,
+          role: detectedRole,
           name: cleanName,
           rankLabel: matchedRank?.label || lp.rankLabel || "",
           rankAbbreviation: matchedRank?.abbreviation || "",
@@ -296,7 +308,7 @@ export function parseJury(
 
     return {
       id: makeId(),
-      role,
+      role: detectedRole,
       name: trimmed,
       rankLabel: "",
       rankAbbreviation: "",
