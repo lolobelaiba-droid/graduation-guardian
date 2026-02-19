@@ -35,6 +35,7 @@ import {
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
+import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import type { PhdStudentType } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
 import { calculateRegistrationDetails, getDefaultInscriptionStatus, getCurrentYearLabel } from "@/lib/registration-calculation";
@@ -140,6 +141,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
   ]);
 
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
+  const { universityNames } = useUniversityOptions();
 
   // Update selected type when prop changes
   useEffect(() => {
@@ -808,6 +810,7 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                                     coSupUniField.onChange(university);
                                   }}
                                   nameSuggestions={professorNames}
+                                  universitySuggestions={universityNames}
                                   findProfessor={findProfessor}
                                   onProfessorDataChange={ensureProfessor}
                                 />
