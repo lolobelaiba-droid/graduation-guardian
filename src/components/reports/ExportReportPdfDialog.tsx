@@ -789,7 +789,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     // ───── Jury Stats ─────
     if (selectedSections.includes("jury")) {
       checkPage(15);
-      sectionTitle("إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو لجنة)");
+      sectionTitle("إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو/مدعو)");
       const tableW = PW - M * 2;
       const cols = [6, 32, 18, 28, 15, 15, 15, 15, 15].map(p => (p / 159) * tableW);
       const rows = data.juryStats.map((s, i) => [
@@ -800,7 +800,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.member > 0 ? toWesternNumerals(s.member) : "-",
         toWesternNumerals(s.total),
       ]);
-      drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "عضو ل.", "المجموع"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "عضو/مدعو", "المجموع"], rows, cols);
     }
 
     // ───── Administrative Actions ─────
