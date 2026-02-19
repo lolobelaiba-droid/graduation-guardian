@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Trash2, Settings2 } from "lucide-react";
+import { Plus, Trash2, Settings2, Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,164 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
+
+// ======== Compact University Autocomplete for Table Cells ========
+
+interface UniversityCellProps {
+  value: string;
+  onChange: (value: string) => void;
+  suggestions: string[];
+  placeholder?: string;
+  className?: string;
+}
+
+const UniversityCell: React.FC<UniversityCellProps> = ({
+  value,
+  onChange,
+  suggestions,
+  placeholder = "جامعة الانتماء",
+  className,
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState(value || "");
+  const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    setInputValue(value || "");
+  }, [value]);
+
+  const filtered = React.useMemo(() => {
+    if (!inputValue.trim()) return suggestions;
+    const lower = inputValue.toLowerCase();
+    return suggestions.filter(s => s.toLowerCase().includes(lower));
+  }, [suggestions, inputValue]);
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputValue(val);
+    onChange(val);
+    setIsOpen(true);
+    setHighlightedIndex(-1);
+  };
+
+  const handleSelect = (name: string) => {
+    setInputValue(name);
+    onChange(name);
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        setIsOpen(true);
+        e.preventDefault();
+      }
+      return;
+    }
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlightedIndex(prev => prev < filtered.length - 1 ? prev + 1 : prev);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlightedIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
+          handleSelect(filtered[highlightedIndex]);
+        }
+        break;
+      case "Escape":
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+        break;
+    }
+  };
+
+  return (
+    <div ref={containerRef} className={cn("relative", className)}>
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsOpen(true)}
+          placeholder={placeholder}
+          dir="rtl"
+          className="h-8 text-xs pl-6"
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => {
+            setIsOpen(!isOpen);
+            inputRef.current?.focus();
+          }}
+        >
+          <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+        </button>
+      </div>
+
+      {isOpen && filtered.length > 0 && (
+        <div className="absolute z-[100] mt-1 w-full min-w-[280px] rounded-md border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
+          <ScrollArea className="max-h-[200px]">
+            <div className="p-1">
+              {filtered.map((name, index) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={cn(
+                    "relative flex w-full cursor-default select-none items-center rounded-sm px-2.5 py-1.5 text-xs outline-none transition-colors",
+                    highlightedIndex === index
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted hover:text-foreground",
+                    value === name && "text-primary font-medium"
+                  )}
+                  onClick={() => handleSelect(name)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <span className="truncate flex-1" dir="rtl">
+                    {name}
+                  </span>
+                  {value === name && (
+                    <Check className="h-3 w-3 mr-auto shrink-0 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+
+      {isOpen && filtered.length === 0 && inputValue.trim() && (
+        <div className="absolute z-[100] mt-1 w-full min-w-[280px] rounded-md border bg-popover text-popover-foreground shadow-md p-2">
+          <p className="text-xs text-muted-foreground text-center">لا توجد نتائج مطابقة</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ======== Types ========
 
@@ -749,13 +905,11 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
 
                 {/* University */}
                 <td className="py-1.5 px-2 align-middle">
-                    <AutocompleteInput
+                    <UniversityCell
                       value={row.university}
-                      onValueChange={(v) => updateRow(row.id, { university: v })}
+                      onChange={(v) => updateRow(row.id, { university: v })}
                       suggestions={universitySuggestions}
                       placeholder="جامعة الانتماء"
-                      className="h-8 text-xs"
-                      dir="rtl"
                     />
                 </td>
 
@@ -1128,13 +1282,11 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                 </Select>
               </td>
               <td className="py-1.5 px-2 align-middle">
-                <AutocompleteInput
+                <UniversityCell
                   value={supervisor.university}
-                  onValueChange={(v) => handleSupervisorChange({ university: v })}
+                  onChange={(v) => handleSupervisorChange({ university: v })}
                   suggestions={universitySuggestions}
                   placeholder="جامعة الانتماء"
-                  className="h-8 text-xs"
-                  dir="rtl"
                 />
               </td>
             </tr>
@@ -1195,13 +1347,11 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                   </Select>
                 </td>
                 <td className="py-1.5 px-2 align-middle">
-                  <AutocompleteInput
+                  <UniversityCell
                     value={coSupervisor.university}
-                    onValueChange={(v) => handleCoSupervisorChange({ university: v })}
+                    onChange={(v) => handleCoSupervisorChange({ university: v })}
                     suggestions={universitySuggestions}
                     placeholder="جامعة الانتماء"
-                    className="h-8 text-xs"
-                    dir="rtl"
                   />
                 </td>
               </tr>
