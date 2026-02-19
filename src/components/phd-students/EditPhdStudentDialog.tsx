@@ -32,6 +32,7 @@ import {
   useUpdatePhdScienceStudent,
 } from "@/hooks/usePhdStudents";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
+import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
@@ -835,11 +836,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                   <FormItem>
                     <FormLabel>جامعة انتماء المشرف</FormLabel>
                     <FormControl>
-                      <DropdownWithAdd
+                      <UniversityAutocomplete
                         value={field.value || ''}
                         onChange={field.onChange}
-                        optionType="university"
-                        placeholder="اختر أو أضف جامعة المشرف"
+                        placeholder="اختر أو أدخل جامعة المشرف"
                       />
                     </FormControl>
                     <FormMessage />
@@ -881,11 +881,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                   <FormItem>
                     <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
                     <FormControl>
-                      <DropdownWithAdd
+                      <UniversityAutocomplete
                         value={field.value || ''}
                         onChange={field.onChange}
-                        optionType="university"
-                        placeholder="اختر أو أضف جامعة مساعد المشرف"
+                        placeholder="اختر أو أدخل جامعة مساعد المشرف"
                       />
                     </FormControl>
                     <FormMessage />
