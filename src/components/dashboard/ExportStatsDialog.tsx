@@ -43,7 +43,7 @@ const exportTypeLabels: Record<ExportType, string> = {
   university_distribution: "توزيع حسب الجامعة",
   supervisor: "إحصائيات المشرفين",
   co_supervisor_distribution: "توزيع حسب مساعد المشرف",
-  jury_stats: "إحصائيات اللجان (مشرف/رئيس/عضو)",
+  jury_stats: "إحصائيات اللجان (مشرف/م.مساعد/رئيس/عضو/مدعو)",
   status_distribution: "توزيع حسب الحالة",
   mention_distribution: "توزيع حسب التقدير",
   registration_year_distribution: "توزيع حسب سنة أول تسجيل",
@@ -78,7 +78,7 @@ const pivotFieldLabels: Record<PivotField, string> = {
   supervisor_ar: "المشرف",
   jury_president_ar: "رئيس اللجنة",
   professor_name: "اسم الأستاذ",
-  jury_role: "الدور (مشرف/رئيس/عضو)",
+  jury_role: "الدور (مشرف/م.مساعد/رئيس/عضو/مدعو)",
 };
 
 // Pivot fields available for each data source
@@ -578,8 +578,8 @@ export function ExportStatsDialog() {
         case "jury_stats": {
           // Fetch all jury data (president, members, and supervisors)
           const [phdLmd, phdScience, master, academicTitles] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
+            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
+            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
             supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
             supabase.from("academic_titles").select("abbreviation, full_name"),
           ]);
@@ -613,19 +613,21 @@ export function ExportStatsDialog() {
             asPresident: number; 
             asMember: number; 
             asSupervisor: number;
+            asCoSupervisor: number;
             total: number;
             faculties: Set<string>;
             presidentDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
             memberDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
             supervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
+            coSupervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
           }> = {};
 
           const ensureProfessor = (name: string) => {
             if (!professorStats[name]) {
               professorStats[name] = { 
-                asPresident: 0, asMember: 0, asSupervisor: 0, total: 0, 
+                asPresident: 0, asMember: 0, asSupervisor: 0, asCoSupervisor: 0, total: 0, 
                 faculties: new Set(),
-                presidentDetails: [], memberDetails: [], supervisorDetails: [] 
+                presidentDetails: [], memberDetails: [], supervisorDetails: [], coSupervisorDetails: [] 
               };
             }
           };
@@ -650,13 +652,20 @@ export function ExportStatsDialog() {
               });
             }
 
-            // Process members
+            // Process members - filter out supervisor and co_supervisor to avoid double counting
             const membersStr = (record as any).jury_members_ar || "";
-            // Split by common separators: Arabic comma, Latin comma, dash, newline, semicolon
             const members = membersStr.split(/[،,;\n]|\s-\s|\s–\s/).map((m: string) => m.trim()).filter(Boolean);
+            const supervisorName = ((record as any).supervisor_ar || "").trim().toLowerCase();
+            const coSupervisorName = ((record as any).co_supervisor_ar || "").trim().toLowerCase();
             
             members.forEach((member: string) => {
               if (!member) return;
+              // Skip if this member matches supervisor or co_supervisor (they're tracked separately)
+              const memberLower = member.trim().toLowerCase();
+              const memberClean = extractTitleAndName(member).name.toLowerCase();
+              if (supervisorName && (memberLower.endsWith(supervisorName) || memberClean === supervisorName)) return;
+              if (coSupervisorName && (memberLower.endsWith(coSupervisorName) || memberClean === coSupervisorName)) return;
+              
               ensureProfessor(member);
               professorStats[member].asMember++;
               professorStats[member].total++;
@@ -678,6 +687,22 @@ export function ExportStatsDialog() {
               professorStats[supervisor].total++;
               if (faculty) professorStats[supervisor].faculties.add(faculty);
               professorStats[supervisor].supervisorDetails.push({
+                student: record.full_name_ar,
+                specialty: record.specialty_ar,
+                faculty,
+                type: record.certificate_type,
+                date: record.defense_date,
+              });
+            }
+
+            // Process co-supervisor from PhD records
+            const coSupervisor = (record as any).co_supervisor_ar?.trim();
+            if (coSupervisor) {
+              ensureProfessor(coSupervisor);
+              professorStats[coSupervisor].asCoSupervisor++;
+              professorStats[coSupervisor].total++;
+              if (faculty) professorStats[coSupervisor].faculties.add(faculty);
+              professorStats[coSupervisor].coSupervisorDetails.push({
                 student: record.full_name_ar,
                 specialty: record.specialty_ar,
                 faculty,
@@ -717,8 +742,9 @@ export function ExportStatsDialog() {
                 "الرتبة": title,
                 "الكليات": Array.from(stats.faculties).join(" | "),
                 "مشرف": stats.asSupervisor,
+                "مشرف مساعد": stats.asCoSupervisor,
                 "رئيس لجنة": stats.asPresident,
-                "عضو لجنة": stats.asMember,
+                "عضو/مدعو": stats.asMember,
                 "المجموع": stats.total,
               };
             });
@@ -773,7 +799,7 @@ export function ExportStatsDialog() {
                 memberDetails.push({
                   "الأستاذ": cleanName,
                   "الرتبة": title,
-                  "الدور": "عضو لجنة",
+                  "الدور": "عضو/مدعو",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
                   "التخصص": detail.specialty,
@@ -783,14 +809,36 @@ export function ExportStatsDialog() {
               });
             });
 
-          // Create workbook with four sheets
+          // Create co-supervisor details sheet
+          const coSupervisorDetails: any[] = [];
+          Object.entries(professorStats)
+            .sort((a, b) => b[1].asCoSupervisor - a[1].asCoSupervisor)
+            .forEach(([professor, stats]) => {
+              const { title, name: cleanName } = extractTitleAndName(professor);
+              stats.coSupervisorDetails.forEach((detail) => {
+                coSupervisorDetails.push({
+                  "الأستاذ": cleanName,
+                  "الرتبة": title,
+                  "الدور": "مشرف مساعد",
+                  "اسم الطالب": detail.student,
+                  "الكلية": detail.faculty,
+                  "التخصص": detail.specialty,
+                  "نوع الشهادة": detail.type,
+                  "تاريخ المناقشة": detail.date,
+                });
+              });
+            });
+
+          // Create workbook with five sheets
           const wb = XLSX.utils.book_new();
           const wsSummary = XLSX.utils.json_to_sheet(summaryData);
           const wsSupervisor = XLSX.utils.json_to_sheet(supervisorDetails);
+          const wsCoSupervisor = XLSX.utils.json_to_sheet(coSupervisorDetails);
           const wsPresident = XLSX.utils.json_to_sheet(presidentDetails);
           const wsMember = XLSX.utils.json_to_sheet(memberDetails);
           XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص الأساتذة");
           XLSX.utils.book_append_sheet(wb, wsSupervisor, "تفاصيل الإشراف");
+          XLSX.utils.book_append_sheet(wb, wsCoSupervisor, "تفاصيل الإشراف المساعد");
           XLSX.utils.book_append_sheet(wb, wsPresident, "تفاصيل رئاسة اللجان");
           XLSX.utils.book_append_sheet(wb, wsMember, "تفاصيل عضوية اللجان");
           XLSX.writeFile(wb, `إحصائيات_اللجان_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
@@ -893,16 +941,26 @@ export function ExportStatsDialog() {
               if (supervisor) {
                 explodedRecords.push({ ...record, _professor_name: supervisor, _jury_role: "مشرف" });
               }
+              // Co-supervisor
+              const coSupervisor = (record as any).co_supervisor_ar?.trim();
+              if (coSupervisor) {
+                explodedRecords.push({ ...record, _professor_name: coSupervisor, _jury_role: "مشرف مساعد" });
+              }
               // President
               const president = (record as any).jury_president_ar?.trim();
               if (president) {
                 explodedRecords.push({ ...record, _professor_name: president, _jury_role: "رئيس لجنة" });
               }
-              // Members
+              // Members (excluding supervisor/co_supervisor to avoid double counting)
               const membersStr = (record as any).jury_members_ar || "";
               const members = membersStr.split(/[،,;\n]|\s-\s|\s–\s/).map((m: string) => m.trim()).filter(Boolean);
+              const supLower = (supervisor || "").toLowerCase();
+              const coSupLower = (coSupervisor || "").toLowerCase();
               members.forEach((member: string) => {
-                explodedRecords.push({ ...record, _professor_name: member, _jury_role: "عضو لجنة" });
+                const mLower = member.trim().toLowerCase();
+                if (supLower && (mLower.endsWith(supLower) || mLower === supLower)) return;
+                if (coSupLower && (mLower.endsWith(coSupLower) || mLower === coSupLower)) return;
+                explodedRecords.push({ ...record, _professor_name: member, _jury_role: "عضو/مدعو" });
               });
             });
             processedData = explodedRecords;
