@@ -212,15 +212,27 @@ export function useProfessors() {
    * البحث عن أستاذ بالاسم وإرجاع بياناته الكاملة
    */
   const findProfessor = (name: string): Professor | undefined => {
+    const trimmed = name.trim();
+    if (!trimmed) return undefined;
     // Try exact match first
-    const exact = professors.find(p => p.full_name === name.trim());
+    const exact = professors.find(p => p.full_name === trimmed);
     if (exact) return exact;
     
-    // Try without abbreviation - but we need sync access, so use cached abbreviations
+    // Try without abbreviation - use cached abbreviations
     const abbrs = cachedAbbreviations || [];
-    const cleanName = stripAbbreviationSync(name.trim(), abbrs);
-    if (!cleanName) return undefined;
-    return professors.find(p => p.full_name === cleanName);
+    const cleanName = stripAbbreviationSync(trimmed, abbrs);
+    if (cleanName && cleanName !== trimmed) {
+      const found = professors.find(p => p.full_name === cleanName);
+      if (found) return found;
+    }
+    
+    // Try suffix match: check if any professor name appears at the end of the input
+    // This handles cases like "أ د. قلاب ذبيح نوال" → finds "قلاب ذبيح نوال"
+    for (const p of professors) {
+      if (trimmed.endsWith(p.full_name)) return p;
+    }
+    
+    return undefined;
   };
 
   return { professors, professorNames, ensureProfessor, findProfessor };
