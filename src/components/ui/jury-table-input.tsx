@@ -507,17 +507,17 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
           onProfessorDataChange(updated.name, updated.rankLabel, updated.rankAbbreviation, updated.university);
         }
         // Propagate supervisor/co-supervisor changes back to form (name only, no abbreviation)
-        // Set internal flag to prevent the useEffect from re-parsing and wiping rank data
         if (updated.role === "supervisor" && onSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
-          internalChangeRef.current = true;
           onSupervisorChange(updated.name?.trim() || "", updated.university || "");
         }
         if (updated.role === "co_supervisor" && onCoSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
-          internalChangeRef.current = true;
           onCoSupervisorChange(updated.name?.trim() || "", updated.university || "");
         }
         return updated;
       });
+      // CRITICAL: Always set internal flag BEFORE notifyChange to prevent the useEffect
+      // from re-parsing and wiping the rank/university data we just set
+      internalChangeRef.current = true;
       notifyChange(next);
       return next;
     });
