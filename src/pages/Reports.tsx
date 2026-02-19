@@ -153,12 +153,14 @@ export default function Reports() {
   };
 
   const juryStats = useMemo(() => {
-    const map: Record<string, { name: string; title: string; university: string; supervisor: number; president: number; member: number; coSupervisor: number }> = {};
-    const addEntry = (fullName: string, role: 'supervisor' | 'president' | 'member' | 'coSupervisor', university?: string) => {
+    const map: Record<string, { name: string; title: string; university: string; supervisor: number; president: number; member: number; coSupervisor: number; invited: number }> = {};
+    const addEntry = (fullName: string, role: 'supervisor' | 'president' | 'member' | 'coSupervisor' | 'invited', university?: string) => {
       if (!fullName?.trim()) return;
-      const { title, cleanName } = extractTitle(fullName);
+      // Strip (مدعو) suffix before extracting title
+      const cleaned = fullName.replace(/\s*\(مدعو\)\s*$/, '').trim();
+      const { title, cleanName } = extractTitle(cleaned);
       const key = cleanName.toLowerCase();
-      if (!map[key]) map[key] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0 };
+      if (!map[key]) map[key] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 };
       if (!map[key].title && title) map[key].title = title;
       if (!map[key].university && university) map[key].university = university;
       map[key][role]++;
@@ -173,15 +175,18 @@ export default function Reports() {
       ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => {
         const mTrimmed = m.trim();
         if (!mTrimmed) return;
-        const mLower = mTrimmed.toLowerCase();
-        const { cleanName } = extractTitle(mTrimmed);
+        // Detect invited role from (مدعو) suffix
+        const isInvited = mTrimmed.includes('(مدعو)');
+        const mCleanForDedup = mTrimmed.replace(/\s*\(مدعو\)\s*$/, '').trim();
+        const mLower = mCleanForDedup.toLowerCase();
+        const { cleanName } = extractTitle(mCleanForDedup);
         const mClean = cleanName.toLowerCase();
         if (supLower && (mLower.endsWith(supLower) || mClean === supLower)) return;
         if (coSupLower && (mLower.endsWith(coSupLower) || mClean === coSupLower)) return;
-        addEntry(mTrimmed, 'member');
+        addEntry(mTrimmed, isInvited ? 'invited' : 'member');
       });
     });
-    return Object.values(map).map(v => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor })).sort((a, b) => b.total - a.total);
+    return Object.values(map).map(v => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor + v.invited })).sort((a, b) => b.total - a.total);
   }, [filteredDefended, academicTitles]);
 
   const englishTheses = useMemo(() => {
@@ -263,9 +268,9 @@ export default function Reports() {
     });
     const adminActs = def.map(s => ({ name: s.full_name_ar, type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم', supervisor: (s as any).supervisor_ar || '', status: getRegistrationStatus((s as any).registration_count, s._type), councilDate: (s as any).scientific_council_date || '', defenseDate: (s as any).defense_date || '', processingTime: calcProcessingTime((s as any).scientific_council_date, (s as any).defense_date) })).filter(s => s.processingTime !== null).sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
     const juryMap: Record<string, any> = {};
-    const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const { title, cleanName } = extractTitle(fn); const k = cleanName.toLowerCase(); if (!juryMap[k]) juryMap[k] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; if (!juryMap[k].university && university) juryMap[k].university = university; juryMap[k][role]++; };
-    def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor', (s as any).supervisor_university); addJ((s as any).co_supervisor_ar, 'coSupervisor', (s as any).co_supervisor_university); addJ((s as any).jury_president_ar, 'president'); const sL = ((s as any).supervisor_ar || '').trim().toLowerCase(); const cL = ((s as any).co_supervisor_ar || '').trim().toLowerCase(); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { const mt = m.trim(); if (!mt) return; const ml = mt.toLowerCase(); const { cleanName: mc } = extractTitle(mt); if (sL && (ml.endsWith(sL) || mc.toLowerCase() === sL)) return; if (cL && (ml.endsWith(cL) || mc.toLowerCase() === cL)) return; addJ(mt, 'member'); }); });
-    const juryStatsD = Object.values(juryMap).map((v: any) => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor })).sort((a: any, b: any) => b.total - a.total);
+    const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const cleaned = fn.replace(/\s*\(مدعو\)\s*$/, '').trim(); const { title, cleanName } = extractTitle(cleaned); const k = cleanName.toLowerCase(); if (!juryMap[k]) juryMap[k] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; if (!juryMap[k].university && university) juryMap[k].university = university; juryMap[k][role]++; };
+    def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor', (s as any).supervisor_university); addJ((s as any).co_supervisor_ar, 'coSupervisor', (s as any).co_supervisor_university); addJ((s as any).jury_president_ar, 'president'); const sL = ((s as any).supervisor_ar || '').trim().toLowerCase(); const cL = ((s as any).co_supervisor_ar || '').trim().toLowerCase(); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { const mt = m.trim(); if (!mt) return; const isInvited = mt.includes('(مدعو)'); const mtClean = mt.replace(/\s*\(مدعو\)\s*$/, '').trim(); const ml = mtClean.toLowerCase(); const { cleanName: mc } = extractTitle(mtClean); if (sL && (ml.endsWith(sL) || mc.toLowerCase() === sL)) return; if (cL && (ml.endsWith(cL) || mc.toLowerCase() === cL)) return; addJ(mt, isInvited ? 'invited' : 'member'); }); });
+    const juryStatsD = Object.values(juryMap).map((v: any) => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor + v.invited })).sort((a: any, b: any) => b.total - a.total);
     const engT = def.filter(s => (s as any).thesis_language === 'english').map(s => ({ name: s.full_name_ar, branch: (s as any).branch_ar || '', specialty: s.specialty_ar, supervisor: (s as any).supervisor_ar || '', thesisTitle: (s as any).thesis_title_ar || '', defenseDate: (s as any).defense_date || '' }));
     const labM: Record<string, number> = {}; def.forEach(s => { const lab = (s as any).research_lab_ar; if (lab) labM[lab] = (labM[lab] || 0) + 1; });
     const labS = Object.entries(labM).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
@@ -484,7 +489,8 @@ export default function Reports() {
                     <TableHead className="text-center text-xs font-bold text-foreground w-[45px]">مشرف</TableHead>
                     <TableHead className="text-center text-xs font-bold text-foreground w-[55px]">م.مساعد</TableHead>
                     <TableHead className="text-center text-xs font-bold text-foreground w-[55px]">رئيس ل.</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">عضو/مدعو</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">عضو</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">مدعو</TableHead>
                     <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">المجموع</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -499,6 +505,7 @@ export default function Reports() {
                       <TableCell className="text-center text-xs py-2.5">{s.coSupervisor > 0 ? toWesternNumerals(s.coSupervisor) : '-'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s.president > 0 ? toWesternNumerals(s.president) : '-'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s.member > 0 ? toWesternNumerals(s.member) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s.invited > 0 ? toWesternNumerals(s.invited) : '-'}</TableCell>
                       <TableCell className="text-center py-2.5">
                         <Badge variant="outline" className="bg-primary/10 text-primary text-xs">{toWesternNumerals(s.total)}</Badge>
                       </TableCell>

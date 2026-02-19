@@ -45,7 +45,7 @@ export interface ReportExportData {
   }[];
   juryStats: {
     name: string; title: string; university: string; supervisor: number; coSupervisor: number;
-    president: number; member: number; total: number;
+    president: number; member: number; invited: number; total: number;
   }[];
   englishTheses: {
     name: string; branch: string; specialty: string; supervisor: string;
@@ -791,16 +791,17 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       checkPage(15);
       sectionTitle("إحصائيات العضوية (مشرف/مشرف مساعد/رئيس لجنة/عضو/مدعو)");
       const tableW = PW - M * 2;
-      const cols = [6, 32, 18, 28, 15, 15, 15, 15, 15].map(p => (p / 159) * tableW);
+      const cols = [6, 28, 16, 24, 13, 13, 13, 13, 13, 13].map(p => (p / 152) * tableW);
       const rows = data.juryStats.map((s, i) => [
         toWesternNumerals(i + 1), s.name, s.title, s.university || '-',
         s.supervisor > 0 ? toWesternNumerals(s.supervisor) : "-",
         s.coSupervisor > 0 ? toWesternNumerals(s.coSupervisor) : "-",
         s.president > 0 ? toWesternNumerals(s.president) : "-",
         s.member > 0 ? toWesternNumerals(s.member) : "-",
+        s.invited > 0 ? toWesternNumerals(s.invited) : "-",
         toWesternNumerals(s.total),
       ]);
-      drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "عضو/مدعو", "المجموع"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "عضو", "مدعو", "المجموع"], rows, cols);
     }
 
     // ───── Administrative Actions ─────
