@@ -144,46 +144,72 @@ export function parseJury(
     rows.push({ id: makeId(), role: "president", name: "", rankLabel: "", rankAbbreviation: "", university: "" });
   }
 
+  // Pre-parse jury_members_ar to extract rank data for supervisor/co-supervisor
+  // since supervisor_ar is stored as a clean name without abbreviation
+  const juryParts = juryMembersAr?.trim()
+    ? juryMembersAr.split(/\s*-\s*/).map((s) => s.trim()).filter(Boolean)
+    : [];
+  const parsedJuryParts = juryParts.map((p) => ({ raw: p, parsed: parseMember(p, "examiner") }));
+
+  // Helper: find rank data from jury_members for a given clean name
+  const findRankInJury = (cleanName: string) => {
+    if (!cleanName) return null;
+    const lower = cleanName.trim().toLowerCase();
+    for (const { raw, parsed } of parsedJuryParts) {
+      const pName = parsed.name?.trim().toLowerCase() || "";
+      const pRaw = raw.trim().toLowerCase();
+      if (pName === lower || pRaw.endsWith(lower)) {
+        return { rankLabel: parsed.rankLabel, rankAbbreviation: parsed.rankAbbreviation };
+      }
+    }
+    return null;
+  };
+
   // Row 2: Supervisor (auto from supervisor fields)
   const supParsed = supervisorAr?.trim() ? parseMember(supervisorAr.trim(), "supervisor") : null;
   const supRow: JuryMember = supParsed
     ? { ...supParsed, role: "supervisor", university: supervisorUniversity || "" }
     : { id: makeId(), role: "supervisor", name: "", rankLabel: "", rankAbbreviation: "", university: supervisorUniversity || "" };
+  // If supervisor was stored clean (no rank), try to recover rank from jury_members_ar
+  if (supRow.name && !supRow.rankLabel) {
+    const juryRank = findRankInJury(supRow.name);
+    if (juryRank) {
+      supRow.rankLabel = juryRank.rankLabel;
+      supRow.rankAbbreviation = juryRank.rankAbbreviation;
+    }
+  }
   rows.push(supRow);
 
   // Row 3: Co-supervisor (auto, only if present)
   if (coSupervisorAr?.trim()) {
     const coSupParsed = parseMember(coSupervisorAr.trim(), "co_supervisor");
-    rows.push({ ...coSupParsed, role: "co_supervisor", university: coSupervisorUniversity || "" });
+    const coSupRow: JuryMember = { ...coSupParsed, role: "co_supervisor", university: coSupervisorUniversity || "" };
+    // Recover rank from jury_members_ar if needed
+    if (coSupRow.name && !coSupRow.rankLabel) {
+      const juryRank = findRankInJury(coSupRow.name);
+      if (juryRank) {
+        coSupRow.rankLabel = juryRank.rankLabel;
+        coSupRow.rankAbbreviation = juryRank.rankAbbreviation;
+      }
+    }
+    rows.push(coSupRow);
   }
 
   // Remaining rows: other jury members from jury_members_ar
   // Skip entries that match the supervisor or co-supervisor to avoid duplicates
-  if (juryMembersAr?.trim()) {
-    // Clean supervisor name (strip abbreviation if present)
-    const supClean = supervisorAr?.trim() || "";
-    const supParsed = supClean ? parseMember(supClean, "supervisor") : null;
-    const supName = (supParsed?.name || supClean).trim().toLowerCase();
+  const supName = (supRow.name || "").trim().toLowerCase();
+  const coSupClean = coSupervisorAr?.trim() || "";
+  const coSupParsedForDedup = coSupClean ? parseMember(coSupClean, "co_supervisor") : null;
+  const coSupName = (coSupParsedForDedup?.name || coSupClean).trim().toLowerCase();
 
-    const coSupClean = coSupervisorAr?.trim() || "";
-    const coSupParsed = coSupClean ? parseMember(coSupClean, "co_supervisor") : null;
-    const coSupName = (coSupParsed?.name || coSupClean).trim().toLowerCase();
-
-    const parts = juryMembersAr
-      .split(/\s*-\s*/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    parts.forEach((p) => {
-      const parsed = parseMember(p, "examiner");
-      const pName = parsed.name?.trim().toLowerCase() || "";
-      const pRaw = p.trim().toLowerCase();
-      // Skip if this member matches supervisor or co-supervisor
-      // Use multiple strategies: exact parsed name match, or raw string ends with clean name
-      if (supName && (pName === supName || pRaw.endsWith(supName))) return;
-      if (coSupName && (pName === coSupName || pRaw.endsWith(coSupName))) return;
-      rows.push(parsed);
-    });
-  }
+  parsedJuryParts.forEach(({ raw, parsed }) => {
+    const pName = parsed.name?.trim().toLowerCase() || "";
+    const pRaw = raw.trim().toLowerCase();
+    // Skip if this member matches supervisor or co-supervisor
+    if (supName && (pName === supName || pRaw.endsWith(supName))) return;
+    if (coSupName && (pName === coSupName || pRaw.endsWith(coSupName))) return;
+    rows.push(parsed);
+  });
 
   return rows;
 }
@@ -374,6 +400,8 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       return;
     }
 
+    // Reset enrichment flag so professor data can re-enrich after re-parse
+    enrichmentDoneRef.current = false;
     setRows(
       parseJury(
         presidentValue,
