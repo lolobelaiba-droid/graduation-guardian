@@ -558,6 +558,23 @@ export default function Reports() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {/* Average processing time row */}
+                  {(() => {
+                    const totalDays = adminActions.reduce((sum, s) => sum + (s.processingTime?.totalDays || 0), 0);
+                    const avgTotalDays = adminActions.length > 0 ? Math.round(totalDays / adminActions.length) : 0;
+                    const avgMonths = Math.floor(avgTotalDays / 30);
+                    const avgDays = avgTotalDays % 30;
+                    return (
+                      <TableRow className="bg-primary/10 border-t-2 border-primary/30">
+                        <TableCell colSpan={7} className="text-right text-sm font-bold py-3 text-primary">
+                          متوسط مدة المعالجة الإدارية
+                        </TableCell>
+                        <TableCell className="text-center text-sm font-bold py-3 text-primary">
+                          {toWesternNumerals(avgMonths)} شهر {toWesternNumerals(avgDays)} يوم
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })()}
                 </TableBody>
               </Table>
             </div>
