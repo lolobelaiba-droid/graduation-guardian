@@ -801,7 +801,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.invited > 0 ? toWesternNumerals(s.invited) : "-",
         toWesternNumerals(s.total),
       ]);
-      drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "عضو", "مدعو", "المجموع"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "ممتحن", "مدعو", "المجموع"], rows, cols);
     }
 
     // ───── Administrative Actions ─────

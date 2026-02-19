@@ -754,7 +754,7 @@ export function ExportStatsDialog() {
                 "مشرف": stats.asSupervisor,
                 "مشرف مساعد": stats.asCoSupervisor,
                 "رئيس لجنة": stats.asPresident,
-                "عضو": stats.asMember,
+                "عضو ممتحن": stats.asMember,
                 "مدعو": stats.asInvited,
                 "المجموع": stats.total,
               };
@@ -810,7 +810,7 @@ export function ExportStatsDialog() {
                 memberDetails.push({
                   "الأستاذ": cleanName,
                   "الرتبة": title,
-                  "الدور": "عضو",
+                  "الدور": "عضو ممتحن",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
                   "التخصص": detail.specialty,
@@ -995,7 +995,7 @@ export function ExportStatsDialog() {
                 if (coSupLower && (mLower.endsWith(coSupLower) || mLower === coSupLower)) return;
                 const isInvited = member.includes('(مدعو)');
                 const memberClean = member.replace(/\s*\(مدعو\)\s*$/, '').trim();
-                explodedRecords.push({ ...record, _professor_name: memberClean, _jury_role: isInvited ? "مدعو" : "عضو" });
+                explodedRecords.push({ ...record, _professor_name: memberClean, _jury_role: isInvited ? "مدعو" : "عضو ممتحن" });
               });
             });
             processedData = explodedRecords;

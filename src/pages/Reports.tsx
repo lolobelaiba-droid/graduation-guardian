@@ -489,7 +489,7 @@ export default function Reports() {
                     <TableHead className="text-center text-xs font-bold text-foreground w-[45px]">مشرف</TableHead>
                     <TableHead className="text-center text-xs font-bold text-foreground w-[55px]">م.مساعد</TableHead>
                     <TableHead className="text-center text-xs font-bold text-foreground w-[55px]">رئيس ل.</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">عضو</TableHead>
+                    <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">ممتحن</TableHead>
                     <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">مدعو</TableHead>
                     <TableHead className="text-center text-xs font-bold text-foreground w-[50px]">المجموع</TableHead>
                   </TableRow>
