@@ -302,6 +302,9 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   const prevSupRef = React.useRef(supervisorAr);
   const prevCoSupRef = React.useRef(coSupervisorAr);
 
+  // Flag to prevent circular re-parse when change originated from within the table
+  const internalChangeRef = React.useRef(false);
+
   // Sync from outside when values change OR when ranks load from DB
   const prevRanksLenRef = React.useRef(ranks.length);
 
@@ -309,31 +312,74 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
     const ranksJustLoaded = ranks.length > 0 && prevRanksLenRef.current === 0;
     prevRanksLenRef.current = ranks.length;
 
-    const changed =
-      ranksJustLoaded ||
-      presidentValue !== prevPresidentRef.current ||
-      membersValue !== prevMembersRef.current ||
-      supervisorAr !== prevSupRef.current ||
-      coSupervisorAr !== prevCoSupRef.current;
+    const supChanged = supervisorAr !== prevSupRef.current;
+    const coSupChanged = coSupervisorAr !== prevCoSupRef.current;
+    const presChanged = presidentValue !== prevPresidentRef.current;
+    const memChanged = membersValue !== prevMembersRef.current;
 
-    if (changed) {
+    const changed = ranksJustLoaded || presChanged || memChanged || supChanged || coSupChanged;
+
+    if (!changed) return;
+
+    // If the change was triggered internally (from jury table editing), skip full re-parse
+    // to avoid wiping rank/university data that was just set
+    if (internalChangeRef.current) {
+      internalChangeRef.current = false;
       prevPresidentRef.current = presidentValue;
       prevMembersRef.current = membersValue;
       prevSupRef.current = supervisorAr;
       prevCoSupRef.current = coSupervisorAr;
-
-      setRows(
-        parseJury(
-          presidentValue,
-          membersValue,
-          supervisorAr,
-          supervisorUniversity,
-          coSupervisorAr,
-          coSupervisorUniversity,
-          ranks
-        )
-      );
+      return;
     }
+
+    prevPresidentRef.current = presidentValue;
+    prevMembersRef.current = membersValue;
+    prevSupRef.current = supervisorAr;
+    prevCoSupRef.current = coSupervisorAr;
+
+    // When only supervisor/co-supervisor changed (not president/members),
+    // update just those rows instead of full re-parse to preserve rank data
+    if ((supChanged || coSupChanged) && !presChanged && !memChanged && !ranksJustLoaded) {
+      setRows((prev) => {
+        return prev.map((row) => {
+          if (row.role === "supervisor" && supChanged) {
+            const parsed = parseSupervisorString(supervisorAr, ranks);
+            return {
+              ...row,
+              name: parsed.name || supervisorAr,
+              // Only overwrite rank if the new value actually has one
+              rankLabel: parsed.rankLabel || row.rankLabel,
+              rankAbbreviation: parsed.rankAbbreviation || row.rankAbbreviation,
+              university: supervisorUniversity || row.university,
+            };
+          }
+          if (row.role === "co_supervisor" && coSupChanged) {
+            const parsed = parseSupervisorString(coSupervisorAr, ranks);
+            return {
+              ...row,
+              name: parsed.name || coSupervisorAr,
+              rankLabel: parsed.rankLabel || row.rankLabel,
+              rankAbbreviation: parsed.rankAbbreviation || row.rankAbbreviation,
+              university: coSupervisorUniversity || row.university,
+            };
+          }
+          return row;
+        });
+      });
+      return;
+    }
+
+    setRows(
+      parseJury(
+        presidentValue,
+        membersValue,
+        supervisorAr,
+        supervisorUniversity,
+        coSupervisorAr,
+        coSupervisorUniversity,
+        ranks
+      )
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presidentValue, membersValue, supervisorAr, coSupervisorAr, ranks]);
 
@@ -380,10 +426,13 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
           onProfessorDataChange(updated.name, updated.rankLabel, updated.rankAbbreviation, updated.university);
         }
         // Propagate supervisor/co-supervisor changes back to form (name only, no abbreviation)
+        // Set internal flag to prevent the useEffect from re-parsing and wiping rank data
         if (updated.role === "supervisor" && onSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
+          internalChangeRef.current = true;
           onSupervisorChange(updated.name?.trim() || "", updated.university || "");
         }
         if (updated.role === "co_supervisor" && onCoSupervisorChange && (patch.name !== undefined || patch.rankLabel !== undefined || patch.rankAbbreviation !== undefined || patch.university !== undefined)) {
+          internalChangeRef.current = true;
           onCoSupervisorChange(updated.name?.trim() || "", updated.university || "");
         }
         return updated;
@@ -771,14 +820,20 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   // Sync from outside
   const prevSupRef = React.useRef(supervisorValue);
   const prevCoSupRef = React.useRef(coSupervisorValue);
+  const internalSupChangeRef = React.useRef(false);
+  const internalCoSupChangeRef = React.useRef(false);
 
   React.useEffect(() => {
     if (supervisorValue !== prevSupRef.current) {
       prevSupRef.current = supervisorValue;
+      // Skip re-parse if the change originated from within this component
+      if (internalSupChangeRef.current) {
+        internalSupChangeRef.current = false;
+        return;
+      }
       const parsed = parseSupervisorString(supervisorValue, ranks);
       setSupervisor((prev) => ({
         ...parsed,
-        // Preserve existing rank if the new value has no abbreviation (clean name from form)
         rankLabel: parsed.rankLabel || prev.rankLabel,
         rankAbbreviation: parsed.rankAbbreviation || prev.rankAbbreviation,
         university: supervisorUniversity,
@@ -789,6 +844,10 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   React.useEffect(() => {
     if (coSupervisorValue !== prevCoSupRef.current) {
       prevCoSupRef.current = coSupervisorValue;
+      if (internalCoSupChangeRef.current) {
+        internalCoSupChangeRef.current = false;
+        return;
+      }
       const parsed = parseSupervisorString(coSupervisorValue, ranks);
       setCoSupervisor((prev) => ({
         ...parsed,
@@ -802,9 +861,8 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   const handleSupervisorChange = (patch: Partial<SupervisorPerson>) => {
     setSupervisor((prev) => {
       const next = { ...prev, ...patch };
-      // Pass only the clean name (no abbreviation) to the form field
+      internalSupChangeRef.current = true;
       onSupervisorChange(next.name?.trim() || "", next.university);
-      // Save professor data when rank or university changes
       if (onProfessorDataChange && next.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
         onProfessorDataChange(next.name, next.rankLabel, next.rankAbbreviation, next.university);
       }
@@ -815,9 +873,8 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   const handleCoSupervisorChange = (patch: Partial<SupervisorPerson>) => {
     setCoSupervisor((prev) => {
       const next = { ...prev, ...patch };
-      // Pass only the clean name (no abbreviation) to the form field
+      internalCoSupChangeRef.current = true;
       onCoSupervisorChange(next.name?.trim() || "", next.university);
-      // Save professor data when rank or university changes
       if (onProfessorDataChange && next.name && (patch.rankLabel || patch.rankAbbreviation || patch.university)) {
         onProfessorDataChange(next.name, next.rankLabel, next.rankAbbreviation, next.university);
       }
