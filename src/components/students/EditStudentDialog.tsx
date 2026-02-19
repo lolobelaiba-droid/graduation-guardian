@@ -39,6 +39,7 @@ import {
   useUpdateMasterCertificate,
 } from "@/hooks/useCertificates";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
+import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
@@ -525,11 +526,9 @@ export default function EditStudentDialog({
                     <FormItem>
                       <FormLabel>الجامعة (عربي)</FormLabel>
                       <FormControl>
-                        <DropdownWithAdd
+                        <UniversityAutocomplete
                           value={(field.value as string) || ""}
                           onChange={field.onChange}
-                          optionType="university"
-                          placeholder="اختر أو أدخل اسم الجامعة"
                         />
                       </FormControl>
                       <FormMessage />

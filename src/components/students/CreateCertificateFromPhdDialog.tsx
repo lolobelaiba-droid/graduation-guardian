@@ -59,6 +59,7 @@ import {
 } from "@/types/certificates";
 import type { PhdStudent, PhdLmdStudent } from "@/types/phd-students";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
+import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { academicYears } from "@/components/print/AddStudentDialog";
 
@@ -814,11 +815,9 @@ export function CreateCertificateFromPhdDialog({
                     <FormItem>
                       <FormLabel>الجامعة</FormLabel>
                       <FormControl>
-                        <DropdownWithAdd
+                        <UniversityAutocomplete
                           value={field.value || ''}
                           onChange={field.onChange}
-                          optionType="university"
-                          placeholder="اختر أو أدخل اسم الجامعة"
                         />
                       </FormControl>
                       <FormMessage />
