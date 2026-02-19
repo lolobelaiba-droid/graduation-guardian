@@ -40,6 +40,7 @@ import {
   type MentionType,
 } from "@/types/certificates";
 import { DropdownWithAdd } from "./DropdownWithAdd";
+import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
@@ -575,11 +576,9 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                   <FormItem>
                     <FormLabel>الجامعة (عربي)</FormLabel>
                     <FormControl>
-                      <DropdownWithAdd
+                      <UniversityAutocomplete
                         value={field.value || ''}
                         onChange={field.onChange}
-                        optionType="university"
-                        placeholder="اختر أو أدخل اسم الجامعة"
                       />
                     </FormControl>
                     <FormMessage />
