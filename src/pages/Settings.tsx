@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
   Building2,
@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
@@ -88,6 +89,96 @@ export default function Settings() {
   const [restoreProgress, setRestoreProgress] = useState<{ step: string; current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Selective restore state
+  const [selectedRestoreGroups, setSelectedRestoreGroups] = useState<Record<string, boolean>>({});
+
+  const RESTORE_GROUPS = useMemo(() => [
+    {
+      id: "phd_lmd_certs",
+      label: "شهادات دكتوراه ل م د",
+      tables: ["phd_lmd_certificates"],
+      countKey: "phdLmdCount" as keyof BackupSummary,
+    },
+    {
+      id: "phd_science_certs",
+      label: "شهادات دكتوراه علوم",
+      tables: ["phd_science_certificates"],
+      countKey: "phdScienceCount" as keyof BackupSummary,
+    },
+    {
+      id: "master_certs",
+      label: "شهادات الماستر",
+      tables: ["master_certificates"],
+      countKey: "masterCount" as keyof BackupSummary,
+    },
+    {
+      id: "phd_lmd_students",
+      label: "طلبة دكتوراه ل م د",
+      tables: ["phd_lmd_students"],
+      countKey: "phdLmdStudentsCount" as keyof BackupSummary,
+    },
+    {
+      id: "phd_science_students",
+      label: "طلبة دكتوراه علوم",
+      tables: ["phd_science_students"],
+      countKey: "phdScienceStudentsCount" as keyof BackupSummary,
+    },
+    {
+      id: "templates",
+      label: "القوالب وحقولها",
+      tables: ["certificate_templates", "certificate_template_fields"],
+      countKey: "templatesCount" as keyof BackupSummary,
+    },
+    {
+      id: "settings",
+      label: "الإعدادات",
+      tables: ["settings", "user_settings"],
+      countKey: null,
+    },
+    {
+      id: "dropdown_options",
+      label: "خيارات القوائم المنسدلة",
+      tables: ["dropdown_options"],
+      countKey: null,
+    },
+    {
+      id: "custom_fields",
+      label: "الحقول المخصصة وقيمها",
+      tables: ["custom_fields", "custom_field_values", "custom_field_options"],
+      countKey: null,
+    },
+    {
+      id: "academic_titles",
+      label: "الألقاب العلمية",
+      tables: ["academic_titles"],
+      countKey: null,
+    },
+    {
+      id: "custom_fonts",
+      label: "الخطوط المخصصة",
+      tables: ["custom_fonts"],
+      countKey: null,
+    },
+    {
+      id: "activity_log",
+      label: "سجل النشاطات",
+      tables: ["activity_log"],
+      countKey: null,
+    },
+    {
+      id: "print_history",
+      label: "سجل الطباعة",
+      tables: ["print_history"],
+      countKey: null,
+    },
+    {
+      id: "notes",
+      label: "الملاحظات",
+      tables: ["notes"],
+      countKey: null,
+    },
+  ], []);
 
   // Logo state
   const [universityLogo, setUniversityLogo] = useState<string | null>(null);
@@ -378,6 +469,11 @@ export default function Settings() {
       console.warn("Could not fetch current data for comparison:", e);
     }
 
+    // Initialize all groups as selected
+    const initialSelection: Record<string, boolean> = {};
+    RESTORE_GROUPS.forEach(g => { initialSelection[g.id] = true; });
+    setSelectedRestoreGroups(initialSelection);
+
     setPendingBackupData({ data: tableData as unknown as Record<string, unknown[]>, summary: backupSummary });
     setCurrentDataSummary(currentSummary);
     return true;
@@ -488,6 +584,21 @@ export default function Settings() {
   const confirmRestore = async () => {
     if (!pendingBackupData) return;
 
+    // Collect selected tables from groups
+    const selectedTables: string[] = [];
+    RESTORE_GROUPS.forEach(g => {
+      if (selectedRestoreGroups[g.id]) {
+        selectedTables.push(...g.tables);
+      }
+    });
+
+    if (selectedTables.length === 0) {
+      toast.error("يرجى اختيار عنصر واحد على الأقل للاستعادة");
+      return;
+    }
+
+    const isFullRestore = selectedTables.length === RESTORE_GROUPS.flatMap(g => g.tables).length;
+
     setShowRestoreConfirm(false);
     setIsRestoring(true);
     setRestoreProgress({ step: "حفظ البيانات الحالية...", current: 0, total: 1 });
@@ -505,9 +616,11 @@ export default function Settings() {
         data: pendingBackupData.data as BackupData['data'],
       };
 
-      const { error } = await BackupService.importAll(backupToRestore, (step, current, total) => {
-        setRestoreProgress({ step, current, total });
-      });
+      const { error } = await BackupService.importAll(
+        backupToRestore,
+        (step, current, total) => { setRestoreProgress({ step, current, total }); },
+        isFullRestore ? undefined : selectedTables
+      );
       if (error) throw error;
 
       setCanUndo(true);
@@ -569,55 +682,99 @@ export default function Settings() {
     <div className="space-y-6">
       {/* Restore Confirmation Dialog */}
       <AlertDialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
-        <AlertDialogContent className="max-w-lg" dir="rtl">
+        <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-right">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               تأكيد الاستعادة
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-right space-y-4">
-              <p>سيتم استبدال جميع البيانات الحالية بالبيانات من النسخة الاحتياطية.</p>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-                  <h4 className="font-semibold text-destructive mb-2">البيانات الحالية (ستُحذف)</h4>
-                  <ul className="text-sm space-y-1 text-foreground">
-                    <li>• شهادات دكتوراه ل م د: {toWesternNumerals(currentDataSummary?.phdLmdCount || 0)}</li>
-                    <li>• شهادات دكتوراه علوم: {toWesternNumerals(currentDataSummary?.phdScienceCount || 0)}</li>
-                    <li>• شهادات ماجستير: {toWesternNumerals(currentDataSummary?.masterCount || 0)}</li>
-                    <li>• طلبة دكتوراه ل م د: {toWesternNumerals(currentDataSummary?.phdLmdStudentsCount || 0)}</li>
-                    <li>• طلبة دكتوراه علوم: {toWesternNumerals(currentDataSummary?.phdScienceStudentsCount || 0)}</li>
-                    <li>• القوالب: {toWesternNumerals(currentDataSummary?.templatesCount || 0)}</li>
-                  </ul>
+            <AlertDialogDescription asChild>
+              <div className="text-right space-y-4">
+                <p>اختر العناصر التي تريد استعادتها من النسخة الاحتياطية. سيتم استبدال البيانات الحالية فقط للعناصر المحددة.</p>
+                
+                {pendingBackupData?.summary.createdAt && (
+                  <p className="text-xs text-muted-foreground">
+                    تاريخ النسخة: {formatDate(pendingBackupData.summary.createdAt)}
+                  </p>
+                )}
+
+                {/* Select All / Deselect All */}
+                <div className="flex items-center gap-3 pb-2 border-b">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const all: Record<string, boolean> = {};
+                      RESTORE_GROUPS.forEach(g => { all[g.id] = true; });
+                      setSelectedRestoreGroups(all);
+                    }}
+                  >
+                    تحديد الكل
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const none: Record<string, boolean> = {};
+                      RESTORE_GROUPS.forEach(g => { none[g.id] = false; });
+                      setSelectedRestoreGroups(none);
+                    }}
+                  >
+                    إلغاء تحديد الكل
+                  </Button>
+                </div>
+
+                {/* Table groups with checkboxes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {RESTORE_GROUPS.map(group => {
+                    const backupCount = group.countKey ? (pendingBackupData?.summary[group.countKey] as number || 0) : null;
+                    const currentCount = group.countKey ? (currentDataSummary?.[group.countKey] as number || 0) : null;
+                    const isChecked = selectedRestoreGroups[group.id] ?? true;
+                    
+                    return (
+                      <label
+                        key={group.id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          isChecked
+                            ? "bg-primary/5 border-primary/30"
+                            : "bg-muted/30 border-border opacity-60"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            setSelectedRestoreGroups(prev => ({ ...prev, [group.id]: !!checked }));
+                          }}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{group.label}</p>
+                          {backupCount !== null && (
+                            <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                              <span>في النسخة: <span className="text-primary font-medium">{toWesternNumerals(backupCount)}</span></span>
+                              <span>الحالي: <span className="text-destructive font-medium">{toWesternNumerals(currentCount || 0)}</span></span>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
                 
-                <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
-                  <h4 className="font-semibold text-primary mb-2">النسخة الاحتياطية (ستُستعاد)</h4>
-                  <ul className="text-sm space-y-1 text-foreground">
-                    <li>• شهادات دكتوراه ل م د: {toWesternNumerals(pendingBackupData?.summary.phdLmdCount || 0)}</li>
-                    <li>• شهادات دكتوراه علوم: {toWesternNumerals(pendingBackupData?.summary.phdScienceCount || 0)}</li>
-                    <li>• شهادات ماجستير: {toWesternNumerals(pendingBackupData?.summary.masterCount || 0)}</li>
-                    <li>• طلبة دكتوراه ل م د: {toWesternNumerals(pendingBackupData?.summary.phdLmdStudentsCount || 0)}</li>
-                    <li>• طلبة دكتوراه علوم: {toWesternNumerals(pendingBackupData?.summary.phdScienceStudentsCount || 0)}</li>
-                    <li>• القوالب: {toWesternNumerals(pendingBackupData?.summary.templatesCount || 0)}</li>
-                  </ul>
-                  {pendingBackupData?.summary.createdAt && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      تاريخ النسخة: {formatDate(pendingBackupData.summary.createdAt)}
-                    </p>
-                  )}
-                </div>
+                <p className="text-destructive text-sm">
+                  ⚠️ يمكنك التراجع عن هذا الإجراء خلال نفس الجلسة فقط
+                </p>
               </div>
-              
-              <p className="text-destructive text-sm">
-                ⚠️ يمكنك التراجع عن هذا الإجراء خلال نفس الجلسة فقط
-              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogCancel onClick={cancelRestore}>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRestore} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              تأكيد الاستعادة
+            <AlertDialogAction
+              onClick={confirmRestore}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={!Object.values(selectedRestoreGroups).some(Boolean)}
+            >
+              استعادة المحدد ({Object.values(selectedRestoreGroups).filter(Boolean).length} من {RESTORE_GROUPS.length})
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -153,7 +153,8 @@ export class BackupService {
    */
   static async importAll(
     backupData: BackupData,
-    onProgress?: (step: string, current: number, total: number) => void
+    onProgress?: (step: string, current: number, total: number) => void,
+    selectedTables?: string[]
   ): Promise<{ success: boolean; error: Error | null }> {
     const TABLE_LABELS: Record<string, string> = {
       phd_lmd_certificates: "شهادات دكتوراه ل م د",
@@ -193,19 +194,20 @@ export class BackupService {
       const { data: tableData } = backupData;
 
       // Count total restore steps
-      const allTables = [
+      const fullTableList = [
         "phd_lmd_certificates", "phd_science_certificates", "master_certificates",
         "phd_lmd_students", "phd_science_students", "dropdown_options", "custom_fonts",
         "academic_titles", "activity_log", "settings", "user_settings", "notes",
         "certificate_templates", "custom_fields",
         "certificate_template_fields", "custom_field_values", "custom_field_options", "print_history",
       ];
+      const allTables = selectedTables ? fullTableList.filter(t => selectedTables.includes(t)) : fullTableList;
+      const isPartial = !!selectedTables;
       const totalSteps = allTables.length + 2; // +2 for delete phases
       let currentStep = 0;
       
       // Helper to delete all rows from a table
       const deleteTable = async (tableName: string) => {
-        // Use gte to match all UUIDs (covers all possible id values)
         const { error } = await supabase
           .from(tableName as 'settings')
           .delete()
@@ -213,32 +215,26 @@ export class BackupService {
         if (error) console.warn(`Warning deleting ${tableName}:`, error.message);
       };
 
-      // Delete existing data
+      const shouldRestore = (t: string) => allTables.includes(t);
+
+      // Delete existing data - only for selected tables
       onProgress?.("حذف البيانات القديمة (الجداول المرتبطة)...", ++currentStep, totalSteps);
       await Promise.all([
-        deleteTable("custom_field_values"),
-        deleteTable("custom_field_options"),
-        deleteTable("certificate_template_fields"),
-        deleteTable("print_history"),
-      ]);
+        shouldRestore("custom_field_values") && deleteTable("custom_field_values"),
+        shouldRestore("custom_field_options") && deleteTable("custom_field_options"),
+        shouldRestore("certificate_template_fields") && deleteTable("certificate_template_fields"),
+        shouldRestore("print_history") && deleteTable("print_history"),
+      ].filter(Boolean));
 
       onProgress?.("حذف البيانات القديمة (الجداول الرئيسية)...", ++currentStep, totalSteps);
-      await Promise.all([
-        deleteTable("certificate_templates"),
-        deleteTable("custom_fields"),
-        deleteTable("phd_lmd_certificates"),
-        deleteTable("phd_science_certificates"),
-        deleteTable("master_certificates"),
-        deleteTable("phd_lmd_students"),
-        deleteTable("phd_science_students"),
-        deleteTable("dropdown_options"),
-        deleteTable("custom_fonts"),
-        deleteTable("academic_titles"),
-        deleteTable("activity_log"),
-        deleteTable("user_settings"),
-        deleteTable("settings"),
-        deleteTable("notes"),
-      ]);
+      const mainDeletes = [
+        "certificate_templates", "custom_fields",
+        "phd_lmd_certificates", "phd_science_certificates", "master_certificates",
+        "phd_lmd_students", "phd_science_students",
+        "dropdown_options", "custom_fonts", "academic_titles",
+        "activity_log", "user_settings", "settings", "notes",
+      ].filter(shouldRestore).map(deleteTable);
+      await Promise.all(mainDeletes);
 
       // Helper to restore a table in batches
       const BATCH_SIZE = 500;
@@ -296,29 +292,34 @@ export class BackupService {
         }
       };
 
-      // Independent tables (sequential for progress visibility)
-      await restoreTable("phd_lmd_certificates", tableData.phd_lmd_certificates);
-      await restoreTable("phd_science_certificates", tableData.phd_science_certificates);
-      await restoreTable("master_certificates", tableData.master_certificates);
-      await restoreTable("phd_lmd_students", tableData.phd_lmd_students);
-      await restoreTable("phd_science_students", tableData.phd_science_students);
-      await restoreTable("dropdown_options", tableData.dropdown_options);
-      await restoreTable("custom_fonts", tableData.custom_fonts);
-      await restoreTable("academic_titles", tableData.academic_titles);
-      await restoreTable("activity_log", tableData.activity_log);
-      await restoreTable("settings", tableData.settings);
-      await restoreTable("user_settings", tableData.user_settings);
-      await restoreTable("notes", tableData.notes);
+      // Independent tables (sequential for progress visibility) - only selected
+      const independentTables: [string, unknown[] | undefined][] = [
+        ["phd_lmd_certificates", tableData.phd_lmd_certificates],
+        ["phd_science_certificates", tableData.phd_science_certificates],
+        ["master_certificates", tableData.master_certificates],
+        ["phd_lmd_students", tableData.phd_lmd_students],
+        ["phd_science_students", tableData.phd_science_students],
+        ["dropdown_options", tableData.dropdown_options],
+        ["custom_fonts", tableData.custom_fonts],
+        ["academic_titles", tableData.academic_titles],
+        ["activity_log", tableData.activity_log],
+        ["settings", tableData.settings],
+        ["user_settings", tableData.user_settings],
+        ["notes", tableData.notes],
+      ];
+      for (const [name, data] of independentTables) {
+        if (shouldRestore(name)) await restoreTable(name, data);
+      }
 
       // Parent tables with dependents
-      await restoreTable("certificate_templates", tableData.certificate_templates);
-      await restoreTable("custom_fields", tableData.custom_fields);
+      if (shouldRestore("certificate_templates")) await restoreTable("certificate_templates", tableData.certificate_templates);
+      if (shouldRestore("custom_fields")) await restoreTable("custom_fields", tableData.custom_fields);
 
       // Dependent tables
-      await restoreTable("certificate_template_fields", tableData.certificate_template_fields);
-      await restoreTable("custom_field_values", tableData.custom_field_values);
-      await restoreTable("custom_field_options", tableData.custom_field_options);
-      await restoreTable("print_history", tableData.print_history);
+      if (shouldRestore("certificate_template_fields")) await restoreTable("certificate_template_fields", tableData.certificate_template_fields);
+      if (shouldRestore("custom_field_values")) await restoreTable("custom_field_values", tableData.custom_field_values);
+      if (shouldRestore("custom_field_options")) await restoreTable("custom_field_options", tableData.custom_field_options);
+      if (shouldRestore("print_history")) await restoreTable("print_history", tableData.print_history);
 
       return { success: true, error: null };
     } catch (error) {
