@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { usePhdLmdStudents, usePhdScienceStudents } from "@/hooks/usePhdStudents";
 import { usePhdLmdCertificates, usePhdScienceCertificates } from "@/hooks/useCertificates";
+import { useProfessors } from "@/hooks/useProfessors";
 import { toWesternNumerals } from "@/lib/numerals";
 import { calculateKpi, calcProcessingTime, getRegistrationStatus } from "@/lib/kpi-calculator";
 import { generateStrategicInsights, type InsightCard } from "@/lib/strategic-insights";
@@ -30,6 +31,7 @@ export default function Reports() {
   const { data: regScience = [], isLoading: l2 } = usePhdScienceStudents();
   const { data: defLmd = [], isLoading: l3 } = usePhdLmdCertificates();
   const { data: defScience = [], isLoading: l4 } = usePhdScienceCertificates();
+  const { findProfessor } = useProfessors();
   const { data: academicTitles = [] } = useQuery({
     queryKey: ["academic_titles_report"],
     queryFn: async () => {
@@ -160,9 +162,11 @@ export default function Reports() {
       const cleaned = fullName.replace(/\s*\(مدعو\)\s*$/, '').trim();
       const { title, cleanName } = extractTitle(cleaned);
       const key = cleanName.toLowerCase();
-      if (!map[key]) map[key] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 };
+      // If no university passed, try to find it from professors DB
+      const resolvedUniversity = university || findProfessor(cleaned)?.university || '';
+      if (!map[key]) map[key] = { name: cleanName, title, university: resolvedUniversity, supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 };
       if (!map[key].title && title) map[key].title = title;
-      if (!map[key].university && university) map[key].university = university;
+      if (!map[key].university && resolvedUniversity) map[key].university = resolvedUniversity;
       map[key][role]++;
     };
     filteredDefended.forEach(s => {
@@ -187,7 +191,7 @@ export default function Reports() {
       });
     });
     return Object.values(map).map(v => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor + v.invited })).sort((a, b) => b.total - a.total);
-  }, [filteredDefended, academicTitles]);
+  }, [filteredDefended, academicTitles, findProfessor]);
 
   const englishTheses = useMemo(() => {
     return filteredDefended.filter(s => (s as any).thesis_language === 'english').map(s => ({
@@ -268,7 +272,7 @@ export default function Reports() {
     });
     const adminActs = def.map(s => ({ name: s.full_name_ar, type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم', supervisor: (s as any).supervisor_ar || '', status: getRegistrationStatus((s as any).registration_count, s._type), councilDate: (s as any).scientific_council_date || '', defenseDate: (s as any).defense_date || '', processingTime: calcProcessingTime((s as any).scientific_council_date, (s as any).defense_date) })).filter(s => s.processingTime !== null).sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
     const juryMap: Record<string, any> = {};
-    const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const cleaned = fn.replace(/\s*\(مدعو\)\s*$/, '').trim(); const { title, cleanName } = extractTitle(cleaned); const k = cleanName.toLowerCase(); if (!juryMap[k]) juryMap[k] = { name: cleanName, title, university: university || '', supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; if (!juryMap[k].university && university) juryMap[k].university = university; juryMap[k][role]++; };
+    const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const cleaned = fn.replace(/\s*\(مدعو\)\s*$/, '').trim(); const { title, cleanName } = extractTitle(cleaned); const k = cleanName.toLowerCase(); const resolvedUni = university || findProfessor(cleaned)?.university || ''; if (!juryMap[k]) juryMap[k] = { name: cleanName, title, university: resolvedUni, supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; if (!juryMap[k].university && resolvedUni) juryMap[k].university = resolvedUni; juryMap[k][role]++; };
     def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor', (s as any).supervisor_university); addJ((s as any).co_supervisor_ar, 'coSupervisor', (s as any).co_supervisor_university); addJ((s as any).jury_president_ar, 'president'); const sL = ((s as any).supervisor_ar || '').trim().toLowerCase(); const cL = ((s as any).co_supervisor_ar || '').trim().toLowerCase(); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { const mt = m.trim(); if (!mt) return; const isInvited = mt.includes('(مدعو)'); const mtClean = mt.replace(/\s*\(مدعو\)\s*$/, '').trim(); const ml = mtClean.toLowerCase(); const { cleanName: mc } = extractTitle(mtClean); if (sL && (ml.endsWith(sL) || mc.toLowerCase() === sL)) return; if (cL && (ml.endsWith(cL) || mc.toLowerCase() === cL)) return; addJ(mt, isInvited ? 'invited' : 'member'); }); });
     const juryStatsD = Object.values(juryMap).map((v: any) => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor + v.invited })).sort((a: any, b: any) => b.total - a.total);
     const engT = def.filter(s => (s as any).thesis_language === 'english').map(s => ({ name: s.full_name_ar, branch: (s as any).branch_ar || '', specialty: s.specialty_ar, supervisor: (s as any).supervisor_ar || '', thesisTitle: (s as any).thesis_title_ar || '', defenseDate: (s as any).defense_date || '' }));
