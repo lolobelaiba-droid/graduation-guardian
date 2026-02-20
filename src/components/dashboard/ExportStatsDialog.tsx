@@ -577,17 +577,26 @@ export function ExportStatsDialog() {
 
         case "jury_stats": {
           // Fetch all jury data (president, members, and supervisors)
-          const [phdLmd, phdScience, master, academicTitles] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
+          const [phdLmd, phdScience, master, academicTitles, professorsData] = await Promise.all([
+            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
+            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
             supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
             supabase.from("academic_titles").select("abbreviation, full_name"),
+            supabase.from("professors").select("full_name, university"),
           ]);
 
           // Build titles map for extracting rank
           const titlesMap = new Map<string, string>();
           (academicTitles.data || []).forEach((t) => {
             titlesMap.set(t.abbreviation, t.full_name);
+          });
+
+          // Build professors map for university lookup (by clean name)
+          const professorsMap = new Map<string, string>();
+          (professorsData.data || []).forEach((p) => {
+            if (p.university) {
+              professorsMap.set(p.full_name.trim().toLowerCase(), p.university);
+            }
           });
 
           // Helper to extract title and name
@@ -601,6 +610,12 @@ export function ExportStatsDialog() {
             return { title: "", name: trimmed };
           };
 
+          // Helper: look up university from professors DB by clean name
+          const findUniversityForName = (rawName: string): string => {
+            const { name: cleanName } = extractTitleAndName(rawName.trim());
+            return professorsMap.get(cleanName.toLowerCase()) || professorsMap.get(rawName.trim().toLowerCase()) || '';
+          };
+
           const allRecords = [
             ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
             ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
@@ -608,8 +623,11 @@ export function ExportStatsDialog() {
 
           const masterRecords = (master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" }));
 
-          // Track professor appearances
+          // Track professor appearances - KEY is the CLEAN name (without title) to avoid duplicates
           const professorStats: Record<string, { 
+            displayName: string; // original raw name (first seen)
+            title: string;
+            university: string;
             asPresident: number; 
             asMember: number; 
             asInvited: number;
@@ -624,101 +642,108 @@ export function ExportStatsDialog() {
             coSupervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
           }> = {};
 
-          const ensureProfessor = (name: string) => {
-            if (!professorStats[name]) {
-              professorStats[name] = { 
+          const ensureProfessor = (rawName: string, university?: string) => {
+            if (!rawName?.trim()) return '';
+            const { title, name: cleanName } = extractTitleAndName(rawName.replace(/\s*\(مدعو\)\s*$/, '').trim());
+            const key = cleanName.toLowerCase();
+            if (!professorStats[key]) {
+              const resolvedUni = university || findUniversityForName(rawName) || '';
+              professorStats[key] = { 
+                displayName: cleanName,
+                title,
+                university: resolvedUni,
                 asPresident: 0, asMember: 0, asInvited: 0, asSupervisor: 0, asCoSupervisor: 0, total: 0, 
                 faculties: new Set(),
                 presidentDetails: [], memberDetails: [], invitedDetails: [], supervisorDetails: [], coSupervisorDetails: [] 
               };
+            } else {
+              // Enrich: update title and university if missing
+              if (!professorStats[key].title && title) professorStats[key].title = title;
+              const resolvedUni = university || findUniversityForName(rawName);
+              if (!professorStats[key].university && resolvedUni) professorStats[key].university = resolvedUni;
             }
+            return key;
           };
 
           // Process PhD records (president, members, supervisor)
           allRecords.forEach((record) => {
             const faculty = record.faculty_ar || "";
+            const supRaw = ((record as any).supervisor_ar || "").trim();
+            const coSupRaw = ((record as any).co_supervisor_ar || "").trim();
+            const supCleanKey = supRaw ? extractTitleAndName(supRaw).name.toLowerCase() : '';
+            const coSupCleanKey = coSupRaw ? extractTitleAndName(coSupRaw).name.toLowerCase() : '';
 
             // Process president
             const president = (record as any).jury_president_ar?.trim();
             if (president) {
-              ensureProfessor(president);
-              professorStats[president].asPresident++;
-              professorStats[president].total++;
-              if (faculty) professorStats[president].faculties.add(faculty);
-              professorStats[president].presidentDetails.push({
-                student: record.full_name_ar,
-                specialty: record.specialty_ar,
-                faculty,
-                type: record.certificate_type,
-                date: record.defense_date,
-              });
+              const key = ensureProfessor(president);
+              if (key) {
+                professorStats[key].asPresident++;
+                professorStats[key].total++;
+                if (faculty) professorStats[key].faculties.add(faculty);
+                professorStats[key].presidentDetails.push({
+                  student: record.full_name_ar, specialty: record.specialty_ar,
+                  faculty, type: record.certificate_type, date: record.defense_date,
+                });
+              }
             }
 
             // Process members - filter out supervisor and co_supervisor to avoid double counting
             const membersStr = (record as any).jury_members_ar || "";
             const members = membersStr.split(/[،,;\n]|\s-\s|\s–\s/).map((m: string) => m.trim()).filter(Boolean);
-            const supervisorName = ((record as any).supervisor_ar || "").trim().toLowerCase();
-            const coSupervisorName = ((record as any).co_supervisor_ar || "").trim().toLowerCase();
             
             members.forEach((member: string) => {
               if (!member) return;
-              // Detect invited role from (مدعو) suffix
               const isInvited = member.includes('(مدعو)');
-              const memberCleanForDedup = member.replace(/\s*\(مدعو\)\s*$/, '').trim();
-              // Skip if this member matches supervisor or co_supervisor (they're tracked separately)
-              const memberLower = memberCleanForDedup.trim().toLowerCase();
-              const memberClean = extractTitleAndName(memberCleanForDedup).name.toLowerCase();
-              if (supervisorName && (memberLower.endsWith(supervisorName) || memberClean === supervisorName)) return;
-              if (coSupervisorName && (memberLower.endsWith(coSupervisorName) || memberClean === coSupervisorName)) return;
+              const memberCleanRaw = member.replace(/\s*\(مدعو\)\s*$/, '').trim();
+              const memberCleanKey = extractTitleAndName(memberCleanRaw).name.toLowerCase();
+              // Skip if matches supervisor or co_supervisor clean names
+              if (supCleanKey && memberCleanKey === supCleanKey) return;
+              if (coSupCleanKey && memberCleanKey === coSupCleanKey) return;
               
-              // Use cleaned name (without مدعو suffix) as key
-              const cleanedMember = memberCleanForDedup;
-              ensureProfessor(cleanedMember);
+              const key = ensureProfessor(member);
+              if (!key) return;
               if (isInvited) {
-                professorStats[cleanedMember].asInvited++;
-                professorStats[cleanedMember].invitedDetails.push({
+                professorStats[key].asInvited++;
+                professorStats[key].invitedDetails.push({
                   student: record.full_name_ar, specialty: record.specialty_ar, faculty, type: record.certificate_type, date: record.defense_date,
                 });
               } else {
-                professorStats[cleanedMember].asMember++;
-                professorStats[cleanedMember].memberDetails.push({
+                professorStats[key].asMember++;
+                professorStats[key].memberDetails.push({
                   student: record.full_name_ar, specialty: record.specialty_ar, faculty, type: record.certificate_type, date: record.defense_date,
                 });
               }
-              professorStats[cleanedMember].total++;
-              if (faculty) professorStats[cleanedMember].faculties.add(faculty);
+              professorStats[key].total++;
+              if (faculty) professorStats[key].faculties.add(faculty);
             });
 
             // Process supervisor from PhD records
-            const supervisor = (record as any).supervisor_ar?.trim();
-            if (supervisor) {
-              ensureProfessor(supervisor);
-              professorStats[supervisor].asSupervisor++;
-              professorStats[supervisor].total++;
-              if (faculty) professorStats[supervisor].faculties.add(faculty);
-              professorStats[supervisor].supervisorDetails.push({
-                student: record.full_name_ar,
-                specialty: record.specialty_ar,
-                faculty,
-                type: record.certificate_type,
-                date: record.defense_date,
-              });
+            if (supRaw) {
+              const key = ensureProfessor(supRaw, (record as any).supervisor_university || '');
+              if (key) {
+                professorStats[key].asSupervisor++;
+                professorStats[key].total++;
+                if (faculty) professorStats[key].faculties.add(faculty);
+                professorStats[key].supervisorDetails.push({
+                  student: record.full_name_ar, specialty: record.specialty_ar,
+                  faculty, type: record.certificate_type, date: record.defense_date,
+                });
+              }
             }
 
             // Process co-supervisor from PhD records
-            const coSupervisor = (record as any).co_supervisor_ar?.trim();
-            if (coSupervisor) {
-              ensureProfessor(coSupervisor);
-              professorStats[coSupervisor].asCoSupervisor++;
-              professorStats[coSupervisor].total++;
-              if (faculty) professorStats[coSupervisor].faculties.add(faculty);
-              professorStats[coSupervisor].coSupervisorDetails.push({
-                student: record.full_name_ar,
-                specialty: record.specialty_ar,
-                faculty,
-                type: record.certificate_type,
-                date: record.defense_date,
-              });
+            if (coSupRaw) {
+              const key = ensureProfessor(coSupRaw, (record as any).co_supervisor_university || '');
+              if (key) {
+                professorStats[key].asCoSupervisor++;
+                professorStats[key].total++;
+                if (faculty) professorStats[key].faculties.add(faculty);
+                professorStats[key].coSupervisorDetails.push({
+                  student: record.full_name_ar, specialty: record.specialty_ar,
+                  faculty, type: record.certificate_type, date: record.defense_date,
+                });
+              }
             }
           });
 
@@ -727,49 +752,46 @@ export function ExportStatsDialog() {
             const faculty = record.faculty_ar || "";
             const supervisor = (record as any).supervisor_ar?.trim();
             if (supervisor) {
-              ensureProfessor(supervisor);
-              professorStats[supervisor].asSupervisor++;
-              professorStats[supervisor].total++;
-              if (faculty) professorStats[supervisor].faculties.add(faculty);
-              professorStats[supervisor].supervisorDetails.push({
-                student: record.full_name_ar,
-                specialty: record.specialty_ar,
-                faculty,
-                type: record.certificate_type,
-                date: record.defense_date,
-              });
+              const key = ensureProfessor(supervisor);
+              if (key) {
+                professorStats[key].asSupervisor++;
+                professorStats[key].total++;
+                if (faculty) professorStats[key].faculties.add(faculty);
+                professorStats[key].supervisorDetails.push({
+                  student: record.full_name_ar, specialty: record.specialty_ar,
+                  faculty, type: record.certificate_type, date: record.defense_date,
+                });
+              }
             }
           });
 
-          // Create summary sheet with title and faculties
+          // Create summary sheet - key is already clean name
           const summaryData = Object.entries(professorStats)
             .sort((a, b) => b[1].total - a[1].total)
-            .map(([name, stats], index) => {
-              const { title, name: cleanName } = extractTitleAndName(name);
-              return {
-                "الترتيب": index + 1,
-                "اسم الأستاذ": cleanName,
-                "الرتبة": title,
-                "الكليات": Array.from(stats.faculties).join(" | "),
-                "مشرف": stats.asSupervisor,
-                "مشرف مساعد": stats.asCoSupervisor,
-                "رئيس لجنة": stats.asPresident,
-                "عضو ممتحن": stats.asMember,
-                "مدعو": stats.asInvited,
-                "المجموع": stats.total,
-              };
-            });
+            .map(([, stats], index) => ({
+              "الترتيب": index + 1,
+              "اسم الأستاذ": stats.displayName,
+              "الرتبة": stats.title,
+              "جامعة الانتماء": stats.university,
+              "الكليات": Array.from(stats.faculties).join(" | "),
+              "مشرف": stats.asSupervisor,
+              "مشرف مساعد": stats.asCoSupervisor,
+              "رئيس لجنة": stats.asPresident,
+              "عضو ممتحن": stats.asMember,
+              "مدعو": stats.asInvited,
+              "المجموع": stats.total,
+            }));
 
           // Create supervisor details sheet
           const supervisorDetails: any[] = [];
-          Object.entries(professorStats)
-            .sort((a, b) => b[1].asSupervisor - a[1].asSupervisor)
-            .forEach(([professor, stats]) => {
-              const { title, name: cleanName } = extractTitleAndName(professor);
+          Object.values(professorStats)
+            .sort((a, b) => b.asSupervisor - a.asSupervisor)
+            .forEach((stats) => {
               stats.supervisorDetails.forEach((detail) => {
                 supervisorDetails.push({
-                  "الأستاذ": cleanName,
-                  "الرتبة": title,
+                  "الأستاذ": stats.displayName,
+                  "الرتبة": stats.title,
+                  "جامعة الانتماء": stats.university,
                   "الدور": "مشرف",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
@@ -782,14 +804,14 @@ export function ExportStatsDialog() {
 
           // Create president details sheet
           const presidentDetails: any[] = [];
-          Object.entries(professorStats)
-            .sort((a, b) => b[1].asPresident - a[1].asPresident)
-            .forEach(([professor, stats]) => {
-              const { title, name: cleanName } = extractTitleAndName(professor);
+          Object.values(professorStats)
+            .sort((a, b) => b.asPresident - a.asPresident)
+            .forEach((stats) => {
               stats.presidentDetails.forEach((detail) => {
                 presidentDetails.push({
-                  "الأستاذ": cleanName,
-                  "الرتبة": title,
+                  "الأستاذ": stats.displayName,
+                  "الرتبة": stats.title,
+                  "جامعة الانتماء": stats.university,
                   "الدور": "رئيس لجنة",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
@@ -802,14 +824,14 @@ export function ExportStatsDialog() {
 
           // Create member details sheet
           const memberDetails: any[] = [];
-          Object.entries(professorStats)
-            .sort((a, b) => b[1].asMember - a[1].asMember)
-            .forEach(([professor, stats]) => {
-              const { title, name: cleanName } = extractTitleAndName(professor);
+          Object.values(professorStats)
+            .sort((a, b) => b.asMember - a.asMember)
+            .forEach((stats) => {
               stats.memberDetails.forEach((detail) => {
                 memberDetails.push({
-                  "الأستاذ": cleanName,
-                  "الرتبة": title,
+                  "الأستاذ": stats.displayName,
+                  "الرتبة": stats.title,
+                  "جامعة الانتماء": stats.university,
                   "الدور": "عضو ممتحن",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
@@ -822,14 +844,14 @@ export function ExportStatsDialog() {
 
           // Create co-supervisor details sheet
           const coSupervisorDetails: any[] = [];
-          Object.entries(professorStats)
-            .sort((a, b) => b[1].asCoSupervisor - a[1].asCoSupervisor)
-            .forEach(([professor, stats]) => {
-              const { title, name: cleanName } = extractTitleAndName(professor);
+          Object.values(professorStats)
+            .sort((a, b) => b.asCoSupervisor - a.asCoSupervisor)
+            .forEach((stats) => {
               stats.coSupervisorDetails.forEach((detail) => {
                 coSupervisorDetails.push({
-                  "الأستاذ": cleanName,
-                  "الرتبة": title,
+                  "الأستاذ": stats.displayName,
+                  "الرتبة": stats.title,
+                  "جامعة الانتماء": stats.university,
                   "الدور": "مشرف مساعد",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
@@ -842,14 +864,14 @@ export function ExportStatsDialog() {
 
           // Create invited details sheet
           const invitedDetails: any[] = [];
-          Object.entries(professorStats)
-            .sort((a, b) => b[1].asInvited - a[1].asInvited)
-            .forEach(([professor, stats]) => {
-              const { title, name: cleanName } = extractTitleAndName(professor);
+          Object.values(professorStats)
+            .sort((a, b) => b.asInvited - a.asInvited)
+            .forEach((stats) => {
               stats.invitedDetails.forEach((detail) => {
                 invitedDetails.push({
-                  "الأستاذ": cleanName,
-                  "الرتبة": title,
+                  "الأستاذ": stats.displayName,
+                  "الرتبة": stats.title,
+                  "جامعة الانتماء": stats.university,
                   "الدور": "مدعو",
                   "اسم الطالب": detail.student,
                   "الكلية": detail.faculty,
