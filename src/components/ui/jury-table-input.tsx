@@ -13,7 +13,6 @@ import {
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
-import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 
 // ======== Compact University Autocomplete for Table Cells ========
 
@@ -28,17 +27,10 @@ interface UniversityCellProps {
 const UniversityCell: React.FC<UniversityCellProps> = ({
   value,
   onChange,
-  suggestions: externalSuggestions = [],
+  suggestions,
   placeholder = "جامعة الانتماء",
   className,
 }) => {
-  const { universityNames } = useUniversityOptions();
-  // Merge external suggestions with DB-loaded university names, deduplicated
-  const suggestions = React.useMemo(() => {
-    const all = [...universityNames, ...externalSuggestions];
-    return [...new Set(all)];
-  }, [universityNames, externalSuggestions]);
-
   const [isOpen, setIsOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value || "");
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
