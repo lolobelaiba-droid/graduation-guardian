@@ -453,7 +453,7 @@ const RankCell: React.FC<RankCellProps> = ({
 
   return (
     <div className="flex flex-col gap-1 min-w-[150px]">
-      <Select value={resolvedLabel} onValueChange={handleSelectRank}>
+      <Select value={resolvedLabel || undefined} onValueChange={handleSelectRank}>
         <SelectTrigger className="h-8 text-xs">
           <SelectValue placeholder="اختر الرتبة" />
         </SelectTrigger>
