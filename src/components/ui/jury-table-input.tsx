@@ -909,7 +909,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 {/* Rank */}
                 <td className="py-1.5 px-2 align-middle">
                     <Select
-                      value={row.rankLabel}
+                      value={row.rankLabel || undefined}
                       onValueChange={(label) => {
                         const found = (ranks.length > 0 ? ranks : DEFAULT_ACADEMIC_RANKS).find((r) => r.label === label);
                         updateRow(row.id, { rankLabel: label, rankAbbreviation: found?.abbreviation || row.rankAbbreviation });
@@ -1291,7 +1291,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
               </td>
               <td className="py-1.5 px-2 align-middle">
                 <Select
-                  value={supervisor.rankLabel}
+                  value={supervisor.rankLabel || undefined}
                   onValueChange={(v) => handleRankSelect(v, handleSupervisorChange)}
                 >
                   <SelectTrigger className="h-8 text-xs">
@@ -1356,7 +1356,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                 </td>
                 <td className="py-1.5 px-2 align-middle">
                   <Select
-                    value={coSupervisor.rankLabel}
+                    value={coSupervisor.rankLabel || undefined}
                     onValueChange={(v) => handleRankSelect(v, handleCoSupervisorChange)}
                   >
                     <SelectTrigger className="h-8 text-xs">
