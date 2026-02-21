@@ -22,6 +22,47 @@ function isRemoteUrl(url: string): boolean {
   return url.startsWith('http://') || url.startsWith('https://');
 }
 
+/**
+ * Check if URL is a file:// protocol URL (Electron local files)
+ */
+function isFileUrl(url: string): boolean {
+  return url.startsWith('file://');
+}
+
+/**
+ * Try fetching a font from multiple possible paths
+ */
+async function tryFetchFont(url: string): Promise<Response | null> {
+  // Try the URL as-is first
+  try {
+    const response = await fetch(url);
+    if (response.ok) return response;
+  } catch { /* continue */ }
+
+  // For file:// URLs in Electron, try reading via IPC as fallback
+  if (isFileUrl(url) && window.electronAPI?.db?.getCachedFileUrl) {
+    // Extract just the file name and try to locate it in the cache
+    const fileName = url.split('/').pop() || '';
+    if (fileName) {
+      try {
+        // Try fetching from the known cache directory via alternative paths
+        const basePaths = [
+          url.replace('file:///', '').replace('file://', ''), // absolute path
+        ];
+        for (const bp of basePaths) {
+          try {
+            const fileUrl = `file:///${bp.replace(/\\/g, '/')}`;
+            const resp = await fetch(fileUrl);
+            if (resp.ok) return resp;
+          } catch { /* next */ }
+        }
+      } catch { /* continue */ }
+    }
+  }
+
+  return null;
+}
+
 async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
   if (!font.url || font.isSystem) return true;
   
@@ -34,39 +75,51 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
     // للخطوط المخصصة من الإنترنت: استخدم التخزين المحلي في Electron
     if (isRemoteUrl(font.url)) {
       urlToFetch = await cacheFontAsset(font.url);
+    } else if (isFileUrl(font.url)) {
+      // file:// URLs from Electron - use directly
+      urlToFetch = font.url;
     } else {
       urlToFetch = resolveElectronFontUrl(font.url);
     }
     
-    const response = await fetch(urlToFetch);
-    if (!response.ok) {
-      // Try alternative paths for packaged Electron app (local fonts only)
+    // Try primary and fallback fetching
+    let response = await tryFetchFont(urlToFetch);
+    
+    // For local bundled fonts, try alternative paths
+    if (!response) {
       const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
       if (isFileProtocol && font.url.startsWith('/fonts/')) {
         const fileName = font.url.replace('/fonts/', '');
-        const altPaths = [`../fonts/${fileName}`, `../../fonts/${fileName}`];
+        const altPaths = [`./fonts/${fileName}`, `../fonts/${fileName}`, `../../fonts/${fileName}`];
         for (const alt of altPaths) {
           try {
             const altResponse = await fetch(alt);
             if (altResponse.ok) {
-              const buffer = await altResponse.arrayBuffer();
-              const fontFace = new FontFace(font.family, buffer, {
-                style: font.style === 'italic' ? 'italic' : 'normal',
-                weight: font.style === 'bold' ? 'bold' : 'normal',
-              });
-              const loaded = await fontFace.load();
-              document.fonts.add(loaded);
-              loadedFonts.add(fontKey);
-              logger.log(`[FontLoader] Loaded font (alt path): ${font.family} (${font.style})`);
-              return true;
+              response = altResponse;
+              break;
             }
           } catch { /* try next */ }
         }
       }
+    }
+    
+    if (!response) {
       throw new Error(`Failed to fetch font: ${urlToFetch}`);
     }
     
     const buffer = await response.arrayBuffer();
+    
+    // Validate font data before loading (check magic bytes)
+    const header = new Uint8Array(buffer, 0, 4);
+    const magic = String.fromCharCode(...header);
+    // Valid font signatures: \x00\x01\x00\x00 (TrueType), OTTO (OpenType), wOFF (WOFF), wOF2 (WOFF2)
+    const validSignatures = ['\x00\x01\x00\x00', 'OTTO', 'wOFF', 'wOF2', 'true', 'typ1'];
+    const isValidFont = validSignatures.some(sig => magic.startsWith(sig)) || header[0] === 0 ;
+    if (!isValidFont) {
+      logger.error(`[FontLoader] Invalid font file for ${font.family}: magic="${magic}" (hex: ${Array.from(header).map(b => b.toString(16)).join(' ')})`);
+      throw new Error(`Invalid font data for ${font.family} - file may be corrupted. Please re-upload the font.`);
+    }
+    
     const fontFace = new FontFace(font.family, buffer, {
       style: font.style === 'italic' ? 'italic' : 'normal',
       weight: font.style === 'bold' ? 'bold' : 'normal',
