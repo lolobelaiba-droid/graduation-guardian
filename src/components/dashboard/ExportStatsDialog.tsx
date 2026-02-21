@@ -660,7 +660,7 @@ export function ExportStatsDialog() {
             const key = cleanName.toLowerCase();
             if (!professorStats[key]) {
               const profData = findProfessorData(rawName);
-              const resolvedUni = university || profData.university || '';
+              const resolvedUni = profData.university || university || '';
               const resolvedTitle = profData.rank_label || '';
               professorStats[key] = { 
                 displayName: cleanName,
@@ -674,7 +674,7 @@ export function ExportStatsDialog() {
               // Enrich: update title and university if missing
               const profData = findProfessorData(rawName);
               if (!professorStats[key].title && profData.rank_label) professorStats[key].title = profData.rank_label;
-              const resolvedUni = university || profData.university;
+              const resolvedUni = profData.university || university;
               if (!professorStats[key].university && resolvedUni) professorStats[key].university = resolvedUni;
             }
             return key;
