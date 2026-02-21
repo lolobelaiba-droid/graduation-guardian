@@ -960,7 +960,7 @@ export default function PrintCertificates() {
                   <p>لا يوجد قالب محدد</p>
                   <p className="text-sm mt-2">اختر قالباً من القائمة أعلاه أو أنشئ قالباً جديداً</p>
                   <Select 
-                    value="" 
+                    value={undefined} 
                     onValueChange={(v) => {
                       if (v) {
                         const template = templates.find(t => t.id === v);
@@ -1391,7 +1391,7 @@ export default function PrintCertificates() {
                   <div className="space-y-3">
                     <Label>القالب المستخدم</Label>
                     <Select 
-                      value={selectedTemplateId || ""} 
+                      value={selectedTemplateId || undefined} 
                       onValueChange={(v) => {
                         if (v) {
                           const template = templates.find(t => t.id === v);
