@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Trash2, Check, ChevronDown } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
 
-// ======== Compact University Autocomplete for Table Cells ========
+// ======== Compact University Select for Table Cells ========
 
 interface UniversityCellProps {
   value: string;
@@ -29,162 +29,22 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
   onChange,
   suggestions,
   placeholder = "جامعة الانتماء",
-  className,
 }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState(value || "");
-  const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const listRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    setInputValue(value || "");
-  }, [value]);
-
-  const filtered = React.useMemo(() => {
-    if (!inputValue.trim()) return suggestions;
-    const lower = inputValue.toLowerCase();
-    return suggestions.filter(s => s.toLowerCase().includes(lower));
-  }, [suggestions, inputValue]);
-
-  React.useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInputValue(val);
-    onChange(val);
-    setIsOpen(true);
-    setHighlightedIndex(-1);
-  };
-
-  const handleSelect = (name: string) => {
-    setInputValue(name);
-    onChange(name);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen) {
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        setIsOpen(true);
-        e.preventDefault();
-      }
-      return;
-    }
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setHighlightedIndex(prev => {
-          const next = prev < filtered.length - 1 ? prev + 1 : prev;
-          requestAnimationFrame(() => {
-            listRef.current?.querySelector(`[data-index="${next}"]`)?.scrollIntoView({ block: "nearest" });
-          });
-          return next;
-        });
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setHighlightedIndex(prev => {
-          const next = prev > 0 ? prev - 1 : -1;
-          if (next >= 0) {
-            requestAnimationFrame(() => {
-              listRef.current?.querySelector(`[data-index="${next}"]`)?.scrollIntoView({ block: "nearest" });
-            });
-          }
-          return next;
-        });
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
-          handleSelect(filtered[highlightedIndex]);
-        }
-        break;
-      case "Escape":
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-        break;
-    }
-  };
-
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          dir="rtl"
-          className="h-8 text-xs pl-6"
-          autoComplete="off"
-        />
-        <button
-          type="button"
-          tabIndex={-1}
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => {
-            setIsOpen(!isOpen);
-            inputRef.current?.focus();
-          }}
-        >
-          <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
-        </button>
-      </div>
-
-      {isOpen && filtered.length > 0 && (
-        <div
-          ref={listRef as any}
-          className="absolute z-[9999] mt-1 w-full min-w-[280px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95"
-        >
-          <div className="max-h-[200px] overflow-y-auto p-1">
-            {filtered.map((name, index) => (
-              <div
-                key={name}
-                data-index={index}
-                className={cn(
-                  "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors",
-                  highlightedIndex === index
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-accent hover:text-accent-foreground",
-                  value === name && "text-primary font-medium"
-                )}
-                onClick={() => handleSelect(name)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-              >
-                <span className="truncate flex-1" dir="rtl">
-                  {name}
-                </span>
-                {value === name && (
-                  <Check className="h-3 w-3 mr-auto shrink-0 text-primary" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {isOpen && filtered.length === 0 && inputValue.trim() && (
-        <div className="absolute z-[100] mt-1 w-full min-w-[280px] rounded-md border bg-popover text-popover-foreground shadow-md p-2">
-          <p className="text-xs text-muted-foreground text-center">لا توجد نتائج مطابقة</p>
-        </div>
-      )}
-    </div>
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className="h-8 text-xs">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {suggestions.map((name) => (
+          <SelectItem key={name} value={name}>
+            {name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 };
-
 // ======== Types ========
 
 export type JuryRole =
@@ -787,7 +647,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-visible rounded-md border border-border">
+      <div className="overflow-x-auto rounded-md border border-border">
         <table className="w-full text-sm" dir="rtl">
           <thead>
             <tr className="bg-muted/60 border-b border-border">
@@ -1222,7 +1082,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
         <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
       </div>
 
-      <div className="overflow-visible rounded-md border border-border">
+      <div className="overflow-x-auto rounded-md border border-border">
         <table className="w-full text-sm" dir="rtl">
           <thead>
             <tr className="bg-muted/60 border-b border-border">
