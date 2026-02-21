@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Plus, Trash2, Loader2, Pencil, Check, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAcademicTitles, AcademicTitle } from "@/hooks/useAcademicTitles";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -84,9 +85,13 @@ export const ManageAcademicTitlesDialog: React.FC<ManageAcademicTitlesDialogProp
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="ghost" size="icon" className="h-6 w-6" title="إدارة الرتب العلمية">
-            <Settings className="h-3.5 w-3.5" />
-          </Button>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center h-5 w-5 rounded-full border border-dashed border-muted-foreground/50 hover:border-primary hover:text-primary transition-colors"
+            title="إدارة الرتب العلمية"
+          >
+            <Settings className="h-3 w-3" />
+          </button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-md" dir="rtl">
