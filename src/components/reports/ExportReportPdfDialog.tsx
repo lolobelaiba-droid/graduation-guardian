@@ -21,6 +21,24 @@ import { getRegistrationStatus } from "@/lib/kpi-calculator";
 import type { InsightCard } from "@/lib/strategic-insights";
 
 // ─── Types ───────────────────────────────────────────────────────────
+export interface JuryDiversityData {
+  similarityIndex: number;
+  totalSeats: number;
+  uniqueProfessors: number;
+  diversityPercent: number;
+  recurringPatterns: {
+    juryNames: string[];
+    students: {
+      name: string;
+      supervisor: string;
+      coSupervisor: string;
+      president: string;
+      members: string[];
+      invited: string[];
+    }[];
+  }[];
+}
+
 export interface ReportExportData {
   facultyName?: string;
   kpi: KpiResult;
@@ -57,9 +75,10 @@ export interface ReportExportData {
     supervisor: string; defenseDate: string;
   }[];
   insights?: InsightCard[];
+  juryDiversity?: JuryDiversityData;
 }
 
-type SectionKey = "kpi" | "insights" | "registered" | "defended" | "jury" | "admin" | "english" | "labs" | "assistants";
+type SectionKey = "kpi" | "insights" | "registered" | "defended" | "jury" | "juryDiversity" | "admin" | "english" | "labs" | "assistants";
 type ExportMode = "general" | "faculty" | "full";
 
 const sectionLabels: Record<SectionKey, string> = {
@@ -68,6 +87,7 @@ const sectionLabels: Record<SectionKey, string> = {
   registered: "أولا: الطلبة المسجلين",
   defended: "ثانيا: الطلبة المناقشين",
   jury: "إحصائيات العضوية",
+  juryDiversity: "تحليل تنوع لجان المناقشة",
   admin: "ثالثا: الإجراءات الإدارية",
   english: "رابعا: المناقشات باللغة الإنجليزية",
   labs: "خامسا: عدد المناقشات حسب مخابر البحث",
@@ -804,7 +824,152 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       drawTable(["#", "الاسم واللقب", "الرتبة", "الجامعة", "مشرف", "م.مساعد", "رئيس ل.", "ممتحن", "مدعو", "المجموع"], rows, cols);
     }
 
-    // ───── Administrative Actions ─────
+    // ───── Jury Diversity Analysis ─────
+    if (selectedSections.includes("juryDiversity") && data.juryDiversity) {
+      doc.addPage();
+      y = 15;
+      sectionTitle("تحليل تنوع لجان المناقشة");
+
+      const jd = data.juryDiversity;
+
+      // Gauge
+      const gaugeR = 14;
+      const gaugeX = PW / 2;
+      const gaugeY = y + gaugeR + 2;
+
+      // Gauge background circle
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(2);
+      doc.circle(gaugeX, gaugeY, gaugeR, "S");
+
+      // Gauge colored circle
+      if (jd.similarityIndex > 40) doc.setDrawColor(239, 68, 68);
+      else if (jd.similarityIndex > 25) doc.setDrawColor(234, 179, 8);
+      else doc.setDrawColor(34, 197, 94);
+      doc.setLineWidth(2.5);
+      doc.circle(gaugeX, gaugeY, gaugeR, "S");
+
+      // Value in center
+      doc.setFont("Amiri", "bold");
+      doc.setFontSize(16);
+      if (jd.similarityIndex > 40) doc.setTextColor(239, 68, 68);
+      else if (jd.similarityIndex > 25) doc.setTextColor(234, 179, 8);
+      else doc.setTextColor(34, 197, 94);
+      doc.text(toWesternNumerals(jd.similarityIndex) + "%", gaugeX, gaugeY + 1, { align: "center" });
+      doc.setFontSize(8);
+      doc.text(processText("مؤشر التشابه"), gaugeX, gaugeY + 5, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+
+      y = gaugeY + gaugeR + 6;
+
+      // Stats row
+      const statsW = (PW - M * 2) / 3;
+      const statsData = [
+        { label: "إجمالي المقاعد", value: toWesternNumerals(jd.totalSeats) },
+        { label: "أساتذة فريدين", value: toWesternNumerals(jd.uniqueProfessors) },
+        { label: "نسبة التنوع", value: toWesternNumerals(jd.diversityPercent) + "%" },
+      ];
+      statsData.forEach((s, i) => {
+        const cx = PW - M - (i * statsW) - statsW / 2;
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(66, 133, 244);
+        doc.text(s.value, cx, y + 3, { align: "center" });
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(processText(s.label), cx, y + 7, { align: "center" });
+      });
+      doc.setTextColor(0, 0, 0);
+      y += 12;
+
+      // Interpretation text
+      checkPage(12);
+      let interpText = "";
+      let interpR = 34, interpG = 197, interpB = 94;
+      if (jd.similarityIndex > 40) {
+        interpText = "مؤشر تشابه مرتفع — يُوصى بتوسيع قاعدة الأساتذة المشاركين في لجان المناقشة لضمان التنوع الأكاديمي.";
+        interpR = 239; interpG = 68; interpB = 68;
+      } else if (jd.similarityIndex > 25) {
+        interpText = "مؤشر تشابه متوسط — التنوع مقبول لكن يمكن تحسينه عبر إشراك أساتذة جدد.";
+        interpR = 234; interpG = 179; interpB = 8;
+      } else {
+        interpText = "مؤشر تشابه منخفض — اللجان تتميز بتنوع جيد وتوزيع عادل للمسؤوليات العلمية.";
+      }
+      doc.setFillColor(interpR, interpG, interpB);
+      doc.rect(PW - M - 2, y, 2, 6, "F");
+      doc.setFont("Amiri", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(interpR, interpG, interpB);
+      const interpLines = doc.splitTextToSize(processText(interpText), PW - M * 2 - 6);
+      doc.text(interpLines, PW - M - 5, y + 3.5, { align: "right" });
+      doc.setTextColor(0, 0, 0);
+      y += Math.max(8, interpLines.length * 4) + 4;
+
+      // Recurring patterns tables
+      if (jd.recurringPatterns.length > 0) {
+        checkPage(10);
+        doc.setFont("Amiri", "bold");
+        doc.setFontSize(10);
+        doc.text(processText(`الأنماط المتكررة في تشكيلة اللجان (${toWesternNumerals(jd.recurringPatterns.length)} نمط)`), PW - M, y, { align: "right" });
+        y += 6;
+
+        jd.recurringPatterns.forEach((pattern) => {
+          checkPage(20);
+
+          // Pattern header with jury names
+          doc.setFillColor(240, 245, 255);
+          doc.setDrawColor(66, 133, 244);
+          doc.setLineWidth(0.3);
+          doc.rect(M, y, PW - M * 2, 6, "FD");
+          doc.setFont("Amiri", "bold");
+          doc.setFontSize(8);
+          doc.setTextColor(66, 133, 244);
+          doc.text(processText(`${toWesternNumerals(pattern.students.length)} طلبة — اللجنة: ${pattern.juryNames.join('، ')}`), PW - M - 2, y + 3.5, { align: "right", maxWidth: PW - M * 2 - 4 });
+          doc.setTextColor(0, 0, 0);
+          y += 7;
+
+          // Determine max members for this pattern
+          let maxMem = 0;
+          pattern.students.forEach(st => { if (st.members.length > maxMem) maxMem = st.members.length; });
+          maxMem = Math.max(maxMem, 2);
+
+          // Build headers
+          const patHeaders = ["الطالب", "المشرف", "م.مساعد", "رئيس اللجنة"];
+          for (let mi = 0; mi < maxMem; mi++) patHeaders.push(`ممتحن ${toWesternNumerals(mi + 1)}`);
+          patHeaders.push("مدعو");
+
+          const baseCols = [30, 22, 22, 22];
+          const memColW = 22;
+          const remaining = (PW - M * 2) - baseCols.reduce((a, b) => a + b, 0) - maxMem * memColW;
+          const invitedW = Math.max(remaining, 18);
+          const patCols = [...baseCols, ...Array(maxMem).fill(memColW), invitedW];
+          // Normalize
+          const totalColW = patCols.reduce((a: number, b: number) => a + b, 0);
+          const tableW = PW - M * 2;
+          const normCols = patCols.map((c: number) => (c / totalColW) * tableW);
+
+          const patRows = pattern.students.map(st => {
+            const row = [st.name, st.supervisor || '-', st.coSupervisor || '-', st.president || '-'];
+            for (let mi = 0; mi < maxMem; mi++) row.push(st.members[mi] || '-');
+            row.push(st.invited.length > 0 ? st.invited.join('، ') : '-');
+            return row;
+          });
+
+          drawTable(patHeaders, patRows, normCols);
+        });
+      } else {
+        checkPage(10);
+        doc.setFont("Amiri", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(34, 197, 94);
+        doc.text(processText("لا توجد أنماط متكررة — كل لجنة مناقشة فريدة في تشكيلتها"), PW / 2, y + 3, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+        y += 10;
+      }
+    }
+
+
     if (selectedSections.includes("admin")) {
       checkPage(15);
       sectionTitle("ثالثا: الإجراءات الإدارية");
