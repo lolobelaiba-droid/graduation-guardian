@@ -147,7 +147,7 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
       {isOpen && filtered.length > 0 && (
         <div
           ref={listRef as any}
-          className="absolute z-50 mt-1 w-full min-w-[280px] rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
+          className="absolute z-[9999] mt-1 w-full min-w-[280px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95"
         >
           <div className="max-h-[200px] overflow-y-auto p-1">
             {filtered.map((name, index) => (
@@ -787,7 +787,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div className="overflow-visible rounded-md border border-border">
         <table className="w-full text-sm" dir="rtl">
           <thead>
             <tr className="bg-muted/60 border-b border-border">
@@ -1222,7 +1222,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
         <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div className="overflow-visible rounded-md border border-border">
         <table className="w-full text-sm" dir="rtl">
           <thead>
             <tr className="bg-muted/60 border-b border-border">
