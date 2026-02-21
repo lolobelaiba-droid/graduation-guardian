@@ -28,6 +28,7 @@ export interface BackupData {
     custom_field_options?: TablesInsert<'custom_field_options'>[];
     print_history?: TablesInsert<'print_history'>[];
     notes?: TablesInsert<'notes'>[];
+    professors?: TablesInsert<'professors'>[];
   };
 }
 
@@ -96,6 +97,7 @@ export class BackupService {
         customFieldOptions,
         printHistory,
         notes,
+        professors,
       ] = await Promise.all([
         this.fetchAllRows("phd_lmd_certificates"),
         this.fetchAllRows("phd_science_certificates"),
@@ -115,6 +117,7 @@ export class BackupService {
         this.fetchAllRows("custom_field_options"),
         this.fetchAllRows("print_history"),
         this.fetchAllRows("notes"),
+        this.fetchAllRows("professors"),
       ]);
 
       const backupData: BackupData = {
@@ -139,6 +142,7 @@ export class BackupService {
           custom_field_options: customFieldOptions as TablesInsert<'custom_field_options'>[],
           print_history: printHistory as TablesInsert<'print_history'>[],
           notes: notes as TablesInsert<'notes'>[],
+          professors: professors as TablesInsert<'professors'>[],
         },
       };
 
@@ -175,6 +179,7 @@ export class BackupService {
       custom_field_options: "خيارات الحقول المخصصة",
       print_history: "سجل الطباعة",
       notes: "الملاحظات",
+      professors: "الأساتذة",
     };
 
     if (isElectron()) {
@@ -197,7 +202,7 @@ export class BackupService {
       const fullTableList = [
         "phd_lmd_certificates", "phd_science_certificates", "master_certificates",
         "phd_lmd_students", "phd_science_students", "dropdown_options", "custom_fonts",
-        "academic_titles", "activity_log", "settings", "user_settings", "notes",
+        "academic_titles", "activity_log", "settings", "user_settings", "notes", "professors",
         "certificate_templates", "custom_fields",
         "certificate_template_fields", "custom_field_values", "custom_field_options", "print_history",
       ];
@@ -232,7 +237,7 @@ export class BackupService {
         "phd_lmd_certificates", "phd_science_certificates", "master_certificates",
         "phd_lmd_students", "phd_science_students",
         "dropdown_options", "custom_fonts", "academic_titles",
-        "activity_log", "user_settings", "settings", "notes",
+        "activity_log", "user_settings", "settings", "notes", "professors",
       ].filter(shouldRestore).map(deleteTable);
       await Promise.all(mainDeletes);
 
@@ -306,6 +311,7 @@ export class BackupService {
         ["settings", tableData.settings],
         ["user_settings", tableData.user_settings],
         ["notes", tableData.notes],
+        ["professors", tableData.professors],
       ];
       for (const [name, data] of independentTables) {
         if (shouldRestore(name)) await restoreTable(name, data);
