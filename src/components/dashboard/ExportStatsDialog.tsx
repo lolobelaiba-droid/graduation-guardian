@@ -1358,7 +1358,7 @@ export function ExportStatsDialog() {
                   )}
                 </div>
                 {getAvailableFields().length > 0 && (
-                  <Select value="" onValueChange={(v) => addRowField(v as PivotField)}>
+                  <Select value={undefined} onValueChange={(v) => addRowField(v as PivotField)}>
                     <SelectTrigger className="w-full">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Plus className="h-4 w-4" />
@@ -1398,7 +1398,7 @@ export function ExportStatsDialog() {
                   )}
                 </div>
                 {getAvailableFields().length > 0 && (
-                  <Select value="" onValueChange={(v) => addColField(v as PivotField)}>
+                  <Select value={undefined} onValueChange={(v) => addColField(v as PivotField)}>
                     <SelectTrigger className="w-full">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Plus className="h-4 w-4" />

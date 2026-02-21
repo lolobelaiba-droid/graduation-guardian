@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 
@@ -211,7 +212,7 @@ export function useProfessors() {
   /**
    * البحث عن أستاذ بالاسم وإرجاع بياناته الكاملة
    */
-  const findProfessor = (name: string): Professor | undefined => {
+  const findProfessor = useCallback((name: string): Professor | undefined => {
     const trimmed = name.trim();
     if (!trimmed) return undefined;
     // Try exact match first
@@ -233,7 +234,7 @@ export function useProfessors() {
     }
     
     return undefined;
-  };
+  }, [professors]);
 
   return { professors, professorNames, ensureProfessor, findProfessor };
 }

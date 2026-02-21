@@ -411,7 +411,7 @@ export default function EditStudentDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>الجنس</FormLabel>
-                      <Select onValueChange={field.onChange} value={(field.value as string) || ""}>
+                      <Select onValueChange={field.onChange} value={(field.value as string) || undefined}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="اختر الجنس" />

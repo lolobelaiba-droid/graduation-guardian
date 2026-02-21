@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp, AlertTriangle, CheckCircle2, Lightbulb, Brain, Info, Shuffle } from "lucide-react";
 import { JuryDiversitySection } from "@/components/reports/JuryDiversitySection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,7 +145,7 @@ export default function Reports() {
       .sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
   }, [filteredDefended]);
 
-  const extractTitle = (fullName: string) => {
+  const extractTitle = useCallback((fullName: string) => {
     const trimmed = fullName.trim();
     for (const t of academicTitles) {
       if (trimmed.startsWith(t.abbreviation + " ") || trimmed.startsWith(t.abbreviation + ".") || trimmed.startsWith(t.abbreviation + "/")) {
@@ -153,7 +153,7 @@ export default function Reports() {
       }
     }
     return { title: "", cleanName: trimmed };
-  };
+  }, [academicTitles]);
 
   const juryStats = useMemo(() => {
     const map: Record<string, { name: string; title: string; university: string; supervisor: number; president: number; member: number; coSupervisor: number; invited: number }> = {};
