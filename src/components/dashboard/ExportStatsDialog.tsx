@@ -581,39 +581,51 @@ export function ExportStatsDialog() {
             supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
             supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
             supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("academic_titles").select("abbreviation, full_name"),
-            supabase.from("professors").select("full_name, university"),
+            supabase.from("academic_titles").select("abbreviation, full_name").order("display_order"),
+            supabase.from("professors").select("full_name, university, rank_label"),
           ]);
 
-          // Build titles map for extracting rank
-          const titlesMap = new Map<string, string>();
-          (academicTitles.data || []).forEach((t) => {
-            titlesMap.set(t.abbreviation, t.full_name);
+          // Build abbreviation list sorted by length (longest first) for stripping
+          const abbreviations = (academicTitles.data || []).map(t => t.abbreviation).sort((a, b) => b.length - a.length);
+
+          // Build professors map for university AND rank lookup (by clean name)
+          const professorsMap = new Map<string, { university: string; rank_label: string }>();
+          (professorsData.data || []).forEach((p: any) => {
+            const key = p.full_name.trim().toLowerCase();
+            professorsMap.set(key, {
+              university: p.university || '',
+              rank_label: p.rank_label || '',
+            });
           });
 
-          // Build professors map for university lookup (by clean name)
-          const professorsMap = new Map<string, string>();
-          (professorsData.data || []).forEach((p) => {
-            if (p.university) {
-              professorsMap.set(p.full_name.trim().toLowerCase(), p.university);
-            }
-          });
-
-          // Helper to extract title and name
-          const extractTitleAndName = (fullName: string): { title: string; name: string } => {
-            const trimmed = fullName.trim();
-            for (const [abbr, fullTitle] of titlesMap) {
-              if (trimmed.startsWith(abbr + " ") || trimmed.startsWith(abbr + ".") || trimmed.startsWith(abbr + "/")) {
-                return { title: fullTitle, name: trimmed.substring(abbr.length).replace(/^[.\s/]+/, "").trim() };
+          // Helper to strip abbreviation prefix and get clean name
+          const stripAbbreviation = (fullName: string): string => {
+            let result = fullName.trim();
+            let changed = true;
+            while (changed) {
+              changed = false;
+              for (const abbr of abbreviations) {
+                if (!abbr) continue;
+                const escaped = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const pattern = new RegExp(`^${escaped}[.\\s/]*`);
+                if (pattern.test(result)) {
+                  const stripped = result.replace(pattern, '').trim();
+                  if (stripped && stripped !== result) {
+                    result = stripped;
+                    changed = true;
+                    break;
+                  }
+                }
               }
             }
-            return { title: "", name: trimmed };
+            return result;
           };
 
-          // Helper: look up university from professors DB by clean name
-          const findUniversityForName = (rawName: string): string => {
-            const { name: cleanName } = extractTitleAndName(rawName.trim());
-            return professorsMap.get(cleanName.toLowerCase()) || professorsMap.get(rawName.trim().toLowerCase()) || '';
+          // Helper: look up professor data from professors DB by clean name
+          const findProfessorData = (rawName: string): { rank_label: string; university: string } => {
+            const cleanName = stripAbbreviation(rawName.trim());
+            const data = professorsMap.get(cleanName.toLowerCase()) || professorsMap.get(rawName.trim().toLowerCase());
+            return data || { rank_label: '', university: '' };
           };
 
           const allRecords = [
@@ -644,13 +656,15 @@ export function ExportStatsDialog() {
 
           const ensureProfessor = (rawName: string, university?: string) => {
             if (!rawName?.trim()) return '';
-            const { title, name: cleanName } = extractTitleAndName(rawName.replace(/\s*\(مدعو\)\s*$/, '').trim());
+            const cleanName = stripAbbreviation(rawName.replace(/\s*\(مدعو\)\s*$/, '').trim());
             const key = cleanName.toLowerCase();
             if (!professorStats[key]) {
-              const resolvedUni = university || findUniversityForName(rawName) || '';
+              const profData = findProfessorData(rawName);
+              const resolvedUni = university || profData.university || '';
+              const resolvedTitle = profData.rank_label || '';
               professorStats[key] = { 
                 displayName: cleanName,
-                title,
+                title: resolvedTitle,
                 university: resolvedUni,
                 asPresident: 0, asMember: 0, asInvited: 0, asSupervisor: 0, asCoSupervisor: 0, total: 0, 
                 faculties: new Set(),
@@ -658,8 +672,9 @@ export function ExportStatsDialog() {
               };
             } else {
               // Enrich: update title and university if missing
-              if (!professorStats[key].title && title) professorStats[key].title = title;
-              const resolvedUni = university || findUniversityForName(rawName);
+              const profData = findProfessorData(rawName);
+              if (!professorStats[key].title && profData.rank_label) professorStats[key].title = profData.rank_label;
+              const resolvedUni = university || profData.university;
               if (!professorStats[key].university && resolvedUni) professorStats[key].university = resolvedUni;
             }
             return key;
@@ -670,8 +685,8 @@ export function ExportStatsDialog() {
             const faculty = record.faculty_ar || "";
             const supRaw = ((record as any).supervisor_ar || "").trim();
             const coSupRaw = ((record as any).co_supervisor_ar || "").trim();
-            const supCleanKey = supRaw ? extractTitleAndName(supRaw).name.toLowerCase() : '';
-            const coSupCleanKey = coSupRaw ? extractTitleAndName(coSupRaw).name.toLowerCase() : '';
+            const supCleanKey = supRaw ? stripAbbreviation(supRaw).toLowerCase() : '';
+            const coSupCleanKey = coSupRaw ? stripAbbreviation(coSupRaw).toLowerCase() : '';
 
             // Process president
             const president = (record as any).jury_president_ar?.trim();
@@ -696,7 +711,7 @@ export function ExportStatsDialog() {
               if (!member) return;
               const isInvited = member.includes('(مدعو)');
               const memberCleanRaw = member.replace(/\s*\(مدعو\)\s*$/, '').trim();
-              const memberCleanKey = extractTitleAndName(memberCleanRaw).name.toLowerCase();
+              const memberCleanKey = stripAbbreviation(memberCleanRaw).toLowerCase();
               // Skip if matches supervisor or co_supervisor clean names
               if (supCleanKey && memberCleanKey === supCleanKey) return;
               if (coSupCleanKey && memberCleanKey === coSupCleanKey) return;
