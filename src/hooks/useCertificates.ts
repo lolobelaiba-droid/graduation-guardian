@@ -32,7 +32,7 @@ export function usePhdLmdCertificates() {
       const { data, error } = await supabase
         .from("phd_lmd_certificates")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("defense_date", { ascending: false });
 
       if (error) throw error;
       return data as PhdLmdCertificate[];
@@ -150,7 +150,7 @@ export function usePhdScienceCertificates() {
       const { data, error } = await supabase
         .from("phd_science_certificates")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("defense_date", { ascending: false });
 
       if (error) throw error;
       return data as PhdScienceCertificate[];
@@ -268,7 +268,7 @@ export function useMasterCertificates() {
       const { data, error } = await supabase
         .from("master_certificates")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("defense_date", { ascending: false });
 
       if (error) throw error;
       return data as MasterCertificate[];
