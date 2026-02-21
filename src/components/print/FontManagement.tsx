@@ -334,8 +334,19 @@ export function FontManagement() {
       if (isElectron()) {
         // Electron: save font file locally
         const arrayBuffer = await selectedFile.arrayBuffer();
+        // Convert to Base64 to avoid IPC size/stack limits with large font files
+        const bytes = new Uint8Array(arrayBuffer);
+        const chunkSize = 8192;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+          for (let j = 0; j < chunk.length; j++) {
+            binary += String.fromCharCode(chunk[j]);
+          }
+        }
+        const base64Data = btoa(binary);
         const result = await (window.electronAPI!.db as any).saveLocalFile(
-          Array.from(new Uint8Array(arrayBuffer)),
+          base64Data,
           fileName,
           'fonts'
         );

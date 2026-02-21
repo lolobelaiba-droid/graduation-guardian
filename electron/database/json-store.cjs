@@ -612,7 +612,11 @@ function saveLocalFile(fileBuffer, fileName, subFolder) {
     fs.mkdirSync(dir, { recursive: true });
   }
   var localPath = path.join(dir, fileName);
-  fs.writeFileSync(localPath, Buffer.from(fileBuffer));
+  // Support both Base64 string (new) and number array (legacy)
+  var buf = typeof fileBuffer === 'string'
+    ? Buffer.from(fileBuffer, 'base64')
+    : Buffer.from(fileBuffer);
+  fs.writeFileSync(localPath, buf);
   var localUrl = require('url').pathToFileURL(localPath).toString();
   return { localPath: localPath, localUrl: localUrl, fileName: fileName };
 }
