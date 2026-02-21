@@ -145,18 +145,20 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
       </div>
 
       {isOpen && filtered.length > 0 && (
-        <div className="absolute z-[100] mt-1 w-full min-w-[280px] rounded-md border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
-          <div ref={listRef} className="max-h-[200px] overflow-y-auto p-1">
+        <div
+          ref={listRef as any}
+          className="absolute z-50 mt-1 w-full min-w-[280px] rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
+        >
+          <div className="max-h-[200px] overflow-y-auto p-1">
             {filtered.map((name, index) => (
-              <button
+              <div
                 key={name}
-                type="button"
                 data-index={index}
                 className={cn(
-                  "relative flex w-full cursor-default select-none items-center rounded-sm px-2.5 py-1.5 text-xs outline-none transition-colors",
+                  "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors",
                   highlightedIndex === index
                     ? "bg-accent text-accent-foreground"
-                    : "hover:bg-muted hover:text-foreground",
+                    : "hover:bg-accent hover:text-accent-foreground",
                   value === name && "text-primary font-medium"
                 )}
                 onClick={() => handleSelect(name)}
@@ -168,7 +170,7 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
                 {value === name && (
                   <Check className="h-3 w-3 mr-auto shrink-0 text-primary" />
                 )}
-              </button>
+              </div>
             ))}
           </div>
         </div>
