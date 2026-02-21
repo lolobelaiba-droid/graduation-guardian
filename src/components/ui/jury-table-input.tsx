@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Trash2, Settings2, Check, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -519,8 +519,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   onSupervisorChange,
   onCoSupervisorChange,
 }) => {
-  const { titles, isLoading: ranksLoading } = useAcademicTitles();
-  const [manageOpen, setManageOpen] = React.useState(false);
+  const { titles, isLoading: ranksLoading, refetch: refetchTitles } = useAcademicTitles();
 
   const ranks: AcademicRank[] = React.useMemo(
     () => titles.map((t) => ({ label: t.full_name, abbreviation: t.abbreviation })),
@@ -782,16 +781,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         <span className="text-xs text-muted-foreground">
           الصف 1 = رئيس اللجنة، الصف 2 = المشرف (تلقائي)، الصف 3 = المشرف المساعد (تلقائي إن وجد)
         </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          onClick={() => setManageOpen(true)}
-        >
-          <Settings2 className="h-3.5 w-3.5" />
-          إدارة الرتب
-        </Button>
+        <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
       </div>
 
       {/* Table */}
@@ -1014,7 +1004,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         </div>
       )}
 
-      <ManageAcademicTitlesDialog />
+      {/* ManageAcademicTitlesDialog moved to header */}
     </div>
   );
 };
@@ -1103,8 +1093,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   findProfessor,
   onProfessorDataChange,
 }) => {
-  const { titles } = useAcademicTitles();
-  const [manageOpen, setManageOpen] = React.useState(false);
+  const { titles, refetch: refetchTitles } = useAcademicTitles();
 
   const ranks: AcademicRank[] = React.useMemo(
     () => titles.map((t) => ({ label: t.full_name, abbreviation: t.abbreviation })),
@@ -1228,16 +1217,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
   return (
     <div className={cn("w-full space-y-2", className)}>
       <div className="flex items-center justify-end">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          onClick={() => setManageOpen(true)}
-        >
-          <Settings2 className="h-3.5 w-3.5" />
-          إدارة الرتب
-        </Button>
+        <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border">
@@ -1385,7 +1365,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
         </table>
       </div>
 
-      <ManageAcademicTitlesDialog />
+      {/* ManageAcademicTitlesDialog moved to header */}
     </div>
   );
 };
