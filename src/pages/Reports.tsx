@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp, AlertTriangle, CheckCircle2, Lightbulb, Brain, Info } from "lucide-react";
+import { Loader2, Users, GraduationCap, Clock, Award, FlaskConical, UserCheck, FileText, Globe, BarChart3, TrendingUp, AlertTriangle, CheckCircle2, Lightbulb, Brain, Info, Shuffle } from "lucide-react";
+import { JuryDiversitySection } from "@/components/reports/JuryDiversitySection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -527,6 +528,13 @@ export default function Reports() {
           )}
         </CardContent>
       </Card>
+
+      {/* تحليل تنوع لجان المناقشة */}
+      <JuryDiversitySection
+        filteredDefended={filteredDefended as any}
+        extractTitle={extractTitle}
+        formatDate={formatDate}
+      />
 
       {/* ثالثا: الإجراءات الإدارية */}
       <SectionHeader title="ثالثا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
