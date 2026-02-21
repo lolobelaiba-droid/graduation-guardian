@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,15 @@ import {
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
+import { useResizableColumns } from "@/hooks/useResizableColumns";
+
+// ======== Resize Handle Component ========
+const ResizeHandle: React.FC<{ onMouseDown: (e: React.MouseEvent) => void }> = ({ onMouseDown }) => (
+  <div
+    className="absolute top-0 left-0 h-full w-1.5 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 z-10"
+    onMouseDown={onMouseDown}
+  />
+);
 
 // ======== Compact University Select for Table Cells ========
 
@@ -385,6 +394,13 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
     [titles]
   );
 
+  const JURY_DEFAULT_WIDTHS = { abbr: 64, name: 144, role: 112, rank: 128, university: 200, actions: 32 };
+  const { getHeaderProps: jGetHP, getResizeHandle: jGetRH, resetWidths: jResetWidths } = useResizableColumns({
+    storageKey: "jury-table-col-widths",
+    defaultWidths: JURY_DEFAULT_WIDTHS,
+    minWidth: 40,
+  });
+
   const [rows, setRows] = React.useState<JuryMember[]>(() =>
     parseJury(presidentValue, membersValue, supervisorAr, supervisorUniversity, coSupervisorAr, coSupervisorUniversity, ranks)
   );
@@ -640,21 +656,26 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         <span className="text-xs text-muted-foreground">
           الصف 1 = رئيس اللجنة، الصف 2 = المشرف (تلقائي)، الصف 3 = المشرف المساعد (تلقائي إن وجد)
         </span>
-        <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={jResetWidths} title="إعادة ضبط عرض الأعمدة">
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+          <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
+        </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-sm" dir="rtl">
+        <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-muted/60 border-b border-border">
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-8">#</th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-16">الاختصار</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-36">الاسم واللقب</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-28">الصفة</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-32">الرتبة</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground min-w-[200px]">جامعة الانتماء</th>
-              <th className="py-2 px-1 w-8" />
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground" style={{ width: 32 }}>#</th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground relative" {...jGetHP('abbr')}>الاختصار<ResizeHandle {...jGetRH('abbr')} /></th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('name')}>الاسم واللقب<ResizeHandle {...jGetRH('name')} /></th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('role')}>الصفة<ResizeHandle {...jGetRH('role')} /></th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('rank')}>الرتبة<ResizeHandle {...jGetRH('rank')} /></th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('university')}>جامعة الانتماء<ResizeHandle {...jGetRH('university')} /></th>
+              <th className="py-2 px-1" style={{ width: 32 }} />
             </tr>
           </thead>
           <tbody>
@@ -959,6 +980,13 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
     [titles]
   );
 
+  const SUP_DEFAULT_WIDTHS = { role: 96, abbr: 64, name: 144, rank: 128, university: 200 };
+  const { getHeaderProps: sGetHP, getResizeHandle: sGetRH, resetWidths: sResetWidths } = useResizableColumns({
+    storageKey: "supervisor-table-col-widths",
+    defaultWidths: SUP_DEFAULT_WIDTHS,
+    minWidth: 40,
+  });
+
   const [supervisor, setSupervisor] = React.useState<SupervisorPerson>(() => ({
     ...parseSupervisorString(supervisorValue, ranks),
     university: supervisorUniversity,
@@ -1075,19 +1103,22 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
 
   return (
     <div className={cn("w-full space-y-2", className)}>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={sResetWidths} title="إعادة ضبط عرض الأعمدة">
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
         <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-sm" dir="rtl">
+        <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-muted/60 border-b border-border">
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-24">الصفة</th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-16">الاختصار</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-36">الاسم واللقب</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-32">الرتبة</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground min-w-[200px]">جامعة الانتماء</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('role')}>الصفة<ResizeHandle {...sGetRH('role')} /></th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground relative" {...sGetHP('abbr')}>الاختصار<ResizeHandle {...sGetRH('abbr')} /></th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('name')}>الاسم واللقب<ResizeHandle {...sGetRH('name')} /></th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('rank')}>الرتبة<ResizeHandle {...sGetRH('rank')} /></th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('university')}>جامعة الانتماء<ResizeHandle {...sGetRH('university')} /></th>
             </tr>
           </thead>
           <tbody>
