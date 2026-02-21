@@ -163,9 +163,12 @@ export default function Reports() {
       const { title, cleanName } = extractTitle(cleaned);
       const key = cleanName.toLowerCase();
       // If no university passed, try to find it from professors DB
-      const resolvedUniversity = university || findProfessor(cleaned)?.university || '';
-      if (!map[key]) map[key] = { name: cleanName, title, university: resolvedUniversity, supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 };
-      if (!map[key].title && title) map[key].title = title;
+      const profRecord = findProfessor(cleaned);
+      const resolvedUniversity = university || profRecord?.university || '';
+      // If extractTitle couldn't find a title from prefix, use rank_label from professors table
+      const resolvedTitle = title || profRecord?.rank_label || '';
+      if (!map[key]) map[key] = { name: cleanName, title: resolvedTitle, university: resolvedUniversity, supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 };
+      if (!map[key].title && resolvedTitle) map[key].title = resolvedTitle;
       if (!map[key].university && resolvedUniversity) map[key].university = resolvedUniversity;
       map[key][role]++;
     };
@@ -272,7 +275,7 @@ export default function Reports() {
     });
     const adminActs = def.map(s => ({ name: s.full_name_ar, type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم', supervisor: (s as any).supervisor_ar || '', status: getRegistrationStatus((s as any).registration_count, s._type), councilDate: (s as any).scientific_council_date || '', defenseDate: (s as any).defense_date || '', processingTime: calcProcessingTime((s as any).scientific_council_date, (s as any).defense_date) })).filter(s => s.processingTime !== null).sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
     const juryMap: Record<string, any> = {};
-    const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const cleaned = fn.replace(/\s*\(مدعو\)\s*$/, '').trim(); const { title, cleanName } = extractTitle(cleaned); const k = cleanName.toLowerCase(); const resolvedUni = university || findProfessor(cleaned)?.university || ''; if (!juryMap[k]) juryMap[k] = { name: cleanName, title, university: resolvedUni, supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 }; if (!juryMap[k].title && title) juryMap[k].title = title; if (!juryMap[k].university && resolvedUni) juryMap[k].university = resolvedUni; juryMap[k][role]++; };
+    const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const cleaned = fn.replace(/\s*\(مدعو\)\s*$/, '').trim(); const { title, cleanName } = extractTitle(cleaned); const k = cleanName.toLowerCase(); const profRec = findProfessor(cleaned); const resolvedUni = university || profRec?.university || ''; const resolvedTitle = title || profRec?.rank_label || ''; if (!juryMap[k]) juryMap[k] = { name: cleanName, title: resolvedTitle, university: resolvedUni, supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 }; if (!juryMap[k].title && resolvedTitle) juryMap[k].title = resolvedTitle; if (!juryMap[k].university && resolvedUni) juryMap[k].university = resolvedUni; juryMap[k][role]++; };
     def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor', (s as any).supervisor_university); addJ((s as any).co_supervisor_ar, 'coSupervisor', (s as any).co_supervisor_university); addJ((s as any).jury_president_ar, 'president'); const sL = ((s as any).supervisor_ar || '').trim().toLowerCase(); const cL = ((s as any).co_supervisor_ar || '').trim().toLowerCase(); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { const mt = m.trim(); if (!mt) return; const isInvited = mt.includes('(مدعو)'); const mtClean = mt.replace(/\s*\(مدعو\)\s*$/, '').trim(); const ml = mtClean.toLowerCase(); const { cleanName: mc } = extractTitle(mtClean); if (sL && (ml.endsWith(sL) || mc.toLowerCase() === sL)) return; if (cL && (ml.endsWith(cL) || mc.toLowerCase() === cL)) return; addJ(mt, isInvited ? 'invited' : 'member'); }); });
     const juryStatsD = Object.values(juryMap).map((v: any) => ({ ...v, total: v.supervisor + v.president + v.member + v.coSupervisor + v.invited })).sort((a: any, b: any) => b.total - a.total);
     const engT = def.filter(s => (s as any).thesis_language === 'english').map(s => ({ name: s.full_name_ar, branch: (s as any).branch_ar || '', specialty: s.specialty_ar, supervisor: (s as any).supervisor_ar || '', thesisTitle: (s as any).thesis_title_ar || '', defenseDate: (s as any).defense_date || '' }));
