@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { X, Settings } from "lucide-react";
+import { X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import { ManageAcademicTitlesDialog } from "@/components/ui/manage-academic-titles-dialog";
@@ -394,18 +394,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
                 </div>
               )}
 
-              <ManageAcademicTitlesDialog
-                onTitlesChange={refetch}
-                trigger={
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center h-5 w-5 rounded-full border border-dashed border-muted-foreground/50 hover:border-primary hover:text-primary transition-colors"
-                    title="إدارة الرتب العلمية"
-                  >
-                    <Settings className="h-3 w-3" />
-                  </button>
-                }
-              />
+              <ManageAcademicTitlesDialog onTitlesChange={refetch} />
             </>
           )}
         </div>
