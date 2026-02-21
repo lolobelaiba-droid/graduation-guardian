@@ -16,7 +16,7 @@ import { KpiGauge } from "@/components/reports/KpiGauge";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { SectionHeader } from "@/components/reports/SectionHeader";
 import ExportReportPdfDialog from "@/components/reports/ExportReportPdfDialog";
-import type { ReportExportData } from "@/components/reports/ExportReportPdfDialog";
+import type { ReportExportData, JuryDiversityData } from "@/components/reports/ExportReportPdfDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { useQuery } from "@tanstack/react-query";
@@ -294,7 +294,47 @@ export default function Reports() {
       englishThesesCount: engT.length, assistantProfessorsCount: assistP.length,
       delayedDefendedPercent: countedD > 0 ? (delayedD / countedD) * 100 : 0,
     });
-    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP, insights: insightsData };
+    // Compute jury diversity data
+    const cleanNameForDiv = (fullName: string) => {
+      const cleaned = fullName.replace(/\s*\(مدعو\)\s*$/, '').trim();
+      return extractTitle(cleaned).cleanName.toLowerCase();
+    };
+    const divAllSeats: string[] = [];
+    const divUniqueSet = new Set<string>();
+    const divJuryMap: Record<string, { juryKey: string; juryNames: string[]; students: { name: string; supervisor: string; coSupervisor: string; president: string; members: string[]; invited: string[] }[] }> = {};
+    def.forEach(s => {
+      const president = (s as any).jury_president_ar || '';
+      const supLower = cleanNameForDiv((s as any).supervisor_ar || '');
+      const coSupLower = cleanNameForDiv((s as any).co_supervisor_ar || '');
+      if (president.trim()) { const pc = cleanNameForDiv(president); divAllSeats.push(pc); divUniqueSet.add(pc); }
+      const members: string[] = []; const invited: string[] = [];
+      ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => {
+        const mt = m.trim(); if (!mt) return;
+        const mc = cleanNameForDiv(mt);
+        if (supLower && mc === supLower) return;
+        if (coSupLower && mc === coSupLower) return;
+        divAllSeats.push(mc); divUniqueSet.add(mc);
+        if (mt.includes('(مدعو)')) invited.push(mt.replace(/\s*\(مدعو\)\s*$/, '').trim());
+        else members.push(mt);
+      });
+      const presClean = cleanNameForDiv(president);
+      const memKeys = members.map(m => cleanNameForDiv(m)).sort();
+      const jKey = [presClean, ...memKeys].join('|');
+      if (!divJuryMap[jKey]) divJuryMap[jKey] = { juryKey: jKey, juryNames: [president.trim(), ...members], students: [] };
+      divJuryMap[jKey].students.push({ name: s.full_name_ar, supervisor: (s as any).supervisor_ar || '', coSupervisor: (s as any).co_supervisor_ar || '', president: president.trim(), members, invited });
+    });
+    const divTotal = divAllSeats.length;
+    const divUnique = divUniqueSet.size;
+    const divDiversity = divTotal > 0 ? (divUnique / divTotal) * 100 : 100;
+    const divSimilarity = Math.round((100 - divDiversity) * 10) / 10;
+    const juryDiversityData: JuryDiversityData = {
+      similarityIndex: divSimilarity,
+      totalSeats: divTotal,
+      uniqueProfessors: divUnique,
+      diversityPercent: Math.round(divDiversity * 10) / 10,
+      recurringPatterns: Object.values(divJuryMap).filter(p => p.students.length > 1).sort((a, b) => b.students.length - a.students.length).map(p => ({ juryNames: p.juryNames, students: p.students })),
+    };
+    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP, insights: insightsData, juryDiversity: juryDiversityData };
   };
 
   return (
