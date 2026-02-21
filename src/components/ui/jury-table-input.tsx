@@ -29,20 +29,17 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
   onChange,
   suggestions,
   placeholder = "جامعة الانتماء",
+  className,
 }) => {
   return (
-    <Select value={value || undefined} onValueChange={onChange}>
-      <SelectTrigger className="h-8 text-xs">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {suggestions.map((name) => (
-          <SelectItem key={name} value={name}>
-            {name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <AutocompleteInput
+      value={value}
+      onValueChange={onChange}
+      suggestions={suggestions}
+      placeholder={placeholder}
+      className={cn("h-8 text-xs", className)}
+      dir="rtl"
+    />
   );
 };
 // ======== Types ========
@@ -652,11 +649,11 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
           <thead>
             <tr className="bg-muted/60 border-b border-border">
               <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-8">#</th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">الاسم واللقب</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-32">الصفة</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-44">الرتبة</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">جامعة الانتماء</th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-16">الاختصار</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-36">الاسم واللقب</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-28">الصفة</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-32">الرتبة</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground min-w-[200px]">جامعة الانتماء</th>
               <th className="py-2 px-1 w-8" />
             </tr>
           </thead>
@@ -1087,10 +1084,10 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
           <thead>
             <tr className="bg-muted/60 border-b border-border">
               <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-24">الصفة</th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-20">الاختصار</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">الاسم واللقب</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-44">الرتبة</th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground">جامعة الانتماء</th>
+              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground w-16">الاختصار</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-36">الاسم واللقب</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground w-32">الرتبة</th>
+              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground min-w-[200px]">جامعة الانتماء</th>
             </tr>
           </thead>
           <tbody>
