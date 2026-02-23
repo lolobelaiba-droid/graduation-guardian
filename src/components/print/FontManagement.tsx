@@ -353,15 +353,16 @@ export function FontManagement() {
         if (!result.success || !result.data?.localUrl) {
           throw new Error(result.error || 'Failed to save font locally');
         }
-        fontUrl = result.data.localUrl;
+        // Store only the fileName (not the full path) for portability
+        fontUrl = fileName; // Just the file name, e.g. "FontFamily_123456.ttf"
 
-        // Save to local DB
+        // Save to local DB with fileName only
         const db = getDbClient();
         if (!db) throw new Error("DB not available");
         await db.insert('custom_fonts', {
           font_name: saveFontName,
           font_family: parsedFont.fontFamily,
-          font_url: fontUrl,
+          font_url: fontUrl, // portable: just fileName
           is_arabic: isArabic,
           font_weight: effectiveWeight,
           font_style: effectiveStyle,

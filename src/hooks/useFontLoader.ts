@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { getFontByName, getAllFonts, type FontConfig } from '@/lib/arabicFonts';
 import { logger } from '@/lib/logger';
 import { cacheFontAsset } from '@/lib/database/asset-cache';
+import { resolveElectronFontUrl as resolvePortableFontUrl } from '@/lib/database/font-url-resolver';
 
 // Track loaded fonts globally to avoid duplicate loading
 const loadedFonts = new Set<string>();
@@ -72,14 +73,16 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
   try {
     let urlToFetch = font.url;
     
+    // For Electron: resolve portable fileName to full file:// URL dynamically
+    urlToFetch = await resolvePortableFontUrl(font.url);
+    
     // للخطوط المخصصة من الإنترنت: استخدم التخزين المحلي في Electron
-    if (isRemoteUrl(font.url)) {
-      urlToFetch = await cacheFontAsset(font.url);
-    } else if (isFileUrl(font.url)) {
+    if (isRemoteUrl(urlToFetch)) {
+      urlToFetch = await cacheFontAsset(urlToFetch);
+    } else if (isFileUrl(urlToFetch)) {
       // file:// URLs from Electron - use directly
-      urlToFetch = font.url;
     } else {
-      urlToFetch = resolveElectronFontUrl(font.url);
+      urlToFetch = resolveElectronFontUrl(urlToFetch);
     }
     
     // Try primary and fallback fetching
