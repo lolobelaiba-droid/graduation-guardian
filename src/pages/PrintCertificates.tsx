@@ -134,26 +134,17 @@ export default function PrintCertificates() {
 
   // Update custom fonts in the arabicFonts module when they change
   useEffect(() => {
-    async function updateCustomFonts() {
-      const { resolveElectronFontUrl } = await import('@/lib/database/font-url-resolver');
-      const fontConfigs: FontConfig[] = await Promise.all(
-        customFontsData.map(async (f) => {
-          const resolvedUrl = await resolveElectronFontUrl(f.font_url);
-          return {
-            name: f.font_name,
-            displayName: f.font_name,
-            displayNameAr: f.font_name,
-            family: f.font_family,
-            url: resolvedUrl,
-            style: (f.font_style || 'normal') as 'normal' | 'bold' | 'italic',
-            isArabic: f.is_arabic || false,
-            isSystem: false,
-          };
-        })
-      );
-      setCustomFonts(fontConfigs);
-    }
-    updateCustomFonts();
+    const fontConfigs: FontConfig[] = customFontsData.map(f => ({
+      name: f.font_name,
+      displayName: f.font_name,
+      displayNameAr: f.font_name,
+      family: f.font_family,
+      url: f.font_url,
+      style: (f.font_style || 'normal') as 'normal' | 'bold' | 'italic',
+      isArabic: f.is_arabic || false,
+      isSystem: false,
+    }));
+    setCustomFonts(fontConfigs);
   }, [customFontsData]);
 
   // Load printers (desktop app only)
