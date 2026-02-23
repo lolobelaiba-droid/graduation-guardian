@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toWesternNumerals } from "@/lib/numerals";
 import type { PhdStudentType } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
@@ -66,6 +67,13 @@ export function ImportPhdExcelDialog({
 
   const fetchExistingCount = async () => {
     const tableName = getPhdStudentTable(studentType);
+    if (isElectron()) {
+      const db = getDbClient();
+      if (!db) return;
+      const result = await db.getAll(tableName);
+      setExistingCount(result.success ? (result.data?.length || 0) : 0);
+      return;
+    }
     if (tableName === 'phd_lmd_students') {
       const { count } = await supabase.from('phd_lmd_students').select('*', { count: 'exact', head: true });
       setExistingCount(count || 0);
@@ -252,11 +260,15 @@ export function ImportPhdExcelDialog({
     let successCount = 0;
     let failedCount = 0;
     const errors: string[] = [];
+    const useLocal = isElectron();
+    const db = useLocal ? getDbClient() : null;
 
     if (importMode === "replace") {
       setImportProgress({ current: 0, total: excelData.length + 1 });
       try {
-        if (tableName === 'phd_lmd_students') {
+        if (useLocal && db) {
+          await db.deleteAll(tableName);
+        } else if (tableName === 'phd_lmd_students') {
           await supabase.from('phd_lmd_students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         } else {
           await supabase.from('phd_science_students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -274,20 +286,29 @@ export function ImportPhdExcelDialog({
       const transformedDataRow = transformRow(row);
 
       try {
-        let error;
-        if (tableName === 'phd_lmd_students') {
-          const result = await supabase.from('phd_lmd_students').insert(transformedDataRow as never);
-          error = result.error;
+        if (useLocal && db) {
+          const result = await db.insert(tableName, transformedDataRow);
+          if (!result.success) {
+            failedCount++;
+            errors.push(`السجل ${toWesternNumerals(i + 1)}: ${result.error}`);
+          } else {
+            successCount++;
+          }
         } else {
-          const result = await supabase.from('phd_science_students').insert(transformedDataRow as never);
-          error = result.error;
-        }
-
-        if (error) {
-          failedCount++;
-          errors.push(`السجل ${toWesternNumerals(i + 1)}: ${error.message}`);
-        } else {
-          successCount++;
+          let error;
+          if (tableName === 'phd_lmd_students') {
+            const result = await supabase.from('phd_lmd_students').insert(transformedDataRow as never);
+            error = result.error;
+          } else {
+            const result = await supabase.from('phd_science_students').insert(transformedDataRow as never);
+            error = result.error;
+          }
+          if (error) {
+            failedCount++;
+            errors.push(`السجل ${toWesternNumerals(i + 1)}: ${error.message}`);
+          } else {
+            successCount++;
+          }
         }
       } catch {
         failedCount++;
@@ -299,16 +320,28 @@ export function ImportPhdExcelDialog({
 
     setImportResults({ success: successCount, failed: failedCount, errors });
 
-    await supabase.from("activity_log").insert({
-      activity_type: "student_added",
-      description: importMode === "replace" 
-        ? `تم استبدال قاعدة بيانات طلبة الدكتوراه بـ ${successCount} طالب من ملف Excel`
-        : `تم استيراد ${successCount} طالب دكتوراه من ملف Excel`,
-      entity_type: "phd_student",
-    });
+    // Log activity
+    const activityDesc = importMode === "replace"
+      ? `تم استبدال قاعدة بيانات طلبة الدكتوراه بـ ${successCount} طالب من ملف Excel`
+      : `تم استيراد ${successCount} طالب دكتوراه من ملف Excel`;
+
+    if (useLocal && db) {
+      await db.insert('activity_log', {
+        activity_type: 'student_added',
+        description: activityDesc,
+        entity_type: 'phd_student',
+      });
+    } else {
+      await supabase.from("activity_log").insert({
+        activity_type: "student_added",
+        description: activityDesc,
+        entity_type: "phd_student",
+      });
+    }
 
     queryClient.invalidateQueries({ queryKey: ["phd_lmd_students"] });
     queryClient.invalidateQueries({ queryKey: ["phd_science_students"] });
+    queryClient.invalidateQueries({ queryKey: ["activity-log"] });
 
     setStep("complete");
   };
