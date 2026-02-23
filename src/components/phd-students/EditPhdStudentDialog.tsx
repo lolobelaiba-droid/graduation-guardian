@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
-import { AcademicTitleInput } from "@/components/ui/academic-title-input";
+import { SupervisorTableInput } from "@/components/ui/jury-table-input";
+import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +33,7 @@ import {
   useUpdatePhdScienceStudent,
 } from "@/hooks/usePhdStudents";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
-import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
+
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
@@ -152,6 +153,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
   ]);
 
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
+  const { universityNames } = useUniversityOptions();
 
   const getSchema = () => {
     return studentType === 'phd_lmd' ? phdLmdSchema : phdScienceSchema;
@@ -808,90 +810,55 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
               />
             </div>
 
-            {/* Supervisor */}
-            <SectionHeader title="المشرف" />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="supervisor_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>المشرف *</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        suggestions={suggestions?.supervisor_ar || []}
-                        dir="auto"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="supervisor_university"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>جامعة انتماء المشرف</FormLabel>
-                    <FormControl>
-                      <UniversityAutocomplete
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        placeholder="اختر أو أدخل جامعة المشرف"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Co-Supervisor */}
-            <SectionHeader title="مساعد المشرف (اختياري)" />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="co_supervisor_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>اسم ولقب مساعد المشرف</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        value={field.value || ''}
-                        suggestions={[
-                          ...(suggestions?.co_supervisor_ar || []),
-                          ...(suggestions?.supervisor_ar || []),
-                        ]}
-                        dir="auto"
-                        placeholder="اختياري"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="co_supervisor_university"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>جامعة انتماء مساعد المشرف</FormLabel>
-                    <FormControl>
-                      <UniversityAutocomplete
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        placeholder="اختر أو أدخل جامعة مساعد المشرف"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Supervisor & Co-Supervisor */}
+            <SectionHeader title="المشرف ومساعد المشرف" />
+            <FormField
+              control={form.control}
+              name="supervisor_ar"
+              render={({ field: supField }) => (
+                <FormField
+                  control={form.control}
+                  name="supervisor_university"
+                  render={({ field: supUniField }) => (
+                    <FormField
+                      control={form.control}
+                      name="co_supervisor_ar"
+                      render={({ field: coSupField }) => (
+                        <FormField
+                          control={form.control}
+                          name="co_supervisor_university"
+                          render={({ field: coSupUniField }) => (
+                            <FormItem>
+                              <FormControl>
+                                <SupervisorTableInput
+                                  supervisorValue={supField.value || ""}
+                                  supervisorUniversity={supUniField.value || ""}
+                                  coSupervisorValue={coSupField.value || ""}
+                                  coSupervisorUniversity={coSupUniField.value || ""}
+                                  onSupervisorChange={(name, university) => {
+                                    supField.onChange(name);
+                                    supUniField.onChange(university);
+                                  }}
+                                  onCoSupervisorChange={(name, university) => {
+                                    coSupField.onChange(name);
+                                    coSupUniField.onChange(university);
+                                  }}
+                                  nameSuggestions={professorNames}
+                                  universitySuggestions={universityNames}
+                                  findProfessor={findProfessor}
+                                  onProfessorDataChange={ensureProfessor}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    />
+                  )}
+                />
+              )}
+            />
 
             {/* Thesis */}
             <SectionHeader title="الأطروحة" />
