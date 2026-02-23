@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toWesternNumerals } from "@/lib/numerals";
 import type { CertificateType } from "@/types/certificates";
 import { certificateTypeLabels } from "@/types/certificates";
@@ -47,6 +48,13 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
 
   const fetchExistingCount = async () => {
     const tableName = getCertificateTable(certificateType);
+    if (isElectron()) {
+      const db = getDbClient();
+      if (!db) return;
+      const result = await db.getAll(tableName);
+      setExistingCount(result.success ? (result.data?.length || 0) : 0);
+      return;
+    }
     const { count } = await supabase.from(tableName as any).select('*', { count: 'exact', head: true });
     setExistingCount(count || 0);
   };
@@ -162,11 +170,17 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
     const tableName = getCertificateTable(certificateType);
     let successCount = 0, failedCount = 0;
     const errors: string[] = [];
+    const useLocal = isElectron();
+    const db = useLocal ? getDbClient() : null;
 
     if (importMode === "replace") {
       setImportProgress({ current: 0, total: excelData.length + 1 });
       try {
-        await supabase.from(tableName as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (useLocal && db) {
+          await db.deleteAll(tableName);
+        } else {
+          await supabase.from(tableName as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        }
         toast.success(`تم حذف ${toWesternNumerals(existingCount)} سجل سابق`);
       } catch { errors.push("فشل في حذف البيانات السابقة"); }
     } else {
@@ -176,25 +190,43 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
     for (let i = 0; i < excelData.length; i++) {
       const transformedDataRow = transformRow(excelData[i]);
       try {
-        const { error } = await supabase.from(tableName as any).insert(transformedDataRow as never);
-        if (error) { failedCount++; errors.push(`السجل ${toWesternNumerals(i + 1)}: ${error.message}`); }
-        else successCount++;
+        if (useLocal && db) {
+          const result = await db.insert(tableName, transformedDataRow);
+          if (!result.success) { failedCount++; errors.push(`السجل ${toWesternNumerals(i + 1)}: ${result.error}`); }
+          else successCount++;
+        } else {
+          const { error } = await supabase.from(tableName as any).insert(transformedDataRow as never);
+          if (error) { failedCount++; errors.push(`السجل ${toWesternNumerals(i + 1)}: ${error.message}`); }
+          else successCount++;
+        }
       } catch { failedCount++; errors.push(`السجل ${toWesternNumerals(i + 1)}: خطأ غير متوقع`); }
       setImportProgress({ current: i + 1, total: excelData.length });
     }
 
     setImportResults({ success: successCount, failed: failedCount, errors });
-    await supabase.from("activity_log").insert({
-      activity_type: "student_added",
-      description: importMode === "replace"
-        ? `تم استبدال بيانات الطلبة المناقشين بـ ${successCount} سجل من ملف Excel`
-        : `تم استيراد ${successCount} سجل مناقشة قديمة من ملف Excel`,
-      entity_type: certificateType,
-    });
+
+    const activityDesc = importMode === "replace"
+      ? `تم استبدال بيانات الطلبة المناقشين بـ ${successCount} سجل من ملف Excel`
+      : `تم استيراد ${successCount} سجل مناقشة قديمة من ملف Excel`;
+
+    if (useLocal && db) {
+      await db.insert('activity_log', {
+        activity_type: 'student_added',
+        description: activityDesc,
+        entity_type: certificateType,
+      });
+    } else {
+      await supabase.from("activity_log").insert({
+        activity_type: "student_added",
+        description: activityDesc,
+        entity_type: certificateType,
+      });
+    }
 
     queryClient.invalidateQueries({ queryKey: ["phd_lmd_certificates"] });
     queryClient.invalidateQueries({ queryKey: ["phd_science_certificates"] });
     queryClient.invalidateQueries({ queryKey: ["master_certificates"] });
+    queryClient.invalidateQueries({ queryKey: ["activity-log"] });
     setStep("complete");
   };
 
