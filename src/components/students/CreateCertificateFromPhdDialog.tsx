@@ -31,8 +31,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
-import { JuryMembersInput } from "@/components/ui/jury-members-input";
-import { AcademicTitleInput } from "@/components/ui/academic-title-input";
+import { JuryTableInput, SupervisorTableInput } from "@/components/ui/jury-table-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,6 +60,8 @@ import type { PhdStudent, PhdLmdStudent } from "@/types/phd-students";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
+import { useProfessors } from "@/hooks/useProfessors";
+import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { academicYears } from "@/components/print/AddStudentDialog";
 
 // Schema for creating certificate from PhD student (fields that need to be filled)
@@ -84,6 +85,9 @@ const certificateSchema = z.object({
   professional_email: z.string().email("البريد الإلكتروني غير صالح").optional().nullable().or(z.literal('')),
   phone_number: z.string().optional().nullable(),
   supervisor_ar: z.string().min(1, "اسم المشرف مطلوب"),
+  co_supervisor_ar: z.string().optional().nullable(),
+  supervisor_university: z.string().optional().nullable(),
+  co_supervisor_university: z.string().optional().nullable(),
   research_lab_ar: z.string().optional().nullable(),
   
   // Fields to be filled for certificate (single fields with auto-direction)
@@ -145,6 +149,9 @@ export function CreateCertificateFromPhdDialog({
     'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
+  const { professorNames, ensureProfessor, findProfessor } = useProfessors();
+  const { universityNames } = useUniversityOptions();
+
   useEffect(() => {
     setSelectedType(initialCertificateType);
     setSelectedStudent(null);
@@ -196,6 +203,9 @@ export function CreateCertificateFromPhdDialog({
       professional_email: '',
       phone_number: '',
       supervisor_ar: '',
+      co_supervisor_ar: '',
+      supervisor_university: '',
+      co_supervisor_university: '',
       research_lab_ar: '',
       province: 'أم البواقي',
       signature_title: '',
@@ -235,6 +245,9 @@ export function CreateCertificateFromPhdDialog({
       professional_email: pendingStudent.professional_email || '',
       phone_number: pendingStudent.phone_number || '',
       supervisor_ar: pendingStudent.supervisor_ar,
+      co_supervisor_ar: pendingStudent.co_supervisor_ar || '',
+      supervisor_university: pendingStudent.supervisor_university || '',
+      co_supervisor_university: pendingStudent.co_supervisor_university || '',
       research_lab_ar: pendingStudent.research_lab_ar || '',
       thesis_title_ar: pendingStudent.thesis_title_ar || '',
       field_ar: (pendingStudent as PhdLmdStudent).field_ar || '',
@@ -258,13 +271,18 @@ export function CreateCertificateFromPhdDialog({
 
   const onSubmit = async (data: z.infer<typeof certificateSchema>) => {
     try {
+      // Save professor names
+      if (data.supervisor_ar) ensureProfessor(data.supervisor_ar);
+      if (data.co_supervisor_ar) ensureProfessor(data.co_supervisor_ar);
+      if (data.jury_president_ar) ensureProfessor(data.jury_president_ar);
+      if (data.jury_members_ar) {
+        data.jury_members_ar.split(/\s*-\s*/).forEach(m => ensureProfessor(m));
+      }
+
       // Prepare certificate data with required French fields (empty if not provided)
       // Include PhD reference data from selected student
       const phdReferenceData = selectedStudent ? {
         registration_number: selectedStudent.registration_number || null,
-        co_supervisor_ar: selectedStudent.co_supervisor_ar || null,
-        supervisor_university: selectedStudent.supervisor_university || null,
-        co_supervisor_university: selectedStudent.co_supervisor_university || null,
         employment_status: selectedStudent.employment_status || null,
         registration_type: selectedStudent.registration_type || null,
         inscription_status: selectedStudent.inscription_status || null,
@@ -609,45 +627,48 @@ export function CreateCertificateFromPhdDialog({
                 )}
               />
 
-              {/* Jury - Single fields with auto direction */}
+              {/* Jury - Using JuryTableInput like EditStudentDialog */}
               <SectionHeader title="لجنة المناقشة" />
               
               <FormField
                 control={form.control}
                 name="jury_president_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رئيس اللجنة *</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        suggestions={suggestions?.jury_president_ar || []}
-                        dir="auto"
-                        placeholder="اختر الرتبة ثم اكتب الاسم"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="jury_members_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>أعضاء اللجنة *</FormLabel>
-                    <FormControl>
-                      <JuryMembersInput
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        suggestions={suggestions?.jury_members_ar || []}
-                        dir="auto"
-                        placeholder="أضف أعضاء اللجنة"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                render={({ field: presidentField }) => (
+                  <FormField
+                    control={form.control}
+                    name="jury_members_ar"
+                    render={({ field: membersField }) => (
+                      <FormItem>
+                        <FormControl>
+                          <JuryTableInput
+                            presidentValue={presidentField.value || ''}
+                            membersValue={membersField.value || ''}
+                            onChange={(president, members) => {
+                              presidentField.onChange(president);
+                              membersField.onChange(members);
+                            }}
+                            supervisorAr={form.watch('supervisor_ar') || ''}
+                            supervisorUniversity={form.watch('supervisor_university') || ''}
+                            coSupervisorAr={form.watch('co_supervisor_ar') || ''}
+                            coSupervisorUniversity={form.watch('co_supervisor_university') || ''}
+                            nameSuggestions={professorNames}
+                            universitySuggestions={universityNames}
+                            findProfessor={findProfessor}
+                            onProfessorDataChange={ensureProfessor}
+                            onSupervisorChange={(name, university) => {
+                              form.setValue('supervisor_ar', name);
+                              form.setValue('supervisor_university', university);
+                            }}
+                            onCoSupervisorChange={(name, university) => {
+                              form.setValue('co_supervisor_ar', name);
+                              form.setValue('co_supervisor_university', university);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
               />
               {/* Personal Info */}
@@ -994,24 +1015,54 @@ export function CreateCertificateFromPhdDialog({
                 />
               </div>
 
-              {/* Supervisor & Research Lab */}
+              {/* Supervisor & Research Lab - Using SupervisorTableInput like EditStudentDialog */}
               <SectionHeader title="المشرف ومخبر البحث / Directeur et Laboratoire" />
               
               <FormField
                 control={form.control}
                 name="supervisor_ar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>المشرف *</FormLabel>
-                    <FormControl>
-                      <AcademicTitleInput
-                        {...field}
-                        suggestions={suggestions?.supervisor_ar || []}
-                        placeholder="اختر الرتبة ثم اكتب اسم المشرف"
+                render={({ field: supField }) => (
+                  <FormField
+                    control={form.control}
+                    name="supervisor_university"
+                    render={({ field: supUniField }) => (
+                      <FormField
+                        control={form.control}
+                        name="co_supervisor_ar"
+                        render={({ field: coSupField }) => (
+                          <FormField
+                            control={form.control}
+                            name="co_supervisor_university"
+                            render={({ field: coSupUniField }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <SupervisorTableInput
+                                    supervisorValue={supField.value || ""}
+                                    supervisorUniversity={supUniField.value || ""}
+                                    coSupervisorValue={coSupField.value || ""}
+                                    coSupervisorUniversity={coSupUniField.value || ""}
+                                    onSupervisorChange={(name, university) => {
+                                      supField.onChange(name);
+                                      supUniField.onChange(university);
+                                    }}
+                                    onCoSupervisorChange={(name, university) => {
+                                      coSupField.onChange(name);
+                                      coSupUniField.onChange(university);
+                                    }}
+                                    nameSuggestions={professorNames}
+                                    universitySuggestions={universityNames}
+                                    findProfessor={findProfessor}
+                                    onProfessorDataChange={ensureProfessor}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    )}
+                  />
                 )}
               />
 
