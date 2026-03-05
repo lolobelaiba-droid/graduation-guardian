@@ -77,6 +77,7 @@ const certificateSchema = z.object({
   university_ar: z.string().optional().nullable(),
   university_fr: z.string().optional().nullable(),
   faculty_ar: z.string().min(1, "الكلية مطلوبة"),
+  faculty_fr: z.string().optional().nullable(),
   branch_ar: z.string().min(1, "الشعبة مطلوبة"),
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
@@ -90,13 +91,26 @@ const certificateSchema = z.object({
   co_supervisor_university: z.string().optional().nullable(),
   research_lab_ar: z.string().optional().nullable(),
   
+  // PhD reference data (preserved from student record)
+  registration_number: z.string().optional().nullable(),
+  employment_status: z.string().optional().nullable(),
+  registration_type: z.string().optional().nullable(),
+  inscription_status: z.string().optional().nullable(),
+  current_year: z.string().optional().nullable(),
+  registration_count: z.coerce.number().optional().nullable(),
+  thesis_language: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  
   // Fields to be filled for certificate (single fields with auto-direction)
   thesis_title_ar: z.string().min(1, "عنوان الأطروحة مطلوب"),
+  thesis_title_fr: z.string().optional().nullable(),
   mention: z.enum(['honorable', 'very_honorable']),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().optional(),
   jury_president_ar: z.string().min(1, "رئيس اللجنة مطلوب"),
+  jury_president_fr: z.string().optional().nullable(),
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
+  jury_members_fr: z.string().optional().nullable(),
   
   // PhD LMD specific
   field_ar: z.string().optional().nullable(),
@@ -187,6 +201,7 @@ export function CreateCertificateFromPhdDialog({
       university_ar: 'جامعة أم البواقي',
       university_fr: "Université D'oum El Bouaghi",
       faculty_ar: '',
+      faculty_fr: '',
       branch_ar: '',
       branch_fr: '',
       specialty_ar: '',
@@ -195,10 +210,13 @@ export function CreateCertificateFromPhdDialog({
       defense_date: '',
       certificate_date: new Date().toISOString().split('T')[0],
       thesis_title_ar: '',
+      thesis_title_fr: '',
       field_ar: '',
       field_fr: '',
       jury_president_ar: '',
+      jury_president_fr: '',
       jury_members_ar: '',
+      jury_members_fr: '',
       first_registration_year: '',
       professional_email: '',
       phone_number: '',
@@ -210,6 +228,15 @@ export function CreateCertificateFromPhdDialog({
       province: 'أم البواقي',
       signature_title: '',
       scientific_council_date: '',
+      // PhD reference data
+      registration_number: '',
+      employment_status: '',
+      registration_type: '',
+      inscription_status: '',
+      current_year: '',
+      registration_count: null,
+      thesis_language: '',
+      notes: '',
     },
   });
 
@@ -237,6 +264,7 @@ export function CreateCertificateFromPhdDialog({
       university_ar: pendingStudent.university_ar || 'جامعة أم البواقي',
       university_fr: pendingStudent.university_fr || "Université D'oum El Bouaghi",
       faculty_ar: pendingStudent.faculty_ar,
+      faculty_fr: pendingStudent.faculty_fr || '',
       branch_ar: pendingStudent.branch_ar,
       branch_fr: pendingStudent.branch_fr || '',
       specialty_ar: pendingStudent.specialty_ar,
@@ -250,16 +278,28 @@ export function CreateCertificateFromPhdDialog({
       co_supervisor_university: pendingStudent.co_supervisor_university || '',
       research_lab_ar: pendingStudent.research_lab_ar || '',
       thesis_title_ar: pendingStudent.thesis_title_ar || '',
+      thesis_title_fr: pendingStudent.thesis_title_fr || '',
       field_ar: (pendingStudent as PhdLmdStudent).field_ar || '',
       field_fr: (pendingStudent as PhdLmdStudent).field_fr || '',
       mention: 'honorable' as MentionType,
       defense_date: '',
       certificate_date: new Date().toISOString().split('T')[0],
       jury_president_ar: '',
+      jury_president_fr: '',
       jury_members_ar: '',
+      jury_members_fr: '',
       province: 'أم البواقي',
       signature_title: getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
       scientific_council_date: '',
+      // PhD reference data preserved
+      registration_number: pendingStudent.registration_number || '',
+      employment_status: pendingStudent.employment_status || '',
+      registration_type: pendingStudent.registration_type || '',
+      inscription_status: pendingStudent.inscription_status || '',
+      current_year: pendingStudent.current_year || '',
+      registration_count: pendingStudent.registration_count || null,
+      thesis_language: pendingStudent.thesis_language || '',
+      notes: pendingStudent.notes || '',
     });
     
     setShowForm(true);
@@ -279,26 +319,21 @@ export function CreateCertificateFromPhdDialog({
         data.jury_members_ar.split(/\s*-\s*/).forEach(m => ensureProfessor(m));
       }
 
-      // Prepare certificate data with required French fields (empty if not provided)
-      // Include PhD reference data from selected student
-      const phdReferenceData = selectedStudent ? {
-        registration_number: selectedStudent.registration_number || null,
-        employment_status: selectedStudent.employment_status || null,
-        registration_type: selectedStudent.registration_type || null,
-        inscription_status: selectedStudent.inscription_status || null,
-        current_year: selectedStudent.current_year || null,
-        registration_count: selectedStudent.registration_count || null,
-        thesis_language: selectedStudent.thesis_language || null,
-        notes: selectedStudent.notes || null,
-      } : {};
-
+      // All data comes from the form now (including PhD reference fields)
       const certificateData = {
         ...data,
-        ...phdReferenceData,
-        faculty_fr: '',
-        thesis_title_fr: '',
-        jury_president_fr: '',
-        jury_members_fr: '',
+        faculty_fr: data.faculty_fr || '',
+        thesis_title_fr: data.thesis_title_fr || '',
+        jury_president_fr: data.jury_president_fr || '',
+        jury_members_fr: data.jury_members_fr || '',
+        registration_number: data.registration_number || null,
+        employment_status: data.employment_status || null,
+        registration_type: data.registration_type || null,
+        inscription_status: data.inscription_status || null,
+        current_year: data.current_year || null,
+        registration_count: data.registration_count || null,
+        thesis_language: data.thesis_language || null,
+        notes: data.notes || null,
       };
 
       // Create certificate
