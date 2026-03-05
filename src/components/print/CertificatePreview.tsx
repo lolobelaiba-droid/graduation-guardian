@@ -680,7 +680,7 @@ export function CertificatePreview({
                     width: hasWidth ? `${field.field_width! * SCALE}px` : undefined,
                     padding: '0',
                     textDecoration: !isVisible ? 'line-through' : 'none',
-                    lineHeight: hasWidth ? '1.4' : undefined,
+                    lineHeight: hasWidth ? (field.line_height ?? 1.4) : undefined,
                   }}
                   onMouseDown={(e) => isVisible && handleMouseDown(e, field)}
                   onClick={() => !dragState && onFieldClick(field.id)}

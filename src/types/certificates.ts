@@ -118,6 +118,7 @@ export interface TemplateField {
   is_visible: boolean;
   field_order: number;
   field_width: number | null;
+  line_height: number | null;
   created_at: string;
 }
 

@@ -1096,11 +1096,11 @@ export function FullPreviewDialog({
                         color: field.font_color,
                         textAlign: field.text_align as 'left' | 'right' | 'center',
                         direction: effectiveDirection,
-                        whiteSpace: hasWidth ? 'normal' : 'nowrap',
-                        wordWrap: hasWidth ? 'break-word' : undefined,
-                        width: hasWidth ? `${effectiveWidthMm! * SCALE}px` : undefined,
-                        lineHeight: hasWidth ? '1.4' : undefined,
-                        padding: '0',
+                      whiteSpace: hasWidth ? 'normal' : 'nowrap',
+                      wordWrap: hasWidth ? 'break-word' : undefined,
+                      width: hasWidth ? `${effectiveWidthMm! * SCALE}px` : undefined,
+                      lineHeight: hasWidth ? (field.line_height ?? 1.4) : undefined,
+                      padding: '0',
                       }}
                       onMouseDown={(e) => showFieldControls && handleFieldMouseDown(e, field)}
                       title={`${field.field_name_ar}: X=${position.x}مم, Y=${position.y}مم${hasWidth ? `, W=${effectiveWidthMm}مم` : ''}`}
