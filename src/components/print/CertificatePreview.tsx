@@ -306,8 +306,13 @@ export function CertificatePreview({
       }
     }
     
-    // Convert any Hindi numerals to Western Arabic for all values
-    return value ? toWesternNumerals(String(value)) : '';
+    if (!value) return '';
+    let result = toWesternNumerals(String(value));
+    // Strip role suffixes like (مدعو) from jury/supervisor fields on certificates
+    if (fieldKey.startsWith('jury_') || fieldKey.startsWith('supervisor') || fieldKey.startsWith('co_supervisor')) {
+      result = result.replace(/\s*\(مدعو\)/g, '');
+    }
+    return result;
   }, [student, dateFormatSettings]);
 
   // Helper to get text direction for date fields
