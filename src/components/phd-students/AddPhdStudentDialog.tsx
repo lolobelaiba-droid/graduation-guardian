@@ -25,6 +25,7 @@ import { SupervisorTableInput } from "@/components/ui/jury-table-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
@@ -836,10 +837,10 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                   <FormItem>
                     <FormLabel>عنوان الأطروحة *</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        {...field} 
+                      <RichTextEditor
                         value={field.value || ''}
-                        rows={2} 
+                        onChange={field.onChange}
+                        rows={2}
                         placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
                         dir="auto"
                       />
