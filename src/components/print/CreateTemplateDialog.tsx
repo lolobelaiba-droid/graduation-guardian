@@ -96,6 +96,7 @@ export function CreateTemplateDialog({
         is_visible: true,
         field_order: index,
         field_width: null,
+        line_height: null,
       }));
 
       await createFields.mutateAsync(fieldData);

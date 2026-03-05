@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import {
   useCertificateTemplates,
@@ -1264,10 +1265,12 @@ export default function PrintCertificates() {
                           const selectedF = templateFields.find(f => f.id === selectedFieldId);
                           const isResizable = selectedF && (
                             selectedF.field_key.startsWith('thesis_title') || 
+                            selectedF.field_key.startsWith('jury_members') ||
                             selectedF.field_key.startsWith('static_text_')
                           );
                           if (!isResizable) return null;
                           return (
+                            <>
                             <div>
                               <Label>عرض الحقل (مم)</Label>
                               <div className="flex items-center gap-2 mt-1">
@@ -1310,6 +1313,51 @@ export default function PrintCertificates() {
                                 حدد عرضاً لتفعيل التفاف النص تلقائياً أو اسحب حافة الحقل في المعاينة
                               </p>
                             </div>
+
+                            {/* Line Height control - only when field has width */}
+                            {selectedF?.field_width != null && (
+                              <div>
+                                <Label>المسافة بين السطور</Label>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Slider
+                                    min={0.8}
+                                    max={3}
+                                    step={0.1}
+                                    value={[selectedF?.line_height ?? 1.4]}
+                                    onValueChange={([val]) => {
+                                      updateField.mutate({
+                                        id: selectedFieldId,
+                                        template_id: selectedTemplateId,
+                                        line_height: val,
+                                      });
+                                    }}
+                                    className="flex-1"
+                                  />
+                                  <span className="text-sm font-mono w-10 text-center">
+                                    {(selectedF?.line_height ?? 1.4).toFixed(1)}
+                                  </span>
+                                  {selectedF?.line_height != null && selectedF.line_height !== 1.4 && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        updateField.mutate({
+                                          id: selectedFieldId,
+                                          template_id: selectedTemplateId,
+                                          line_height: null,
+                                        });
+                                      }}
+                                    >
+                                      افتراضي
+                                    </Button>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  تحكم في المسافة بين السطور عند التفاف النص (الافتراضي: 1.4)
+                                </p>
+                              </div>
+                            )}
+                            </>
                           );
                         })()}
 

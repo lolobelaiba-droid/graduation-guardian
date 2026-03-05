@@ -82,6 +82,7 @@ export type Database = {
           id: string
           is_rtl: boolean | null
           is_visible: boolean | null
+          line_height: number | null
           position_x: number
           position_y: number
           template_id: string
@@ -100,6 +101,7 @@ export type Database = {
           id?: string
           is_rtl?: boolean | null
           is_visible?: boolean | null
+          line_height?: number | null
           position_x?: number
           position_y?: number
           template_id: string
@@ -118,6 +120,7 @@ export type Database = {
           id?: string
           is_rtl?: boolean | null
           is_visible?: boolean | null
+          line_height?: number | null
           position_x?: number
           position_y?: number
           template_id?: string

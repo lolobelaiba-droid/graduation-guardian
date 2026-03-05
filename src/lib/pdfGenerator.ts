@@ -596,9 +596,10 @@ function renderField(
   if (field.field_width && field.field_width > 0) {
     const maxWidth = field.field_width;
     const lines = doc.splitTextToSize(processed.text, maxWidth);
-    // Line height matching preview's CSS lineHeight: 1.4
+    // Line height matching preview's CSS lineHeight (default 1.4)
     // jsPDF font size is in points, 1pt ≈ 0.353mm
-    const lineHeight = field.font_size * 0.353 * 1.4;
+    const fieldLineHeight = (field as any).line_height ?? 1.4;
+    const lineHeight = field.font_size * 0.353 * fieldLineHeight;
     
     // In the preview, position_x is the LEFT edge of the text box.
     // In jsPDF, doc.text(x) alignment anchor differs:
