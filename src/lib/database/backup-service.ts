@@ -255,6 +255,7 @@ export class BackupService {
           'position_x', 'position_y', 'font_size', 'font_name', 'font_color',
           'text_align', 'is_rtl', 'is_visible', 'field_order', 'field_width', 'created_at'
         ],
+        custom_fonts: ['id', 'font_name', 'font_family', 'font_url', 'font_weight', 'font_style', 'is_arabic', 'created_at'],
       };
 
       const cleanBatchData = (tableName: string, batch: Record<string, unknown>[]) => {
