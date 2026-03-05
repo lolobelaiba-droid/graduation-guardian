@@ -689,7 +689,15 @@ export function CertificatePreview({
                   {isSelected && showControls && !isDragging && (
                     <GripVertical className="inline-block h-3 w-3 ml-1 text-muted-foreground" />
                   )}
-                  {getFieldValue(field.field_key, field) || `[${field.field_name_ar}]`}
+                  {(() => {
+                    const displayValue = getFieldValue(field.field_key, field);
+                    const isHtmlField = field.field_key === 'thesis_title_ar' || field.field_key === 'thesis_title_fr';
+                    const containsHtml = isHtmlField && displayValue && /<[^>]+>/.test(displayValue);
+                    if (containsHtml) {
+                      return <span dangerouslySetInnerHTML={{ __html: displayValue }} />;
+                    }
+                    return displayValue || `[${field.field_name_ar}]`;
+                  })()}
                   
                   {/* Word-style resize handles for resizable fields */}
                   {resizable && (isSelected || hasWidth) && showControls && !isDragging && onFieldResize && (

@@ -15,6 +15,7 @@ import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { JuryTableInput, SupervisorTableInput } from "@/components/ui/jury-table-input";
 import { DateInput } from "@/components/ui/date-input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Form,
   FormControl,
@@ -807,12 +808,12 @@ export default function EditStudentDialog({
                       <FormItem>
                         <FormLabel>عنوان الأطروحة *</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            value={(field.value as string) || ""} 
-                            rows={2}
-                            dir="auto"
+                          <RichTextEditor
+                            value={(field.value as string) || ""}
+                            onChange={field.onChange}
                             placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
+                            dir="auto"
+                            rows={2}
                           />
                         </FormControl>
                         <FormMessage />

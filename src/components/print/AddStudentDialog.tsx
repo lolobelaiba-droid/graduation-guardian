@@ -25,6 +25,7 @@ import { JuryTableInput, SupervisorTableInput } from "@/components/ui/jury-table
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -830,11 +831,12 @@ export function AddStudentDialog({ open, onOpenChange, certificateType: initialC
                       <FormItem>
                         <FormLabel>عنوان الأطروحة *</FormLabel>
                         <FormControl>
-                        <Textarea 
-                            {...field} 
-                            rows={2} 
+                          <RichTextEditor
+                            value={field.value || ""}
+                            onChange={field.onChange}
                             placeholder="عنوان الأطروحة (يمكن الكتابة بالعربية أو الفرنسية)"
                             dir="auto"
+                            rows={2}
                           />
                         </FormControl>
                         <FormMessage />
