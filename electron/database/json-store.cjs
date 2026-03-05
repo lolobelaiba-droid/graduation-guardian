@@ -497,6 +497,113 @@ function exportAllData() {
   };
 }
 
+/**
+ * استخراج الرتبة والاسم النظيف من اسم يحتوي على لقب علمي
+ */
+function extractRankAndName(fullNameWithRank) {
+  var KNOWN_RANKS = [
+    { abbr: 'أ.ت.ع', label: 'أستاذ التعليم العالي', pattern: /^أ\.?د\.?\s*/ },
+    { abbr: 'أ.ت.ع', label: 'أستاذ التعليم العالي', pattern: /^أد\.?\s*/ },
+    { abbr: 'أ.م.أ', label: 'أستاذ محاضر أ', pattern: /^د\.?\s*/ },
+    { abbr: 'أ.م.ب', label: 'أستاذ محاضر ب', pattern: /^م\.?ب\.?\s*/ },
+    { abbr: 'أ.م.س.أ', label: 'أستاذ مساعد أ', pattern: /^م\.?س\.?أ\.?\s*/ },
+    { abbr: 'أ.م.س.ب', label: 'أستاذ مساعد ب', pattern: /^م\.?س\.?ب\.?\s*/ },
+  ];
+
+  var trimmed = (fullNameWithRank || '').trim();
+  for (var i = 0; i < KNOWN_RANKS.length; i++) {
+    var rank = KNOWN_RANKS[i];
+    if (rank.pattern.test(trimmed)) {
+      var cleanName = trimmed.replace(rank.pattern, '').trim();
+      if (cleanName) {
+        return { cleanName: cleanName, rankAbbr: rank.abbr, rankLabel: rank.label };
+      }
+    }
+  }
+  return { cleanName: trimmed, rankAbbr: '', rankLabel: '' };
+}
+
+/**
+ * إعادة بناء جدول الأساتذة من بيانات الشهادات
+ */
+function rebuildProfessorsFromCertificates(data) {
+  var profMap = {};
+
+  function processCerts(certs) {
+    if (!certs) return;
+    for (var i = 0; i < certs.length; i++) {
+      var cert = certs[i];
+      
+      // Supervisor
+      if (cert.supervisor_ar) {
+        var sup = extractRankAndName(cert.supervisor_ar);
+        if (sup.cleanName && !profMap[sup.cleanName]) {
+          profMap[sup.cleanName] = { rank_label: sup.rankLabel, rank_abbreviation: sup.rankAbbr, university: cert.supervisor_university || '' };
+        }
+      }
+      // Co-supervisor
+      if (cert.co_supervisor_ar) {
+        var coSup = extractRankAndName(cert.co_supervisor_ar);
+        if (coSup.cleanName && !profMap[coSup.cleanName]) {
+          profMap[coSup.cleanName] = { rank_label: coSup.rankLabel, rank_abbreviation: coSup.rankAbbr, university: cert.co_supervisor_university || '' };
+        }
+      }
+      // Jury president
+      if (cert.jury_president_ar) {
+        var pres = extractRankAndName(cert.jury_president_ar);
+        if (pres.cleanName && !profMap[pres.cleanName]) {
+          profMap[pres.cleanName] = { rank_label: pres.rankLabel, rank_abbreviation: pres.rankAbbr, university: '' };
+        }
+      }
+      // Jury members
+      if (cert.jury_members_ar) {
+        var members = cert.jury_members_ar.split(/\s*-\s*/);
+        for (var j = 0; j < members.length; j++) {
+          var m = members[j].trim();
+          if (!m) continue;
+          var mem = extractRankAndName(m);
+          if (mem.cleanName && !profMap[mem.cleanName]) {
+            profMap[mem.cleanName] = { rank_label: mem.rankLabel, rank_abbreviation: mem.rankAbbr, university: '' };
+          }
+        }
+      }
+    }
+  }
+
+  processCerts(data.phd_lmd_certificates);
+  processCerts(data.phd_science_certificates);
+
+  var names = Object.keys(profMap);
+  if (names.length === 0) return;
+
+  // Merge with existing professors (don't overwrite)
+  var existingProfs = readTable('professors') || [];
+  var existingNames = {};
+  for (var i = 0; i < existingProfs.length; i++) {
+    existingNames[existingProfs[i].full_name] = true;
+  }
+
+  var newProfs = [];
+  for (var k = 0; k < names.length; k++) {
+    var name = names[k];
+    if (!existingNames[name]) {
+      newProfs.push({
+        id: generateUUID(),
+        full_name: name,
+        rank_label: profMap[name].rank_label || null,
+        rank_abbreviation: profMap[name].rank_abbreviation || null,
+        university: profMap[name].university || null,
+        created_at: getCurrentDateTime()
+      });
+    }
+  }
+
+  if (newProfs.length > 0) {
+    writeTable('professors', existingProfs.concat(newProfs));
+    console.log('Rebuilt ' + newProfs.length + ' professors from certificates');
+  }
+}
+
 function importAllData(backupData) {
   var data = backupData.data;
   
@@ -523,10 +630,30 @@ function importAllData(backupData) {
   ];
   
   tableNames.forEach(function(tableName) {
-    if (data[tableName]) {
+    if (data[tableName] && data[tableName].length > 0) {
       writeTable(tableName, data[tableName]);
     }
   });
+  
+  // Rebuild professors from certificates if not in backup
+  if (!data.professors || data.professors.length === 0) {
+    rebuildProfessorsFromCertificates(data);
+  }
+
+  // Rebuild academic_titles with defaults if not in backup
+  if (!data.academic_titles || data.academic_titles.length === 0) {
+    var existingTitles = readTable('academic_titles');
+    if (!existingTitles || existingTitles.length === 0) {
+      var defaultTitles = [
+        { id: generateUUID(), abbreviation: 'أ.ت.ع', full_name: 'أستاذ التعليم العالي', display_order: 1, created_at: getCurrentDateTime() },
+        { id: generateUUID(), abbreviation: 'أ.م.أ', full_name: 'أستاذ محاضر أ', display_order: 2, created_at: getCurrentDateTime() },
+        { id: generateUUID(), abbreviation: 'أ.م.ب', full_name: 'أستاذ محاضر ب', display_order: 3, created_at: getCurrentDateTime() },
+        { id: generateUUID(), abbreviation: 'أ.م.س.أ', full_name: 'أستاذ مساعد أ', display_order: 4, created_at: getCurrentDateTime() },
+        { id: generateUUID(), abbreviation: 'أ.م.س.ب', full_name: 'أستاذ مساعد ب', display_order: 5, created_at: getCurrentDateTime() },
+      ];
+      writeTable('academic_titles', defaultTitles);
+    }
+  }
   
   return { success: true };
 }
