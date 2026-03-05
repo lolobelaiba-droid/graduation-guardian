@@ -242,7 +242,9 @@ export class BackupService {
       await Promise.all(mainDeletes);
 
       // Helper to restore a table in batches
-      const BATCH_SIZE = 500;
+      const DEFAULT_BATCH_SIZE = 500;
+      // Tables with large data (e.g. base64 images) need smaller batches to avoid timeouts
+      const SMALL_BATCH_TABLES = ['certificate_templates', 'certificate_template_fields', 'custom_fonts'];
       // Tables with unique constraints that need upsert
       const UPSERT_TABLES = ['settings', 'user_settings', 'dropdown_options'];
       
@@ -278,6 +280,7 @@ export class BackupService {
         if (!data || data.length === 0) return;
         
         const useUpsert = UPSERT_TABLES.includes(tableName);
+        const BATCH_SIZE = SMALL_BATCH_TABLES.includes(tableName) ? 50 : DEFAULT_BATCH_SIZE;
         
         for (let i = 0; i < data.length; i += BATCH_SIZE) {
           const batch = cleanBatchData(tableName, data.slice(i, i + BATCH_SIZE) as Record<string, unknown>[]);
