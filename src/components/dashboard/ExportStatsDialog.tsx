@@ -622,10 +622,19 @@ export function ExportStatsDialog() {
           };
 
           // Helper: look up professor data from professors DB by clean name
+          // Uses suffix match (like useProfessors.findProfessor) to handle unrecognized abbreviation prefixes
           const findProfessorData = (rawName: string): { rank_label: string; university: string } => {
-            const cleanName = stripAbbreviation(rawName.trim());
-            const data = professorsMap.get(cleanName.toLowerCase()) || professorsMap.get(rawName.trim().toLowerCase());
-            return data || { rank_label: '', university: '' };
+            const trimmed = rawName.trim();
+            const cleanName = stripAbbreviation(trimmed);
+            // 1. Try exact match after stripping abbreviation
+            const data = professorsMap.get(cleanName.toLowerCase()) || professorsMap.get(trimmed.toLowerCase());
+            if (data) return data;
+            // 2. Suffix match: check if any professor name appears at the end of the input
+            // Handles cases like "م ب. حليس يوسف" when "م ب." is not in academic_titles
+            for (const [profName, profData] of professorsMap.entries()) {
+              if (trimmed.toLowerCase().endsWith(profName)) return profData;
+            }
+            return { rank_label: '', university: '' };
           };
 
           const allRecords = [
