@@ -195,6 +195,7 @@ export function CertificatePreview({
   // Check if a field should be resizable (long text fields)
   const isResizableField = useCallback((fieldKey: string): boolean => {
     return fieldKey.startsWith('thesis_title') || 
+           fieldKey.startsWith('jury_members') ||
            fieldKey.startsWith('static_text_');
   }, []);
 
@@ -691,7 +692,7 @@ export function CertificatePreview({
                   )}
                   {(() => {
                     const displayValue = getFieldValue(field.field_key, field);
-                    const isHtmlField = field.field_key === 'thesis_title_ar' || field.field_key === 'thesis_title_fr';
+                    const isHtmlField = field.field_key === 'thesis_title_ar' || field.field_key === 'thesis_title_fr' || field.field_key === 'jury_members_ar' || field.field_key === 'jury_members_fr';
                     const containsHtml = isHtmlField && displayValue && /<[^>]+>/.test(displayValue);
                     if (containsHtml) {
                       return <span dangerouslySetInnerHTML={{ __html: displayValue }} />;

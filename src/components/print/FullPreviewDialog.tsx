@@ -516,6 +516,7 @@ export function FullPreviewDialog({
   // Check if a field should be resizable (long text fields)
   const isResizableField = useCallback((fieldKey: string): boolean => {
     return fieldKey.startsWith('thesis_title') || 
+           fieldKey.startsWith('jury_members') ||
            fieldKey.startsWith('static_text_');
   }, []);
 
@@ -1107,7 +1108,14 @@ export function FullPreviewDialog({
                       {isSelected && showFieldControls && !isDragging && (
                         <GripVertical className="inline-block h-3 w-3 ml-1 text-primary" />
                       )}
-                      {value || `[${field.field_name_ar}]`}
+                      {(() => {
+                        const isHtmlField = field.field_key === 'thesis_title_ar' || field.field_key === 'thesis_title_fr' || field.field_key === 'jury_members_ar' || field.field_key === 'jury_members_fr';
+                        const containsHtml = isHtmlField && value && /<[^>]+>/.test(value);
+                        if (containsHtml) {
+                          return <span dangerouslySetInnerHTML={{ __html: value }} />;
+                        }
+                        return value || `[${field.field_name_ar}]`;
+                      })()}
 
                       {/* Word-style resize handles for resizable fields */}
                       {resizable && (isSelected || hasWidth) && showFieldControls && !isDragging && onFieldResize && (
