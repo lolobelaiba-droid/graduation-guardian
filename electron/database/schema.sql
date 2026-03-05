@@ -148,6 +148,8 @@ CREATE TABLE IF NOT EXISTS certificate_template_fields (
     is_rtl INTEGER DEFAULT 1,
     is_visible INTEGER DEFAULT 1,
     field_order INTEGER DEFAULT 0,
+    field_width REAL DEFAULT NULL,
+    line_height REAL DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (template_id) REFERENCES certificate_templates(id) ON DELETE CASCADE
 );
