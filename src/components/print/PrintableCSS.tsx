@@ -103,7 +103,15 @@ export function PrintableCSS({
       return value ? formatCertificateDate(value as string, false, dateFormatSettings) : '';
     }
 
-    return value ? toWesternNumerals(String(value)) : '';
+    if (!value) return '';
+    let result = toWesternNumerals(String(value));
+    
+    // Strip role suffixes like (مدعو) from jury/supervisor fields on certificates
+    if (fieldKey.startsWith('jury_') || fieldKey.startsWith('supervisor') || fieldKey.startsWith('co_supervisor') || fieldKey.startsWith('jury_president')) {
+      result = result.replace(/\s*\(مدعو\)/g, '');
+    }
+    
+    return result;
   }, [student, dateFormatSettings]);
 
   const getDateFieldDirection = useCallback((fieldKey: string): 'rtl' | 'ltr' | undefined => {
