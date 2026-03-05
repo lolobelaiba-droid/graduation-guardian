@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -45,6 +45,7 @@ import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { academicYears } from "@/components/print/AddStudentDialog";
+import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
 
 // PhD LMD schema
 const phdLmdSchema = z.object({
@@ -203,6 +204,14 @@ export default function EditStudentDialog({
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
 
+  // Bilingual dropdown state
+  const [employmentStatusAr, setEmploymentStatusAr] = useState("");
+  const [employmentStatusFr, setEmploymentStatusFr] = useState("");
+  const [registrationTypeAr, setRegistrationTypeAr] = useState("");
+  const [registrationTypeFr, setRegistrationTypeFr] = useState("");
+  const [inscriptionStatusAr, setInscriptionStatusAr] = useState("");
+  const [inscriptionStatusFr, setInscriptionStatusFr] = useState("");
+
   const getSchema = () => {
     switch (certificateType) {
       case "phd_lmd": return phdLmdSchema;
@@ -285,6 +294,14 @@ export default function EditStudentDialog({
       } else {
         form.reset(baseValues as MasterFormValues);
       }
+
+      // Initialize bilingual dropdown state
+      setEmploymentStatusAr(student.employment_status || "");
+      setEmploymentStatusFr("");
+      setRegistrationTypeAr(student.registration_type || "");
+      setRegistrationTypeFr("");
+      setInscriptionStatusAr(student.inscription_status || "");
+      setInscriptionStatusFr("");
     }
   }, [student, open, certificateType, form]);
 
@@ -302,19 +319,27 @@ export default function EditStudentDialog({
       String(d.jury_members_ar).split(/\s*-\s*/).forEach(m => ensureProfessor(m));
     }
 
+    // Override bilingual dropdown values
+    const submitData = {
+      ...data,
+      employment_status: employmentStatusAr || null,
+      registration_type: registrationTypeAr || null,
+      inscription_status: inscriptionStatusAr || null,
+    } as FormValues;
+
     const handleSuccess = () => {
       onOpenChange(false);
     };
 
     switch (certificateType) {
       case "phd_lmd":
-        updatePhdLmd.mutate({ id: student.id, ...data } as Parameters<typeof updatePhdLmd.mutate>[0], { onSuccess: handleSuccess });
+        updatePhdLmd.mutate({ id: student.id, ...submitData } as Parameters<typeof updatePhdLmd.mutate>[0], { onSuccess: handleSuccess });
         break;
       case "phd_science":
-        updatePhdScience.mutate({ id: student.id, ...data } as Parameters<typeof updatePhdScience.mutate>[0], { onSuccess: handleSuccess });
+        updatePhdScience.mutate({ id: student.id, ...submitData } as Parameters<typeof updatePhdScience.mutate>[0], { onSuccess: handleSuccess });
         break;
       case "master":
-        updateMaster.mutate({ id: student.id, ...data } as Parameters<typeof updateMaster.mutate>[0], { onSuccess: handleSuccess });
+        updateMaster.mutate({ id: student.id, ...submitData } as Parameters<typeof updateMaster.mutate>[0], { onSuccess: handleSuccess });
         break;
     }
   };
@@ -912,45 +937,45 @@ export default function EditStudentDialog({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={"employment_status" as keyof FormValues}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الحالة الوظيفية</FormLabel>
-                        <FormControl>
-                          <Input {...field} value={(field.value as string) || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={"registration_type" as keyof FormValues}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>نوع التسجيل</FormLabel>
-                        <FormControl>
-                          <Input {...field} value={(field.value as string) || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={"inscription_status" as keyof FormValues}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>حالة التسجيل</FormLabel>
-                        <FormControl>
-                          <Input {...field} value={(field.value as string) || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                </div>
+
+                <BilingualDropdown
+                  valueAr={employmentStatusAr}
+                  valueFr={employmentStatusFr}
+                  onChangeAr={setEmploymentStatusAr}
+                  onChangeFr={setEmploymentStatusFr}
+                  optionType="employment_status"
+                  labelAr="الحالة الوظيفية"
+                  labelFr="Situation professionnelle"
+                  placeholderAr="اختر الحالة الوظيفية"
+                  placeholderFr="Choisir la situation"
+                />
+
+                <BilingualDropdown
+                  valueAr={registrationTypeAr}
+                  valueFr={registrationTypeFr}
+                  onChangeAr={setRegistrationTypeAr}
+                  onChangeFr={setRegistrationTypeFr}
+                  optionType="registration_type"
+                  labelAr="نوع التسجيل"
+                  labelFr="Type d'inscription"
+                  placeholderAr="اختر نوع التسجيل"
+                  placeholderFr="Choisir le type"
+                />
+
+                <BilingualDropdown
+                  valueAr={inscriptionStatusAr}
+                  valueFr={inscriptionStatusFr}
+                  onChangeAr={setInscriptionStatusAr}
+                  onChangeFr={setInscriptionStatusFr}
+                  optionType="inscription_status"
+                  labelAr="حالة التسجيل"
+                  labelFr="Statut d'inscription"
+                  placeholderAr="اختر حالة التسجيل"
+                  placeholderFr="Choisir le statut"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name={"current_year" as keyof FormValues}
