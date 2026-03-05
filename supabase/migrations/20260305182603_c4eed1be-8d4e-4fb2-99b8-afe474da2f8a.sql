@@ -1,0 +1,1 @@
+ALTER TABLE public.certificate_template_fields ADD COLUMN line_height numeric DEFAULT NULL;
