@@ -206,7 +206,14 @@ export class BackupService {
         "certificate_templates", "custom_fields",
         "certificate_template_fields", "custom_field_values", "custom_field_options", "print_history",
       ];
-      const allTables = selectedTables ? fullTableList.filter(t => selectedTables.includes(t)) : fullTableList;
+      // Only include tables that actually have data in the backup (to avoid deleting existing data for missing tables)
+      const tablesWithData = fullTableList.filter(t => {
+        const d = (tableData as Record<string, unknown[]>)[t];
+        return d && d.length > 0;
+      });
+      const allTables = selectedTables 
+        ? tablesWithData.filter(t => selectedTables.includes(t)) 
+        : tablesWithData;
       const isPartial = !!selectedTables;
       const totalSteps = allTables.length + 2; // +2 for delete phases
       let currentStep = 0;

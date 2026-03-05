@@ -491,7 +491,8 @@ function exportAllData() {
       custom_field_values: readTable('custom_field_values'),
       custom_field_options: readTable('custom_field_options'),
       print_history: readTable('print_history'),
-      notes: readTable('notes')
+      notes: readTable('notes'),
+      professors: readTable('professors')
     }
   };
 }
@@ -517,7 +518,8 @@ function importAllData(backupData) {
     'custom_field_values',
     'custom_field_options',
     'print_history',
-    'notes'
+    'notes',
+    'professors'
   ];
   
   tableNames.forEach(function(tableName) {
