@@ -96,9 +96,9 @@ export function ViewPhdStudentDialog({ open, onOpenChange, student, studentType 
               <SectionHeader title="الأطروحة" />
               <div className="py-2">
                 <span className="text-muted-foreground block mb-1">عنوان الأطروحة</span>
-                <p className="font-medium text-foreground leading-relaxed" dir="auto">
-                  {student.thesis_title_ar}
-                </p>
+                <p className="font-medium text-foreground leading-relaxed" dir="auto"
+                  dangerouslySetInnerHTML={{ __html: student.thesis_title_ar }}
+                />
               </div>
             </>
           )}

@@ -25,6 +25,7 @@ import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
@@ -869,7 +870,12 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                 <FormItem>
                   <FormLabel>عنوان الأطروحة *</FormLabel>
                   <FormControl>
-                    <Textarea {...field} value={field.value || ''} rows={2} dir="auto" />
+                    <RichTextEditor
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      rows={2}
+                      dir="auto"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
