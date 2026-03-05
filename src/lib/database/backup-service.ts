@@ -363,12 +363,11 @@ export class BackupService {
    */
   private static extractRankAndName(fullNameWithRank: string): { cleanName: string; rankAbbr: string; rankLabel: string } {
     const KNOWN_RANKS: { abbr: string; label: string; pattern: RegExp }[] = [
-      { abbr: 'أ.ت.ع', label: 'أستاذ التعليم العالي', pattern: /^أ\.?د\.?\s*/  },
-      { abbr: 'أ.ت.ع', label: 'أستاذ التعليم العالي', pattern: /^أد\.?\s*/ },
-      { abbr: 'أ.م.أ', label: 'أستاذ محاضر أ', pattern: /^د\.?\s*/ },
-      { abbr: 'أ.م.ب', label: 'أستاذ محاضر ب', pattern: /^م\.?ب\.?\s*/ },
-      { abbr: 'أ.م.س.أ', label: 'أستاذ مساعد أ', pattern: /^م\.?س\.?أ\.?\s*/ },
-      { abbr: 'أ.م.س.ب', label: 'أستاذ مساعد ب', pattern: /^م\.?س\.?ب\.?\s*/ },
+      { abbr: 'أد.', label: 'أستاذ التعليم العالي', pattern: /^أ\.?د\.?\s*/ },
+      { abbr: 'أد.', label: 'أستاذ التعليم العالي', pattern: /^أد\.?\s*/ },
+      { abbr: 'د.', label: 'أستاذ محاضر أ', pattern: /^د\.?\s*/ },
+      { abbr: 'د.', label: 'أستاذ محاضر ب', pattern: /^م\.?ب\.?\s*/ },
+      { abbr: 'أم.', label: 'أستاذ مميز', pattern: /^أم\.?\s*/ },
     ];
 
     const trimmed = fullNameWithRank.trim();
@@ -481,11 +480,10 @@ export class BackupService {
    */
   private static async rebuildDefaultAcademicTitles(): Promise<void> {
     const defaultTitles = [
-      { abbreviation: 'أ.ت.ع', full_name: 'أستاذ التعليم العالي', display_order: 1 },
-      { abbreviation: 'أ.م.أ', full_name: 'أستاذ محاضر أ', display_order: 2 },
-      { abbreviation: 'أ.م.ب', full_name: 'أستاذ محاضر ب', display_order: 3 },
-      { abbreviation: 'أ.م.س.أ', full_name: 'أستاذ مساعد أ', display_order: 4 },
-      { abbreviation: 'أ.م.س.ب', full_name: 'أستاذ مساعد ب', display_order: 5 },
+      { abbreviation: 'أد.', full_name: 'أستاذ التعليم العالي', display_order: 1 },
+      { abbreviation: 'د.', full_name: 'أستاذ محاضر أ', display_order: 2 },
+      { abbreviation: 'د.', full_name: 'أستاذ محاضر ب', display_order: 3 },
+      { abbreviation: 'أم.', full_name: 'أستاذ مميز', display_order: 4 },
     ];
 
     if (isElectron()) {
