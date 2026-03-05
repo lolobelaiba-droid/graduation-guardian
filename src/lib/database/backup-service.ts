@@ -338,10 +338,171 @@ export class BackupService {
       if (shouldRestore("custom_field_options")) await restoreTable("custom_field_options", tableData.custom_field_options);
       if (shouldRestore("print_history")) await restoreTable("print_history", tableData.print_history);
 
+      // After restoration, rebuild professors table if it wasn't in the backup
+      const professorsInBackup = (tableData.professors && tableData.professors.length > 0);
+      if (!professorsInBackup) {
+        onProgress?.("إعادة بناء سجل الأساتذة من بيانات الشهادات...", totalSteps - 1, totalSteps);
+        await this.rebuildProfessorsFromCertificates(backupData);
+      }
+
+      // Rebuild academic_titles if not in backup
+      const titlesInBackup = (tableData.academic_titles && tableData.academic_titles.length > 0);
+      if (!titlesInBackup) {
+        onProgress?.("إعادة بناء الألقاب العلمية...", totalSteps, totalSteps);
+        await this.rebuildDefaultAcademicTitles();
+      }
+
       return { success: true, error: null };
     } catch (error) {
       return { success: false, error: error as Error };
     }
+  }
+
+  /**
+   * استخراج الرتبة والاسم النظيف من اسم كامل يحتوي على لقب علمي
+   */
+  private static extractRankAndName(fullNameWithRank: string): { cleanName: string; rankAbbr: string; rankLabel: string } {
+    const KNOWN_RANKS: { abbr: string; label: string; pattern: RegExp }[] = [
+      { abbr: 'أ.ت.ع', label: 'أستاذ التعليم العالي', pattern: /^أ\.?د\.?\s*/  },
+      { abbr: 'أ.ت.ع', label: 'أستاذ التعليم العالي', pattern: /^أد\.?\s*/ },
+      { abbr: 'أ.م.أ', label: 'أستاذ محاضر أ', pattern: /^د\.?\s*/ },
+      { abbr: 'أ.م.ب', label: 'أستاذ محاضر ب', pattern: /^م\.?ب\.?\s*/ },
+      { abbr: 'أ.م.س.أ', label: 'أستاذ مساعد أ', pattern: /^م\.?س\.?أ\.?\s*/ },
+      { abbr: 'أ.م.س.ب', label: 'أستاذ مساعد ب', pattern: /^م\.?س\.?ب\.?\s*/ },
+    ];
+
+    const trimmed = fullNameWithRank.trim();
+    for (const rank of KNOWN_RANKS) {
+      if (rank.pattern.test(trimmed)) {
+        const cleanName = trimmed.replace(rank.pattern, '').trim();
+        if (cleanName) {
+          return { cleanName, rankAbbr: rank.abbr, rankLabel: rank.label };
+        }
+      }
+    }
+    return { cleanName: trimmed, rankAbbr: '', rankLabel: '' };
+  }
+
+  /**
+   * إعادة بناء جدول الأساتذة من بيانات الشهادات المستعادة
+   */
+  private static async rebuildProfessorsFromCertificates(backupData: BackupData): Promise<void> {
+    const profMap = new Map<string, { rank_label: string; rank_abbreviation: string; university: string }>();
+
+    const processCerts = (certs: Record<string, unknown>[] | undefined) => {
+      if (!certs) return;
+      for (const cert of certs) {
+        // Supervisor
+        const supervisorRaw = cert.supervisor_ar as string;
+        if (supervisorRaw) {
+          const { cleanName, rankAbbr, rankLabel } = this.extractRankAndName(supervisorRaw);
+          if (cleanName && !profMap.has(cleanName)) {
+            profMap.set(cleanName, {
+              rank_label: rankLabel,
+              rank_abbreviation: rankAbbr,
+              university: (cert.supervisor_university as string) || '',
+            });
+          }
+        }
+
+        // Co-supervisor
+        const coSupRaw = cert.co_supervisor_ar as string;
+        if (coSupRaw) {
+          const { cleanName, rankAbbr, rankLabel } = this.extractRankAndName(coSupRaw);
+          if (cleanName && !profMap.has(cleanName)) {
+            profMap.set(cleanName, {
+              rank_label: rankLabel,
+              rank_abbreviation: rankAbbr,
+              university: (cert.co_supervisor_university as string) || '',
+            });
+          }
+        }
+
+        // Jury president
+        const presidentRaw = cert.jury_president_ar as string;
+        if (presidentRaw) {
+          const { cleanName, rankAbbr, rankLabel } = this.extractRankAndName(presidentRaw);
+          if (cleanName && !profMap.has(cleanName)) {
+            profMap.set(cleanName, { rank_label: rankLabel, rank_abbreviation: rankAbbr, university: '' });
+          }
+        }
+
+        // Jury members (separated by " - ")
+        const membersRaw = cert.jury_members_ar as string;
+        if (membersRaw) {
+          const members = membersRaw.split(/\s*-\s*/);
+          for (const member of members) {
+            const trimmed = member.trim();
+            if (!trimmed) continue;
+            const { cleanName, rankAbbr, rankLabel } = this.extractRankAndName(trimmed);
+            if (cleanName && !profMap.has(cleanName)) {
+              profMap.set(cleanName, { rank_label: rankLabel, rank_abbreviation: rankAbbr, university: '' });
+            }
+          }
+        }
+      }
+    };
+
+    processCerts(backupData.data.phd_lmd_certificates as Record<string, unknown>[]);
+    processCerts(backupData.data.phd_science_certificates as Record<string, unknown>[]);
+
+    if (profMap.size === 0) return;
+
+    // Insert into professors table
+    const professors = Array.from(profMap.entries()).map(([name, info]) => ({
+      full_name: name,
+      rank_label: info.rank_label || null,
+      rank_abbreviation: info.rank_abbreviation || null,
+      university: info.university || null,
+    }));
+
+    if (isElectron()) {
+      const db = getDbClient()!;
+      for (const prof of professors) {
+        await db.insert('professors', prof);
+      }
+    } else {
+      // Batch insert via Supabase
+      const BATCH = 100;
+      for (let i = 0; i < professors.length; i += BATCH) {
+        const batch = professors.slice(i, i + BATCH);
+        await supabase.from('professors').upsert(
+          batch as TablesInsert<'professors'>[],
+          { onConflict: 'id' }
+        );
+      }
+    }
+
+    console.log(`Rebuilt ${professors.length} professors from certificates`);
+  }
+
+  /**
+   * إعادة بناء الألقاب العلمية الافتراضية
+   */
+  private static async rebuildDefaultAcademicTitles(): Promise<void> {
+    const defaultTitles = [
+      { abbreviation: 'أ.ت.ع', full_name: 'أستاذ التعليم العالي', display_order: 1 },
+      { abbreviation: 'أ.م.أ', full_name: 'أستاذ محاضر أ', display_order: 2 },
+      { abbreviation: 'أ.م.ب', full_name: 'أستاذ محاضر ب', display_order: 3 },
+      { abbreviation: 'أ.م.س.أ', full_name: 'أستاذ مساعد أ', display_order: 4 },
+      { abbreviation: 'أ.م.س.ب', full_name: 'أستاذ مساعد ب', display_order: 5 },
+    ];
+
+    if (isElectron()) {
+      const db = getDbClient()!;
+      // Check if already exist
+      const existing = await db.getAll('academic_titles', 'display_order', 'ASC');
+      if (existing.success && existing.data && (existing.data as unknown[]).length > 0) return;
+      for (const title of defaultTitles) {
+        await db.insert('academic_titles', title);
+      }
+    } else {
+      const { data: existing } = await supabase.from('academic_titles').select('id').limit(1);
+      if (existing && existing.length > 0) return;
+      await supabase.from('academic_titles').insert(defaultTitles as TablesInsert<'academic_titles'>[]);
+    }
+
+    console.log('Rebuilt default academic titles');
   }
 
   /**
