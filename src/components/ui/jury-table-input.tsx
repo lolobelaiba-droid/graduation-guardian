@@ -578,7 +578,12 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       const formatMember = (m: JuryMember) => {
         const abbr = m.rankAbbreviation?.trim();
         const name = m.name?.trim();
-        return abbr && name ? `${abbr} ${name}` : name || abbr || "";
+        let formatted = abbr && name ? `${abbr} ${name}` : name || abbr || "";
+        // Append (مدعو) suffix for invited members to preserve role in serialized data
+        if (formatted && m.role === "invited") {
+          formatted += " (مدعو)";
+        }
+        return formatted;
       };
 
       const membersOrdered: JuryMember[] = [];
