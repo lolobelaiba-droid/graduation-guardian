@@ -46,6 +46,7 @@ import { useProfessors } from "@/hooks/useProfessors";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { academicYears } from "@/components/print/AddStudentDialog";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
+import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 
 // PhD LMD schema
 const phdLmdSchema = z.object({
@@ -204,6 +205,11 @@ export default function EditStudentDialog({
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
 
+  // Fetch bilingual options for French value lookup
+  const { data: employmentOptions = [] } = useBilingualDropdownOptions("employment_status");
+  const { data: registrationOptions = [] } = useBilingualDropdownOptions("registration_type");
+  const { data: inscriptionOptions = [] } = useBilingualDropdownOptions("inscription_status");
+
   // Bilingual dropdown state
   const [employmentStatusAr, setEmploymentStatusAr] = useState("");
   const [employmentStatusFr, setEmploymentStatusFr] = useState("");
@@ -295,15 +301,23 @@ export default function EditStudentDialog({
         form.reset(baseValues as MasterFormValues);
       }
 
-      // Initialize bilingual dropdown state
-      setEmploymentStatusAr(student.employment_status || "");
-      setEmploymentStatusFr("");
-      setRegistrationTypeAr(student.registration_type || "");
-      setRegistrationTypeFr("");
-      setInscriptionStatusAr(student.inscription_status || "");
-      setInscriptionStatusFr("");
+      // Initialize bilingual dropdown state with French lookup
+      const empAr = student.employment_status || "";
+      setEmploymentStatusAr(empAr);
+      const empOpt = employmentOptions.find(opt => opt.value_ar === empAr);
+      setEmploymentStatusFr(empOpt?.value_fr || "");
+
+      const regAr = student.registration_type || "";
+      setRegistrationTypeAr(regAr);
+      const regOpt = registrationOptions.find(opt => opt.value_ar === regAr);
+      setRegistrationTypeFr(regOpt?.value_fr || "");
+
+      const inscAr = student.inscription_status || "";
+      setInscriptionStatusAr(inscAr);
+      const inscOpt = inscriptionOptions.find(opt => opt.value_ar === inscAr);
+      setInscriptionStatusFr(inscOpt?.value_fr || "");
     }
-  }, [student, open, certificateType, form]);
+  }, [student, open, certificateType, form, employmentOptions, registrationOptions, inscriptionOptions]);
 
   const isLoading = updatePhdLmd.isPending || updatePhdScience.isPending || updateMaster.isPending;
 
