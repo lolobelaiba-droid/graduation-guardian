@@ -588,6 +588,30 @@ export function ExportStatsDialog() {
           // Build abbreviation list sorted by length (longest first) for stripping
           const abbreviations = (academicTitles.data || []).map(t => t.abbreviation).sort((a, b) => b.length - a.length);
 
+          // Build abbreviation list early (needed for enrichment below)
+          const abbreviationsForMap = (academicTitles.data || []).map(t => t.abbreviation).sort((a, b) => b.length - a.length);
+          const stripAbbreviationForMap = (fullName: string): string => {
+            let result = fullName.trim();
+            let changed = true;
+            while (changed) {
+              changed = false;
+              for (const abbr of abbreviationsForMap) {
+                if (!abbr) continue;
+                const escaped = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const pattern = new RegExp(`^${escaped}[.\\s/]*`);
+                if (pattern.test(result)) {
+                  const stripped = result.replace(pattern, '').trim();
+                  if (stripped && stripped !== result) {
+                    result = stripped;
+                    changed = true;
+                    break;
+                  }
+                }
+              }
+            }
+            return result;
+          };
+
           // Build professors map for university AND rank lookup (by clean name)
           const professorsMap = new Map<string, { university: string; rank_label: string }>();
           (professorsData.data || []).forEach((p: any) => {
@@ -597,6 +621,46 @@ export function ExportStatsDialog() {
               rank_label: p.rank_label || '',
             });
           });
+
+          // Enrich professorsMap with university data from certificate records
+          // This fills in university for professors whose professors table entry has no university
+          const enrichFromCertificates = (records: any[]) => {
+            records.forEach((r: any) => {
+              // Enrich supervisor
+              if (r.supervisor_ar && r.supervisor_university) {
+                const cleanSup = stripAbbreviationForMap(r.supervisor_ar).toLowerCase();
+                const existing = professorsMap.get(cleanSup);
+                if (existing && !existing.university) {
+                  existing.university = r.supervisor_university;
+                } else if (!existing) {
+                  // Try suffix match
+                  for (const [profName, profData] of professorsMap.entries()) {
+                    if (cleanSup.endsWith(profName) && !profData.university) {
+                      profData.university = r.supervisor_university;
+                      break;
+                    }
+                  }
+                }
+              }
+              // Enrich co-supervisor
+              if (r.co_supervisor_ar && r.co_supervisor_university) {
+                const cleanCoSup = stripAbbreviationForMap(r.co_supervisor_ar).toLowerCase();
+                const existing = professorsMap.get(cleanCoSup);
+                if (existing && !existing.university) {
+                  existing.university = r.co_supervisor_university;
+                } else if (!existing) {
+                  for (const [profName, profData] of professorsMap.entries()) {
+                    if (cleanCoSup.endsWith(profName) && !profData.university) {
+                      profData.university = r.co_supervisor_university;
+                      break;
+                    }
+                  }
+                }
+              }
+            });
+          };
+          enrichFromCertificates(phdLmd.data || []);
+          enrichFromCertificates(phdScience.data || []);
 
           // Helper to strip abbreviation prefix and get clean name
           const stripAbbreviation = (fullName: string): string => {
