@@ -77,6 +77,10 @@ export default function Students() {
   // Import old data dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
   // Advanced filters state
   const [showFilters, setShowFilters] = useState(false);
   const [filterFaculty, setFilterFaculty] = useState<string>("all");
