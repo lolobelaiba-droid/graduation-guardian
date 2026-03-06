@@ -363,25 +363,25 @@ export function ExportStatsDialog() {
 
         case "certificate_type": {
           if (dataSource === "phd_candidates") {
-            const [phdLmd, phdScience] = await Promise.all([
-              supabase.from("phd_lmd_students").select("*", { count: "exact", head: true }),
-              supabase.from("phd_science_students").select("*", { count: "exact", head: true }),
+            const [phdLmdCount, phdScienceCount] = await Promise.all([
+              fetchCount("phd_lmd_students"),
+              fetchCount("phd_science_students"),
             ]);
             exportData = [
-              { "نوع الدكتوراه": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
-              { "نوع الدكتوراه": "دكتوراه علوم", "العدد": phdScience.count || 0 },
+              { "نوع الدكتوراه": "دكتوراه ل م د", "العدد": phdLmdCount },
+              { "نوع الدكتوراه": "دكتوراه علوم", "العدد": phdScienceCount },
             ];
             fileName = `توزيع_أنواع_الدكتوراه_${new Date().toISOString().split('T')[0]}.xlsx`;
           } else {
-            const [phdLmd, phdScience, master] = await Promise.all([
-              supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
-              supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
-              supabase.from("master_certificates").select("*", { count: "exact", head: true }),
+            const [phdLmdCount, phdScienceCount, masterCount] = await Promise.all([
+              fetchCount("phd_lmd_certificates"),
+              fetchCount("phd_science_certificates"),
+              fetchCount("master_certificates"),
             ]);
             exportData = [
-              { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
-              { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
-              { "نوع الشهادة": "ماجستير", "العدد": master.count || 0 },
+              { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmdCount },
+              { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScienceCount },
+              { "نوع الشهادة": "ماجستير", "العدد": masterCount },
             ];
             fileName = `توزيع_أنواع_الشهادات_${new Date().toISOString().split('T')[0]}.xlsx`;
           }
@@ -393,23 +393,23 @@ export function ExportStatsDialog() {
           
           if (dataSource === "phd_candidates") {
             const [phdLmd, phdScience] = await Promise.all([
-              supabase.from("phd_lmd_students").select("supervisor_ar, full_name_ar, specialty_ar, status"),
-              supabase.from("phd_science_students").select("supervisor_ar, full_name_ar, specialty_ar, status"),
+              fetchTable("phd_lmd_students"),
+              fetchTable("phd_science_students"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, phd_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, phd_type: "دكتوراه علوم" })),
+              ...phdLmd.map((s: any) => ({ ...s, phd_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, phd_type: "دكتوراه علوم" })),
             ];
           } else {
             const [phdLmd, phdScience, master] = await Promise.all([
-              supabase.from("phd_lmd_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-              supabase.from("phd_science_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-              supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+              fetchTable("phd_lmd_certificates"),
+              fetchTable("phd_science_certificates"),
+              fetchTable("master_certificates"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" })),
+              ...phdLmd.map((s: any) => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, certificate_type: "دكتوراه علوم" })),
+              ...master.map((s: any) => ({ ...s, certificate_type: "ماجستير" })),
             ];
           }
 
