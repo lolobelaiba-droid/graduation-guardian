@@ -565,27 +565,35 @@ export function ExportStatsDialog() {
           // Sort titles by display_order
           titlesList.sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
 
+          // extractTitle: same logic as Reports.tsx
+          const extractTitle = (fullName: string): { title: string; cleanName: string } => {
+            const trimmed = fullName.trim();
+            for (const t of titlesList) {
+              if (trimmed.startsWith(t.abbreviation + " ") || trimmed.startsWith(t.abbreviation + ".") || trimmed.startsWith(t.abbreviation + "/")) {
+                return { title: t.full_name, cleanName: trimmed.substring(t.abbreviation.length).replace(/^[.\s/]+/, "").trim() };
+              }
+            }
+            return { title: "", cleanName: trimmed };
+          };
+
           // findProfessor: replicates useProfessors.findProfessor exactly
           const findProfessor = (name: string): { full_name: string; university: string | null; rank_label: string | null } | undefined => {
             const trimmed = name.trim();
             if (!trimmed) return undefined;
-            // 1. Exact match
-            const exact = professorsList.find(p => p.full_name === trimmed);
+            const exact = professorsList.find((p: any) => p.full_name === trimmed);
             if (exact) return exact;
-            // 2. Match after extracting title
             const { cleanName } = extractTitle(trimmed);
             if (cleanName && cleanName !== trimmed) {
-              const found = professorsList.find(p => p.full_name === cleanName);
+              const found = professorsList.find((p: any) => p.full_name === cleanName);
               if (found) return found;
             }
-            // 3. Suffix match
             for (const p of professorsList) {
               if (trimmed.endsWith(p.full_name)) return p;
             }
             return undefined;
           };
 
-          // Track professor appearances - KEY is the CLEAN name (without title) to avoid duplicates
+          // Track professor appearances
           const professorStats: Record<string, { 
             displayName: string;
             title: string;
@@ -604,14 +612,11 @@ export function ExportStatsDialog() {
             coSupervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
           }> = {};
 
-          // addEntry: same logic as Reports.tsx addEntry
           const ensureProfessor = (fullName: string, role: 'supervisor' | 'president' | 'member' | 'coSupervisor' | 'invited', university?: string) => {
             if (!fullName?.trim()) return '';
-            // Strip (مدعو) suffix BEFORE looking up professor (same as Reports.tsx)
             const cleaned = fullName.replace(/\s*\(مدعو\)\s*$/, '').trim();
             const { title, cleanName } = extractTitle(cleaned);
             const key = cleanName.toLowerCase();
-            // Look up professor from DB (same as Reports.tsx)
             const profRecord = findProfessor(cleaned);
             const resolvedUniversity = profRecord?.university || university || '';
             const resolvedTitle = profRecord?.rank_label || title || '';
@@ -634,11 +639,11 @@ export function ExportStatsDialog() {
           const JURY_SEPARATORS = /\s*[-–—]\s*|[،,;]\s*|\n/;
 
           const allRecords = [
-            ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-            ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+            ...phdLmdData.map((s: any) => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+            ...phdScienceData.map((s: any) => ({ ...s, certificate_type: "دكتوراه علوم" })),
           ];
 
-          const masterRecords = (master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" }));
+          const masterRecords = masterData.map((s: any) => ({ ...s, certificate_type: "ماجستير" }));
 
           // Process PhD records - same logic as Reports.tsx addEntry
           allRecords.forEach((record) => {
