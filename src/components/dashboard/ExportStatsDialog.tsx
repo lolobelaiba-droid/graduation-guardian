@@ -12,6 +12,29 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
+
+// Helper to fetch data from a table - supports both Electron (SQLite) and Web (Supabase)
+async function fetchTable(tableName: string, columns?: string): Promise<any[]> {
+  if (isElectron()) {
+    const db = getDbClient()!;
+    const result = await db.getAll(tableName);
+    return result.success ? (result.data || []) : [];
+  }
+  const { data } = await supabase.from(tableName as any).select(columns || "*");
+  return data || [];
+}
+
+// Helper to get count from a table
+async function fetchCount(tableName: string): Promise<number> {
+  if (isElectron()) {
+    const db = getDbClient()!;
+    const result = await db.getAll(tableName);
+    return result.success ? (result.data?.length || 0) : 0;
+  }
+  const { count } = await supabase.from(tableName as any).select("*", { count: "exact", head: true });
+  return count || 0;
+}
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { toWesternNumerals } from "@/lib/numerals";
