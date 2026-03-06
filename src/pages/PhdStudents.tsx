@@ -121,6 +121,10 @@ export default function PhdStudents() {
   // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdStudents();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceStudents();
 
