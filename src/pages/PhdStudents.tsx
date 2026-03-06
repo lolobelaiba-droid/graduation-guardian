@@ -240,7 +240,7 @@ export default function PhdStudents() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "طلبة الدكتوراه");
     
-    const dateStr = toWesternNumerals(new Date().toLocaleDateString("ar-SA"));
+    const dateStr = new Date().toISOString().split('T')[0];
     const fileName = `طلبة_${phdStudentTypeLabels[selectedType].ar}_${dateStr}.xlsx`;
     XLSX.writeFile(wb, fileName);
     toast.success(`تم تصدير ${toWesternNumerals(currentData.length)} طالب`);

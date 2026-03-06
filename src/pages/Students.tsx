@@ -261,7 +261,7 @@ export default function Students() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "الطلاب");
     
-    const dateStr = toWesternNumerals(new Date().toLocaleDateString("ar-SA"));
+    const dateStr = new Date().toISOString().split('T')[0];
     const fileName = `طلاب_${certificateTypeLabels[selectedCertType].ar}_${dateStr}.xlsx`;
     XLSX.writeFile(wb, fileName);
     toast.success(`تم تصدير ${toWesternNumerals(currentData.length)} طالب`);

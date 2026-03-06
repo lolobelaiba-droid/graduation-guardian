@@ -336,7 +336,7 @@ export function ExportStatsDialog() {
               "الحالة": statusLabels[s.status as keyof typeof statusLabels] || s.status,
               "المشرف": s.supervisor_ar || "",
             }));
-            fileName = `طلبة_الدكتوراه_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+            fileName = `طلبة_الدكتوراه_${new Date().toISOString().split('T')[0]}.xlsx`;
           } else {
             exportData = students.map((s) => ({
               "نوع الشهادة": s.certificate_type,
