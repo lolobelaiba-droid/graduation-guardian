@@ -150,6 +150,16 @@ export default function PhdStudents() {
     return matchesSearch;
   });
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset page on filter/tab change
+  useMemo(() => { setCurrentPage(1); }, [searchQuery, selectedType]);
+
   const handleDeleteClick = (id: string, type: PhdStudentType) => {
     setStudentToDelete({ id, type });
     setDeleteDialogOpen(true);
