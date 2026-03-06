@@ -351,7 +351,7 @@ export function ExportStatsDialog() {
               "تاريخ المناقشة": s.defense_date,
               "التقدير": s.mention === "very_honorable" ? "مشرف جدا" : "مشرف",
             }));
-            fileName = `الطلاب_المناقشين_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+            fileName = `الطلاب_المناقشين_${new Date().toISOString().split('T')[0]}.xlsx`;
           }
           break;
         }
@@ -368,7 +368,7 @@ export function ExportStatsDialog() {
             "الكلية": name,
             "عدد الطلاب": count,
           }));
-          fileName = `توزيع_الكليات_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          fileName = `توزيع_الكليات_${new Date().toISOString().split('T')[0]}.xlsx`;
           break;
         }
 
@@ -380,7 +380,7 @@ export function ExportStatsDialog() {
             { "الجنس": "ذكور", "العدد": maleCount },
             { "الجنس": "إناث", "العدد": femaleCount },
           ];
-          fileName = `توزيع_الجنس_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          fileName = `توزيع_الجنس_${new Date().toISOString().split('T')[0]}.xlsx`;
           break;
         }
 
@@ -394,7 +394,7 @@ export function ExportStatsDialog() {
               { "نوع الدكتوراه": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
               { "نوع الدكتوراه": "دكتوراه علوم", "العدد": phdScience.count || 0 },
             ];
-            fileName = `توزيع_أنواع_الدكتوراه_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+            fileName = `توزيع_أنواع_الدكتوراه_${new Date().toISOString().split('T')[0]}.xlsx`;
           } else {
             const [phdLmd, phdScience, master] = await Promise.all([
               supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
@@ -406,7 +406,7 @@ export function ExportStatsDialog() {
               { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
               { "نوع الشهادة": "ماجستير", "العدد": master.count || 0 },
             ];
-            fileName = `توزيع_أنواع_الشهادات_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+            fileName = `توزيع_أنواع_الشهادات_${new Date().toISOString().split('T')[0]}.xlsx`;
           }
           break;
         }
@@ -484,7 +484,7 @@ export function ExportStatsDialog() {
           XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص المشرفين");
           XLSX.utils.book_append_sheet(wb, wsDetailed, "التفاصيل");
           const sourceLabel = dataSource === "phd_candidates" ? "طلبة_الدكتوراه" : "المناقشين";
-          XLSX.writeFile(wb, `إحصائيات_المشرفين_${sourceLabel}_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_المشرفين_${sourceLabel}_${new Date().toISOString().split('T')[0]}.xlsx`);
 
           toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(supervisorData).length)} مشرف بنجاح`);
           setOpen(false);
@@ -511,7 +511,7 @@ export function ExportStatsDialog() {
             "الحالة": statusLabels[status as keyof typeof statusLabels] || status,
             "العدد": count,
           }));
-          fileName = `توزيع_حالات_طلبة_الدكتوراه_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          fileName = `توزيع_حالات_طلبة_الدكتوراه_${new Date().toISOString().split('T')[0]}.xlsx`;
           break;
         }
 
@@ -571,7 +571,7 @@ export function ExportStatsDialog() {
             }));
           
           const sourceLabel = dataSource === "phd_candidates" ? "طلبة_الدكتوراه" : "المناقشين";
-          fileName = `توزيع_${config.label}_${sourceLabel}_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`;
+          fileName = `توزيع_${config.label}_${sourceLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
           break;
         }
 
@@ -896,7 +896,7 @@ export function ExportStatsDialog() {
           XLSX.utils.book_append_sheet(wb, wsPresident, "تفاصيل رئاسة اللجان");
           XLSX.utils.book_append_sheet(wb, wsMember, "تفاصيل العضوية");
           XLSX.utils.book_append_sheet(wb, wsInvited, "تفاصيل المدعوين");
-          XLSX.writeFile(wb, `إحصائيات_اللجان_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_اللجان_${new Date().toISOString().split('T')[0]}.xlsx`);
 
           toast.success(`تم تصدير بيانات ${toWesternNumerals(Object.keys(professorStats).length)} أستاذ بنجاح`);
           setOpen(false);
@@ -1093,7 +1093,7 @@ export function ExportStatsDialog() {
           const wb = XLSX.utils.book_new();
           const ws = XLSX.utils.json_to_sheet(pivotExportData);
           XLSX.utils.book_append_sheet(wb, ws, "جدول محوري");
-          XLSX.writeFile(wb, `إحصائيات_مخصصة_${rowFieldNames}_×_${colFieldNames}_${toWesternNumerals(new Date().toLocaleDateString("ar-SA"))}.xlsx`);
+          XLSX.writeFile(wb, `إحصائيات_مخصصة_${rowFieldNames}_×_${colFieldNames}_${new Date().toISOString().split('T')[0]}.xlsx`);
 
           toast.success(`تم تصدير الجدول المحوري: ${toWesternNumerals(sortedRows.length)} صف × ${toWesternNumerals(sortedCols.length)} عمود`);
           setOpen(false);
