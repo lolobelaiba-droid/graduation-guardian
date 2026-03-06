@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 import {
   Search,
@@ -13,6 +13,8 @@ import {
   GraduationCap,
   Calendar,
   FileDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { PhdStudentType, PhdStudent } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
 import { AddPhdStudentDialog } from "@/components/phd-students/AddPhdStudentDialog";
@@ -119,6 +122,10 @@ export default function PhdStudents() {
   // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
   const { data: phdLmdData = [], isLoading: loadingPhdLmd } = usePhdLmdStudents();
   const { data: phdScienceData = [], isLoading: loadingPhdScience } = usePhdScienceStudents();
 
@@ -143,6 +150,16 @@ export default function PhdStudents() {
 
     return matchesSearch;
   });
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset page on filter/tab change
+  useMemo(() => { setCurrentPage(1); }, [searchQuery, selectedType]);
 
   const handleDeleteClick = (id: string, type: PhdStudentType) => {
     setStudentToDelete({ id, type });
@@ -337,7 +354,7 @@ export default function PhdStudents() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredStudents.map((student, index) => (
+                        paginatedStudents.map((student, index) => (
                           <TableRow
                             key={student.id}
                             className="hover:bg-muted/30 transition-colors animate-fade-in"
@@ -395,11 +412,74 @@ export default function PhdStudents() {
                   </Table>
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 border-t border-border flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    عرض {toWesternNumerals(filteredStudents.length)} من {toWesternNumerals(currentData.length)} طالب
-                  </p>
+                {/* Footer with Pagination */}
+                <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      عرض {toWesternNumerals((currentPage - 1) * itemsPerPage + 1)}-{toWesternNumerals(Math.min(currentPage * itemsPerPage, filteredStudents.length))} من {toWesternNumerals(filteredStudents.length)} طالب
+                    </p>
+                    <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 w-[100px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">{toWesternNumerals(10)} / صفحة</SelectItem>
+                        <SelectItem value="25">{toWesternNumerals(25)} / صفحة</SelectItem>
+                        <SelectItem value="50">{toWesternNumerals(50)} / صفحة</SelectItem>
+                        <SelectItem value="100">{toWesternNumerals(100)} / صفحة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(p => p - 1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => {
+                          if (totalPages <= 7) return true;
+                          if (page === 1 || page === totalPages) return true;
+                          if (Math.abs(page - currentPage) <= 1) return true;
+                          return false;
+                        })
+                        .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                          if (idx > 0 && page - (arr[idx - 1] as number) > 1) acc.push('...');
+                          acc.push(page);
+                          return acc;
+                        }, [])
+                        .map((item, idx) =>
+                          item === '...' ? (
+                            <span key={`ellipsis-${idx}`} className="px-1 text-muted-foreground text-sm">...</span>
+                          ) : (
+                            <Button
+                              key={item}
+                              variant={currentPage === item ? "default" : "outline"}
+                              size="icon"
+                              className="h-8 w-8 text-xs"
+                              onClick={() => setCurrentPage(item as number)}
+                            >
+                              {toWesternNumerals(item as number)}
+                            </Button>
+                          )
+                        )}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(p => p + 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
