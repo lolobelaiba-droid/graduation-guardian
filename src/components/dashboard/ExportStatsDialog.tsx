@@ -212,52 +212,22 @@ export function ExportStatsDialog() {
 
   // Load faculties for a specific source
   const loadFacultiesForSource = async (source: DataSource) => {
-    let queries;
-    if (source === "phd_candidates") {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_students").select("faculty_ar"),
-        supabase.from("phd_science_students").select("faculty_ar"),
-      ]);
-    } else {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_certificates").select("faculty_ar"),
-        supabase.from("phd_science_certificates").select("faculty_ar"),
-        supabase.from("master_certificates").select("faculty_ar"),
-      ]);
-    }
+    const tables = source === "phd_candidates" 
+      ? ["phd_lmd_students", "phd_science_students"]
+      : ["phd_lmd_certificates", "phd_science_certificates", "master_certificates"];
 
+    const results = await Promise.all(tables.map(t => fetchTable(t, "faculty_ar")));
     const allFaculties = new Set<string>();
-    queries.forEach((result) => {
-      (result.data || []).forEach((s: any) => {
+    results.forEach((data) => {
+      data.forEach((s: any) => {
         if (s.faculty_ar) allFaculties.add(s.faculty_ar);
       });
     });
     setFaculties(Array.from(allFaculties));
   };
 
-  // Load faculties when dialog opens - based on data source
   const loadFaculties = async () => {
-    let queries;
-    if (dataSource === "phd_candidates") {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_students").select("faculty_ar"),
-        supabase.from("phd_science_students").select("faculty_ar"),
-      ]);
-    } else {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_certificates").select("faculty_ar"),
-        supabase.from("phd_science_certificates").select("faculty_ar"),
-        supabase.from("master_certificates").select("faculty_ar"),
-      ]);
-    }
-
-    const allFaculties = new Set<string>();
-    queries.forEach((result) => {
-      (result.data || []).forEach((s: any) => {
-        if (s.faculty_ar) allFaculties.add(s.faculty_ar);
-      });
-    });
-    setFaculties(Array.from(allFaculties));
+    await loadFacultiesForSource(dataSource);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
