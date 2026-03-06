@@ -877,23 +877,23 @@ export function ExportStatsDialog() {
           
           if (dataSource === "phd_candidates") {
             const [phdLmd, phdScience] = await Promise.all([
-              supabase.from("phd_lmd_students").select("*"),
-              supabase.from("phd_science_students").select("*"),
+              fetchTable("phd_lmd_students"),
+              fetchTable("phd_science_students"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, phd_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, phd_type: "دكتوراه علوم" })),
+              ...phdLmd.map((s: any) => ({ ...s, phd_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, phd_type: "دكتوراه علوم" })),
             ];
           } else {
             const [phdLmd, phdScience, master] = await Promise.all([
-              supabase.from("phd_lmd_certificates").select("*"),
-              supabase.from("phd_science_certificates").select("*"),
-              supabase.from("master_certificates").select("*"),
+              fetchTable("phd_lmd_certificates"),
+              fetchTable("phd_science_certificates"),
+              fetchTable("master_certificates"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" })),
+              ...phdLmd.map((s: any) => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, certificate_type: "دكتوراه علوم" })),
+              ...master.map((s: any) => ({ ...s, certificate_type: "ماجستير" })),
             ];
           }
 
