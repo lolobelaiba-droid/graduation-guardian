@@ -138,6 +138,19 @@ export default function Students() {
     return matchesSearch && matchesFaculty && matchesSpecialty && matchesSupervisor && matchesYear;
   });
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset page when filters/search/tab change
+  const resetPage = () => setCurrentPage(1);
+  
+  // We need useEffect-like resets, so let's use useMemo to detect changes
+  useMemo(() => { resetPage(); }, [searchQuery, filterFaculty, filterSpecialty, filterSupervisor, filterYear, selectedCertType]);
+
   const activeFiltersCount = [filterFaculty, filterSpecialty, filterSupervisor, filterYear].filter(v => v !== "all").length;
 
   const clearAllFilters = () => {
