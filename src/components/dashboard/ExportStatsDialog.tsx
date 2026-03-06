@@ -242,62 +242,46 @@ export function ExportStatsDialog() {
     const results: any[] = [];
 
     if (dataSource === "phd_candidates") {
-      // PhD candidates database
       const tables = certificateType === "all" 
         ? ["phd_lmd_students", "phd_science_students"] as const
         : [certificateType === "phd_lmd" ? "phd_lmd_students" : "phd_science_students"] as const;
 
       for (const table of tables) {
-        let query = supabase.from(table).select("*");
+        let data = await fetchTable(table);
+        
+        // Apply filters client-side
+        if (gender !== "all") data = data.filter((d: any) => d.gender === gender);
+        if (faculty !== "all") data = data.filter((d: any) => d.faculty_ar === faculty);
 
-        if (gender !== "all") {
-          query = query.eq("gender", gender);
-        }
-
-        if (faculty !== "all") {
-          query = query.eq("faculty_ar", faculty);
-        }
-
-        const { data } = await query;
-        if (data) {
-          results.push(...data.map((d: any) => ({
-            ...d,
-            phd_type: table === "phd_lmd_students" ? "دكتوراه ل م د" : "دكتوراه علوم",
-          })));
-        }
+        results.push(...data.map((d: any) => ({
+          ...d,
+          phd_type: table === "phd_lmd_students" ? "دكتوراه ل م د" : "دكتوراه علوم",
+        })));
       }
     } else {
-      // Defended students database (certificates)
       const tables = certificateType === "all" 
         ? ["phd_lmd_certificates", "phd_science_certificates", "master_certificates"] as const
         : [certificateType === "phd_lmd" ? "phd_lmd_certificates" : certificateType === "phd_science" ? "phd_science_certificates" : "master_certificates"] as const;
 
       for (const table of tables) {
-        let query = supabase.from(table).select("*");
-
-        if (gender !== "all") {
-          query = query.eq("gender", gender);
-        }
-
-        if (faculty !== "all") {
-          query = query.eq("faculty_ar", faculty);
-        }
-
+        let data = await fetchTable(table);
+        
+        // Apply filters client-side
+        if (gender !== "all") data = data.filter((d: any) => d.gender === gender);
+        if (faculty !== "all") data = data.filter((d: any) => d.faculty_ar === faculty);
         if (useDateFilter && startDate) {
-          query = query.gte("defense_date", startDate.toISOString().split('T')[0]);
+          const startStr = startDate.toISOString().split('T')[0];
+          data = data.filter((d: any) => d.defense_date >= startStr);
         }
-
         if (useDateFilter && endDate) {
-          query = query.lte("defense_date", endDate.toISOString().split('T')[0]);
+          const endStr = endDate.toISOString().split('T')[0];
+          data = data.filter((d: any) => d.defense_date <= endStr);
         }
 
-        const { data } = await query;
-        if (data) {
-          results.push(...data.map((d: any) => ({
-            ...d,
-            certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماجستير",
-          })));
-        }
+        results.push(...data.map((d: any) => ({
+          ...d,
+          certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماجستير",
+        })));
       }
     }
 
