@@ -432,7 +432,7 @@ export default function Students() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredStudents.map((student, index) => (
+                      {paginatedStudents.map((student, index) => (
                         <TableRow
                           key={student.id}
                           className="hover:bg-muted/30 transition-colors animate-fade-in"
