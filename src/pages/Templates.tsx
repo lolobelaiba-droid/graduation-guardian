@@ -208,7 +208,7 @@ export default function Templates() {
               {/* Meta */}
               <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border">
                 <span>{template.page_orientation === "portrait" ? "عمودي" : "أفقي"}</span>
-                <span>{toWesternNumerals(new Date(template.created_at).toLocaleDateString("ar-SA"))}</span>
+                <span>{new Date(template.created_at).toLocaleDateString("fr-FR")}</span>
               </div>
 
               {/* Status */}
