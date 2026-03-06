@@ -554,30 +554,16 @@ export function ExportStatsDialog() {
 
         case "jury_stats": {
           // Fetch all jury data (president, members, and supervisors)
-          const [phdLmd, phdScience, master, academicTitles, professorsData] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("academic_titles").select("abbreviation, full_name").order("display_order"),
-            supabase.from("professors").select("full_name, university, rank_label"),
+          const [phdLmdData, phdScienceData, masterData, titlesList, professorsList] = await Promise.all([
+            fetchTable("phd_lmd_certificates"),
+            fetchTable("phd_science_certificates"),
+            fetchTable("master_certificates"),
+            fetchTable("academic_titles"),
+            fetchTable("professors"),
           ]);
 
-          // Build academic titles list for extractTitle (same logic as Reports.tsx)
-          const titlesList = (academicTitles.data || []) as { abbreviation: string; full_name: string }[];
-
-          // extractTitle: same logic as Reports.tsx
-          const extractTitle = (fullName: string): { title: string; cleanName: string } => {
-            const trimmed = fullName.trim();
-            for (const t of titlesList) {
-              if (trimmed.startsWith(t.abbreviation + " ") || trimmed.startsWith(t.abbreviation + ".") || trimmed.startsWith(t.abbreviation + "/")) {
-                return { title: t.full_name, cleanName: trimmed.substring(t.abbreviation.length).replace(/^[.\s/]+/, "").trim() };
-              }
-            }
-            return { title: "", cleanName: trimmed };
-          };
-
-          // Build professors list for findProfessor (same logic as useProfessors.findProfessor)
-          const professorsList = (professorsData.data || []) as { full_name: string; university: string | null; rank_label: string | null }[];
+          // Sort titles by display_order
+          titlesList.sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
 
           // findProfessor: replicates useProfessors.findProfessor exactly
           const findProfessor = (name: string): { full_name: string; university: string | null; rank_label: string | null } | undefined => {
