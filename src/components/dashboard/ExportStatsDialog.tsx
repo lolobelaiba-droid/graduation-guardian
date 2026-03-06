@@ -472,11 +472,11 @@ export function ExportStatsDialog() {
         case "status_distribution": {
           // Only for phd_candidates
           const [phdLmd, phdScience] = await Promise.all([
-            supabase.from("phd_lmd_students").select("status"),
-            supabase.from("phd_science_students").select("status"),
+            fetchTable("phd_lmd_students"),
+            fetchTable("phd_science_students"),
           ]);
 
-          const allStudents = [...(phdLmd.data || []), ...(phdScience.data || [])];
+          const allStudents = [...phdLmd, ...phdScience];
           const statusCounts: Record<string, number> = {};
           
           allStudents.forEach((s: any) => {
