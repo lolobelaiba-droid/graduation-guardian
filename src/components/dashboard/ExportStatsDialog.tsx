@@ -12,6 +12,29 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { isElectron, getDbClient } from "@/lib/database/db-client";
+
+// Helper to fetch data from a table - supports both Electron (SQLite) and Web (Supabase)
+async function fetchTable(tableName: string, columns?: string): Promise<any[]> {
+  if (isElectron()) {
+    const db = getDbClient()!;
+    const result = await db.getAll(tableName);
+    return result.success ? (result.data || []) : [];
+  }
+  const { data } = await supabase.from(tableName as any).select(columns || "*");
+  return data || [];
+}
+
+// Helper to get count from a table
+async function fetchCount(tableName: string): Promise<number> {
+  if (isElectron()) {
+    const db = getDbClient()!;
+    const result = await db.getAll(tableName);
+    return result.success ? (result.data?.length || 0) : 0;
+  }
+  const { count } = await supabase.from(tableName as any).select("*", { count: "exact", head: true });
+  return count || 0;
+}
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { toWesternNumerals } from "@/lib/numerals";
@@ -189,52 +212,22 @@ export function ExportStatsDialog() {
 
   // Load faculties for a specific source
   const loadFacultiesForSource = async (source: DataSource) => {
-    let queries;
-    if (source === "phd_candidates") {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_students").select("faculty_ar"),
-        supabase.from("phd_science_students").select("faculty_ar"),
-      ]);
-    } else {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_certificates").select("faculty_ar"),
-        supabase.from("phd_science_certificates").select("faculty_ar"),
-        supabase.from("master_certificates").select("faculty_ar"),
-      ]);
-    }
+    const tables = source === "phd_candidates" 
+      ? ["phd_lmd_students", "phd_science_students"]
+      : ["phd_lmd_certificates", "phd_science_certificates", "master_certificates"];
 
+    const results = await Promise.all(tables.map(t => fetchTable(t, "faculty_ar")));
     const allFaculties = new Set<string>();
-    queries.forEach((result) => {
-      (result.data || []).forEach((s: any) => {
+    results.forEach((data) => {
+      data.forEach((s: any) => {
         if (s.faculty_ar) allFaculties.add(s.faculty_ar);
       });
     });
     setFaculties(Array.from(allFaculties));
   };
 
-  // Load faculties when dialog opens - based on data source
   const loadFaculties = async () => {
-    let queries;
-    if (dataSource === "phd_candidates") {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_students").select("faculty_ar"),
-        supabase.from("phd_science_students").select("faculty_ar"),
-      ]);
-    } else {
-      queries = await Promise.all([
-        supabase.from("phd_lmd_certificates").select("faculty_ar"),
-        supabase.from("phd_science_certificates").select("faculty_ar"),
-        supabase.from("master_certificates").select("faculty_ar"),
-      ]);
-    }
-
-    const allFaculties = new Set<string>();
-    queries.forEach((result) => {
-      (result.data || []).forEach((s: any) => {
-        if (s.faculty_ar) allFaculties.add(s.faculty_ar);
-      });
-    });
-    setFaculties(Array.from(allFaculties));
+    await loadFacultiesForSource(dataSource);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -249,62 +242,46 @@ export function ExportStatsDialog() {
     const results: any[] = [];
 
     if (dataSource === "phd_candidates") {
-      // PhD candidates database
       const tables = certificateType === "all" 
         ? ["phd_lmd_students", "phd_science_students"] as const
         : [certificateType === "phd_lmd" ? "phd_lmd_students" : "phd_science_students"] as const;
 
       for (const table of tables) {
-        let query = supabase.from(table).select("*");
+        let data = await fetchTable(table);
+        
+        // Apply filters client-side
+        if (gender !== "all") data = data.filter((d: any) => d.gender === gender);
+        if (faculty !== "all") data = data.filter((d: any) => d.faculty_ar === faculty);
 
-        if (gender !== "all") {
-          query = query.eq("gender", gender);
-        }
-
-        if (faculty !== "all") {
-          query = query.eq("faculty_ar", faculty);
-        }
-
-        const { data } = await query;
-        if (data) {
-          results.push(...data.map((d: any) => ({
-            ...d,
-            phd_type: table === "phd_lmd_students" ? "دكتوراه ل م د" : "دكتوراه علوم",
-          })));
-        }
+        results.push(...data.map((d: any) => ({
+          ...d,
+          phd_type: table === "phd_lmd_students" ? "دكتوراه ل م د" : "دكتوراه علوم",
+        })));
       }
     } else {
-      // Defended students database (certificates)
       const tables = certificateType === "all" 
         ? ["phd_lmd_certificates", "phd_science_certificates", "master_certificates"] as const
         : [certificateType === "phd_lmd" ? "phd_lmd_certificates" : certificateType === "phd_science" ? "phd_science_certificates" : "master_certificates"] as const;
 
       for (const table of tables) {
-        let query = supabase.from(table).select("*");
-
-        if (gender !== "all") {
-          query = query.eq("gender", gender);
-        }
-
-        if (faculty !== "all") {
-          query = query.eq("faculty_ar", faculty);
-        }
-
+        let data = await fetchTable(table);
+        
+        // Apply filters client-side
+        if (gender !== "all") data = data.filter((d: any) => d.gender === gender);
+        if (faculty !== "all") data = data.filter((d: any) => d.faculty_ar === faculty);
         if (useDateFilter && startDate) {
-          query = query.gte("defense_date", startDate.toISOString().split('T')[0]);
+          const startStr = startDate.toISOString().split('T')[0];
+          data = data.filter((d: any) => d.defense_date >= startStr);
         }
-
         if (useDateFilter && endDate) {
-          query = query.lte("defense_date", endDate.toISOString().split('T')[0]);
+          const endStr = endDate.toISOString().split('T')[0];
+          data = data.filter((d: any) => d.defense_date <= endStr);
         }
 
-        const { data } = await query;
-        if (data) {
-          results.push(...data.map((d: any) => ({
-            ...d,
-            certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماجستير",
-          })));
-        }
+        results.push(...data.map((d: any) => ({
+          ...d,
+          certificate_type: table === "phd_lmd_certificates" ? "دكتوراه ل م د" : table === "phd_science_certificates" ? "دكتوراه علوم" : "ماجستير",
+        })));
       }
     }
 
@@ -386,25 +363,25 @@ export function ExportStatsDialog() {
 
         case "certificate_type": {
           if (dataSource === "phd_candidates") {
-            const [phdLmd, phdScience] = await Promise.all([
-              supabase.from("phd_lmd_students").select("*", { count: "exact", head: true }),
-              supabase.from("phd_science_students").select("*", { count: "exact", head: true }),
+            const [phdLmdCount, phdScienceCount] = await Promise.all([
+              fetchCount("phd_lmd_students"),
+              fetchCount("phd_science_students"),
             ]);
             exportData = [
-              { "نوع الدكتوراه": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
-              { "نوع الدكتوراه": "دكتوراه علوم", "العدد": phdScience.count || 0 },
+              { "نوع الدكتوراه": "دكتوراه ل م د", "العدد": phdLmdCount },
+              { "نوع الدكتوراه": "دكتوراه علوم", "العدد": phdScienceCount },
             ];
             fileName = `توزيع_أنواع_الدكتوراه_${new Date().toISOString().split('T')[0]}.xlsx`;
           } else {
-            const [phdLmd, phdScience, master] = await Promise.all([
-              supabase.from("phd_lmd_certificates").select("*", { count: "exact", head: true }),
-              supabase.from("phd_science_certificates").select("*", { count: "exact", head: true }),
-              supabase.from("master_certificates").select("*", { count: "exact", head: true }),
+            const [phdLmdCount, phdScienceCount, masterCount] = await Promise.all([
+              fetchCount("phd_lmd_certificates"),
+              fetchCount("phd_science_certificates"),
+              fetchCount("master_certificates"),
             ]);
             exportData = [
-              { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmd.count || 0 },
-              { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScience.count || 0 },
-              { "نوع الشهادة": "ماجستير", "العدد": master.count || 0 },
+              { "نوع الشهادة": "دكتوراه ل م د", "العدد": phdLmdCount },
+              { "نوع الشهادة": "دكتوراه علوم", "العدد": phdScienceCount },
+              { "نوع الشهادة": "ماجستير", "العدد": masterCount },
             ];
             fileName = `توزيع_أنواع_الشهادات_${new Date().toISOString().split('T')[0]}.xlsx`;
           }
@@ -416,23 +393,23 @@ export function ExportStatsDialog() {
           
           if (dataSource === "phd_candidates") {
             const [phdLmd, phdScience] = await Promise.all([
-              supabase.from("phd_lmd_students").select("supervisor_ar, full_name_ar, specialty_ar, status"),
-              supabase.from("phd_science_students").select("supervisor_ar, full_name_ar, specialty_ar, status"),
+              fetchTable("phd_lmd_students"),
+              fetchTable("phd_science_students"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, phd_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, phd_type: "دكتوراه علوم" })),
+              ...phdLmd.map((s: any) => ({ ...s, phd_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, phd_type: "دكتوراه علوم" })),
             ];
           } else {
             const [phdLmd, phdScience, master] = await Promise.all([
-              supabase.from("phd_lmd_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-              supabase.from("phd_science_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
-              supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, defense_date"),
+              fetchTable("phd_lmd_certificates"),
+              fetchTable("phd_science_certificates"),
+              fetchTable("master_certificates"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" })),
+              ...phdLmd.map((s: any) => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, certificate_type: "دكتوراه علوم" })),
+              ...master.map((s: any) => ({ ...s, certificate_type: "ماجستير" })),
             ];
           }
 
@@ -495,11 +472,11 @@ export function ExportStatsDialog() {
         case "status_distribution": {
           // Only for phd_candidates
           const [phdLmd, phdScience] = await Promise.all([
-            supabase.from("phd_lmd_students").select("status"),
-            supabase.from("phd_science_students").select("status"),
+            fetchTable("phd_lmd_students"),
+            fetchTable("phd_science_students"),
           ]);
 
-          const allStudents = [...(phdLmd.data || []), ...(phdScience.data || [])];
+          const allStudents = [...phdLmd, ...phdScience];
           const statusCounts: Record<string, number> = {};
           
           allStudents.forEach((s: any) => {
@@ -577,16 +554,16 @@ export function ExportStatsDialog() {
 
         case "jury_stats": {
           // Fetch all jury data (president, members, and supervisors)
-          const [phdLmd, phdScience, master, academicTitles, professorsData] = await Promise.all([
-            supabase.from("phd_lmd_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("phd_science_certificates").select("jury_president_ar, jury_members_ar, supervisor_ar, supervisor_university, co_supervisor_ar, co_supervisor_university, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("master_certificates").select("supervisor_ar, full_name_ar, specialty_ar, faculty_ar, defense_date"),
-            supabase.from("academic_titles").select("abbreviation, full_name").order("display_order"),
-            supabase.from("professors").select("full_name, university, rank_label"),
+          const [phdLmdData, phdScienceData, masterData, titlesList, professorsList] = await Promise.all([
+            fetchTable("phd_lmd_certificates"),
+            fetchTable("phd_science_certificates"),
+            fetchTable("master_certificates"),
+            fetchTable("academic_titles"),
+            fetchTable("professors"),
           ]);
 
-          // Build academic titles list for extractTitle (same logic as Reports.tsx)
-          const titlesList = (academicTitles.data || []) as { abbreviation: string; full_name: string }[];
+          // Sort titles by display_order
+          titlesList.sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
 
           // extractTitle: same logic as Reports.tsx
           const extractTitle = (fullName: string): { title: string; cleanName: string } => {
@@ -599,30 +576,24 @@ export function ExportStatsDialog() {
             return { title: "", cleanName: trimmed };
           };
 
-          // Build professors list for findProfessor (same logic as useProfessors.findProfessor)
-          const professorsList = (professorsData.data || []) as { full_name: string; university: string | null; rank_label: string | null }[];
-
           // findProfessor: replicates useProfessors.findProfessor exactly
           const findProfessor = (name: string): { full_name: string; university: string | null; rank_label: string | null } | undefined => {
             const trimmed = name.trim();
             if (!trimmed) return undefined;
-            // 1. Exact match
-            const exact = professorsList.find(p => p.full_name === trimmed);
+            const exact = professorsList.find((p: any) => p.full_name === trimmed);
             if (exact) return exact;
-            // 2. Match after extracting title
             const { cleanName } = extractTitle(trimmed);
             if (cleanName && cleanName !== trimmed) {
-              const found = professorsList.find(p => p.full_name === cleanName);
+              const found = professorsList.find((p: any) => p.full_name === cleanName);
               if (found) return found;
             }
-            // 3. Suffix match
             for (const p of professorsList) {
               if (trimmed.endsWith(p.full_name)) return p;
             }
             return undefined;
           };
 
-          // Track professor appearances - KEY is the CLEAN name (without title) to avoid duplicates
+          // Track professor appearances
           const professorStats: Record<string, { 
             displayName: string;
             title: string;
@@ -641,14 +612,11 @@ export function ExportStatsDialog() {
             coSupervisorDetails: Array<{ student: string; specialty: string; faculty: string; type: string; date: string }>;
           }> = {};
 
-          // addEntry: same logic as Reports.tsx addEntry
           const ensureProfessor = (fullName: string, role: 'supervisor' | 'president' | 'member' | 'coSupervisor' | 'invited', university?: string) => {
             if (!fullName?.trim()) return '';
-            // Strip (مدعو) suffix BEFORE looking up professor (same as Reports.tsx)
             const cleaned = fullName.replace(/\s*\(مدعو\)\s*$/, '').trim();
             const { title, cleanName } = extractTitle(cleaned);
             const key = cleanName.toLowerCase();
-            // Look up professor from DB (same as Reports.tsx)
             const profRecord = findProfessor(cleaned);
             const resolvedUniversity = profRecord?.university || university || '';
             const resolvedTitle = profRecord?.rank_label || title || '';
@@ -671,11 +639,11 @@ export function ExportStatsDialog() {
           const JURY_SEPARATORS = /\s*[-–—]\s*|[،,;]\s*|\n/;
 
           const allRecords = [
-            ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-            ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
+            ...phdLmdData.map((s: any) => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+            ...phdScienceData.map((s: any) => ({ ...s, certificate_type: "دكتوراه علوم" })),
           ];
 
-          const masterRecords = (master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" }));
+          const masterRecords = masterData.map((s: any) => ({ ...s, certificate_type: "ماجستير" }));
 
           // Process PhD records - same logic as Reports.tsx addEntry
           allRecords.forEach((record) => {
@@ -909,23 +877,23 @@ export function ExportStatsDialog() {
           
           if (dataSource === "phd_candidates") {
             const [phdLmd, phdScience] = await Promise.all([
-              supabase.from("phd_lmd_students").select("*"),
-              supabase.from("phd_science_students").select("*"),
+              fetchTable("phd_lmd_students"),
+              fetchTable("phd_science_students"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, phd_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, phd_type: "دكتوراه علوم" })),
+              ...phdLmd.map((s: any) => ({ ...s, phd_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, phd_type: "دكتوراه علوم" })),
             ];
           } else {
             const [phdLmd, phdScience, master] = await Promise.all([
-              supabase.from("phd_lmd_certificates").select("*"),
-              supabase.from("phd_science_certificates").select("*"),
-              supabase.from("master_certificates").select("*"),
+              fetchTable("phd_lmd_certificates"),
+              fetchTable("phd_science_certificates"),
+              fetchTable("master_certificates"),
             ]);
             allStudents = [
-              ...(phdLmd.data || []).map(s => ({ ...s, certificate_type: "دكتوراه ل م د" })),
-              ...(phdScience.data || []).map(s => ({ ...s, certificate_type: "دكتوراه علوم" })),
-              ...(master.data || []).map(s => ({ ...s, certificate_type: "ماجستير" })),
+              ...phdLmd.map((s: any) => ({ ...s, certificate_type: "دكتوراه ل م د" })),
+              ...phdScience.map((s: any) => ({ ...s, certificate_type: "دكتوراه علوم" })),
+              ...master.map((s: any) => ({ ...s, certificate_type: "ماجستير" })),
             ];
           }
 
