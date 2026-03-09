@@ -4,7 +4,7 @@
  * Stores content as HTML string
  */
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Bold, Italic, Omega } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -39,6 +39,21 @@ interface RichTextEditorProps {
   className?: string;
 }
 
+// Detect if text starts with Arabic/RTL characters
+function detectDirection(text: string): "rtl" | "ltr" {
+  // Strip HTML tags to get plain text
+  const plain = text.replace(/<[^>]+>/g, "").trim();
+  if (!plain) return "rtl"; // default to RTL for empty (Arabic UI)
+  // Check first strong directional character
+  const rtlRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  const ltrRegex = /[A-Za-z\u00C0-\u024F]/;
+  for (const char of plain) {
+    if (rtlRegex.test(char)) return "rtl";
+    if (ltrRegex.test(char)) return "ltr";
+  }
+  return "rtl"; // default
+}
+
 export function RichTextEditor({
   value,
   onChange,
@@ -49,11 +64,13 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
+  const [detectedDir, setDetectedDir] = useState<"rtl" | "ltr">(() => 
+    dir === "auto" ? detectDirection(value) : (dir as "rtl" | "ltr")
+  );
 
   // Sync external value to editor on mount/change
   const lastValueRef = useRef(value);
   if (editorRef.current && value !== lastValueRef.current) {
-    // Only update DOM if value changed externally
     const currentHTML = editorRef.current.innerHTML;
     if (currentHTML !== value) {
       editorRef.current.innerHTML = value || "";
@@ -61,16 +78,29 @@ export function RichTextEditor({
     lastValueRef.current = value;
   }
 
+  // Update direction when value changes externally
+  useEffect(() => {
+    if (dir === "auto") {
+      setDetectedDir(detectDirection(value));
+    }
+  }, [value, dir]);
+
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
-      // Normalize: if only <br> or empty tags, treat as empty
       const cleaned = html.replace(/<br\s*\/?>/gi, "").replace(/<[^>]+>/g, "").trim();
       const newValue = cleaned ? html : "";
       lastValueRef.current = newValue;
+      
+      // Dynamically detect and update direction based on content
+      if (dir === "auto") {
+        const newDir = detectDirection(newValue);
+        setDetectedDir(newDir);
+      }
+      
       onChange(newValue);
     }
-  }, [onChange]);
+  }, [onChange, dir]);
 
   const execCommand = useCallback((command: string) => {
     editorRef.current?.focus();
@@ -85,12 +115,12 @@ export function RichTextEditor({
     setSymbolsOpen(false);
   }, [handleInput]);
 
-  // Check if a format is currently active
   const isFormatActive = useCallback((command: string): boolean => {
     return document.queryCommandState(command);
   }, []);
 
   const minHeight = Math.max(rows * 1.5, 3);
+  const effectiveDir = dir === "auto" ? detectedDir : dir;
 
   return (
     <div className={cn("rounded-md border border-input bg-background", className)}>
@@ -163,13 +193,13 @@ export function RichTextEditor({
       <div
         ref={editorRef}
         contentEditable
-        dir={dir}
+        dir={effectiveDir}
         className="px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-b-md"
         style={{
           minHeight: `${minHeight}rem`,
           lineHeight: "1.6",
-          unicodeBidi: "plaintext",
-          textAlign: "start",
+          direction: effectiveDir as "rtl" | "ltr",
+          textAlign: effectiveDir === "rtl" ? "right" : "left",
         }}
         onInput={handleInput}
         onBlur={handleInput}
