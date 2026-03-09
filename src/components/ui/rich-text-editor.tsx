@@ -165,7 +165,7 @@ export function RichTextEditor({
         contentEditable
         dir={dir}
         className="px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-b-md"
-        style={{ minHeight: `${minHeight}rem`, lineHeight: "1.6" }}
+        style={{ minHeight: `${minHeight}rem`, lineHeight: "1.6", unicodeBidi: "plaintext" }}
         onInput={handleInput}
         onBlur={handleInput}
         data-placeholder={placeholder}
