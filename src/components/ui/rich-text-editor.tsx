@@ -165,7 +165,15 @@ export function RichTextEditor({
         contentEditable
         dir={dir}
         className="px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-b-md"
-        style={{ minHeight: `${minHeight}rem`, lineHeight: "1.6", unicodeBidi: "plaintext" }}
+        style={{
+          minHeight: `${minHeight}rem`,
+          lineHeight: "1.6",
+          unicodeBidi: "plaintext",
+          textAlign: "start",
+          // Reset CSS direction to allow dir="auto" HTML attribute to work
+          // (global CSS sets direction:rtl which overrides dir="auto")
+          ...(dir === "auto" ? { direction: "ltr" as const } : {}),
+        }}
         onInput={handleInput}
         onBlur={handleInput}
         data-placeholder={placeholder}
