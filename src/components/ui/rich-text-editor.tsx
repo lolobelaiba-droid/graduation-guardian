@@ -2,6 +2,8 @@
  * RichTextEditor - A simple rich text editor for thesis titles
  * Supports bold, italic formatting and special symbol insertion
  * Stores content as HTML string
+ * 
+ * Direction is determined dynamically: Arabic → RTL, Latin → LTR
  */
 
 import { useRef, useState, useCallback, useEffect } from "react";
@@ -30,6 +32,19 @@ const SYMBOL_CATEGORIES = [
   },
 ];
 
+// Detect text direction from first strong directional character
+function detectDirection(html: string): "rtl" | "ltr" {
+  const plain = html.replace(/<[^>]+>/g, "").trim();
+  if (!plain) return "rtl"; // default RTL for Arabic UI
+  const rtlRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  const ltrRegex = /[A-Za-z\u00C0-\u024F]/;
+  for (const char of plain) {
+    if (rtlRegex.test(char)) return "rtl";
+    if (ltrRegex.test(char)) return "ltr";
+  }
+  return "rtl";
+}
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -37,21 +52,6 @@ interface RichTextEditorProps {
   dir?: string;
   rows?: number;
   className?: string;
-}
-
-// Detect if text starts with Arabic/RTL characters
-function detectDirection(text: string): "rtl" | "ltr" {
-  // Strip HTML tags to get plain text
-  const plain = text.replace(/<[^>]+>/g, "").trim();
-  if (!plain) return "rtl"; // default to RTL for empty (Arabic UI)
-  // Check first strong directional character
-  const rtlRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-  const ltrRegex = /[A-Za-z\u00C0-\u024F]/;
-  for (const char of plain) {
-    if (rtlRegex.test(char)) return "rtl";
-    if (ltrRegex.test(char)) return "ltr";
-  }
-  return "rtl"; // default
 }
 
 export function RichTextEditor({
@@ -64,42 +64,51 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
-  const [detectedDir, setDetectedDir] = useState<"rtl" | "ltr">(() => 
-    dir === "auto" ? detectDirection(value) : (dir as "rtl" | "ltr")
+  const isInternalChange = useRef(false);
+  const [effectiveDir, setEffectiveDir] = useState<"rtl" | "ltr">(() =>
+    dir === "auto" ? detectDirection(value) : (dir === "ltr" ? "ltr" : "rtl")
   );
 
-  // Sync external value to editor on mount/change
-  const lastValueRef = useRef(value);
-  if (editorRef.current && value !== lastValueRef.current) {
-    const currentHTML = editorRef.current.innerHTML;
-    if (currentHTML !== value) {
+  // Initialize content on mount
+  useEffect(() => {
+    if (editorRef.current) {
       editorRef.current.innerHTML = value || "";
     }
-    lastValueRef.current = value;
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Update direction when value changes externally
+  // Sync external value changes (e.g., form reset)
   useEffect(() => {
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    if (editorRef.current) {
+      const currentHTML = editorRef.current.innerHTML;
+      if (currentHTML !== value) {
+        editorRef.current.innerHTML = value || "";
+      }
+    }
     if (dir === "auto") {
-      setDetectedDir(detectDirection(value));
+      setEffectiveDir(detectDirection(value));
     }
   }, [value, dir]);
 
   const handleInput = useCallback(() => {
-    if (editorRef.current) {
-      const html = editorRef.current.innerHTML;
-      const cleaned = html.replace(/<br\s*\/?>/gi, "").replace(/<[^>]+>/g, "").trim();
-      const newValue = cleaned ? html : "";
-      lastValueRef.current = newValue;
-      
-      // Dynamically detect and update direction based on content
-      if (dir === "auto") {
-        const newDir = detectDirection(newValue);
-        setDetectedDir(newDir);
-      }
-      
-      onChange(newValue);
+    if (!editorRef.current) return;
+    
+    const html = editorRef.current.innerHTML;
+    // Normalize: if only <br> or empty tags, treat as empty
+    const cleaned = html.replace(/<br\s*\/?>/gi, "").replace(/<[^>]+>/g, "").trim();
+    const newValue = cleaned ? html : "";
+    
+    // Update direction dynamically
+    if (dir === "auto") {
+      setEffectiveDir(detectDirection(newValue));
     }
+    
+    isInternalChange.current = true;
+    onChange(newValue);
   }, [onChange, dir]);
 
   const execCommand = useCallback((command: string) => {
@@ -120,7 +129,6 @@ export function RichTextEditor({
   }, []);
 
   const minHeight = Math.max(rows * 1.5, 3);
-  const effectiveDir = dir === "auto" ? detectedDir : dir;
 
   return (
     <div className={cn("rounded-md border border-input bg-background", className)}>
@@ -189,7 +197,7 @@ export function RichTextEditor({
         </Popover>
       </div>
 
-      {/* Editable area */}
+      {/* Editable area - NO dangerouslySetInnerHTML to avoid React bidi interference */}
       <div
         ref={editorRef}
         contentEditable
@@ -198,13 +206,12 @@ export function RichTextEditor({
         style={{
           minHeight: `${minHeight}rem`,
           lineHeight: "1.6",
-          direction: effectiveDir as "rtl" | "ltr",
+          direction: effectiveDir,
           textAlign: effectiveDir === "rtl" ? "right" : "left",
         }}
         onInput={handleInput}
         onBlur={handleInput}
         data-placeholder={placeholder}
-        dangerouslySetInnerHTML={{ __html: value || "" }}
         suppressContentEditableWarning
       />
     </div>
