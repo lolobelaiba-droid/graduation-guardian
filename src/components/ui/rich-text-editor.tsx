@@ -198,7 +198,7 @@ export function RichTextEditor({
         style={{
           minHeight: `${minHeight}rem`,
           lineHeight: "1.6",
-          direction: effectiveDir,
+          direction: effectiveDir as "rtl" | "ltr",
           textAlign: effectiveDir === "rtl" ? "right" : "left",
         }}
         onInput={handleInput}
