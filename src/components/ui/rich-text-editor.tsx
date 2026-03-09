@@ -170,9 +170,6 @@ export function RichTextEditor({
           lineHeight: "1.6",
           unicodeBidi: "plaintext",
           textAlign: "start",
-          // Reset CSS direction to allow dir="auto" HTML attribute to work
-          // (global CSS sets direction:rtl which overrides dir="auto")
-          ...(dir === "auto" ? { direction: "ltr" as const } : {}),
         }}
         onInput={handleInput}
         onBlur={handleInput}
