@@ -185,8 +185,8 @@ export function PrintableCSS({
           : (field.is_rtl ? 'rtl' : 'ltr');
 
         const hasWidth = field.field_width != null;
-        // Thesis title fields may contain HTML formatting (bold, italic)
-        const isHtmlField = field.field_key === 'thesis_title_ar' || field.field_key === 'thesis_title_fr';
+        // Thesis title and jury fields may contain HTML formatting (bold, italic, &nbsp;)
+        const isHtmlField = ['thesis_title_ar', 'thesis_title_fr', 'jury_members_ar', 'jury_members_fr'].includes(field.field_key);
         const containsHtml = isHtmlField && (/<[^>]+>/.test(value) || /&[a-zA-Z]+;|&#\d+;/.test(value));
 
         return (
