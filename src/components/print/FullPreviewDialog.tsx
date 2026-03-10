@@ -1116,7 +1116,7 @@ export function FullPreviewDialog({
                       )}
                       {(() => {
                         const isHtmlField = field.field_key === 'thesis_title_ar' || field.field_key === 'thesis_title_fr' || field.field_key === 'jury_members_ar' || field.field_key === 'jury_members_fr';
-                        const containsHtml = isHtmlField && value && /<[^>]+>/.test(value);
+                        const containsHtml = isHtmlField && value && (/<[^>]+>/.test(value) || /&[a-zA-Z]+;|&#\d+;/.test(value));
                         if (containsHtml) {
                           return <span dangerouslySetInnerHTML={{ __html: value }} />;
                         }

@@ -698,7 +698,7 @@ export function CertificatePreview({
                   {(() => {
                     const displayValue = getFieldValue(field.field_key, field);
                     const isHtmlField = field.field_key === 'thesis_title_ar' || field.field_key === 'thesis_title_fr' || field.field_key === 'jury_members_ar' || field.field_key === 'jury_members_fr';
-                    const containsHtml = isHtmlField && displayValue && /<[^>]+>/.test(displayValue);
+                    const containsHtml = isHtmlField && displayValue && (/<[^>]+>/.test(displayValue) || /&[a-zA-Z]+;|&#\d+;/.test(displayValue));
                     if (containsHtml) {
                       return <span dangerouslySetInnerHTML={{ __html: displayValue }} />;
                     }
