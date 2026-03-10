@@ -76,7 +76,7 @@ function calcTimeQuality(students: KpiInput['defendedStudents']): number {
     if (!regCount) continue;
     counted++;
     
-    const legalDuration = s._type === 'phd_science' ? 5 : 3;
+    const legalDuration = s._type === 'phd_science' ? 6 : 5;
     if (regCount <= legalDuration) regular++;
   }
   
