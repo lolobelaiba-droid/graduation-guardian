@@ -262,7 +262,7 @@ export class BackupService {
         certificate_template_fields: [
           'id', 'template_id', 'field_key', 'field_name_ar', 'field_name_fr',
           'position_x', 'position_y', 'font_size', 'font_name', 'font_color',
-          'text_align', 'is_rtl', 'is_visible', 'field_order', 'field_width', 'created_at'
+          'text_align', 'is_rtl', 'is_visible', 'field_order', 'field_width', 'line_height', 'created_at'
         ],
         custom_fonts: ['id', 'font_name', 'font_family', 'font_url', 'font_weight', 'font_style', 'is_arabic', 'created_at'],
       };
