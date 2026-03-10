@@ -51,7 +51,7 @@ function calcSpeedOfAchievement(students: KpiInput['defendedStudents']): number 
     const regCount = s.registration_count;
     if (!regCount) continue;
     
-    const legalDuration = s._type === 'phd_science' ? 5 : 3;
+    const legalDuration = s._type === 'phd_science' ? 6 : 5;
     // Score: 100 if within legal duration, decreasing by 15 per extra year
     const score = Math.max(0, 100 - Math.max(0, regCount - legalDuration) * 15);
     scores.push(score);
@@ -76,7 +76,7 @@ function calcTimeQuality(students: KpiInput['defendedStudents']): number {
     if (!regCount) continue;
     counted++;
     
-    const legalDuration = s._type === 'phd_science' ? 5 : 3;
+    const legalDuration = s._type === 'phd_science' ? 6 : 5;
     if (regCount <= legalDuration) regular++;
   }
   
@@ -156,6 +156,6 @@ export function calcProcessingTime(councilDate: string, defenseDate: string): { 
  */
 export function getRegistrationStatus(regCount: number | null | undefined, type: string): 'regular' | 'delayed' | 'unknown' {
   if (!regCount) return 'unknown';
-  const legalDuration = type === 'phd_science' ? 5 : 3;
+  const legalDuration = type === 'phd_science' ? 6 : 5;
   return regCount <= legalDuration ? 'regular' : 'delayed';
 }
