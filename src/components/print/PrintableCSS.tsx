@@ -207,7 +207,7 @@ export function PrintableCSS({
               whiteSpace: hasWidth ? 'normal' : 'nowrap',
               wordWrap: hasWidth ? 'break-word' : undefined,
               width: hasWidth ? `${field.field_width}mm` : undefined,
-              lineHeight: hasWidth ? '1.4' : undefined,
+              lineHeight: hasWidth ? String(field.line_height ?? 1.4) : undefined,
               margin: 0,
               padding: 0,
             }}
