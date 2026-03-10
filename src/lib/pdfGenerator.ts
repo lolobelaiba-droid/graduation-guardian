@@ -393,7 +393,14 @@ function getFieldValue(
   }
 
   // Convert Hindi numerals to Western Arabic
-  return toWesternNumerals(String(value));
+  let result = toWesternNumerals(String(value));
+  
+  // Strip role suffixes like (مدعو) from jury/supervisor fields on certificates
+  if (fieldKey.startsWith('jury_') || fieldKey.startsWith('supervisor') || fieldKey.startsWith('co_supervisor') || fieldKey.startsWith('jury_president')) {
+    result = result.replace(/\s*\(مدعو\)/g, '');
+  }
+  
+  return result;
 }
 
 // ============================================================================
