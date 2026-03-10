@@ -51,7 +51,7 @@ function calcSpeedOfAchievement(students: KpiInput['defendedStudents']): number 
     const regCount = s.registration_count;
     if (!regCount) continue;
     
-    const legalDuration = s._type === 'phd_science' ? 5 : 3;
+    const legalDuration = s._type === 'phd_science' ? 6 : 5;
     // Score: 100 if within legal duration, decreasing by 15 per extra year
     const score = Math.max(0, 100 - Math.max(0, regCount - legalDuration) * 15);
     scores.push(score);
