@@ -156,6 +156,6 @@ export function calcProcessingTime(councilDate: string, defenseDate: string): { 
  */
 export function getRegistrationStatus(regCount: number | null | undefined, type: string): 'regular' | 'delayed' | 'unknown' {
   if (!regCount) return 'unknown';
-  const legalDuration = type === 'phd_science' ? 5 : 3;
+  const legalDuration = type === 'phd_science' ? 6 : 5;
   return regCount <= legalDuration ? 'regular' : 'delayed';
 }
