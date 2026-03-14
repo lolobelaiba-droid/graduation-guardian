@@ -47,6 +47,8 @@ import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { academicYears } from "@/components/print/AddStudentDialog";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
+import { useRecordLock } from "@/hooks/useRecordLock";
+import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 
 // PhD LMD schema
 const phdLmdSchema = z.object({
