@@ -407,6 +407,7 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
       } else {
         await updateScience.mutateAsync(submitData);
       }
+      releaseLock();
       onOpenChange(false);
     } catch (error) {
       // Error handled by hook
