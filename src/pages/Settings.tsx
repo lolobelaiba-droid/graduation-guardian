@@ -106,6 +106,9 @@ export default function Settings() {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [hasExistingPassword, setHasExistingPassword] = useState(false);
 
+  // Auto-logout
+  const [autoLogoutMinutes, setAutoLogoutMinutes] = useState<string>("0");
+
   // Selective restore state
   const [selectedRestoreGroups, setSelectedRestoreGroups] = useState<Record<string, boolean>>({});
 
