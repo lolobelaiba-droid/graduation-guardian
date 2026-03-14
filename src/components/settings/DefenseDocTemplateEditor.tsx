@@ -516,17 +516,69 @@ export default function DefenseDocTemplateEditor() {
 
                       <div className="w-px h-5 bg-border mx-1" />
 
-                      {/* Font size in toolbar */}
+                      {/* Inline font family for selection */}
+                      <Select value="" onValueChange={(v) => execCmd(template.id, "fontName", v)}>
+                        <SelectTrigger className="h-8 w-28 text-xs">
+                          <span className="text-xs">خط التحديد</span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FONT_OPTIONS.map((f) => (
+                            <SelectItem key={f} value={f}>
+                              <span style={{ fontFamily: f }} className="text-xs">{f}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Inline font size for selection */}
                       <Select value="" onValueChange={(v) => execCmd(template.id, "fontSize", v)}>
                         <SelectTrigger className="h-8 w-20 text-xs">
                           <span className="text-xs">حجم</span>
                         </SelectTrigger>
                         <SelectContent>
                           {[1, 2, 3, 4, 5, 6, 7].map((s) => (
-                            <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                            <SelectItem key={s} value={String(s)}>
+                              {s === 1 ? "8px" : s === 2 ? "10px" : s === 3 ? "12px" : s === 4 ? "14px" : s === 5 ? "18px" : s === 6 ? "24px" : "36px"}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+
+                      {/* Text direction toggle */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 text-xs"
+                        onClick={() => {
+                          const ref = editorRefs.current[template.id];
+                          if (!ref) return;
+                          const sel = window.getSelection();
+                          if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+                            // Toggle whole editor direction
+                            const current = ref.dir || "rtl";
+                            ref.dir = current === "rtl" ? "ltr" : "rtl";
+                            ref.style.direction = ref.dir;
+                            ref.style.textAlign = ref.dir === "rtl" ? "right" : "left";
+                          } else {
+                            // Wrap selection in a span with opposite direction
+                            const range = sel.getRangeAt(0);
+                            const parentEl = range.commonAncestorContainer.parentElement;
+                            const currentDir = parentEl?.closest("[dir]")?.getAttribute("dir") || "rtl";
+                            const newDir = currentDir === "rtl" ? "ltr" : "rtl";
+                            document.execCommand(
+                              "insertHTML",
+                              false,
+                              `<span dir="${newDir}" style="direction: ${newDir}; unicode-bidi: embed;">${sel.toString()}</span>`
+                            );
+                          }
+                          handleEditorInput(template.id);
+                        }}
+                        title="تبديل اتجاه النص (RTL/LTR)"
+                      >
+                        <ArrowRightLeft className="h-3.5 w-3.5" />
+                        اتجاه
+                      </Button>
 
                       <div className="w-px h-5 bg-border mx-1" />
 
