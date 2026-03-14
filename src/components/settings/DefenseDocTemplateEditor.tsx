@@ -115,15 +115,17 @@ export default function DefenseDocTemplateEditor() {
   const [newVarKey, setNewVarKey] = useState("");
   const [newVarLabel, setNewVarLabel] = useState("");
 
-  // Table insertion dialog
-  const [tableDialog, setTableDialog] = useState<{ open: boolean; templateId: string }>({
+  // Table insertion/editing dialog
+  const [tableDialog, setTableDialog] = useState<{ open: boolean; templateId: string; editMode: boolean }>({
     open: false,
     templateId: "",
+    editMode: false,
   });
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
   const savedSelectionRef = useRef<Range | null>(null);
+  const editingTableRef = useRef<HTMLTableElement | null>(null);
 
   useEffect(() => {
     if (templates.length > 0) {
