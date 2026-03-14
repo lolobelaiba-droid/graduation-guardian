@@ -984,6 +984,8 @@ export default function DefenseDocTemplateEditor() {
                           textIndent: settings.first_line_indent > 0 ? `${settings.first_line_indent}mm` : undefined,
                         }}
                         onInput={() => handleEditorInput(template.id)}
+                        onMouseUp={saveSelection}
+                        onKeyUp={saveSelection}
                         onClick={(e) => handleEditorClick(template.id, e)}
                         suppressContentEditableWarning
                       />
