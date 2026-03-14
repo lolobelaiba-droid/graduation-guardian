@@ -942,7 +942,8 @@ export default function DefenseDocTemplateEditor() {
                     {/* Editor / Preview */}
                     {isPreview ? (
                       <div
-                        className="border rounded-lg p-8 bg-white min-h-[500px] text-foreground"
+                      <div
+                        className="defense-doc-editor border rounded-lg p-8 bg-white min-h-[500px] text-foreground"
                         style={{
                           fontFamily: settings.font_family,
                           fontSize: `${settings.font_size}px`,
@@ -953,9 +954,8 @@ export default function DefenseDocTemplateEditor() {
                           margin: "0 auto",
                           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
                           color: "#000",
-                         paddingRight: `${settings.margin_right}mm`,
+                          paddingRight: `${settings.margin_right}mm`,
                           paddingLeft: `${settings.margin_left}mm`,
-                          textIndent: settings.first_line_indent > 0 ? `${settings.first_line_indent}mm` : undefined,
                         }}
                         dangerouslySetInnerHTML={{
                           __html: settings.content.replace(
