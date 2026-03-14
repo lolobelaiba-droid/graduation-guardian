@@ -15,6 +15,7 @@ import {
   Calendar,
   Settings2,
   FolderOpen,
+  FileText,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
