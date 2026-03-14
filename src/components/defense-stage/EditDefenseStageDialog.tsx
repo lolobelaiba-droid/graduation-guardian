@@ -247,7 +247,7 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
   const updateScience = useUpdateDefenseStageScience();
 
   // Record locking
-  const tableName = studentType === 'lmd' ? 'defense_stage_lmd' : 'defense_stage_science';
+  const tableName = studentType === 'phd_lmd' ? 'defense_stage_lmd' : 'defense_stage_science';
   const { isLocked, lockedBy, acquireLock, releaseLock } = useRecordLock(tableName, open ? student?.id ?? null : null);
 
   useEffect(() => {
