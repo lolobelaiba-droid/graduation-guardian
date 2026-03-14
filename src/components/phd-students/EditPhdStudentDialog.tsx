@@ -392,6 +392,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
           break;
       }
       setBilingualErrors({});
+      releaseLock();
       onOpenChange(false);
     } catch (error) {
       // Error handled by hook
