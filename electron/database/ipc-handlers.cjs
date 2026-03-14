@@ -257,6 +257,14 @@ function registerDatabaseHandlers() {
     }
   });
 
+  ipcMain.handle('db:getNetworkInfo', async () => {
+    try {
+      return { success: true, data: db.getNetworkInfo() };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   // ============================================
   // التخزين المحلي للملفات (Cache)
   // ============================================
