@@ -386,7 +386,7 @@ export function CreateCertificateFromPhdDialog({
         } as any);
         
         if (selectedStudent) {
-          await deletePhdScience.mutateAsync(selectedStudent.id);
+          await deleteStageScience.mutateAsync(selectedStudent.id);
         }
       }
       
