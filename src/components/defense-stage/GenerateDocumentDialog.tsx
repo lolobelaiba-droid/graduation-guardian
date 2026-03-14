@@ -80,7 +80,7 @@ interface GenerateDocumentDialogProps {
   onOpenChange: (open: boolean) => void;
   student: DefenseStageStudent | null;
   studentType: DefenseStageType;
-  documentType: "jury_decision" | "defense_auth";
+  documentType: "jury_decision" | "defense_auth" | "defense_minutes";
 }
 
 export function GenerateDocumentDialog({
