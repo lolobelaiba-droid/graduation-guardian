@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import EditorRuler from "./EditorRuler";
 import {
   FileText,
   Save,
