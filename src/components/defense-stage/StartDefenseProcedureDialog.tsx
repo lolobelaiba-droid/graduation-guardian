@@ -76,8 +76,127 @@ function SectionHeader({ title }: { title: string }) {
     </div>
   );
 }
+// Decree Dropdown with add/edit/delete management
+function DecreeDropdownField({ form, name, label, optionType, options, addOption, deleteOption, updateOption }: {
+  form: any;
+  name: string;
+  label: string;
+  optionType: OptionType;
+  options: { id: string; option_value: string }[];
+  addOption: any;
+  deleteOption: any;
+  updateOption: any;
+}) {
+  const [newValue, setNewValue] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [manageOpen, setManageOpen] = useState(false);
 
-interface StartDefenseProcedureDialogProps {
+  const handleAdd = () => {
+    if (!newValue.trim()) return;
+    addOption.mutate({ optionType, optionValue: newValue.trim() });
+    setNewValue('');
+  };
+
+  const handleDelete = (id: string) => {
+    deleteOption.mutate({ id, optionType });
+  };
+
+  const handleUpdate = (id: string) => {
+    if (!editValue.trim()) return;
+    updateOption.mutate({ id, optionType, optionValue: editValue.trim() });
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <div className="flex items-center justify-between">
+            <FormLabel>{label}</FormLabel>
+            <Popover open={manageOpen} onOpenChange={setManageOpen}>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs gap-1">
+                  <Pencil className="h-3 w-3" />
+                  إدارة القرارات
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[500px] p-3" align="start">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm">إدارة قائمة القرارات</h4>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newValue}
+                      onChange={(e) => setNewValue(e.target.value)}
+                      placeholder="أضف قراراً جديداً..."
+                      className="text-sm"
+                    />
+                    <Button type="button" size="sm" onClick={handleAdd} disabled={!newValue.trim()}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <ScrollArea className="max-h-[200px]">
+                    <div className="space-y-2">
+                      {options.map((opt) => (
+                        <div key={opt.id} className="flex items-start gap-2 p-2 rounded border bg-muted/30">
+                          {editingId === opt.id ? (
+                            <>
+                              <Input
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="text-xs flex-1"
+                                autoFocus
+                              />
+                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => handleUpdate(opt.id)}>حفظ</Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setEditingId(null)}>إلغاء</Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-xs flex-1 leading-relaxed">{opt.option_value}</span>
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { setEditingId(opt.id); setEditValue(opt.option_value); }}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDelete(opt.id)}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      {options.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">لا توجد قرارات مسجلة</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <FormControl>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="اختر القرار..." />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.option_value}>
+                    <span className="text-xs leading-relaxed">{opt.option_value}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
