@@ -365,7 +365,6 @@ export type Database = {
           font_family: string | null
           font_size: number | null
           id: string
-          jury_table_settings: Json | null
           line_height: number | null
           title: string
           updated_at: string | null
@@ -378,7 +377,6 @@ export type Database = {
           font_family?: string | null
           font_size?: number | null
           id?: string
-          jury_table_settings?: Json | null
           line_height?: number | null
           title: string
           updated_at?: string | null
@@ -391,7 +389,6 @@ export type Database = {
           font_family?: string | null
           font_size?: number | null
           id?: string
-          jury_table_settings?: Json | null
           line_height?: number | null
           title?: string
           updated_at?: string | null
