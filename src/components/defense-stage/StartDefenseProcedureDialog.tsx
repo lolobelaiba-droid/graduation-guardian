@@ -160,6 +160,8 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
       scientific_council_date: '',
       province: 'أم البواقي',
       signature_title: getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
+      decree_training: '',
+      decree_accreditation: '',
     });
     setShowForm(true);
     setShowConfirmDialog(false);
