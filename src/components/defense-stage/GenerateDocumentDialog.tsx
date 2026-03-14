@@ -115,6 +115,8 @@ export function GenerateDocumentDialog({
       if (isJuryDecision) {
         updateData.decision_number = decisionNumber.trim();
         updateData.decision_date = decisionDate.trim();
+        // Auto-update status to 'under_review' (قيد الخبرة) when jury decision is generated
+        updateData.stage_status = 'under_review';
       } else {
         updateData.auth_decision_number = decisionNumber.trim();
         updateData.auth_decision_date = decisionDate.trim();

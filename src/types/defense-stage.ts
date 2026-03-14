@@ -69,6 +69,7 @@ export const defenseStageTableMap: Record<DefenseStageType, string> = {
 
 export const stageStatusLabels: Record<DefenseStageStatus, { ar: string; color: string }> = {
   pending: { ar: 'في الانتظار', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
+  under_review: { ar: 'قيد الخبرة', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
   authorized: { ar: 'مرخص', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
   defended: { ar: 'انتهت إجراءات المناقشة', color: 'bg-green-500/10 text-green-600 border-green-500/20' },
 };
