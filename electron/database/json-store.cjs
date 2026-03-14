@@ -248,7 +248,12 @@ function readTable(tableName) {
   try {
     var content = fs.readFileSync(filePath, 'utf8');
     if (!content || content.trim() === '') return [];
-    return JSON.parse(content);
+    var parsed = JSON.parse(content);
+    // حفظ في الذاكرة المؤقتة
+    if (CACHED_TABLES.indexOf(tableName) !== -1) {
+      readCache[tableName] = { data: parsed, timestamp: Date.now() };
+    }
+    return parsed;
   } catch (error) {
     console.error('Error reading table ' + tableName + ':', error);
     // محاولة قراءة من النسخة الاحتياطية
