@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
 
-export type OptionType = 'faculty' | 'field_ar' | 'field_fr' | 'academic_year' | 'research_lab' | 'university';
+export type OptionType = 'faculty' | 'field_ar' | 'field_fr' | 'academic_year' | 'research_lab' | 'university' | 'decree_training' | 'decree_accreditation';
 
 interface DropdownOption {
   id: string;
