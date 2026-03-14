@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useDefenseDocTemplates";
 import { parseJury, type JuryMember } from "@/components/ui/jury-table-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
+import { useProfessors } from "@/hooks/useProfessors";
 import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
 import { toast } from "sonner";
 
@@ -61,6 +62,7 @@ export function GenerateDocumentDialog({
   const updateScience = useUpdateDefenseStageScience();
   const { data: templates = [] } = useDefenseDocTemplates();
   const { titles: academicTitles } = useAcademicTitles();
+  const { findProfessor } = useProfessors();
   const ranks = academicTitles.map(t => ({ label: t.full_name, abbreviation: t.abbreviation }));
 
   const fullDocType = `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
@@ -215,6 +217,20 @@ export function GenerateDocumentDialog({
       ranks
     );
 
+    // Enrich jury members with professor data (rank + university) from professor registry
+    const enrichedJuryMembers = juryMembers.map((member) => {
+      if (!member.name?.trim()) return member;
+      const prof = findProfessor(member.name);
+      if (!prof) return member;
+      return {
+        ...member,
+        name: prof.full_name || member.name,
+        rankLabel: member.rankLabel || prof.rank_label || "",
+        rankAbbreviation: member.rankAbbreviation || prof.rank_abbreviation || "",
+        university: member.university || prof.university || "",
+      };
+    });
+
     const variables: Record<string, string> = {
       decision_number: student.decision_number || "",
       decision_date: student.decision_date || "",
@@ -243,7 +259,7 @@ export function GenerateDocumentDialog({
       co_supervisor_university: student.co_supervisor_university || "",
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
-      jury_table: buildJuryTableHtml(juryMembers),
+      jury_table: buildJuryTableHtml(enrichedJuryMembers),
       scientific_council_date: student.scientific_council_date || "",
       defense_date: student.defense_date || "",
       signature_title: student.signature_title || "",
