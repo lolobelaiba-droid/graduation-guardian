@@ -206,13 +206,41 @@ function sleepSync(ms) {
 }
 
 // ============================================
+// ذاكرة تخزين مؤقتة للقراءة (Read Cache)
+// ============================================
+
+var READ_CACHE_MS = 2000; // 2 ثانية
+var CACHED_TABLES = [
+  'phd_lmd_certificates', 'phd_science_certificates', 'master_certificates',
+  'phd_lmd_students', 'phd_science_students', 'professors',
+  'certificate_templates', 'certificate_template_fields',
+  'dropdown_options', 'academic_titles', 'custom_fonts'
+];
+var readCache = {}; // { tableName: { data, timestamp } }
+
+function invalidateCache(tableName) {
+  delete readCache[tableName];
+}
+
+function invalidateAllCache() {
+  readCache = {};
+}
+
+// ============================================
 // قراءة وكتابة البيانات (مع قفل الملفات)
 // ============================================
 
 /**
- * قراءة بيانات جدول (مع إعادة القراءة من القرص دائماً في وضع الشبكة)
+ * قراءة بيانات جدول (مع تخزين مؤقت للجداول الكبيرة)
  */
 function readTable(tableName) {
+  // التحقق من الذاكرة المؤقتة
+  if (CACHED_TABLES.indexOf(tableName) !== -1) {
+    var cached = readCache[tableName];
+    if (cached && (Date.now() - cached.timestamp) < READ_CACHE_MS) {
+      return cached.data;
+    }
+  }
   var filePath = getTablePath(tableName);
   if (!fs.existsSync(filePath)) {
     return [];
