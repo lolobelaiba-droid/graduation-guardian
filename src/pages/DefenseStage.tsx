@@ -240,7 +240,7 @@ export default function DefenseStage() {
                               )}
                               <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'defended')}>
                                 <CheckCircle className="h-4 w-4 ml-2" />
-                                تمت المناقشة
+                                انتهت إجراءات المناقشة
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
