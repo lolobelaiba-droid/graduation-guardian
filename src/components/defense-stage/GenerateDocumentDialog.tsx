@@ -110,7 +110,9 @@ export function GenerateDocumentDialog({
   const { findProfessor } = useProfessors();
   const ranks = academicTitles.map(t => ({ label: t.full_name, abbreviation: t.abbreviation }));
 
-  const fullDocType = `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
+  const fullDocType = documentType === "defense_minutes"
+    ? `defense_minutes_${studentType === "phd_lmd" ? "lmd" : "science"}`
+    : `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
   const template = templates.find((t) => t.document_type === fullDocType);
 
   const isJuryDecision = documentType === "jury_decision";
