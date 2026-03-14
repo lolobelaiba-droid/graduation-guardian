@@ -696,6 +696,109 @@ export default function Settings() {
     return formatted;
   };
 
+  // Network-wide backup
+  const handleNetworkBackup = async () => {
+    if (!isElectron()) return;
+    setIsNetworkBackup(true);
+    try {
+      const db = getDbClient()!;
+      const maxCount = parseInt(backupCount) || 10;
+      const result = await db.saveBackupToFolder(maxCount);
+      if (result.success) {
+        toast.success("تم حفظ النسخة الاحتياطية الشبكية بنجاح");
+      } else {
+        throw new Error(result.error || "فشل الحفظ");
+      }
+    } catch (error) {
+      console.error("Network backup error:", error);
+      toast.error("حدث خطأ أثناء النسخ الاحتياطي الشبكي");
+    } finally {
+      setIsNetworkBackup(false);
+    }
+  };
+
+  // Password management
+  const hashPasswordLocal = async (password: string, salt: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(salt + password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+
+  const handleChangePassword = async () => {
+    if (!isElectron()) return;
+    
+    if (hasExistingPassword && !currentPassword.trim()) {
+      toast.error("يرجى إدخال كلمة المرور الحالية");
+      return;
+    }
+    if (!newAppPassword.trim() || newAppPassword.length < 4) {
+      toast.error("كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل");
+      return;
+    }
+    if (newAppPassword !== confirmAppPassword) {
+      toast.error("كلمتا المرور غير متطابقتين");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      const db = getDbClient()!;
+
+      // تحقق من كلمة المرور الحالية إذا كانت موجودة
+      if (hasExistingPassword) {
+        const saltResult = await db.getSetting("app_password_salt");
+        const hashResult = await db.getSetting("app_password_hash");
+        const salt = (saltResult?.data as any)?.value || "";
+        const storedHash = (hashResult?.data as any)?.value || "";
+        const inputHash = await hashPasswordLocal(currentPassword, salt);
+        if (inputHash !== storedHash) {
+          toast.error("كلمة المرور الحالية غير صحيحة");
+          setIsSavingPassword(false);
+          return;
+        }
+      }
+
+      // تعيين كلمة المرور الجديدة
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      const newSalt = Array.from(array).map((b) => b.toString(16).padStart(2, "0")).join("");
+      const newHash = await hashPasswordLocal(newAppPassword, newSalt);
+
+      await db.setSetting("app_password_salt", newSalt);
+      await db.setSetting("app_password_hash", newHash);
+
+      setHasExistingPassword(true);
+      setCurrentPassword("");
+      setNewAppPassword("");
+      setConfirmAppPassword("");
+      setShowPasswordSection(false);
+      toast.success("تم تغيير كلمة المرور بنجاح");
+    } catch (e) {
+      console.error("Change password error:", e);
+      toast.error("حدث خطأ أثناء تغيير كلمة المرور");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
+  const handleRemovePassword = async () => {
+    if (!isElectron()) return;
+    setIsSavingPassword(true);
+    try {
+      const db = getDbClient()!;
+      await db.setSetting("app_password_hash", "");
+      await db.setSetting("app_password_salt", "");
+      setHasExistingPassword(false);
+      setShowPasswordSection(false);
+      toast.success("تم إزالة كلمة المرور");
+    } catch (e) {
+      toast.error("حدث خطأ");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
