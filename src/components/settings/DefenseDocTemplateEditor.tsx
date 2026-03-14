@@ -908,8 +908,10 @@ export default function DefenseDocTemplateEditor() {
                         pageWidthMm={210}
                         marginRight={settings.margin_right}
                         marginLeft={settings.margin_left}
+                        firstLineIndent={settings.first_line_indent}
                         onMarginRightChange={(val) => updateLocal(template.id, "margin_right", val)}
                         onMarginLeftChange={(val) => updateLocal(template.id, "margin_left", val)}
+                        onFirstLineIndentChange={(val) => updateLocal(template.id, "first_line_indent", val)}
                         dir="rtl"
                       />
                     </div>
