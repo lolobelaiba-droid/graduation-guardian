@@ -397,6 +397,8 @@ export type Database = {
       }
       defense_stage_lmd: {
         Row: {
+          auth_decision_date: string | null
+          auth_decision_number: string | null
           birthplace_ar: string
           birthplace_fr: string | null
           branch_ar: string
@@ -406,6 +408,8 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          dean_letter_date: string | null
+          dean_letter_number: string | null
           decision_date: string | null
           decision_number: string | null
           decree_accreditation: string | null
@@ -449,6 +453,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auth_decision_date?: string | null
+          auth_decision_number?: string | null
           birthplace_ar: string
           birthplace_fr?: string | null
           branch_ar: string
@@ -458,6 +464,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          dean_letter_date?: string | null
+          dean_letter_number?: string | null
           decision_date?: string | null
           decision_number?: string | null
           decree_accreditation?: string | null
@@ -501,6 +509,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auth_decision_date?: string | null
+          auth_decision_number?: string | null
           birthplace_ar?: string
           birthplace_fr?: string | null
           branch_ar?: string
@@ -510,6 +520,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          dean_letter_date?: string | null
+          dean_letter_number?: string | null
           decision_date?: string | null
           decision_number?: string | null
           decree_accreditation?: string | null
@@ -556,6 +568,8 @@ export type Database = {
       }
       defense_stage_science: {
         Row: {
+          auth_decision_date: string | null
+          auth_decision_number: string | null
           birthplace_ar: string
           birthplace_fr: string | null
           branch_ar: string
@@ -565,6 +579,8 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          dean_letter_date: string | null
+          dean_letter_number: string | null
           decision_date: string | null
           decision_number: string | null
           decree_accreditation: string | null
@@ -608,6 +624,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auth_decision_date?: string | null
+          auth_decision_number?: string | null
           birthplace_ar: string
           birthplace_fr?: string | null
           branch_ar: string
@@ -617,6 +635,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          dean_letter_date?: string | null
+          dean_letter_number?: string | null
           decision_date?: string | null
           decision_number?: string | null
           decree_accreditation?: string | null
@@ -660,6 +680,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auth_decision_date?: string | null
+          auth_decision_number?: string | null
           birthplace_ar?: string
           birthplace_fr?: string | null
           branch_ar?: string
@@ -669,6 +691,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          dean_letter_date?: string | null
+          dean_letter_number?: string | null
           decision_date?: string | null
           decision_number?: string | null
           decree_accreditation?: string | null
