@@ -6,6 +6,42 @@ export interface CustomVariable {
   label: string;
 }
 
+export interface JuryTableSettings {
+  font_size: number;
+  padding: number;
+  border_color: string;
+  header_bg: string;
+  line_height: number;
+  show_number: boolean;
+  show_rank: boolean;
+  show_university: boolean;
+  show_role: boolean;
+  include_abbreviation: boolean;
+  col_number_width: number;
+  col_name_width: number;
+  col_rank_width: number;
+  col_university_width: number;
+  col_role_width: number;
+}
+
+export const DEFAULT_JURY_TABLE_SETTINGS: JuryTableSettings = {
+  font_size: 12,
+  padding: 8,
+  border_color: "#333",
+  header_bg: "#f0f0f0",
+  line_height: 1.6,
+  show_number: true,
+  show_rank: true,
+  show_university: true,
+  show_role: true,
+  include_abbreviation: true,
+  col_number_width: 6,
+  col_name_width: 24,
+  col_rank_width: 18,
+  col_university_width: 28,
+  col_role_width: 24,
+};
+
 export interface DefenseDocTemplate {
   id: string;
   document_type: string;
@@ -15,6 +51,7 @@ export interface DefenseDocTemplate {
   font_size: number;
   line_height: number;
   custom_variables: CustomVariable[];
+  jury_table_settings: JuryTableSettings;
   created_at: string;
   updated_at: string;
 }
