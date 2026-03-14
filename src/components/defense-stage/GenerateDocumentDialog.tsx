@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useDefenseDocTemplates";
 import { parseJury, type JuryMember } from "@/components/ui/jury-table-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
+import { useProfessors } from "@/hooks/useProfessors";
 import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
 import { toast } from "sonner";
 
