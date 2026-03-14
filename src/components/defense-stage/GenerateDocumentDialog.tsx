@@ -210,6 +210,9 @@ export function GenerateDocumentDialog({
 
     const content = printRef.current.innerHTML;
     const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+    const jts: JuryTableSettings = template?.jury_table_settings
+      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+      : { ...DEFAULT_JURY_TABLE_SETTINGS };
 
     printWindow.document.write(`<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -228,10 +231,10 @@ export function GenerateDocumentDialog({
     color: #000;
   }
   table { border-collapse: collapse; width: 100%; }
-  td, th { border: 1px solid #333; padding: 8px; text-align: center; }
-  th { background: #f0f0f0; font-weight: bold; }
+  td, th { border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height}; }
+  th { background: ${jts.header_bg}; font-weight: bold; }
   .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
-  @media print { body { -webkit-print-color-adjust: exact; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head>
 <body>${content}</body>
@@ -528,7 +531,7 @@ export function GenerateDocumentDialog({
           <div className="space-y-4">
             <div
               ref={printRef}
-              className="border rounded-lg p-8 bg-white min-h-[500px]"
+              className="border rounded-lg bg-white min-h-[500px]"
               style={{
                 fontFamily: template?.font_family || "IBM Plex Sans Arabic",
                 fontSize: `${template?.font_size || 14}px`,
@@ -537,6 +540,10 @@ export function GenerateDocumentDialog({
                 width: "210mm",
                 maxWidth: "100%",
                 margin: "0 auto",
+                paddingTop: `${template?.margin_top ?? 20}mm`,
+                paddingBottom: `${template?.margin_bottom ?? 20}mm`,
+                paddingRight: `${template?.margin_right ?? 15}mm`,
+                paddingLeft: `${template?.margin_left ?? 15}mm`,
                 boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
                 color: "#000",
               }}
