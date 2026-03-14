@@ -23,6 +23,7 @@ import { useUnreadNotesCount } from "@/hooks/useNotes";
 const menuItems = [
   { title: "لوحة التحكم", icon: LayoutDashboard, path: "/" },
   { title: "قاعدة بيانات طلبة الدكتوراه", icon: Database, path: "/phd-students" },
+  { title: "طلبة في طور المناقشة", icon: Scale, path: "/defense-stage" },
   { title: "إدارة الطلبة المناقشين", icon: Users, path: "/students" },
   { title: "طباعة الشهادات", icon: Printer, path: "/print" },
   { title: "إدارة القوالب", icon: FileText, path: "/templates" },
