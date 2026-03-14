@@ -800,7 +800,7 @@ export default function DefenseDocTemplateEditor() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Table className="h-5 w-5 text-primary" />
-              إدراج جدول
+              {tableDialog.editMode ? "تعديل الجدول" : "إدراج جدول"}
             </DialogTitle>
           </DialogHeader>
 
