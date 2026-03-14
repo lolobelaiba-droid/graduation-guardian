@@ -115,15 +115,17 @@ export default function DefenseDocTemplateEditor() {
   const [newVarKey, setNewVarKey] = useState("");
   const [newVarLabel, setNewVarLabel] = useState("");
 
-  // Table insertion dialog
-  const [tableDialog, setTableDialog] = useState<{ open: boolean; templateId: string }>({
+  // Table insertion/editing dialog
+  const [tableDialog, setTableDialog] = useState<{ open: boolean; templateId: string; editMode: boolean }>({
     open: false,
     templateId: "",
+    editMode: false,
   });
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
   const savedSelectionRef = useRef<Range | null>(null);
+  const editingTableRef = useRef<HTMLTableElement | null>(null);
 
   useEffect(() => {
     if (templates.length > 0) {
@@ -225,12 +227,32 @@ export default function DefenseDocTemplateEditor() {
     toast.success("تم حذف المتغير");
   };
 
+  const buildTableHtml = () => {
+    let html = '<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">';
+    if (tableHeaders.some((h) => h.trim())) {
+      html += "<thead><tr>";
+      for (let c = 0; c < tableCols; c++) {
+        html += `<th style="border: 1px solid #333; padding: 8px; text-align: center; background: #f0f0f0; font-weight: bold;">${tableHeaders[c] || `عمود ${c + 1}`}</th>`;
+      }
+      html += "</tr></thead>";
+    }
+    html += "<tbody>";
+    for (let r = 0; r < tableRows; r++) {
+      html += "<tr>";
+      for (let c = 0; c < tableCols; c++) {
+        html += '<td style="border: 1px solid #333; padding: 8px; text-align: center;">&nbsp;</td>';
+      }
+      html += "</tr>";
+    }
+    html += "</tbody></table>";
+    return html;
+  };
+
   const insertTable = (templateId: string) => {
     const ref = editorRefs.current[templateId];
     if (!ref) return;
     ref.focus();
 
-    // Restore saved selection if available
     if (savedSelectionRef.current) {
       const sel = window.getSelection();
       if (sel) {
@@ -240,31 +262,52 @@ export default function DefenseDocTemplateEditor() {
       }
     }
 
-    let html = '<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">';
-
-    // Header row
-    if (tableHeaders.length > 0) {
-      html += "<thead><tr>";
-      for (let c = 0; c < tableCols; c++) {
-        html += `<th style="border: 1px solid #333; padding: 8px; text-align: center; background: #f0f0f0; font-weight: bold;">${tableHeaders[c] || `عمود ${c + 1}`}</th>`;
-      }
-      html += "</tr></thead>";
-    }
-
-    html += "<tbody>";
-    for (let r = 0; r < tableRows; r++) {
-      html += "<tr>";
-      for (let c = 0; c < tableCols; c++) {
-        html += '<td style="border: 1px solid #333; padding: 8px; text-align: center;">&nbsp;</td>';
-      }
-      html += "</tr>";
-    }
-    html += "</tbody></table><br/>";
-
-    document.execCommand("insertHTML", false, html);
+    document.execCommand("insertHTML", false, buildTableHtml() + "<br/>");
     handleEditorInput(templateId);
-    setTableDialog({ open: false, templateId: "" });
+    setTableDialog({ open: false, templateId: "", editMode: false });
     toast.success("تم إدراج الجدول");
+  };
+
+  const updateExistingTable = (templateId: string) => {
+    if (!editingTableRef.current) return;
+    const newTable = document.createElement("div");
+    newTable.innerHTML = buildTableHtml();
+    const tableEl = newTable.querySelector("table");
+    if (tableEl) {
+      editingTableRef.current.replaceWith(tableEl);
+    }
+    editingTableRef.current = null;
+    handleEditorInput(templateId);
+    setTableDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم تحديث الجدول");
+  };
+
+  const deleteTable = (templateId: string) => {
+    if (!editingTableRef.current) return;
+    editingTableRef.current.remove();
+    editingTableRef.current = null;
+    handleEditorInput(templateId);
+    setTableDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم حذف الجدول");
+  };
+
+  const handleEditorClick = (templateId: string, e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const table = target.closest("table");
+    if (!table) return;
+
+    editingTableRef.current = table as HTMLTableElement;
+    const rows = table.querySelectorAll("tbody tr");
+    const headerCells = table.querySelectorAll("thead th");
+    const firstRow = table.querySelector("tr");
+    const cols = firstRow ? firstRow.children.length : 3;
+    const headers: string[] = [];
+    headerCells.forEach((th) => headers.push(th.textContent || ""));
+
+    setTableRows(rows.length || 1);
+    setTableCols(cols);
+    setTableHeaders(headers);
+    setTableDialog({ open: true, templateId, editMode: true });
   };
 
   const saveTemplate = async (id: string) => {
@@ -560,7 +603,7 @@ export default function DefenseDocTemplateEditor() {
                           if (sel && sel.rangeCount > 0) {
                             savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
                           }
-                          setTableDialog({ open: true, templateId: template.id });
+                          setTableDialog({ open: true, templateId: template.id, editMode: false });
                           setTableRows(3);
                           setTableCols(3);
                           setTableHeaders([]);
@@ -629,6 +672,7 @@ export default function DefenseDocTemplateEditor() {
                           lineHeight: settings.line_height,
                         }}
                         onInput={() => handleEditorInput(template.id)}
+                        onClick={(e) => handleEditorClick(template.id, e)}
                         suppressContentEditableWarning
                       />
                     )}
@@ -750,13 +794,13 @@ export default function DefenseDocTemplateEditor() {
       {/* Table Insertion Dialog */}
       <Dialog
         open={tableDialog.open}
-        onOpenChange={(open) => setTableDialog({ open, templateId: tableDialog.templateId })}
+        onOpenChange={(open) => setTableDialog({ open, templateId: tableDialog.templateId, editMode: tableDialog.editMode })}
       >
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Table className="h-5 w-5 text-primary" />
-              إدراج جدول
+              {tableDialog.editMode ? "تعديل الجدول" : "إدراج جدول"}
             </DialogTitle>
           </DialogHeader>
 
@@ -865,12 +909,18 @@ export default function DefenseDocTemplateEditor() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTableDialog({ open: false, templateId: "" })}>
+            <Button variant="outline" onClick={() => setTableDialog({ open: false, templateId: "", editMode: false })}>
               إلغاء
             </Button>
-            <Button onClick={() => insertTable(tableDialog.templateId)} className="gap-1">
+            {tableDialog.editMode && (
+              <Button variant="destructive" onClick={() => deleteTable(tableDialog.templateId)} className="gap-1">
+                <Trash2 className="h-4 w-4" />
+                حذف الجدول
+              </Button>
+            )}
+            <Button onClick={() => tableDialog.editMode ? updateExistingTable(tableDialog.templateId) : insertTable(tableDialog.templateId)} className="gap-1">
               <Table className="h-4 w-4" />
-              إدراج
+              {tableDialog.editMode ? "تحديث" : "إدراج"}
             </Button>
           </DialogFooter>
         </DialogContent>
