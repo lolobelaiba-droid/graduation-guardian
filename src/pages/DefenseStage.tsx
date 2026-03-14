@@ -11,6 +11,7 @@ import {
   FileText,
   CheckCircle,
   FilePlus,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ import {
 } from "@/hooks/useDefenseStage";
 import { StartDefenseProcedureDialog } from "@/components/defense-stage/StartDefenseProcedureDialog";
 import { GenerateDocumentDialog } from "@/components/defense-stage/GenerateDocumentDialog";
+import { EditDefenseStageDialog } from "@/components/defense-stage/EditDefenseStageDialog";
 import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 
@@ -65,6 +67,7 @@ export default function DefenseStage() {
     student: DefenseStageStudent;
     documentType: "jury_decision" | "defense_auth";
   } | null>(null);
+  const [editTarget, setEditTarget] = useState<DefenseStageStudent | null>(null);
 
   const { data: lmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
   const { data: scienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
@@ -225,6 +228,10 @@ export default function DefenseStage() {
                                 <FileText className="h-4 w-4 ml-2" />
                                 توليد ترخيص المناقشة
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditTarget(student)}>
+                                <Pencil className="h-4 w-4 ml-2" />
+                                تعديل البيانات
+                              </DropdownMenuItem>
                               {student.stage_status === 'pending' && (
                                 <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'authorized')}>
                                   <CheckCircle className="h-4 w-4 ml-2" />
@@ -295,6 +302,13 @@ export default function DefenseStage() {
         student={docGenTarget?.student || null}
         studentType={activeTab as DefenseStageType}
         documentType={docGenTarget?.documentType || "jury_decision"}
+      />
+
+      <EditDefenseStageDialog
+        open={!!editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+        student={editTarget}
+        studentType={activeTab as DefenseStageType}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
