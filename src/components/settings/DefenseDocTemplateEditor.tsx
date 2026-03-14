@@ -644,7 +644,7 @@ export default function DefenseDocTemplateEditor() {
                           </div>
                         </CollapsibleContent>
                       </Collapsible>
-                    )
+                    )}
 
                     {/* Toolbar */}
                     <div className="flex items-center gap-1 flex-wrap border rounded-lg p-2 bg-muted/30">
