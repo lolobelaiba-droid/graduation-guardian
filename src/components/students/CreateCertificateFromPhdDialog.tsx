@@ -45,11 +45,11 @@ import {
   useCreatePhdScienceCertificate,
 } from "@/hooks/useCertificates";
 import {
-  usePhdLmdStudents,
-  usePhdScienceStudents,
-  useDeletePhdLmdStudent,
-  useDeletePhdScienceStudent,
-} from "@/hooks/usePhdStudents";
+  useDefenseStageLmd,
+  useDefenseStageScience,
+  useDeleteDefenseStageLmd,
+  useDeleteDefenseStageScience,
+} from "@/hooks/useDefenseStage";
 import {
   certificateTypeLabels,
   mentionLabels,
@@ -57,7 +57,8 @@ import {
   type CertificateType,
   type MentionType,
 } from "@/types/certificates";
-import type { PhdStudent, PhdLmdStudent } from "@/types/phd-students";
+import type { DefenseStageStudent } from "@/types/defense-stage";
+import { stageStatusLabels } from "@/types/defense-stage";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
