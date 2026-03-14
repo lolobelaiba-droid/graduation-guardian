@@ -217,6 +217,20 @@ export function GenerateDocumentDialog({
       ranks
     );
 
+    // Enrich jury members with professor data (rank + university) from professor registry
+    const enrichedJuryMembers = juryMembers.map((member) => {
+      if (!member.name?.trim()) return member;
+      const prof = findProfessor(member.name);
+      if (!prof) return member;
+      return {
+        ...member,
+        name: prof.full_name || member.name,
+        rankLabel: member.rankLabel || prof.rank_label || "",
+        rankAbbreviation: member.rankAbbreviation || prof.rank_abbreviation || "",
+        university: member.university || prof.university || "",
+      };
+    });
+
     const variables: Record<string, string> = {
       decision_number: student.decision_number || "",
       decision_date: student.decision_date || "",
