@@ -343,7 +343,6 @@ export function GenerateDocumentDialog({
       decree_training: student.decree_training || "",
       decree_accreditation: student.decree_accreditation || "",
     };
-    }
 
     let content = template.content;
     content = content.replace(
