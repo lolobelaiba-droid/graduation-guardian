@@ -540,3 +540,16 @@ html.theme-slate {
     print-color-adjust: exact !important;
   }
 }
+
+/* Defense document template editor - normalize contentEditable elements */
+.defense-doc-editor blockquote,
+.defense-doc-editor div,
+.defense-doc-editor p {
+  margin: 0;
+  padding: 0;
+  text-indent: inherit;
+}
+.defense-doc-editor blockquote {
+  margin-inline-start: 2em;
+  border: none;
+}
