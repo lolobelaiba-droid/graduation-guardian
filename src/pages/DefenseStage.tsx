@@ -61,6 +61,10 @@ export default function DefenseStage() {
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; type: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [docGenTarget, setDocGenTarget] = useState<{
+    student: DefenseStageStudent;
+    documentType: "jury_decision" | "defense_auth";
+  } | null>(null);
 
   const { data: lmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
   const { data: scienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
