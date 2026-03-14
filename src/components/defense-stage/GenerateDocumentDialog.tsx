@@ -364,8 +364,8 @@ export function GenerateDocumentDialog({
   };
 
   const docTitle = isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
-  const numberLabel = isJuryDecision ? "رقم مقرر اللجنة" : "رقم مقرر الترخيص *";
-  const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة" : "تاريخ مقرر الترخيص *";
+  const numberLabel = isJuryDecision ? "رقم مقرر اللجنة" : "رقم مقرر الترخيص";
+  const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة" : "تاريخ مقرر الترخيص";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -385,6 +385,23 @@ export function GenerateDocumentDialog({
 
         {!showPreview ? (
           <div className="space-y-4 py-2">
+            {!isJuryDecision && (
+              <>
+                <div className="space-y-2">
+                  <Label>رقم مقرر اللجنة *</Label>
+                  <Input
+                    value={juryDecisionNumber}
+                    onChange={(e) => setJuryDecisionNumber(e.target.value)}
+                    placeholder="أدخل رقم مقرر اللجنة..."
+                    dir="rtl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>تاريخ مقرر اللجنة *</Label>
+                  <DateInput value={juryDecisionDate} onChange={setJuryDecisionDate} />
+                </div>
+              </>
+            )}
             <div className="space-y-2">
               <Label>{numberLabel}</Label>
               <Input
