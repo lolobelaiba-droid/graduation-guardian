@@ -498,6 +498,107 @@ function update(tableName, id, updates) {
   return data[index];
 }
 
+// ============================================
+// قفل السجلات (Record Locking) لمنع التعارض
+// ============================================
+
+var RECORD_LOCK_STALE_MS = 60000; // 60 ثانية
+
+function acquireRecordLock(tableName, recordId) {
+  if (!isNetworkMode()) return { acquired: true };
+  
+  var lockDir = path.join(getDataDir(), '.record_locks');
+  if (!fs.existsSync(lockDir)) {
+    fs.mkdirSync(lockDir, { recursive: true });
+  }
+  
+  var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
+  var identity = getDeviceIdentity();
+  var lockData = {
+    hostname: identity.hostname,
+    ip: identity.ip,
+    timestamp: Date.now()
+  };
+  
+  // التحقق من وجود قفل حالي
+  if (fs.existsSync(lockFile)) {
+    try {
+      var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      if (Date.now() - existing.timestamp < RECORD_LOCK_STALE_MS) {
+        // القفل نشط ومن جهاز آخر
+        if (existing.hostname !== identity.hostname || existing.ip !== identity.ip) {
+          return {
+            acquired: false,
+            lockedBy: existing.hostname,
+            lockedByIp: existing.ip
+          };
+        }
+      }
+    } catch (e) {
+      // ملف تالف، تابع
+    }
+  }
+  
+  // إنشاء القفل
+  try {
+    fs.writeFileSync(lockFile, JSON.stringify(lockData), 'utf8');
+    return { acquired: true };
+  } catch (e) {
+    return { acquired: true }; // لا نمنع العمل في حالة الخطأ
+  }
+}
+
+function releaseRecordLock(tableName, recordId) {
+  if (!isNetworkMode()) return;
+  
+  var lockDir = path.join(getDataDir(), '.record_locks');
+  var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
+  
+  try {
+    if (fs.existsSync(lockFile)) {
+      var identity = getDeviceIdentity();
+      var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      // حذف فقط إذا كان القفل لنا
+      if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+        fs.unlinkSync(lockFile);
+      }
+    }
+  } catch (e) {
+    // تجاهل
+  }
+}
+
+function checkRecordLock(tableName, recordId) {
+  if (!isNetworkMode()) return { locked: false };
+  
+  var lockDir = path.join(getDataDir(), '.record_locks');
+  var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
+  
+  if (!fs.existsSync(lockFile)) return { locked: false };
+  
+  try {
+    var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+    var identity = getDeviceIdentity();
+    
+    if (Date.now() - existing.timestamp >= RECORD_LOCK_STALE_MS) {
+      try { fs.unlinkSync(lockFile); } catch (e) {}
+      return { locked: false };
+    }
+    
+    if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+      return { locked: false }; // القفل لنا
+    }
+    
+    return {
+      locked: true,
+      lockedBy: existing.hostname,
+      lockedByIp: existing.ip
+    };
+  } catch (e) {
+    return { locked: false };
+  }
+}
+
 function deleteById(tableName, id) {
   var data = readTable(tableName);
   var filtered = data.filter(function(item) {
