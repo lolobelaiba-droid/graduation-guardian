@@ -99,6 +99,10 @@ interface LocalSettings {
   font_family: string;
   font_size: number;
   line_height: number;
+  margin_top: number;
+  margin_bottom: number;
+  margin_right: number;
+  margin_left: number;
   custom_variables: CustomVariable[];
   jury_table_settings: JuryTableSettings;
 }
@@ -143,6 +147,10 @@ export default function DefenseDocTemplateEditor() {
           font_family: t.font_family || "IBM Plex Sans Arabic",
           font_size: t.font_size || 14,
           line_height: t.line_height || 1.8,
+          margin_top: t.margin_top ?? 20,
+          margin_bottom: t.margin_bottom ?? 20,
+          margin_right: t.margin_right ?? 15,
+          margin_left: t.margin_left ?? 15,
           custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
           jury_table_settings: t.jury_table_settings || { ...DEFAULT_JURY_TABLE_SETTINGS },
         };
@@ -330,6 +338,10 @@ export default function DefenseDocTemplateEditor() {
         font_family: settings.font_family,
         font_size: settings.font_size,
         line_height: settings.line_height,
+        margin_top: settings.margin_top,
+        margin_bottom: settings.margin_bottom,
+        margin_right: settings.margin_right,
+        margin_left: settings.margin_left,
         custom_variables: settings.custom_variables,
         jury_table_settings: settings.jury_table_settings,
       } as any);
@@ -486,6 +498,28 @@ export default function DefenseDocTemplateEditor() {
                           className="h-9"
                         />
                       </div>
+                    </div>
+
+                    {/* Page Margins */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[
+                        { key: "margin_top" as const, label: "الهامش العلوي (mm)" },
+                        { key: "margin_bottom" as const, label: "الهامش السفلي (mm)" },
+                        { key: "margin_right" as const, label: "الهامش الأيمن (mm)" },
+                        { key: "margin_left" as const, label: "الهامش الأيسر (mm)" },
+                      ].map((m) => (
+                        <div key={m.key} className="space-y-2">
+                          <Label className="text-xs">{m.label}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={50}
+                            value={settings[m.key]}
+                            onChange={(e) => updateLocal(template.id, m.key, parseFloat(e.target.value) || 0)}
+                            className="h-9"
+                          />
+                        </div>
+                      ))}
                     </div>
 
                     {/* Jury Table Settings */}
