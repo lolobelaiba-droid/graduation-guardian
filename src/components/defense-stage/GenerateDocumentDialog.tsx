@@ -175,6 +175,45 @@ export function GenerateDocumentDialog({
     }, 500);
   };
 
+  const handleDownloadPdf = async () => {
+    if (!printRef.current) return;
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+      const studentName = student?.full_name_ar || "وثيقة";
+      const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
+      const fileName = `${docTitle}_${studentName}.pdf`;
+
+      const element = printRef.current;
+      const opt = {
+        margin: [
+          template?.margin_top ?? 20,
+          template?.margin_right ?? 15,
+          template?.margin_bottom ?? 20,
+          template?.margin_left ?? 15,
+        ],
+        filename: fileName,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      toast.success("تم تحميل الوثيقة بنجاح");
+    } catch (err) {
+      console.error("PDF download error:", err);
+      toast.error("فشل في تحميل الوثيقة");
+    }
+  };
+
   const buildJuryTableHtml = (members: JuryMember[]): string => {
     const jts: JuryTableSettings = template?.jury_table_settings
       ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
