@@ -797,6 +797,8 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
               coSupervisorUniversity={form.watch('co_supervisor_university') || ''}
               nameSuggestions={professorNames}
               universitySuggestions={universityNames}
+              findProfessor={findProfessor}
+              onProfessorDataChange={ensureProfessor}
             />
 
             {/* Decrees */}
