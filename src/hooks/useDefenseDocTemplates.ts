@@ -121,6 +121,9 @@ export function useDefenseDocTemplates() {
       return (data || []).map((d: any) => ({
         ...d,
         custom_variables: Array.isArray(d.custom_variables) ? d.custom_variables : [],
+        jury_table_settings: d.jury_table_settings && typeof d.jury_table_settings === 'object'
+          ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...d.jury_table_settings }
+          : { ...DEFAULT_JURY_TABLE_SETTINGS },
       })) as DefenseDocTemplate[];
     },
   });
