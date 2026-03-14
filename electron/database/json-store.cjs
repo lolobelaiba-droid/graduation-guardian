@@ -1234,5 +1234,13 @@ module.exports = {
   getCachedFilePath: getCachedFilePath,
   getLocalFileUrl: getLocalFileUrl,
   getCacheDir: getCacheDir,
-  saveLocalFile: saveLocalFile
+  saveLocalFile: saveLocalFile,
+  
+  // قفل السجلات
+  acquireRecordLock: acquireRecordLock,
+  releaseRecordLock: releaseRecordLock,
+  checkRecordLock: checkRecordLock,
+  
+  // إدارة الذاكرة المؤقتة
+  invalidateAllCache: invalidateAllCache
 };

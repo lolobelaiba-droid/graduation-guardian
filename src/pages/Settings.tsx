@@ -1323,6 +1323,39 @@ export default function Settings() {
             )}
 
             {/* Password Management - Electron only */}
+            {/* Auto-Logout Setting - Electron only */}
+            {isElectron() && (
+              <div className="bg-card rounded-2xl shadow-card p-6">
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Timer className="h-5 w-5 text-primary" />
+                  قفل تلقائي عند عدم النشاط
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  قفل التطبيق تلقائياً بعد فترة عدم نشاط لحماية البيانات
+                </p>
+                <div className="flex items-center gap-3 max-w-xs">
+                  <Select
+                    value={autoLogoutMinutes}
+                    onValueChange={async (val) => {
+                      setAutoLogoutMinutes(val);
+                      await saveSetting("auto_logout_minutes", val);
+                      window.dispatchEvent(new Event("auto-logout-setting-changed"));
+                      toast.success(val === "0" ? "تم تعطيل القفل التلقائي" : `سيتم قفل التطبيق بعد ${val} دقيقة من عدم النشاط`);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">معطل</SelectItem>
+                      <SelectItem value="15">15 دقيقة</SelectItem>
+                      <SelectItem value="30">30 دقيقة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
             {isElectron() && (
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">

@@ -266,6 +266,37 @@ function registerDatabaseHandlers() {
   });
 
   // ============================================
+  // قفل السجلات (Record Locking)
+  // ============================================
+
+  ipcMain.handle('db:acquireRecordLock', async (_, tableName, recordId) => {
+    try {
+      const result = db.acquireRecordLock(tableName, recordId);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:releaseRecordLock', async (_, tableName, recordId) => {
+    try {
+      db.releaseRecordLock(tableName, recordId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:checkRecordLock', async (_, tableName, recordId) => {
+    try {
+      const result = db.checkRecordLock(tableName, recordId);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ============================================
   // التخزين المحلي للملفات (Cache)
   // ============================================
 
