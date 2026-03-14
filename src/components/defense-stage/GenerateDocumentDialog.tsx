@@ -450,6 +450,7 @@ export function GenerateDocumentDialog({
                 <p>سيتم توليد المحضر مع ترك الحقول التالية فارغة (نقاط) للتعبئة يدوياً:</p>
                 <p className="mt-2 font-medium text-foreground">رقم المحضر • ساعة المناقشة • التقدير</p>
               </div>
+            ) : (
               <>
                 {!isJuryDecision && (
                   <>
