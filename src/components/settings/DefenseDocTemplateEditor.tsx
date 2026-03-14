@@ -603,7 +603,7 @@ export default function DefenseDocTemplateEditor() {
                           if (sel && sel.rangeCount > 0) {
                             savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
                           }
-                          setTableDialog({ open: true, templateId: template.id });
+                          setTableDialog({ open: true, templateId: template.id, editMode: false });
                           setTableRows(3);
                           setTableCols(3);
                           setTableHeaders([]);
