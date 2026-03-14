@@ -248,8 +248,8 @@ export function GenerateDocumentDialog({
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const studentName = student?.full_name_ar || "وثيقة";
-      const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
-      const fileName = `${docTitle}_${studentName}.pdf`;
+      const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
+      const fileName = `${docTitlePdf}_${studentName}.pdf`;
 
       // Wait for fonts to load
       await document.fonts.ready;
