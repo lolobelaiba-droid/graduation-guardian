@@ -2,31 +2,45 @@ import { useState, useRef, useEffect } from "react";
 import { formatCertificateDate } from "@/lib/numerals";
 
 /**
- * Format document dates like certificate birth date (DD/MM/YYYY)
- * and enforce RTL visual rendering in Arabic templates.
+ * تنسيق جذري لتواريخ الوثائق العربية:
+ * - توحيد الإدخال إلى يوم/شهر/سنة
+ * - عرض بصري RTL بنفس سلوك قوالب الشهادة (السنة/الشهر/اليوم بصرياً)
  */
 function formatArabicDocumentDate(dateStr: string | null | undefined, placeholder = ""): string {
   const raw = dateStr?.trim();
   if (!raw) return placeholder;
 
-  let formatted = raw;
+  let day = "";
+  let month = "";
+  let year = "";
 
-  // Common persisted formats
   const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const ymdSlashMatch = raw.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
   const dmySlashMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
 
   if (isoMatch) {
-    formatted = `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+    year = isoMatch[1];
+    month = isoMatch[2];
+    day = isoMatch[3];
   } else if (ymdSlashMatch) {
-    formatted = `${ymdSlashMatch[3]}/${ymdSlashMatch[2]}/${ymdSlashMatch[1]}`;
+    year = ymdSlashMatch[1];
+    month = ymdSlashMatch[2];
+    day = ymdSlashMatch[3];
   } else if (dmySlashMatch) {
-    formatted = `${dmySlashMatch[1]}/${dmySlashMatch[2]}/${dmySlashMatch[3]}`;
+    day = dmySlashMatch[1];
+    month = dmySlashMatch[2];
+    year = dmySlashMatch[3];
   } else {
-    formatted = formatCertificateDate(raw, true);
+    const normalized = formatCertificateDate(raw, true);
+    const normalizedMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!normalizedMatch) return `\u200F${normalized}\u200F`;
+    day = normalizedMatch[1];
+    month = normalizedMatch[2];
+    year = normalizedMatch[3];
   }
 
-  return `\u200F${formatted}\u200F`;
+  const visualRtl = `${year}/${month}/${day}`;
+  return `\u200F${visualRtl}\u200F`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
