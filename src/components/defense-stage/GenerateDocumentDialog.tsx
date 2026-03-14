@@ -60,6 +60,8 @@ export function GenerateDocumentDialog({
   const updateLmd = useUpdateDefenseStageLmd();
   const updateScience = useUpdateDefenseStageScience();
   const { data: templates = [] } = useDefenseDocTemplates();
+  const { titles: academicTitles } = useAcademicTitles();
+  const ranks = academicTitles.map(t => ({ label: t.full_name, abbreviation: t.abbreviation }));
 
   const fullDocType = `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
   const template = templates.find((t) => t.document_type === fullDocType);
