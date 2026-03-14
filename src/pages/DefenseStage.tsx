@@ -10,6 +10,7 @@ import {
   ChevronRight,
   FileText,
   CheckCircle,
+  FilePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,8 @@ import {
   useUpdateDefenseStageScience,
 } from "@/hooks/useDefenseStage";
 import { StartDefenseProcedureDialog } from "@/components/defense-stage/StartDefenseProcedureDialog";
-import type { DefenseStageStudent, DefenseStageStatus } from "@/types/defense-stage";
+import { GenerateDocumentDialog } from "@/components/defense-stage/GenerateDocumentDialog";
+import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 
 const ITEMS_PER_PAGE = 15;
@@ -59,6 +61,10 @@ export default function DefenseStage() {
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; type: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [docGenTarget, setDocGenTarget] = useState<{
+    student: DefenseStageStudent;
+    documentType: "jury_decision" | "defense_auth";
+  } | null>(null);
 
   const { data: lmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
   const { data: scienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
@@ -207,6 +213,14 @@ export default function DefenseStage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setDocGenTarget({ student, documentType: "jury_decision" })}>
+                                <FilePlus className="h-4 w-4 ml-2" />
+                                توليد مقرر تعيين اللجنة
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDocGenTarget({ student, documentType: "defense_auth" })}>
+                                <FileText className="h-4 w-4 ml-2" />
+                                توليد ترخيص المناقشة
+                              </DropdownMenuItem>
                               {student.stage_status === 'pending' && (
                                 <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'authorized')}>
                                   <CheckCircle className="h-4 w-4 ml-2" />
@@ -214,7 +228,7 @@ export default function DefenseStage() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'defended')}>
-                                <FileText className="h-4 w-4 ml-2" />
+                                <CheckCircle className="h-4 w-4 ml-2" />
                                 تمت المناقشة
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -270,6 +284,14 @@ export default function DefenseStage() {
 
       {/* Dialogs */}
       <StartDefenseProcedureDialog open={showStartDialog} onOpenChange={setShowStartDialog} />
+
+      <GenerateDocumentDialog
+        open={!!docGenTarget}
+        onOpenChange={(open) => !open && setDocGenTarget(null)}
+        student={docGenTarget?.student || null}
+        studentType={activeTab as DefenseStageType}
+        documentType={docGenTarget?.documentType || "jury_decision"}
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>

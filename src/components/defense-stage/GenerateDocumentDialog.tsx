@@ -1,0 +1,270 @@
+import { useState, useRef, useEffect } from "react";
+import { FileText, Loader2, Printer } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { DateInput } from "@/components/ui/date-input";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  useUpdateDefenseStageLmd,
+  useUpdateDefenseStageScience,
+} from "@/hooks/useDefenseStage";
+import {
+  useDefenseDocTemplates,
+  getTemplateVariables,
+  DOCUMENT_TYPE_LABELS,
+} from "@/hooks/useDefenseDocTemplates";
+import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
+import { toast } from "sonner";
+
+interface GenerateDocumentDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  student: DefenseStageStudent | null;
+  studentType: DefenseStageType;
+  documentType: "jury_decision" | "defense_auth";
+}
+
+export function GenerateDocumentDialog({
+  open,
+  onOpenChange,
+  student,
+  studentType,
+  documentType,
+}: GenerateDocumentDialogProps) {
+  const [decisionNumber, setDecisionNumber] = useState("");
+  const [decisionDate, setDecisionDate] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const updateLmd = useUpdateDefenseStageLmd();
+  const updateScience = useUpdateDefenseStageScience();
+  const { data: templates = [] } = useDefenseDocTemplates();
+
+  const fullDocType = `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
+  const template = templates.find((t) => t.document_type === fullDocType);
+
+  useEffect(() => {
+    if (open && student) {
+      setDecisionNumber(student.decision_number || "");
+      setDecisionDate(student.decision_date || "");
+      setShowPreview(false);
+    }
+  }, [open, student]);
+
+  const handleGenerate = async () => {
+    if (!decisionNumber.trim()) {
+      toast.error("يرجى إدخال رقم المقرر");
+      return;
+    }
+    if (!decisionDate.trim()) {
+      toast.error("يرجى إدخال تاريخ المقرر");
+      return;
+    }
+    if (!student) return;
+
+    try {
+      const mutation = studentType === "phd_lmd" ? updateLmd : updateScience;
+      await mutation.mutateAsync({
+        id: student.id,
+        decision_number: decisionNumber.trim(),
+        decision_date: decisionDate.trim(),
+      });
+      setShowPreview(true);
+    } catch {
+      // Error handled by hook
+    }
+  };
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("فشل فتح نافذة الطباعة");
+      return;
+    }
+
+    const content = printRef.current.innerHTML;
+    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>${template?.title || "وثيقة"}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @page { size: A4 portrait; margin: 20mm; }
+  body {
+    font-family: '${fontFamily}', sans-serif;
+    font-size: ${template?.font_size || 14}px;
+    line-height: ${template?.line_height || 1.8};
+    direction: rtl;
+    color: #000;
+  }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #333; padding: 8px; text-align: center; }
+  th { background: #f0f0f0; font-weight: bold; }
+  .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
+  @media print { body { -webkit-print-color-adjust: exact; } }
+</style>
+</head>
+<body>${content}</body>
+</html>`);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
+
+  const getRenderedContent = () => {
+    if (!template || !student) return "";
+
+    const variables: Record<string, string> = {
+      decision_number: decisionNumber,
+      decision_date: decisionDate,
+      full_name_ar: student.full_name_ar || "",
+      full_name_fr: student.full_name_fr || "",
+      date_of_birth: student.date_of_birth || "",
+      birthplace_ar: student.birthplace_ar || "",
+      province: student.province || "",
+      registration_number: student.registration_number || "",
+      university_ar: student.university_ar || "",
+      faculty_ar: student.faculty_ar || "",
+      field_ar: student.field_ar || "",
+      branch_ar: student.branch_ar || "",
+      specialty_ar: student.specialty_ar || "",
+      thesis_title_ar: student.thesis_title_ar || "",
+      thesis_title_fr: student.thesis_title_fr || "",
+      supervisor_ar: student.supervisor_ar || "",
+      supervisor_university: student.supervisor_university || "",
+      co_supervisor_ar: student.co_supervisor_ar || "",
+      co_supervisor_university: student.co_supervisor_university || "",
+      jury_president_ar: student.jury_president_ar || "",
+      jury_members_ar: student.jury_members_ar || "",
+      scientific_council_date: student.scientific_council_date || "",
+      defense_date: student.defense_date || "",
+      signature_title: student.signature_title || "",
+      first_registration_year: student.first_registration_year || "",
+      research_lab_ar: student.research_lab_ar || "",
+      current_year: student.current_year || "",
+      decree_training: student.decree_training || "",
+      decree_accreditation: student.decree_accreditation || "",
+    };
+
+    let content = template.content;
+    // Replace variable tags (both styled spans and raw {{var}} syntax)
+    content = content.replace(
+      /<span[^>]*class="variable-tag"[^>]*>\{\{(\w+)\}\}<\/span>/g,
+      (_, key) => variables[key] || `{{${key}}}`
+    );
+    content = content.replace(
+      /\{\{(\w+)\}\}/g,
+      (_, key) => variables[key] || `{{${key}}}`
+    );
+
+    return content;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className={showPreview ? "max-w-4xl max-h-[95vh] overflow-y-auto" : "max-w-md"}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            {documentType === "jury_decision" ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة"}
+          </DialogTitle>
+          <DialogDescription>
+            {!showPreview
+              ? `أدخل رقم المقرر وتاريخه للطالب: ${student?.full_name_ar || ""}`
+              : "معاينة الوثيقة قبل الطباعة"
+            }
+          </DialogDescription>
+        </DialogHeader>
+
+        {!showPreview ? (
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>رقم المقرر *</Label>
+              <Input
+                value={decisionNumber}
+                onChange={(e) => setDecisionNumber(e.target.value)}
+                placeholder="أدخل رقم المقرر..."
+                dir="rtl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>تاريخ المقرر *</Label>
+              <DateInput
+                value={decisionDate}
+                onChange={setDecisionDate}
+              />
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={handleGenerate}
+                disabled={updateLmd.isPending || updateScience.isPending}
+                className="gap-2"
+              >
+                {(updateLmd.isPending || updateScience.isPending) && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                <FileText className="h-4 w-4" />
+                توليد الوثيقة
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div
+              ref={printRef}
+              className="border rounded-lg p-8 bg-white min-h-[500px]"
+              style={{
+                fontFamily: template?.font_family || "IBM Plex Sans Arabic",
+                fontSize: `${template?.font_size || 14}px`,
+                lineHeight: template?.line_height || 1.8,
+                direction: "rtl",
+                width: "210mm",
+                maxWidth: "100%",
+                margin: "0 auto",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                color: "#000",
+              }}
+              dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
+            />
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowPreview(false)}>
+                تعديل البيانات
+              </Button>
+              <Button onClick={handlePrint} className="gap-2">
+                <Printer className="h-4 w-4" />
+                طباعة
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
