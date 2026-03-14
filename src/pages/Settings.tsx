@@ -1285,6 +1285,109 @@ export default function Settings() {
                 </div>
               )}
             </div>
+
+            {/* Network Backup Section - Electron only */}
+            {isElectron() && networkInfo?.isNetwork && (
+              <div className="bg-card rounded-2xl shadow-card p-6">
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Network className="h-5 w-5 text-primary" />
+                  نسخ احتياطي شبكي
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  حفظ نسخة احتياطية كاملة من جميع البيانات المشتركة على الشبكة في مجلد بتاريخ
+                </p>
+                <div className="flex items-center gap-3 mb-4 p-3 bg-muted/50 rounded-lg text-sm">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                  <span>المسار المشترك: <span className="font-mono text-xs">{networkInfo.sharedPath}</span></span>
+                </div>
+                <Button
+                  className="gap-2"
+                  onClick={handleNetworkBackup}
+                  disabled={isNetworkBackup}
+                >
+                  {isNetworkBackup ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Network className="h-4 w-4" />
+                  )}
+                  نسخ احتياطي شبكي الآن
+                </Button>
+              </div>
+            )}
+
+            {/* Password Management - Electron only */}
+            {isElectron() && (
+              <div className="bg-card rounded-2xl shadow-card p-6">
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  {hasExistingPassword ? <Lock className="h-5 w-5 text-primary" /> : <Unlock className="h-5 w-5 text-muted-foreground" />}
+                  حماية التطبيق بكلمة مرور
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {hasExistingPassword ? "التطبيق محمي بكلمة مرور. يمكنك تغييرها أو إزالتها." : "لم يتم تعيين كلمة مرور بعد."}
+                </p>
+                
+                {!showPasswordSection ? (
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="gap-2" onClick={() => setShowPasswordSection(true)}>
+                      <Lock className="h-4 w-4" />
+                      {hasExistingPassword ? "تغيير كلمة المرور" : "تعيين كلمة مرور"}
+                    </Button>
+                    {hasExistingPassword && (
+                      <Button variant="ghost" className="gap-2 text-destructive" onClick={handleRemovePassword} disabled={isSavingPassword}>
+                        <Unlock className="h-4 w-4" />
+                        إزالة كلمة المرور
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-w-sm">
+                    {hasExistingPassword && (
+                      <div className="space-y-2">
+                        <Label>كلمة المرور الحالية</Label>
+                        <Input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="أدخل كلمة المرور الحالية"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>كلمة المرور الجديدة</Label>
+                      <Input
+                        type="password"
+                        value={newAppPassword}
+                        onChange={(e) => setNewAppPassword(e.target.value)}
+                        placeholder="أدخل كلمة المرور الجديدة"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تأكيد كلمة المرور</Label>
+                      <Input
+                        type="password"
+                        value={confirmAppPassword}
+                        onChange={(e) => setConfirmAppPassword(e.target.value)}
+                        placeholder="أعد إدخال كلمة المرور"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button className="gap-2" onClick={handleChangePassword} disabled={isSavingPassword}>
+                        {isSavingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        حفظ
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setShowPasswordSection(false);
+                        setCurrentPassword("");
+                        setNewAppPassword("");
+                        setConfirmAppPassword("");
+                      }}>
+                        إلغاء
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </TabsContent>
 
