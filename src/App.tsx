@@ -8,6 +8,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Students from "@/pages/Students";
 import PhdStudents from "@/pages/PhdStudents";
+import DefenseStage from "@/pages/DefenseStage";
 import Templates from "@/pages/Templates";
 import PrintCertificates from "@/pages/PrintCertificates";
 import ActivityLog from "@/pages/ActivityLog";
