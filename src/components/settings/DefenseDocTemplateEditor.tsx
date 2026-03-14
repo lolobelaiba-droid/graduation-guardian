@@ -714,6 +714,15 @@ export default function DefenseDocTemplateEditor() {
 
                       <div className="w-px h-5 bg-border mx-1" />
 
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "indent")} title="زيادة المسافة البادئة">
+                        <IndentIncrease className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "outdent")} title="تقليل المسافة البادئة">
+                        <IndentDecrease className="h-4 w-4" />
+                      </Button>
+
+                      <div className="w-px h-5 bg-border mx-1" />
+
                       <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "undo")} title="تراجع">
                         <Undo2 className="h-4 w-4" />
                       </Button>
