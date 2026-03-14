@@ -364,9 +364,23 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
     }
 
     try {
+      // Sanitize empty strings to null for date columns to avoid PostgreSQL "invalid input syntax for type date" errors
+      const dateFields = ['date_of_birth', 'scientific_council_date', 'defense_date', 'decision_date', 'auth_decision_date', 'dean_letter_date'];
+      const sanitized: Record<string, any> = { ...data };
+      for (const key of dateFields) {
+        if (sanitized[key] === '' || sanitized[key] === undefined) {
+          sanitized[key] = null;
+        }
+      }
+      // Also sanitize other optional string fields that might be empty
+      for (const [key, val] of Object.entries(sanitized)) {
+        if (val === '' && key !== 'full_name_ar' && key !== 'birthplace_ar' && key !== 'faculty_ar' && key !== 'branch_ar' && key !== 'specialty_ar' && key !== 'supervisor_ar' && key !== 'jury_president_ar' && key !== 'jury_members_ar' && key !== 'scientific_council_date' && key !== 'date_of_birth') {
+          sanitized[key] = null;
+        }
+      }
       const submitData = {
         id: student.id,
-        ...data,
+        ...sanitized,
         employment_status: employmentStatusAr || null,
         registration_type: registrationTypeAr || null,
         inscription_status: inscriptionStatusAr || null,
