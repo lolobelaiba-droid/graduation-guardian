@@ -348,6 +348,8 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
         signature_title: data.signature_title || null,
         decree_training: data.decree_training,
         decree_accreditation: data.decree_accreditation,
+        decision_number: null,
+        decision_date: null,
       };
 
       if (selectedType === 'phd_lmd') {
