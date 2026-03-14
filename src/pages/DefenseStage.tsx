@@ -233,6 +233,12 @@ export default function DefenseStage() {
                                 تعديل البيانات
                               </DropdownMenuItem>
                               {student.stage_status === 'pending' && (
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'under_review')}>
+                                  <CheckCircle className="h-4 w-4 ml-2" />
+                                  قيد الخبرة
+                                </DropdownMenuItem>
+                              )}
+                              {(student.stage_status === 'pending' || student.stage_status === 'under_review') && (
                                 <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'authorized')}>
                                   <CheckCircle className="h-4 w-4 ml-2" />
                                   ترخيص المناقشة
