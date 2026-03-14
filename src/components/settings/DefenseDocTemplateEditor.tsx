@@ -123,6 +123,7 @@ export default function DefenseDocTemplateEditor() {
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
+  const savedSelectionRef = useRef<Range | null>(null);
 
   useEffect(() => {
     if (templates.length > 0) {
@@ -228,6 +229,16 @@ export default function DefenseDocTemplateEditor() {
     const ref = editorRefs.current[templateId];
     if (!ref) return;
     ref.focus();
+
+    // Restore saved selection if available
+    if (savedSelectionRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+        savedSelectionRef.current = null;
+      }
+    }
 
     let html = '<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">';
 
@@ -544,6 +555,11 @@ export default function DefenseDocTemplateEditor() {
                         size="sm"
                         className="h-8 gap-1 text-xs"
                         onClick={() => {
+                          // Save current selection before dialog steals focus
+                          const sel = window.getSelection();
+                          if (sel && sel.rangeCount > 0) {
+                            savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+                          }
                           setTableDialog({ open: true, templateId: template.id });
                           setTableRows(3);
                           setTableCols(3);
