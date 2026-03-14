@@ -956,8 +956,9 @@ export default function DefenseDocTemplateEditor() {
                           fontFamily: settings.font_family,
                           fontSize: `${settings.font_size}px`,
                           lineHeight: settings.line_height,
-                          paddingRight: `${settings.margin_right}mm`,
+                         paddingRight: `${settings.margin_right}mm`,
                           paddingLeft: `${settings.margin_left}mm`,
+                          textIndent: settings.first_line_indent > 0 ? `${settings.first_line_indent}mm` : undefined,
                         }}
                         onInput={() => handleEditorInput(template.id)}
                         onClick={(e) => handleEditorClick(template.id, e)}
