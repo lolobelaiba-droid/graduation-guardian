@@ -19,6 +19,8 @@ import {
 import {
   useDefenseDocTemplates,
   DEFAULT_VARIABLES,
+  DEFAULT_JURY_TABLE_SETTINGS,
+  type JuryTableSettings,
 } from "@/hooks/useDefenseDocTemplates";
 import { parseJury, type JuryMember } from "@/components/ui/jury-table-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
@@ -170,30 +172,44 @@ export function GenerateDocumentDialog({
   };
 
   const buildJuryTableHtml = (members: JuryMember[]): string => {
-    const thStyle = 'border: 1px solid #333; padding: 8px; text-align: center; background: #f0f0f0; font-weight: bold;';
-    const tdStyle = 'border: 1px solid #333; padding: 8px; text-align: center;';
+    const jts: JuryTableSettings = template?.jury_table_settings
+      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+      : { ...DEFAULT_JURY_TABLE_SETTINGS };
+
+    const thStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; background: ${jts.header_bg}; font-weight: bold; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
+    const tdStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
     
+    // Build visible columns
+    const columns: { key: string; header: string; widthKey: keyof JuryTableSettings }[] = [];
+    if (jts.show_number) columns.push({ key: "number", header: "رقم", widthKey: "col_number_width" });
+    columns.push({ key: "name", header: "الاسم واللقب", widthKey: "col_name_width" });
+    if (jts.show_rank) columns.push({ key: "rank", header: "الرتبة", widthKey: "col_rank_width" });
+    if (jts.show_university) columns.push({ key: "university", header: "مؤسسة الانتماء", widthKey: "col_university_width" });
+    if (jts.show_role) columns.push({ key: "role", header: "الصفة", widthKey: "col_role_width" });
+
     let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
-<thead><tr>
-<th style="${thStyle} width: 6%;">رقم</th>
-<th style="${thStyle} width: 24%;">الاسم واللقب</th>
-<th style="${thStyle} width: 18%;">الرتبة</th>
-<th style="${thStyle} width: 28%;">مؤسسة الانتماء</th>
-<th style="${thStyle} width: 24%;">الصفة</th>
-</tr></thead><tbody>`;
+<thead><tr>`;
+    columns.forEach((col) => {
+      html += `<th style="${thStyle} width: ${jts[col.widthKey]}%;">${col.header}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
 
     members.forEach((m, i) => {
-      const displayName = m.rankAbbreviation 
+      const displayName = jts.include_abbreviation && m.rankAbbreviation 
         ? `${m.rankAbbreviation} ${m.name}`.trim() 
         : m.name;
       const roleLabel = JURY_ROLE_DOC_LABELS[m.role] || m.role;
-      html += `<tr>
-<td style="${tdStyle}">${i + 1}</td>
-<td style="${tdStyle}">${displayName || '&nbsp;'}</td>
-<td style="${tdStyle}">${m.rankLabel || '&nbsp;'}</td>
-<td style="${tdStyle}">${m.university || '&nbsp;'}</td>
-<td style="${tdStyle}">${roleLabel}</td>
-</tr>`;
+      html += `<tr>`;
+      columns.forEach((col) => {
+        let value = '&nbsp;';
+        if (col.key === "number") value = String(i + 1);
+        else if (col.key === "name") value = displayName || '&nbsp;';
+        else if (col.key === "rank") value = m.rankLabel || '&nbsp;';
+        else if (col.key === "university") value = m.university || '&nbsp;';
+        else if (col.key === "role") value = roleLabel;
+        html += `<td style="${tdStyle}">${value}</td>`;
+      });
+      html += `</tr>`;
     });
 
     html += '</tbody></table>';
