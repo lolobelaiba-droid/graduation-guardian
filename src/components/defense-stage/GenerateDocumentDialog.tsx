@@ -92,10 +92,14 @@ export function GenerateDocumentDialog({
 }: GenerateDocumentDialogProps) {
   // For jury_decision: decision_number + decision_date
   // For defense_auth: auth_decision_number + auth_decision_date + dean_letter_number + dean_letter_date
+  // For defense_minutes: minutes_number + defense_time + mention
   const [decisionNumber, setDecisionNumber] = useState("");
   const [decisionDate, setDecisionDate] = useState("");
   const [deanLetterNumber, setDeanLetterNumber] = useState("");
   const [deanLetterDate, setDeanLetterDate] = useState("");
+  const [minutesNumber, setMinutesNumber] = useState("");
+  const [defenseTime, setDefenseTime] = useState("");
+  const [mention, setMention] = useState("مشرف جدا");
   const [showPreview, setShowPreview] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
