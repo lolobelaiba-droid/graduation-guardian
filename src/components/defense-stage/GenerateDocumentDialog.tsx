@@ -184,38 +184,23 @@ export function GenerateDocumentDialog({
       const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
       const fileName = `${docTitle}_${studentName}.pdf`;
 
-      // Create a clone of the content to avoid modifying the preview
-      const element = printRef.current.cloneNode(true) as HTMLElement;
-      
-      // Set explicit styles on the clone for proper rendering
-      element.style.width = "210mm";
-      element.style.padding = `${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm`;
-      element.style.fontFamily = `'${template?.font_family || "IBM Plex Sans Arabic"}', 'IBM Plex Sans Arabic', sans-serif`;
-      element.style.fontSize = `${template?.font_size || 14}px`;
-      element.style.lineHeight = `${template?.line_height || 1.8}`;
-      element.style.direction = "rtl";
-      element.style.color = "#000";
-      element.style.backgroundColor = "#fff";
-      
-      // Append temporarily to body for rendering
-      element.style.position = "fixed";
-      element.style.left = "-9999px";
-      element.style.top = "0";
-      document.body.appendChild(element);
-
       // Wait for fonts to load
       await document.fonts.ready;
 
       const opt = {
-        margin: 0 as number, // margins already applied via padding
+        margin: [
+          template?.margin_top ?? 20,
+          template?.margin_right ?? 15,
+          template?.margin_bottom ?? 20,
+          template?.margin_left ?? 15,
+        ] as [number, number, number, number],
         filename: fileName,
         image: { type: "jpeg" as const, quality: 1.0 },
         html2canvas: {
-          scale: 5,
+          scale: 4,
           useCORS: true,
           letterRendering: true,
           logging: false,
-          windowWidth: 794, // A4 width in px at 96dpi
         },
         jsPDF: {
           unit: "mm" as const,
@@ -224,10 +209,7 @@ export function GenerateDocumentDialog({
         },
       };
 
-      await html2pdf().set(opt).from(element).save();
-      
-      // Cleanup
-      document.body.removeChild(element);
+      await html2pdf().set(opt).from(printRef.current).save();
       toast.success("تم تحميل الوثيقة بنجاح");
     } catch (err) {
       console.error("PDF download error:", err);
