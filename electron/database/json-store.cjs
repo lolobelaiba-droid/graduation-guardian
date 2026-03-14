@@ -206,13 +206,41 @@ function sleepSync(ms) {
 }
 
 // ============================================
+// ذاكرة تخزين مؤقتة للقراءة (Read Cache)
+// ============================================
+
+var READ_CACHE_MS = 2000; // 2 ثانية
+var CACHED_TABLES = [
+  'phd_lmd_certificates', 'phd_science_certificates', 'master_certificates',
+  'phd_lmd_students', 'phd_science_students', 'professors',
+  'certificate_templates', 'certificate_template_fields',
+  'dropdown_options', 'academic_titles', 'custom_fonts'
+];
+var readCache = {}; // { tableName: { data, timestamp } }
+
+function invalidateCache(tableName) {
+  delete readCache[tableName];
+}
+
+function invalidateAllCache() {
+  readCache = {};
+}
+
+// ============================================
 // قراءة وكتابة البيانات (مع قفل الملفات)
 // ============================================
 
 /**
- * قراءة بيانات جدول (مع إعادة القراءة من القرص دائماً في وضع الشبكة)
+ * قراءة بيانات جدول (مع تخزين مؤقت للجداول الكبيرة)
  */
 function readTable(tableName) {
+  // التحقق من الذاكرة المؤقتة
+  if (CACHED_TABLES.indexOf(tableName) !== -1) {
+    var cached = readCache[tableName];
+    if (cached && (Date.now() - cached.timestamp) < READ_CACHE_MS) {
+      return cached.data;
+    }
+  }
   var filePath = getTablePath(tableName);
   if (!fs.existsSync(filePath)) {
     return [];
@@ -220,7 +248,12 @@ function readTable(tableName) {
   try {
     var content = fs.readFileSync(filePath, 'utf8');
     if (!content || content.trim() === '') return [];
-    return JSON.parse(content);
+    var parsed = JSON.parse(content);
+    // حفظ في الذاكرة المؤقتة
+    if (CACHED_TABLES.indexOf(tableName) !== -1) {
+      readCache[tableName] = { data: parsed, timestamp: Date.now() };
+    }
+    return parsed;
   } catch (error) {
     console.error('Error reading table ' + tableName + ':', error);
     // محاولة قراءة من النسخة الاحتياطية
@@ -268,6 +301,8 @@ function writeTable(tableName, data) {
     var tmpPath = filePath + '.tmp.' + process.pid;
     fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
     fs.renameSync(tmpPath, filePath);
+    // تحديث الذاكرة المؤقتة
+    invalidateCache(tableName);
     return true;
   } catch (error) {
     console.error('Error writing table ' + tableName + ':', error);
@@ -461,6 +496,107 @@ function update(tableName, id, updates) {
   
   writeTable(tableName, data);
   return data[index];
+}
+
+// ============================================
+// قفل السجلات (Record Locking) لمنع التعارض
+// ============================================
+
+var RECORD_LOCK_STALE_MS = 60000; // 60 ثانية
+
+function acquireRecordLock(tableName, recordId) {
+  if (!isNetworkMode()) return { acquired: true };
+  
+  var lockDir = path.join(getDataDir(), '.record_locks');
+  if (!fs.existsSync(lockDir)) {
+    fs.mkdirSync(lockDir, { recursive: true });
+  }
+  
+  var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
+  var identity = getDeviceIdentity();
+  var lockData = {
+    hostname: identity.hostname,
+    ip: identity.ip,
+    timestamp: Date.now()
+  };
+  
+  // التحقق من وجود قفل حالي
+  if (fs.existsSync(lockFile)) {
+    try {
+      var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      if (Date.now() - existing.timestamp < RECORD_LOCK_STALE_MS) {
+        // القفل نشط ومن جهاز آخر
+        if (existing.hostname !== identity.hostname || existing.ip !== identity.ip) {
+          return {
+            acquired: false,
+            lockedBy: existing.hostname,
+            lockedByIp: existing.ip
+          };
+        }
+      }
+    } catch (e) {
+      // ملف تالف، تابع
+    }
+  }
+  
+  // إنشاء القفل
+  try {
+    fs.writeFileSync(lockFile, JSON.stringify(lockData), 'utf8');
+    return { acquired: true };
+  } catch (e) {
+    return { acquired: true }; // لا نمنع العمل في حالة الخطأ
+  }
+}
+
+function releaseRecordLock(tableName, recordId) {
+  if (!isNetworkMode()) return;
+  
+  var lockDir = path.join(getDataDir(), '.record_locks');
+  var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
+  
+  try {
+    if (fs.existsSync(lockFile)) {
+      var identity = getDeviceIdentity();
+      var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      // حذف فقط إذا كان القفل لنا
+      if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+        fs.unlinkSync(lockFile);
+      }
+    }
+  } catch (e) {
+    // تجاهل
+  }
+}
+
+function checkRecordLock(tableName, recordId) {
+  if (!isNetworkMode()) return { locked: false };
+  
+  var lockDir = path.join(getDataDir(), '.record_locks');
+  var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
+  
+  if (!fs.existsSync(lockFile)) return { locked: false };
+  
+  try {
+    var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+    var identity = getDeviceIdentity();
+    
+    if (Date.now() - existing.timestamp >= RECORD_LOCK_STALE_MS) {
+      try { fs.unlinkSync(lockFile); } catch (e) {}
+      return { locked: false };
+    }
+    
+    if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+      return { locked: false }; // القفل لنا
+    }
+    
+    return {
+      locked: true,
+      lockedBy: existing.hostname,
+      lockedByIp: existing.ip
+    };
+  } catch (e) {
+    return { locked: false };
+  }
 }
 
 function deleteById(tableName, id) {
@@ -1098,5 +1234,13 @@ module.exports = {
   getCachedFilePath: getCachedFilePath,
   getLocalFileUrl: getLocalFileUrl,
   getCacheDir: getCacheDir,
-  saveLocalFile: saveLocalFile
+  saveLocalFile: saveLocalFile,
+  
+  // قفل السجلات
+  acquireRecordLock: acquireRecordLock,
+  releaseRecordLock: releaseRecordLock,
+  checkRecordLock: checkRecordLock,
+  
+  // إدارة الذاكرة المؤقتة
+  invalidateAllCache: invalidateAllCache
 };

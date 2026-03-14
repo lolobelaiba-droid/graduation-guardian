@@ -472,7 +472,7 @@ export class BackupService {
       }
     }
 
-    console.log(`Rebuilt ${professors.length} professors from certificates`);
+    // professors rebuilt
   }
 
   /**
@@ -500,7 +500,7 @@ export class BackupService {
       await supabase.from('academic_titles').insert(defaultTitles as TablesInsert<'academic_titles'>[]);
     }
 
-    console.log('Rebuilt default academic titles');
+    // academic titles rebuilt
   }
 
   /**

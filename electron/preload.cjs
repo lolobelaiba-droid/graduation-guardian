@@ -95,6 +95,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getNetworkInfo: () =>
       ipcRenderer.invoke('db:getNetworkInfo'),
     
+    // قفل السجلات
+    acquireRecordLock: (tableName, recordId) =>
+      ipcRenderer.invoke('db:acquireRecordLock', tableName, recordId),
+    releaseRecordLock: (tableName, recordId) =>
+      ipcRenderer.invoke('db:releaseRecordLock', tableName, recordId),
+    checkRecordLock: (tableName, recordId) =>
+      ipcRenderer.invoke('db:checkRecordLock', tableName, recordId),
+    
     // التخزين المحلي للملفات (Cache)
     cacheRemoteFile: (remoteUrl, subFolder) =>
       ipcRenderer.invoke('db:cacheRemoteFile', remoteUrl, subFolder),
