@@ -474,8 +474,8 @@ export function CreateCertificateFromPhdDialog({
                 ) : availableStudents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
                     <Search className="h-12 w-12 mb-4 opacity-50" />
-                    <p className="font-medium">لا يوجد طلاب في قاعدة البيانات</p>
-                    <p className="text-sm mt-2">أضف طلاباً من صفحة قاعدة بيانات طلبة الدكتوراه أولاً</p>
+                    <p className="font-medium">لا يوجد طلاب في طور المناقشة</p>
+                    <p className="text-sm mt-2">انقل طلاباً من صفحة "طلبة في طور المناقشة" أولاً</p>
                     <Button 
                       variant="outline" 
                       size="sm" 
