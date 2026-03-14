@@ -145,8 +145,8 @@ export function CreateCertificateFromPhdDialog({
 }: CreateCertificateFromPhdDialogProps) {
   const [selectedType, setSelectedType] = useState<CertificateType>(initialCertificateType);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState<PhdStudent | null>(null);
-  const [pendingStudent, setPendingStudent] = useState<PhdStudent | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<DefenseStageStudent | null>(null);
+  const [pendingStudent, setPendingStudent] = useState<DefenseStageStudent | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showForm, setShowForm] = useState(false);
   
