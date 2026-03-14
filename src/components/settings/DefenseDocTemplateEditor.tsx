@@ -686,7 +686,7 @@ export default function DefenseDocTemplateEditor() {
 
                                   <div>
                                     <Label className="text-xs mb-2 block">عرض الأعمدة (%)</Label>
-                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                                       {[
                                         { key: "col_number_width" as const, label: "رقم" },
                                         { key: "col_name_width" as const, label: "الاسم" },
