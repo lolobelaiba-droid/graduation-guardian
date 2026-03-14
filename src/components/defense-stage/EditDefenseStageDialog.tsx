@@ -246,6 +246,20 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
   const updateLmd = useUpdateDefenseStageLmd();
   const updateScience = useUpdateDefenseStageScience();
 
+  // Record locking
+  const tableName = studentType === 'lmd' ? 'defense_stage_lmd' : 'defense_stage_science';
+  const { isLocked, lockedBy, acquireLock, releaseLock } = useRecordLock(tableName, open ? student?.id ?? null : null);
+
+  useEffect(() => {
+    if (open && student?.id) acquireLock();
+    if (!open) releaseLock();
+  }, [open, student?.id]);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) releaseLock();
+    onOpenChange(newOpen);
+  }, [onOpenChange, releaseLock]);
+
   const { getFrFromAr, getArFromFr } = useFieldDomainSync();
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
