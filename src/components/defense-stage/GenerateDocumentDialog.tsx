@@ -391,6 +391,7 @@ export function GenerateDocumentDialog({
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
       jury_table: buildJuryTableHtml(enrichedJuryMembers),
+      jury_table_with_signature: buildJuryTableHtml(enrichedJuryMembers, true),
       scientific_council_date: formatArabicDocumentDate(student.scientific_council_date),
       defense_date: formatArabicDocumentDate(student.defense_date),
       signature_title: student.signature_title || "",
@@ -399,6 +400,10 @@ export function GenerateDocumentDialog({
       current_year: student.current_year || "",
       decree_training: student.decree_training || "",
       decree_accreditation: student.decree_accreditation || "",
+      minutes_number: minutesNumber.trim() || "......................",
+      minutes_year: new Date().getFullYear().toString(),
+      defense_time: defenseTime.trim() || "......................",
+      mention: mention || "......................",
     };
 
     let content = normalizeDefenseTemplateHtml(template.content, template.document_type);
