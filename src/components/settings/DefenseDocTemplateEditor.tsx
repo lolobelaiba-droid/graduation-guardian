@@ -147,6 +147,10 @@ export default function DefenseDocTemplateEditor() {
           font_family: t.font_family || "IBM Plex Sans Arabic",
           font_size: t.font_size || 14,
           line_height: t.line_height || 1.8,
+          margin_top: t.margin_top ?? 20,
+          margin_bottom: t.margin_bottom ?? 20,
+          margin_right: t.margin_right ?? 15,
+          margin_left: t.margin_left ?? 15,
           custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
           jury_table_settings: t.jury_table_settings || { ...DEFAULT_JURY_TABLE_SETTINGS },
         };
