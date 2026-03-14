@@ -4,8 +4,8 @@ import { formatCertificateDate } from "@/lib/numerals";
 /**
  * تنسيق تواريخ وثائق المناقشة العربية:
  * - توحيد الإدخال إلى dd/MM/yyyy
- * - عزل اتجاه اليونيكود عبر LRI (\u2066) و PDI (\u2069)
- * - تغليف HTML بوسم <bdi dir="ltr"> لضمان عرض يوم/شهر/سنة بالترتيب الصحيح
+ * - عزل اتجاه اليونيكود عبر RLI (\u2067) و PDI (\u2069)
+ * - تغليف التاريخ بوسم <bdi> لضمان العزل داخل النص العربي
  */
 function formatArabicDocumentDate(dateStr: string | null | undefined, placeholder = ""): string {
   const raw = dateStr?.trim();
@@ -28,14 +28,14 @@ function formatArabicDocumentDate(dateStr: string | null | undefined, placeholde
   } else {
     const normalized = formatCertificateDate(raw, true);
     const normalizedMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!normalizedMatch) return `\u2066${normalized}\u2069`;
+    if (!normalizedMatch) return `\u2067<bdi>${normalized}</bdi>\u2069`;
     day = normalizedMatch[1]; month = normalizedMatch[2]; year = normalizedMatch[3];
   }
 
-  // dd/MM/yyyy بالترتيب المنطقي الصحيح
+  // ترتيب منطقي ثابت: يوم/شهر/سنة
   const dateFormatted = `${day}/${month}/${year}`;
-  // LRI + <bdi dir="ltr"> لعزل الاتجاه داخل النص العربي + PDI للإغلاق
-  return `\u2066<bdi dir="ltr">${dateFormatted}</bdi>\u2069`;
+  // RLI + BDI + PDI لعزل الاتجاه داخل الجملة العربية
+  return `\u2067<bdi>${dateFormatted}</bdi>\u2069`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
