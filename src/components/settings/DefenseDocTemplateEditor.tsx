@@ -17,6 +17,8 @@ import {
   AlignJustify,
   Undo2,
   Redo2,
+  IndentIncrease,
+  IndentDecrease,
   Eye,
   EyeOff,
   Plus,
@@ -105,6 +107,7 @@ interface LocalSettings {
   margin_bottom: number;
   margin_right: number;
   margin_left: number;
+  first_line_indent: number;
   custom_variables: CustomVariable[];
   jury_table_settings: JuryTableSettings;
 }
@@ -153,6 +156,7 @@ export default function DefenseDocTemplateEditor() {
           margin_bottom: t.margin_bottom ?? 20,
           margin_right: t.margin_right ?? 15,
           margin_left: t.margin_left ?? 15,
+          first_line_indent: 0,
           custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
           jury_table_settings: t.jury_table_settings || { ...DEFAULT_JURY_TABLE_SETTINGS },
         };
@@ -711,6 +715,15 @@ export default function DefenseDocTemplateEditor() {
 
                       <div className="w-px h-5 bg-border mx-1" />
 
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "indent")} title="زيادة المسافة البادئة">
+                        <IndentIncrease className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "outdent")} title="تقليل المسافة البادئة">
+                        <IndentDecrease className="h-4 w-4" />
+                      </Button>
+
+                      <div className="w-px h-5 bg-border mx-1" />
+
                       <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "undo")} title="تراجع">
                         <Undo2 className="h-4 w-4" />
                       </Button>
@@ -896,8 +909,10 @@ export default function DefenseDocTemplateEditor() {
                         pageWidthMm={210}
                         marginRight={settings.margin_right}
                         marginLeft={settings.margin_left}
+                        firstLineIndent={settings.first_line_indent}
                         onMarginRightChange={(val) => updateLocal(template.id, "margin_right", val)}
                         onMarginLeftChange={(val) => updateLocal(template.id, "margin_left", val)}
+                        onFirstLineIndentChange={(val) => updateLocal(template.id, "first_line_indent", val)}
                         dir="rtl"
                       />
                     </div>
@@ -916,8 +931,9 @@ export default function DefenseDocTemplateEditor() {
                           margin: "0 auto",
                           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
                           color: "#000",
-                          paddingRight: `${settings.margin_right}mm`,
+                         paddingRight: `${settings.margin_right}mm`,
                           paddingLeft: `${settings.margin_left}mm`,
+                          textIndent: settings.first_line_indent > 0 ? `${settings.first_line_indent}mm` : undefined,
                         }}
                         dangerouslySetInnerHTML={{
                           __html: settings.content.replace(
@@ -941,8 +957,9 @@ export default function DefenseDocTemplateEditor() {
                           fontFamily: settings.font_family,
                           fontSize: `${settings.font_size}px`,
                           lineHeight: settings.line_height,
-                          paddingRight: `${settings.margin_right}mm`,
+                         paddingRight: `${settings.margin_right}mm`,
                           paddingLeft: `${settings.margin_left}mm`,
+                          textIndent: settings.first_line_indent > 0 ? `${settings.first_line_indent}mm` : undefined,
                         }}
                         onInput={() => handleEditorInput(template.id)}
                         onClick={(e) => handleEditorClick(template.id, e)}
