@@ -26,7 +26,7 @@ function formatArabicDocumentDate(dateStr: string | null | undefined, placeholde
     formatted = formatCertificateDate(raw, true);
   }
 
-  return `<span dir="ltr" style="display:inline-block;direction:ltr;unicode-bidi:isolate">${formatted}</span>`;
+  return `<bdi dir="ltr" style="white-space:nowrap">${formatted}</bdi>`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
