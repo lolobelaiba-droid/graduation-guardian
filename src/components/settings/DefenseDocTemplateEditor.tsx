@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { normalizeDefenseTemplateHtml } from "@/lib/defenseTemplateHtml";
 import {
   useDefenseDocTemplates,
   useUpdateDefenseDocTemplate,
