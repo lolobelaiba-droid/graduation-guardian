@@ -391,31 +391,32 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
 
               <SectionHeader title="لجنة المناقشة" />
 
-              {/* Supervisor Table */}
+              {/* Supervisor Table (read-only display) */}
               <SupervisorTableInput
-                supervisorAr={selectedStudent?.supervisor_ar || ''}
+                supervisorValue={selectedStudent?.supervisor_ar || ''}
                 supervisorUniversity={selectedStudent?.supervisor_university || ''}
-                coSupervisorAr={selectedStudent?.co_supervisor_ar || ''}
+                coSupervisorValue={selectedStudent?.co_supervisor_ar || ''}
                 coSupervisorUniversity={selectedStudent?.co_supervisor_university || ''}
-                onSupervisorArChange={() => {}}
-                onSupervisorUniversityChange={() => {}}
-                onCoSupervisorArChange={() => {}}
-                onCoSupervisorUniversityChange={() => {}}
-                disabled={true}
+                onSupervisorChange={() => {}}
+                onCoSupervisorChange={() => {}}
+                nameSuggestions={professorNames}
+                universitySuggestions={universityNames}
               />
 
               {/* Jury Table */}
               <JuryTableInput
-                juryPresidentAr={form.watch('jury_president_ar')}
-                juryPresidentFr={form.watch('jury_president_fr') || ''}
-                juryMembersAr={form.watch('jury_members_ar')}
-                juryMembersFr={form.watch('jury_members_fr') || ''}
-                onPresidentArChange={(v) => form.setValue('jury_president_ar', v)}
-                onPresidentFrChange={(v) => form.setValue('jury_president_fr', v)}
-                onMembersArChange={(v) => form.setValue('jury_members_ar', v)}
-                onMembersFrChange={(v) => form.setValue('jury_members_fr', v)}
+                presidentValue={form.watch('jury_president_ar')}
+                membersValue={form.watch('jury_members_ar')}
+                onChange={(president, members) => {
+                  form.setValue('jury_president_ar', president);
+                  form.setValue('jury_members_ar', members);
+                }}
                 supervisorAr={selectedStudent?.supervisor_ar || ''}
+                supervisorUniversity={selectedStudent?.supervisor_university || ''}
                 coSupervisorAr={selectedStudent?.co_supervisor_ar || ''}
+                coSupervisorUniversity={selectedStudent?.co_supervisor_university || ''}
+                nameSuggestions={professorNames}
+                universitySuggestions={universityNames}
               />
 
               <div className="grid grid-cols-2 gap-4">
