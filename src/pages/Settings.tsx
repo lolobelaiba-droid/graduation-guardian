@@ -1173,6 +1173,11 @@ export default function Settings() {
           <TemplatePrintSettings />
         </TabsContent>
 
+        {/* Defense Document Templates Tab */}
+        <TabsContent value="defensedocs">
+          <DefenseDocTemplateEditor />
+        </TabsContent>
+
         {/* Custom Fields Tab - Last after Print Settings */}
         <TabsContent value="customfields">
           <CustomFieldsManager />
