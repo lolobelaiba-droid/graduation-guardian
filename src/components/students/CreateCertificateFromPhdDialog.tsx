@@ -414,7 +414,7 @@ export function CreateCertificateFromPhdDialog({
           </DialogTitle>
           <DialogDescription>
             {!showForm 
-              ? "ابحث عن طالب من قاعدة بيانات طلبة الدكتوراه لإنشاء شهادة جديدة" 
+              ? "اختر طالباً من طور المناقشة لإنشاء شهادة جديدة" 
               : "أكمل البيانات المطلوبة لإصدار الشهادة"
             }
           </DialogDescription>
