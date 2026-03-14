@@ -65,7 +65,7 @@ export default function DefenseStage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [docGenTarget, setDocGenTarget] = useState<{
     student: DefenseStageStudent;
-    documentType: "jury_decision" | "defense_auth";
+    documentType: "jury_decision" | "defense_auth" | "defense_minutes";
   } | null>(null);
   const [editTarget, setEditTarget] = useState<DefenseStageStudent | null>(null);
 
