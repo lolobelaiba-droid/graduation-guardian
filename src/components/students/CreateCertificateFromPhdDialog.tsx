@@ -258,7 +258,7 @@ export function CreateCertificateFromPhdDialog({
   });
 
   // Show confirmation dialog before selecting student
-  const handleStudentClick = (student: PhdStudent) => {
+  const handleStudentClick = (student: DefenseStageStudent) => {
     setPendingStudent(student);
     setShowConfirmDialog(true);
   };
