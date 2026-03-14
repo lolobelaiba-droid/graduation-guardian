@@ -49,7 +49,8 @@ import {
   useUpdateDefenseStageScience,
 } from "@/hooks/useDefenseStage";
 import { StartDefenseProcedureDialog } from "@/components/defense-stage/StartDefenseProcedureDialog";
-import type { DefenseStageStudent, DefenseStageStatus } from "@/types/defense-stage";
+import { GenerateDocumentDialog } from "@/components/defense-stage/GenerateDocumentDialog";
+import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 
 const ITEMS_PER_PAGE = 15;
