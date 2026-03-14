@@ -144,6 +144,7 @@ export default function DefenseDocTemplateEditor() {
           font_size: t.font_size || 14,
           line_height: t.line_height || 1.8,
           custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
+          jury_table_settings: t.jury_table_settings || { ...DEFAULT_JURY_TABLE_SETTINGS },
         };
       });
       setLocalSettings(initial);
