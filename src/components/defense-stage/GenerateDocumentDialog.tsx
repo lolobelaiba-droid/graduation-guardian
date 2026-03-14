@@ -87,14 +87,25 @@ export function GenerateDocumentDialog({
     }
   }, [open, student, isJuryDecision]);
 
+  // For defense_auth: also load jury decision data
+  const [juryDecisionNumber, setJuryDecisionNumber] = useState("");
+  const [juryDecisionDate, setJuryDecisionDate] = useState("");
+
+  useEffect(() => {
+    if (open && student && !isJuryDecision) {
+      setJuryDecisionNumber(student.decision_number || "");
+      setJuryDecisionDate(student.decision_date || "");
+    }
+  }, [open, student, isJuryDecision]);
+
   const handleGenerate = async () => {
     if (!isJuryDecision) {
-      if (!decisionNumber.trim()) {
-        toast.error("يرجى إدخال رقم المقرر");
+      if (!juryDecisionNumber.trim()) {
+        toast.error("يرجى إدخال رقم مقرر اللجنة");
         return;
       }
-      if (!decisionDate.trim()) {
-        toast.error("يرجى إدخال تاريخ المقرر");
+      if (!juryDecisionDate.trim()) {
+        toast.error("يرجى إدخال تاريخ مقرر اللجنة");
         return;
       }
       if (!deanLetterNumber.trim()) {
