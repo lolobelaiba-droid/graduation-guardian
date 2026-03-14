@@ -22,6 +22,7 @@ export interface JuryTableSettings {
   col_rank_width: number;
   col_university_width: number;
   col_role_width: number;
+  col_signature_width: number;
 }
 
 export const DEFAULT_JURY_TABLE_SETTINGS: JuryTableSettings = {
