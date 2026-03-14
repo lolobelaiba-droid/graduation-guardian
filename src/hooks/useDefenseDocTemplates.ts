@@ -28,10 +28,15 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 
 // Default placeholder variables for defense documents
 export const DEFAULT_VARIABLES: CustomVariable[] = [
-  { key: "decision_number", label: "رقم المقرر" },
-  { key: "decision_date", label: "تاريخ المقرر" },
+  { key: "decision_number", label: "رقم مقرر اللجنة" },
+  { key: "decision_date", label: "تاريخ مقرر اللجنة" },
+  { key: "auth_decision_number", label: "رقم مقرر الترخيص" },
+  { key: "auth_decision_date", label: "تاريخ مقرر الترخيص" },
+  { key: "dean_letter_number", label: "رقم إرسال العميد" },
+  { key: "dean_letter_date", label: "تاريخ إرسال العميد" },
   { key: "full_name_ar", label: "الاسم الكامل (عربي)" },
   { key: "full_name_fr", label: "الاسم الكامل (فرنسي)" },
+  { key: "gender", label: "الجنس" },
   { key: "date_of_birth", label: "تاريخ الميلاد" },
   { key: "birthplace_ar", label: "مكان الميلاد" },
   { key: "province", label: "الولاية" },

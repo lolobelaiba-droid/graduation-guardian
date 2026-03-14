@@ -350,6 +350,10 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
         decree_accreditation: data.decree_accreditation,
         decision_number: null,
         decision_date: null,
+        auth_decision_number: null,
+        auth_decision_date: null,
+        dean_letter_number: null,
+        dean_letter_date: null,
       };
 
       if (selectedType === 'phd_lmd') {
