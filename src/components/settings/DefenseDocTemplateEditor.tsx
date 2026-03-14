@@ -338,6 +338,10 @@ export default function DefenseDocTemplateEditor() {
         font_family: settings.font_family,
         font_size: settings.font_size,
         line_height: settings.line_height,
+        margin_top: settings.margin_top,
+        margin_bottom: settings.margin_bottom,
+        margin_right: settings.margin_right,
+        margin_left: settings.margin_left,
         custom_variables: settings.custom_variables,
         jury_table_settings: settings.jury_table_settings,
       } as any);
