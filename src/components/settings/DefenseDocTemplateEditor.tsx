@@ -555,6 +555,11 @@ export default function DefenseDocTemplateEditor() {
                         size="sm"
                         className="h-8 gap-1 text-xs"
                         onClick={() => {
+                          // Save current selection before dialog steals focus
+                          const sel = window.getSelection();
+                          if (sel && sel.rangeCount > 0) {
+                            savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+                          }
                           setTableDialog({ open: true, templateId: template.id });
                           setTableRows(3);
                           setTableCols(3);
