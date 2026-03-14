@@ -304,6 +304,13 @@ export default function DefenseStage() {
         documentType={docGenTarget?.documentType || "jury_decision"}
       />
 
+      <EditDefenseStageDialog
+        open={!!editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+        student={editTarget}
+        studentType={activeTab as DefenseStageType}
+      />
+
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
