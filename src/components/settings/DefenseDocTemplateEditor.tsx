@@ -890,6 +890,18 @@ export default function DefenseDocTemplateEditor() {
                       </Button>
                     </div>
 
+                    {/* Ruler */}
+                    <div style={{ width: "210mm", maxWidth: "100%", margin: "0 auto" }}>
+                      <EditorRuler
+                        pageWidthMm={210}
+                        marginRight={settings.margin_right}
+                        marginLeft={settings.margin_left}
+                        onMarginRightChange={(val) => updateLocal(template.id, "margin_right", val)}
+                        onMarginLeftChange={(val) => updateLocal(template.id, "margin_left", val)}
+                        dir="rtl"
+                      />
+                    </div>
+
                     {/* Editor / Preview */}
                     {isPreview ? (
                       <div
@@ -904,6 +916,8 @@ export default function DefenseDocTemplateEditor() {
                           margin: "0 auto",
                           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
                           color: "#000",
+                          paddingRight: `${settings.margin_right}mm`,
+                          paddingLeft: `${settings.margin_left}mm`,
                         }}
                         dangerouslySetInnerHTML={{
                           __html: settings.content.replace(
@@ -927,6 +941,8 @@ export default function DefenseDocTemplateEditor() {
                           fontFamily: settings.font_family,
                           fontSize: `${settings.font_size}px`,
                           lineHeight: settings.line_height,
+                          paddingRight: `${settings.margin_right}mm`,
+                          paddingLeft: `${settings.margin_left}mm`,
                         }}
                         onInput={() => handleEditorInput(template.id)}
                         onClick={(e) => handleEditorClick(template.id, e)}
