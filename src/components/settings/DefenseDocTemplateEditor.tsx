@@ -58,10 +58,14 @@ import {
   useDefenseDocTemplates,
   useUpdateDefenseDocTemplate,
   DEFAULT_VARIABLES,
+  DEFAULT_JURY_TABLE_SETTINGS,
   getTemplateVariables,
   type DefenseDocTemplate,
   type CustomVariable,
+  type JuryTableSettings,
 } from "@/hooks/useDefenseDocTemplates";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 const FONT_OPTIONS = [
   "IBM Plex Sans Arabic",
