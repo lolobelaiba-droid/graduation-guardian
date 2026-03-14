@@ -500,6 +500,28 @@ export default function DefenseDocTemplateEditor() {
                       </div>
                     </div>
 
+                    {/* Page Margins */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[
+                        { key: "margin_top" as const, label: "الهامش العلوي (mm)" },
+                        { key: "margin_bottom" as const, label: "الهامش السفلي (mm)" },
+                        { key: "margin_right" as const, label: "الهامش الأيمن (mm)" },
+                        { key: "margin_left" as const, label: "الهامش الأيسر (mm)" },
+                      ].map((m) => (
+                        <div key={m.key} className="space-y-2">
+                          <Label className="text-xs">{m.label}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={50}
+                            value={settings[m.key]}
+                            onChange={(e) => updateLocal(template.id, m.key, parseFloat(e.target.value) || 0)}
+                            className="h-9"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
                     {/* Jury Table Settings */}
                     {(template.document_type.startsWith("jury_decision") || template.document_type.startsWith("defense_auth")) && (
                       <Collapsible>
