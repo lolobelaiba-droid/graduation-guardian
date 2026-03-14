@@ -253,6 +253,9 @@ export default function Settings() {
           case "app_password_hash":
             if (setting.value) setHasExistingPassword(true);
             break;
+          case "auto_logout_minutes":
+            if (setting.value) setAutoLogoutMinutes(setting.value);
+            break;
         }
       });
     };
