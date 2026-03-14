@@ -149,6 +149,12 @@ export function GenerateDocumentDialog({
   }, [open, student, isJuryDecision, isDefenseMinutes]);
 
   const handleGenerate = async () => {
+    if (isDefenseMinutes) {
+      // Defense minutes: just show preview, no DB updates needed
+      if (!student) return;
+      setShowPreview(true);
+      return;
+    }
     if (!isJuryDecision) {
       if (!juryDecisionNumber.trim()) {
         toast.error("يرجى إدخال رقم مقرر اللجنة");
@@ -176,7 +182,6 @@ export function GenerateDocumentDialog({
       if (isJuryDecision) {
         updateData.decision_number = decisionNumber.trim();
         updateData.decision_date = decisionDate.trim();
-        // Auto-update status to 'under_review' (قيد الخبرة) when jury decision is generated
         updateData.stage_status = 'under_review';
       } else {
         updateData.decision_number = juryDecisionNumber.trim();
@@ -185,7 +190,6 @@ export function GenerateDocumentDialog({
         updateData.auth_decision_date = decisionDate.trim();
         updateData.dean_letter_number = deanLetterNumber.trim();
         updateData.dean_letter_date = deanLetterDate.trim();
-        // Auto-update status to 'defended' (انتهت إجراءات المناقشة) when defense auth is generated
         updateData.stage_status = 'defended';
       }
 
