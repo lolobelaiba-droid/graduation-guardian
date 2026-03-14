@@ -228,6 +228,19 @@ export default function ActivityLog() {
                           {activity.created_at ? formatDate(activity.created_at) : "-"}
                         </TableCell>
                         <TableCell>{activity.created_by || "-"}</TableCell>
+                        <TableCell className="text-sm">
+                          {activity.device_hostname ? (
+                            <div className="flex items-center gap-1.5">
+                              <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                              <div>
+                                <p className="text-foreground text-xs font-medium">{activity.device_hostname}</p>
+                                <p className="text-muted-foreground text-xs">{activity.device_ip || ""}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
