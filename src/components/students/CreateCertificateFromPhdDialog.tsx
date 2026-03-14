@@ -308,11 +308,7 @@ export function CreateCertificateFromPhdDialog({
       province: pendingStudent.province || 'أم البواقي',
       signature_title: pendingStudent.signature_title || getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
       scientific_council_date: pendingStudent.scientific_council_date || '',
-      jury_members_ar: '',
-      jury_members_fr: '',
-      province: 'أم البواقي',
-      signature_title: getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
-      scientific_council_date: '',
+      // PhD reference data preserved
       // PhD reference data preserved
       registration_number: pendingStudent.registration_number || '',
       employment_status: pendingStudent.employment_status || '',
