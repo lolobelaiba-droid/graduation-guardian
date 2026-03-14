@@ -1,15 +1,32 @@
 import { useState, useRef, useEffect } from "react";
+import { formatCertificateDate } from "@/lib/numerals";
 
-/** Format ISO date (YYYY-MM-DD) to DD/MM/YYYY wrapped in RTL span for Arabic documents */
-function formatIsoDateToDDMMYYYY(dateStr: string | null | undefined): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = String(d.getFullYear());
-  // Wrap in a span with dir="ltr" inside RTL context to keep digit order correct
-  return `<span dir="ltr" style="display:inline-block;direction:ltr;unicode-bidi:embed">${day}/${month}/${year}</span>`;
+/**
+ * Format document dates like certificate birth date (DD/MM/YYYY)
+ * and enforce RTL visual rendering in Arabic templates.
+ */
+function formatArabicDocumentDate(dateStr: string | null | undefined, placeholder = ""): string {
+  const raw = dateStr?.trim();
+  if (!raw) return placeholder;
+
+  let formatted = raw;
+
+  // Common persisted formats
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const ymdSlashMatch = raw.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+  const dmySlashMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+  if (isoMatch) {
+    formatted = `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+  } else if (ymdSlashMatch) {
+    formatted = `${ymdSlashMatch[3]}/${ymdSlashMatch[2]}/${ymdSlashMatch[1]}`;
+  } else if (dmySlashMatch) {
+    formatted = `${dmySlashMatch[1]}/${dmySlashMatch[2]}/${dmySlashMatch[3]}`;
+  } else {
+    formatted = formatCertificateDate(raw, true);
+  }
+
+  return `<span dir="rtl" style="display:inline-block;direction:rtl;unicode-bidi:isolate-override">${formatted}</span>`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
