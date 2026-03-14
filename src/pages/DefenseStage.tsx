@@ -213,6 +213,14 @@ export default function DefenseStage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setDocGenTarget({ student, documentType: "jury_decision" })}>
+                                <FilePlus className="h-4 w-4 ml-2" />
+                                توليد مقرر تعيين اللجنة
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDocGenTarget({ student, documentType: "defense_auth" })}>
+                                <FileText className="h-4 w-4 ml-2" />
+                                توليد ترخيص المناقشة
+                              </DropdownMenuItem>
                               {student.stage_status === 'pending' && (
                                 <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'authorized')}>
                                   <CheckCircle className="h-4 w-4 ml-2" />
@@ -220,7 +228,7 @@ export default function DefenseStage() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'defended')}>
-                                <FileText className="h-4 w-4 ml-2" />
+                                <CheckCircle className="h-4 w-4 ml-2" />
                                 تمت المناقشة
                               </DropdownMenuItem>
                               <DropdownMenuItem
