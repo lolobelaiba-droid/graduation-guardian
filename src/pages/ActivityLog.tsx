@@ -10,6 +10,7 @@ import {
   Calendar,
   Loader2,
   RefreshCw,
+  Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,13 +188,14 @@ export default function ActivityLog() {
                   <TableHead className="text-right font-semibold">المعرّف</TableHead>
                   <TableHead className="text-right font-semibold">التاريخ</TableHead>
                   <TableHead className="text-right font-semibold">المستخدم</TableHead>
+                  <TableHead className="text-right font-semibold">الجهاز</TableHead>
                   <TableHead className="text-right font-semibold w-20">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredActivities.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       لا توجد أنشطة مسجلة
                     </TableCell>
                   </TableRow>
@@ -226,6 +228,19 @@ export default function ActivityLog() {
                           {activity.created_at ? formatDate(activity.created_at) : "-"}
                         </TableCell>
                         <TableCell>{activity.created_by || "-"}</TableCell>
+                        <TableCell className="text-sm">
+                          {activity.device_hostname ? (
+                            <div className="flex items-center gap-1.5">
+                              <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                              <div>
+                                <p className="text-foreground text-xs font-medium">{activity.device_hostname}</p>
+                                <p className="text-muted-foreground text-xs">{activity.device_ip || ""}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -334,6 +349,22 @@ export default function ActivityLog() {
                           </p>
                         </div>
                       </div>
+                      {(selectedActivity.device_hostname || selectedActivity.device_ip) && (
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                          <div>
+                            <span className="text-sm font-medium text-foreground">اسم الجهاز:</span>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {selectedActivity.device_hostname || "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-foreground">عنوان IP:</span>
+                            <p className="text-sm text-muted-foreground font-mono mt-1">
+                              {selectedActivity.device_ip || "-"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </>
                   );
                 })()}

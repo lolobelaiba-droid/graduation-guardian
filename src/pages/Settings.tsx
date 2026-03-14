@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
   Building2,
@@ -16,6 +16,9 @@ import {
   Settings2,
   FolderOpen,
   FileText,
+  Network,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
@@ -48,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { BackupService, type BackupData } from "@/lib/database/backup-service";
+import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { toast } from "sonner";
 
 interface BackupSummary {
@@ -91,6 +95,16 @@ export default function Settings() {
   const [restoreProgress, setRestoreProgress] = useState<{ step: string; current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [isNetworkBackup, setIsNetworkBackup] = useState(false);
+  const { data: networkInfo } = useNetworkInfo();
+
+  // Password management
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newAppPassword, setNewAppPassword] = useState("");
+  const [confirmAppPassword, setConfirmAppPassword] = useState("");
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [hasExistingPassword, setHasExistingPassword] = useState(false);
 
   // Selective restore state
   const [selectedRestoreGroups, setSelectedRestoreGroups] = useState<Record<string, boolean>>({});
@@ -232,6 +246,9 @@ export default function Settings() {
             break;
           case "backup_count":
             if (setting.value) setBackupCount(setting.value);
+            break;
+          case "app_password_hash":
+            if (setting.value) setHasExistingPassword(true);
             break;
         }
       });
@@ -679,6 +696,109 @@ export default function Settings() {
     return formatted;
   };
 
+  // Network-wide backup
+  const handleNetworkBackup = async () => {
+    if (!isElectron()) return;
+    setIsNetworkBackup(true);
+    try {
+      const db = getDbClient()!;
+      const maxCount = parseInt(backupCount) || 10;
+      const result = await db.saveBackupToFolder(maxCount);
+      if (result.success) {
+        toast.success("تم حفظ النسخة الاحتياطية الشبكية بنجاح");
+      } else {
+        throw new Error(result.error || "فشل الحفظ");
+      }
+    } catch (error) {
+      console.error("Network backup error:", error);
+      toast.error("حدث خطأ أثناء النسخ الاحتياطي الشبكي");
+    } finally {
+      setIsNetworkBackup(false);
+    }
+  };
+
+  // Password management
+  const hashPasswordLocal = async (password: string, salt: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(salt + password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+
+  const handleChangePassword = async () => {
+    if (!isElectron()) return;
+    
+    if (hasExistingPassword && !currentPassword.trim()) {
+      toast.error("يرجى إدخال كلمة المرور الحالية");
+      return;
+    }
+    if (!newAppPassword.trim() || newAppPassword.length < 4) {
+      toast.error("كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل");
+      return;
+    }
+    if (newAppPassword !== confirmAppPassword) {
+      toast.error("كلمتا المرور غير متطابقتين");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      const db = getDbClient()!;
+
+      // تحقق من كلمة المرور الحالية إذا كانت موجودة
+      if (hasExistingPassword) {
+        const saltResult = await db.getSetting("app_password_salt");
+        const hashResult = await db.getSetting("app_password_hash");
+        const salt = (saltResult?.data as any)?.value || "";
+        const storedHash = (hashResult?.data as any)?.value || "";
+        const inputHash = await hashPasswordLocal(currentPassword, salt);
+        if (inputHash !== storedHash) {
+          toast.error("كلمة المرور الحالية غير صحيحة");
+          setIsSavingPassword(false);
+          return;
+        }
+      }
+
+      // تعيين كلمة المرور الجديدة
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      const newSalt = Array.from(array).map((b) => b.toString(16).padStart(2, "0")).join("");
+      const newHash = await hashPasswordLocal(newAppPassword, newSalt);
+
+      await db.setSetting("app_password_salt", newSalt);
+      await db.setSetting("app_password_hash", newHash);
+
+      setHasExistingPassword(true);
+      setCurrentPassword("");
+      setNewAppPassword("");
+      setConfirmAppPassword("");
+      setShowPasswordSection(false);
+      toast.success("تم تغيير كلمة المرور بنجاح");
+    } catch (e) {
+      console.error("Change password error:", e);
+      toast.error("حدث خطأ أثناء تغيير كلمة المرور");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
+  const handleRemovePassword = async () => {
+    if (!isElectron()) return;
+    setIsSavingPassword(true);
+    try {
+      const db = getDbClient()!;
+      await db.setSetting("app_password_hash", "");
+      await db.setSetting("app_password_salt", "");
+      setHasExistingPassword(false);
+      setShowPasswordSection(false);
+      toast.success("تم إزالة كلمة المرور");
+    } catch (e) {
+      toast.error("حدث خطأ");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -1165,6 +1285,109 @@ export default function Settings() {
                 </div>
               )}
             </div>
+
+            {/* Network Backup Section - Electron only */}
+            {isElectron() && networkInfo?.isNetwork && (
+              <div className="bg-card rounded-2xl shadow-card p-6">
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Network className="h-5 w-5 text-primary" />
+                  نسخ احتياطي شبكي
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  حفظ نسخة احتياطية كاملة من جميع البيانات المشتركة على الشبكة في مجلد بتاريخ
+                </p>
+                <div className="flex items-center gap-3 mb-4 p-3 bg-muted/50 rounded-lg text-sm">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                  <span>المسار المشترك: <span className="font-mono text-xs">{networkInfo.sharedPath}</span></span>
+                </div>
+                <Button
+                  className="gap-2"
+                  onClick={handleNetworkBackup}
+                  disabled={isNetworkBackup}
+                >
+                  {isNetworkBackup ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Network className="h-4 w-4" />
+                  )}
+                  نسخ احتياطي شبكي الآن
+                </Button>
+              </div>
+            )}
+
+            {/* Password Management - Electron only */}
+            {isElectron() && (
+              <div className="bg-card rounded-2xl shadow-card p-6">
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  {hasExistingPassword ? <Lock className="h-5 w-5 text-primary" /> : <Unlock className="h-5 w-5 text-muted-foreground" />}
+                  حماية التطبيق بكلمة مرور
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {hasExistingPassword ? "التطبيق محمي بكلمة مرور. يمكنك تغييرها أو إزالتها." : "لم يتم تعيين كلمة مرور بعد."}
+                </p>
+                
+                {!showPasswordSection ? (
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="gap-2" onClick={() => setShowPasswordSection(true)}>
+                      <Lock className="h-4 w-4" />
+                      {hasExistingPassword ? "تغيير كلمة المرور" : "تعيين كلمة مرور"}
+                    </Button>
+                    {hasExistingPassword && (
+                      <Button variant="ghost" className="gap-2 text-destructive" onClick={handleRemovePassword} disabled={isSavingPassword}>
+                        <Unlock className="h-4 w-4" />
+                        إزالة كلمة المرور
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-w-sm">
+                    {hasExistingPassword && (
+                      <div className="space-y-2">
+                        <Label>كلمة المرور الحالية</Label>
+                        <Input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="أدخل كلمة المرور الحالية"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>كلمة المرور الجديدة</Label>
+                      <Input
+                        type="password"
+                        value={newAppPassword}
+                        onChange={(e) => setNewAppPassword(e.target.value)}
+                        placeholder="أدخل كلمة المرور الجديدة"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تأكيد كلمة المرور</Label>
+                      <Input
+                        type="password"
+                        value={confirmAppPassword}
+                        onChange={(e) => setConfirmAppPassword(e.target.value)}
+                        placeholder="أعد إدخال كلمة المرور"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button className="gap-2" onClick={handleChangePassword} disabled={isSavingPassword}>
+                        {isSavingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        حفظ
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setShowPasswordSection(false);
+                        setCurrentPassword("");
+                        setNewAppPassword("");
+                        setConfirmAppPassword("");
+                      }}>
+                        إلغاء
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </TabsContent>
 

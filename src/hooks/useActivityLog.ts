@@ -22,6 +22,8 @@ export interface ActivityLog {
   entity_type: string | null;
   created_by: string;
   created_at: string;
+  device_hostname?: string;
+  device_ip?: string;
 }
 
 export function useActivityLog(limit?: number) {
