@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
   Building2,
