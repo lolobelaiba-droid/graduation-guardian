@@ -559,7 +559,7 @@ export default function DefenseDocTemplateEditor() {
                     </div>
 
                     {/* Jury Table Settings */}
-                    {(template.document_type.startsWith("jury_decision") || template.document_type.startsWith("defense_auth")) && (
+                    {(template.document_type.startsWith("jury_decision") || template.document_type.startsWith("defense_auth") || template.document_type.startsWith("defense_minutes")) && (
                       <Collapsible>
                         <CollapsibleTrigger asChild>
                           <Button variant="outline" className="w-full justify-between gap-2 h-10">
