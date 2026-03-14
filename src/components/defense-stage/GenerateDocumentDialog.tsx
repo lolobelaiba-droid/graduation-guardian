@@ -116,6 +116,7 @@ export function GenerateDocumentDialog({
   const template = templates.find((t) => t.document_type === fullDocType);
 
   const isJuryDecision = documentType === "jury_decision";
+  const isDefenseMinutes = documentType === "defense_minutes";
 
   useEffect(() => {
     if (open && student) {
