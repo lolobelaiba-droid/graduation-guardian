@@ -547,9 +547,10 @@ html.theme-slate {
 .defense-doc-editor p {
   margin: 0;
   padding: 0;
-  text-indent: inherit;
+  text-indent: 0;
 }
 .defense-doc-editor blockquote {
-  margin-inline-start: 2em;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
   border: none;
 }

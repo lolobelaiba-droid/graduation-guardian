@@ -360,10 +360,13 @@ export default function DefenseDocTemplateEditor() {
 
     setSavingTemplates((prev) => new Set(prev).add(id));
     try {
+      const documentType = templates.find((t) => t.id === id)?.document_type;
+      const normalizedContent = normalizeDefenseTemplateHtml(settings.content, documentType);
+
       await updateTemplate.mutateAsync({
         id,
         title: settings.title,
-        content: settings.content,
+        content: normalizedContent,
         font_family: settings.font_family,
         font_size: settings.font_size,
         line_height: settings.line_height,
