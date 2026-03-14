@@ -148,7 +148,7 @@ export function GenerateDocumentDialog({
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  @page { size: A4 portrait; margin: 20mm; }
+  @page { size: A4 portrait; margin: ${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm; }
   body {
     font-family: '${fontFamily}', sans-serif;
     font-size: ${template?.font_size || 14}px;
