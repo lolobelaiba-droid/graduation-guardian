@@ -20,8 +20,18 @@ import {
   useDefenseDocTemplates,
   DEFAULT_VARIABLES,
 } from "@/hooks/useDefenseDocTemplates";
+import { parseJury, type JuryMember } from "@/components/ui/jury-table-input";
+import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
 import { toast } from "sonner";
+
+const JURY_ROLE_DOC_LABELS: Record<string, string> = {
+  president: "رئيسا",
+  supervisor: "مشرفا ومقررا",
+  co_supervisor: "مشرفا مساعدا",
+  examiner: "ممتحنا",
+  invited: "عضوا مدعوا",
+};
 
 interface GenerateDocumentDialogProps {
   open: boolean;
