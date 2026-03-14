@@ -472,7 +472,7 @@ export class BackupService {
       }
     }
 
-    console.log(`Rebuilt ${professors.length} professors from certificates`);
+    // professors rebuilt
   }
 
   /**
