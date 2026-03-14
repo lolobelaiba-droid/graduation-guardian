@@ -303,7 +303,7 @@ export function GenerateDocumentDialog({
     let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
 <thead><tr>`;
     columns.forEach((col) => {
-      const w = col.key === "signature" ? 12 : (jts[col.widthKey] as number);
+      const w = col.key === "signature" ? 20 : (jts[col.widthKey] as number);
       html += `<th style="${thStyle} width: ${w}%;">${col.header}</th>`;
     });
     html += `</tr></thead><tbody>`;
