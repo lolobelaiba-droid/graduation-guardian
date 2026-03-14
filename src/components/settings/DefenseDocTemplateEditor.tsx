@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { normalizeDefenseTemplateHtml } from "@/lib/defenseTemplateHtml";
 import {
   useDefenseDocTemplates,
   useUpdateDefenseDocTemplate,
@@ -148,7 +149,7 @@ export default function DefenseDocTemplateEditor() {
       templates.forEach((t) => {
         initial[t.id] = {
           title: t.title,
-          content: t.content,
+          content: normalizeDefenseTemplateHtml(t.content, t.document_type),
           font_family: t.font_family || "IBM Plex Sans Arabic",
           font_size: t.font_size || 14,
           line_height: t.line_height || 1.8,
@@ -359,10 +360,13 @@ export default function DefenseDocTemplateEditor() {
 
     setSavingTemplates((prev) => new Set(prev).add(id));
     try {
+      const documentType = templates.find((t) => t.id === id)?.document_type;
+      const normalizedContent = normalizeDefenseTemplateHtml(settings.content, documentType);
+
       await updateTemplate.mutateAsync({
         id,
         title: settings.title,
-        content: settings.content,
+        content: normalizedContent,
         font_family: settings.font_family,
         font_size: settings.font_size,
         line_height: settings.line_height,
@@ -957,7 +961,7 @@ export default function DefenseDocTemplateEditor() {
                           paddingLeft: `${settings.margin_left}mm`,
                         }}
                         dangerouslySetInnerHTML={{
-                          __html: settings.content.replace(
+                          __html: normalizeDefenseTemplateHtml(settings.content, template.document_type).replace(
                             /\{\{(\w+)\}\}/g,
                             '<span style="background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; font-size: 12px;">$1</span>'
                           ),

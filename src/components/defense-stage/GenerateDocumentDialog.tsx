@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { formatCertificateDate } from "@/lib/numerals";
+import { normalizeDefenseTemplateHtml } from "@/lib/defenseTemplateHtml";
 
 /**
  * تنسيق تواريخ وثائق المناقشة العربية:
@@ -384,7 +385,7 @@ export function GenerateDocumentDialog({
       decree_accreditation: student.decree_accreditation || "",
     };
 
-    let content = template.content;
+    let content = normalizeDefenseTemplateHtml(template.content, template.document_type);
     content = content.replace(
       /<span[^>]*class="variable-tag"[^>]*>\{\{(\w+)\}\}<\/span>/g,
       (_, key) => variables[key] ?? `{{${key}}}`
