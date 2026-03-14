@@ -175,43 +175,50 @@ export function GenerateDocumentDialog({
     }, 500);
   };
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = () => {
     if (!printRef.current) return;
-    try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
-      const studentName = student?.full_name_ar || "وثيقة";
-      const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
-      const fileName = `${docTitle}_${studentName}.pdf`;
+    const content = printRef.current.innerHTML;
+    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+    const studentName = student?.full_name_ar || "وثيقة";
+    const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
 
-      const element = printRef.current;
-      const opt = {
-        margin: [
-          template?.margin_top ?? 20,
-          template?.margin_right ?? 15,
-          template?.margin_bottom ?? 20,
-          template?.margin_left ?? 15,
-        ] as [number, number, number, number],
-        filename: fileName,
-        image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-        },
-        jsPDF: {
-          unit: "mm" as const,
-          format: "a4" as const,
-          orientation: "portrait" as const,
-        },
-      };
-
-      await html2pdf().set(opt).from(element).save();
-      toast.success("تم تحميل الوثيقة بنجاح");
-    } catch (err) {
-      console.error("PDF download error:", err);
-      toast.error("فشل في تحميل الوثيقة");
+    const pdfWindow = window.open("", "_blank");
+    if (!pdfWindow) {
+      toast.error("فشل فتح نافذة التحميل");
+      return;
     }
+
+    pdfWindow.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>${docTitle}_${studentName}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @page { size: A4 portrait; margin: ${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm; }
+  body {
+    font-family: '${fontFamily}', 'IBM Plex Sans Arabic', sans-serif;
+    font-size: ${template?.font_size || 14}px;
+    line-height: ${template?.line_height || 1.8};
+    direction: rtl;
+    color: #000;
+  }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #333; padding: 8px; text-align: center; }
+  th { background: #f0f0f0; font-weight: bold; }
+  .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
+  @media print { body { -webkit-print-color-adjust: exact; } }
+</style>
+</head>
+<body>${content}</body>
+</html>`);
+    pdfWindow.document.close();
+
+    // Wait for fonts to load then trigger print (user selects "Save as PDF")
+    setTimeout(() => {
+      pdfWindow.print();
+    }, 800);
   };
 
   const buildJuryTableHtml = (members: JuryMember[]): string => {
