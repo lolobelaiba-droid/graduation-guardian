@@ -961,7 +961,7 @@ export default function DefenseDocTemplateEditor() {
                           paddingLeft: `${settings.margin_left}mm`,
                         }}
                         dangerouslySetInnerHTML={{
-                          __html: settings.content.replace(
+                          __html: normalizeDefenseTemplateHtml(settings.content, template.document_type).replace(
                             /\{\{(\w+)\}\}/g,
                             '<span style="background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; font-size: 12px;">$1</span>'
                           ),
