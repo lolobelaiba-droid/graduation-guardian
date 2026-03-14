@@ -80,7 +80,7 @@ interface GenerateDocumentDialogProps {
   onOpenChange: (open: boolean) => void;
   student: DefenseStageStudent | null;
   studentType: DefenseStageType;
-  documentType: "jury_decision" | "defense_auth";
+  documentType: "jury_decision" | "defense_auth" | "defense_minutes";
 }
 
 export function GenerateDocumentDialog({
@@ -92,10 +92,14 @@ export function GenerateDocumentDialog({
 }: GenerateDocumentDialogProps) {
   // For jury_decision: decision_number + decision_date
   // For defense_auth: auth_decision_number + auth_decision_date + dean_letter_number + dean_letter_date
+  // For defense_minutes: minutes_number + defense_time + mention
   const [decisionNumber, setDecisionNumber] = useState("");
   const [decisionDate, setDecisionDate] = useState("");
   const [deanLetterNumber, setDeanLetterNumber] = useState("");
   const [deanLetterDate, setDeanLetterDate] = useState("");
+  const [minutesNumber, setMinutesNumber] = useState("");
+  const [defenseTime, setDefenseTime] = useState("");
+  const [mention, setMention] = useState("مشرف جدا");
   const [showPreview, setShowPreview] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -106,16 +110,23 @@ export function GenerateDocumentDialog({
   const { findProfessor } = useProfessors();
   const ranks = academicTitles.map(t => ({ label: t.full_name, abbreviation: t.abbreviation }));
 
-  const fullDocType = `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
+  const fullDocType = documentType === "defense_minutes"
+    ? `defense_minutes_${studentType === "phd_lmd" ? "lmd" : "science"}`
+    : `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
   const template = templates.find((t) => t.document_type === fullDocType);
 
   const isJuryDecision = documentType === "jury_decision";
+  const isDefenseMinutes = documentType === "defense_minutes";
 
   useEffect(() => {
     if (open && student) {
       if (isJuryDecision) {
         setDecisionNumber(student.decision_number || "");
         setDecisionDate(student.decision_date || "");
+      } else if (isDefenseMinutes) {
+        setMinutesNumber("");
+        setDefenseTime("");
+        setMention("مشرف جدا");
       } else {
         setDecisionNumber(student.auth_decision_number || "");
         setDecisionDate(student.auth_decision_date || "");
@@ -124,20 +135,26 @@ export function GenerateDocumentDialog({
       }
       setShowPreview(false);
     }
-  }, [open, student, isJuryDecision]);
+  }, [open, student, isJuryDecision, isDefenseMinutes]);
 
   // For defense_auth: also load jury decision data
   const [juryDecisionNumber, setJuryDecisionNumber] = useState("");
   const [juryDecisionDate, setJuryDecisionDate] = useState("");
 
   useEffect(() => {
-    if (open && student && !isJuryDecision) {
+    if (open && student && !isJuryDecision && !isDefenseMinutes) {
       setJuryDecisionNumber(student.decision_number || "");
       setJuryDecisionDate(student.decision_date || "");
     }
-  }, [open, student, isJuryDecision]);
+  }, [open, student, isJuryDecision, isDefenseMinutes]);
 
   const handleGenerate = async () => {
+    if (isDefenseMinutes) {
+      // Defense minutes: just show preview, no DB updates needed
+      if (!student) return;
+      setShowPreview(true);
+      return;
+    }
     if (!isJuryDecision) {
       if (!juryDecisionNumber.trim()) {
         toast.error("يرجى إدخال رقم مقرر اللجنة");
@@ -165,7 +182,6 @@ export function GenerateDocumentDialog({
       if (isJuryDecision) {
         updateData.decision_number = decisionNumber.trim();
         updateData.decision_date = decisionDate.trim();
-        // Auto-update status to 'under_review' (قيد الخبرة) when jury decision is generated
         updateData.stage_status = 'under_review';
       } else {
         updateData.decision_number = juryDecisionNumber.trim();
@@ -174,7 +190,6 @@ export function GenerateDocumentDialog({
         updateData.auth_decision_date = decisionDate.trim();
         updateData.dean_letter_number = deanLetterNumber.trim();
         updateData.dean_letter_date = deanLetterDate.trim();
-        // Auto-update status to 'defended' (انتهت إجراءات المناقشة) when defense auth is generated
         updateData.stage_status = 'defended';
       }
 
@@ -233,8 +248,8 @@ export function GenerateDocumentDialog({
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const studentName = student?.full_name_ar || "وثيقة";
-      const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
-      const fileName = `${docTitle}_${studentName}.pdf`;
+      const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
+      const fileName = `${docTitlePdf}_${studentName}.pdf`;
 
       // Wait for fonts to load
       await document.fonts.ready;
@@ -269,7 +284,7 @@ export function GenerateDocumentDialog({
     }
   };
 
-  const buildJuryTableHtml = (members: JuryMember[]): string => {
+  const buildJuryTableHtml = (members: JuryMember[], withSignature = false): string => {
     const jts: JuryTableSettings = template?.jury_table_settings
       ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
       : { ...DEFAULT_JURY_TABLE_SETTINGS };
@@ -277,23 +292,23 @@ export function GenerateDocumentDialog({
     const thStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; background: ${jts.header_bg}; font-weight: bold; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
     const tdStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
     
-    // Build visible columns
     const columns: { key: string; header: string; widthKey: keyof JuryTableSettings }[] = [];
     if (jts.show_number) columns.push({ key: "number", header: "رقم", widthKey: "col_number_width" });
     columns.push({ key: "name", header: "الاسم واللقب", widthKey: "col_name_width" });
     if (jts.show_rank) columns.push({ key: "rank", header: "الرتبة", widthKey: "col_rank_width" });
     if (jts.show_university) columns.push({ key: "university", header: "مؤسسة الانتماء", widthKey: "col_university_width" });
     if (jts.show_role) columns.push({ key: "role", header: "الصفة", widthKey: "col_role_width" });
+    if (withSignature) columns.push({ key: "signature", header: "الإمضاء", widthKey: "col_number_width" });
 
     let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
 <thead><tr>`;
     columns.forEach((col) => {
-      html += `<th style="${thStyle} width: ${jts[col.widthKey]}%;">${col.header}</th>`;
+      const w = col.key === "signature" ? 12 : (jts[col.widthKey] as number);
+      html += `<th style="${thStyle} width: ${w}%;">${col.header}</th>`;
     });
     html += `</tr></thead><tbody>`;
 
     members.forEach((m, i) => {
-      // Display name without rank abbreviation - show just the name as in student data
       const displayName = m.name;
       const roleLabel = JURY_ROLE_DOC_LABELS[m.role] || m.role;
       html += `<tr>`;
@@ -304,6 +319,7 @@ export function GenerateDocumentDialog({
         else if (col.key === "rank") value = m.rankLabel || '&nbsp;';
         else if (col.key === "university") value = m.university || '&nbsp;';
         else if (col.key === "role") value = roleLabel;
+        else if (col.key === "signature") value = '&nbsp;';
         html += `<td style="${tdStyle}">${value}</td>`;
       });
       html += `</tr>`;
@@ -375,6 +391,7 @@ export function GenerateDocumentDialog({
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
       jury_table: buildJuryTableHtml(enrichedJuryMembers),
+      jury_table_with_signature: buildJuryTableHtml(enrichedJuryMembers, true),
       scientific_council_date: formatArabicDocumentDate(student.scientific_council_date),
       defense_date: formatArabicDocumentDate(student.defense_date),
       signature_title: student.signature_title || "",
@@ -383,6 +400,10 @@ export function GenerateDocumentDialog({
       current_year: student.current_year || "",
       decree_training: student.decree_training || "",
       decree_accreditation: student.decree_accreditation || "",
+      minutes_number: minutesNumber.trim() || "......................",
+      minutes_year: new Date().getFullYear().toString(),
+      defense_time: defenseTime.trim() || "......................",
+      mention: mention || "......................",
     };
 
     let content = normalizeDefenseTemplateHtml(template.content, template.document_type);
@@ -398,7 +419,9 @@ export function GenerateDocumentDialog({
     return content;
   };
 
-  const docTitle = isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
+  const docTitle = isDefenseMinutes
+    ? "توليد محضر مداولات لجنة المناقشة"
+    : isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
   const numberLabel = isJuryDecision ? "رقم مقرر اللجنة" : "رقم مقرر الترخيص";
   const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة" : "تاريخ مقرر الترخيص";
 
@@ -412,7 +435,9 @@ export function GenerateDocumentDialog({
           </DialogTitle>
           <DialogDescription>
             {!showPreview
-              ? `أدخل بيانات المقرر للطالب: ${student?.full_name_ar || ""}`
+              ? isDefenseMinutes
+                ? `أدخل بيانات المحضر للطالب: ${student?.full_name_ar || ""}`
+                : `أدخل بيانات المقرر للطالب: ${student?.full_name_ar || ""}`
               : "معاينة الوثيقة قبل الطباعة"
             }
           </DialogDescription>
@@ -420,52 +445,89 @@ export function GenerateDocumentDialog({
 
         {!showPreview ? (
           <div className="space-y-4 py-2">
-            {!isJuryDecision && (
+            {isDefenseMinutes ? (
               <>
                 <div className="space-y-2">
-                  <Label>رقم مقرر اللجنة *</Label>
+                  <Label>رقم المحضر</Label>
                   <Input
-                    value={juryDecisionNumber}
-                    onChange={(e) => setJuryDecisionNumber(e.target.value)}
-                    placeholder="أدخل رقم مقرر اللجنة..."
+                    value={minutesNumber}
+                    onChange={(e) => setMinutesNumber(e.target.value)}
+                    placeholder="أدخل رقم المحضر..."
                     dir="rtl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>تاريخ مقرر اللجنة *</Label>
-                  <DateInput value={juryDecisionDate} onChange={setJuryDecisionDate} />
+                  <Label>ساعة المناقشة</Label>
+                  <Input
+                    value={defenseTime}
+                    onChange={(e) => setDefenseTime(e.target.value)}
+                    placeholder="مثال: 10:00 صباحا"
+                    dir="rtl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>التقدير</Label>
+                  <select
+                    value={mention}
+                    onChange={(e) => setMention(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    dir="rtl"
+                  >
+                    <option value="مشرف جدا">مشرف جدا</option>
+                    <option value="مشرف">مشرف</option>
+                  </select>
                 </div>
               </>
-            )}
-            <div className="space-y-2">
-              <Label>{numberLabel}</Label>
-              <Input
-                value={decisionNumber}
-                onChange={(e) => setDecisionNumber(e.target.value)}
-                placeholder="أدخل رقم المقرر..."
-                dir="rtl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{dateLabel}</Label>
-              <DateInput value={decisionDate} onChange={setDecisionDate} />
-            </div>
-
-            {!isJuryDecision && (
+            ) : (
               <>
+                {!isJuryDecision && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>رقم مقرر اللجنة *</Label>
+                      <Input
+                        value={juryDecisionNumber}
+                        onChange={(e) => setJuryDecisionNumber(e.target.value)}
+                        placeholder="أدخل رقم مقرر اللجنة..."
+                        dir="rtl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ مقرر اللجنة *</Label>
+                      <DateInput value={juryDecisionDate} onChange={setJuryDecisionDate} />
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
-                  <Label>رقم إرسال العميد *</Label>
+                  <Label>{numberLabel}</Label>
                   <Input
-                    value={deanLetterNumber}
-                    onChange={(e) => setDeanLetterNumber(e.target.value)}
-                    placeholder="أدخل رقم إرسال العميد..."
+                    value={decisionNumber}
+                    onChange={(e) => setDecisionNumber(e.target.value)}
+                    placeholder="أدخل رقم المقرر..."
                     dir="rtl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>تاريخ إرسال العميد *</Label>
-                  <DateInput value={deanLetterDate} onChange={setDeanLetterDate} />
+                  <Label>{dateLabel}</Label>
+                  <DateInput value={decisionDate} onChange={setDecisionDate} />
                 </div>
+
+                {!isJuryDecision && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>رقم إرسال العميد *</Label>
+                      <Input
+                        value={deanLetterNumber}
+                        onChange={(e) => setDeanLetterNumber(e.target.value)}
+                        placeholder="أدخل رقم إرسال العميد..."
+                        dir="rtl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ إرسال العميد *</Label>
+                      <DateInput value={deanLetterDate} onChange={setDeanLetterDate} />
+                    </div>
+                  </>
+                )}
               </>
             )}
 

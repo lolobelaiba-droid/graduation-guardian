@@ -12,6 +12,7 @@ import {
   CheckCircle,
   FilePlus,
   Pencil,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,7 +66,7 @@ export default function DefenseStage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [docGenTarget, setDocGenTarget] = useState<{
     student: DefenseStageStudent;
-    documentType: "jury_decision" | "defense_auth";
+    documentType: "jury_decision" | "defense_auth" | "defense_minutes";
   } | null>(null);
   const [editTarget, setEditTarget] = useState<DefenseStageStudent | null>(null);
 
@@ -227,6 +228,10 @@ export default function DefenseStage() {
                               <DropdownMenuItem onClick={() => setDocGenTarget({ student, documentType: "defense_auth" })}>
                                 <FileText className="h-4 w-4 ml-2" />
                                 توليد ترخيص المناقشة
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDocGenTarget({ student, documentType: "defense_minutes" })}>
+                                <ClipboardList className="h-4 w-4 ml-2" />
+                                توليد محضر المناقشة
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setEditTarget(student)}>
                                 <Pencil className="h-4 w-4 ml-2" />

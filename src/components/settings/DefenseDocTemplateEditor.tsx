@@ -89,6 +89,8 @@ const typeColors: Record<string, string> = {
   jury_decision_science: "bg-success/10 text-success border-success/20",
   defense_auth_lmd: "bg-warning/10 text-warning border-warning/20",
   defense_auth_science: "bg-accent/10 text-accent-foreground border-accent/20",
+  defense_minutes_lmd: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  defense_minutes_science: "bg-teal-500/10 text-teal-600 border-teal-500/20",
 };
 
 const typeLabels: Record<string, string> = {
@@ -96,6 +98,8 @@ const typeLabels: Record<string, string> = {
   jury_decision_science: "مقرر اللجنة - علوم",
   defense_auth_lmd: "ترخيص المناقشة - ل م د",
   defense_auth_science: "ترخيص المناقشة - علوم",
+  defense_minutes_lmd: "محضر المناقشة - ل م د",
+  defense_minutes_science: "محضر المناقشة - علوم",
 };
 
 interface LocalSettings {

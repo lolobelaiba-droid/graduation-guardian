@@ -65,6 +65,8 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   jury_decision_science: "مقرر تعيين لجنة المناقشة - دكتوراه علوم",
   defense_auth_lmd: "الترخيص بالمناقشة - دكتوراه ل م د",
   defense_auth_science: "الترخيص بالمناقشة - دكتوراه علوم",
+  defense_minutes_lmd: "محضر مداولات لجنة المناقشة - دكتوراه ل م د",
+  defense_minutes_science: "محضر مداولات لجنة المناقشة - دكتوراه علوم",
 };
 
 // Default placeholder variables for defense documents
@@ -105,6 +107,11 @@ export const DEFAULT_VARIABLES: CustomVariable[] = [
   { key: "decree_training", label: "قرار تنظيم التكوين" },
   { key: "decree_accreditation", label: "قرار التأهيل" },
   { key: "jury_table", label: "جدول أعضاء اللجنة (ديناميكي)" },
+  { key: "jury_table_with_signature", label: "جدول اللجنة مع عمود الإمضاء" },
+  { key: "minutes_number", label: "رقم المحضر" },
+  { key: "minutes_year", label: "سنة المحضر" },
+  { key: "defense_time", label: "ساعة المناقشة" },
+  { key: "mention", label: "التقدير (مشرف جيد / مشرف جدا)" },
 ];
 
 export function getTemplateVariables(template: DefenseDocTemplate): CustomVariable[] {
