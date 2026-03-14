@@ -197,6 +197,25 @@ export default function EditStudentDialog({
   const updatePhdLmd = useUpdatePhdLmdCertificate();
   const updatePhdScience = useUpdatePhdScienceCertificate();
   const updateMaster = useUpdateMasterCertificate();
+
+  // Record locking
+  const tableName = certificateType === "phd_lmd" ? "phd_lmd_certificates" : certificateType === "phd_science" ? "phd_science_certificates" : "master_certificates";
+  const { isLocked, lockedBy, acquireLock, releaseLock } = useRecordLock(tableName, open ? student?.id ?? null : null);
+
+  // Acquire lock on open, release on close
+  useEffect(() => {
+    if (open && student?.id) {
+      acquireLock();
+    }
+    if (!open) {
+      releaseLock();
+    }
+  }, [open, student?.id]);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) releaseLock();
+    onOpenChange(newOpen);
+  }, [onOpenChange, releaseLock]);
   
   // Fetch suggestions for autocomplete fields
   const { data: suggestions } = useMultipleFieldSuggestions([
