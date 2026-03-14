@@ -285,6 +285,14 @@ export default function DefenseStage() {
       {/* Dialogs */}
       <StartDefenseProcedureDialog open={showStartDialog} onOpenChange={setShowStartDialog} />
 
+      <GenerateDocumentDialog
+        open={!!docGenTarget}
+        onOpenChange={(open) => !open && setDocGenTarget(null)}
+        student={docGenTarget?.student || null}
+        studentType={activeTab as DefenseStageType}
+        documentType={docGenTarget?.documentType || "jury_decision"}
+      />
+
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
