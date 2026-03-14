@@ -139,6 +139,8 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
       scientific_council_date: '',
       province: 'أم البواقي',
       signature_title: '',
+      decree_training: '',
+      decree_accreditation: '',
     },
   });
 
