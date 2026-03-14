@@ -22,6 +22,7 @@ export interface JuryTableSettings {
   col_rank_width: number;
   col_university_width: number;
   col_role_width: number;
+  col_signature_width: number;
 }
 
 export const DEFAULT_JURY_TABLE_SETTINGS: JuryTableSettings = {
@@ -40,6 +41,7 @@ export const DEFAULT_JURY_TABLE_SETTINGS: JuryTableSettings = {
   col_rank_width: 18,
   col_university_width: 28,
   col_role_width: 24,
+  col_signature_width: 20,
 };
 
 export interface DefenseDocTemplate {

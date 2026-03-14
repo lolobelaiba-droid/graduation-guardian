@@ -686,13 +686,14 @@ export default function DefenseDocTemplateEditor() {
 
                                   <div>
                                     <Label className="text-xs mb-2 block">عرض الأعمدة (%)</Label>
-                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                                       {[
                                         { key: "col_number_width" as const, label: "رقم" },
                                         { key: "col_name_width" as const, label: "الاسم" },
                                         { key: "col_rank_width" as const, label: "الرتبة" },
                                         { key: "col_university_width" as const, label: "الجامعة" },
                                         { key: "col_role_width" as const, label: "الصفة" },
+                                        { key: "col_signature_width" as const, label: "الإمضاء" },
                                       ].map((col) => (
                                         <div key={col.key} className="space-y-1">
                                           <Label className="text-[10px] text-muted-foreground">{col.label}</Label>
