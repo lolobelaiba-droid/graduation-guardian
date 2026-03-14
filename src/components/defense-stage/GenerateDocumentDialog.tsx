@@ -191,7 +191,7 @@ export function GenerateDocumentDialog({
           template?.margin_right ?? 15,
           template?.margin_bottom ?? 20,
           template?.margin_left ?? 15,
-        ],
+        ] as [number, number, number, number],
         filename: fileName,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
