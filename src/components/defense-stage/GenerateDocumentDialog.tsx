@@ -446,39 +446,10 @@ export function GenerateDocumentDialog({
         {!showPreview ? (
           <div className="space-y-4 py-2">
             {isDefenseMinutes ? (
-              <>
-                <div className="space-y-2">
-                  <Label>رقم المحضر</Label>
-                  <Input
-                    value={minutesNumber}
-                    onChange={(e) => setMinutesNumber(e.target.value)}
-                    placeholder="أدخل رقم المحضر..."
-                    dir="rtl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>ساعة المناقشة</Label>
-                  <Input
-                    value={defenseTime}
-                    onChange={(e) => setDefenseTime(e.target.value)}
-                    placeholder="مثال: 10:00 صباحا"
-                    dir="rtl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>التقدير</Label>
-                  <select
-                    value={mention}
-                    onChange={(e) => setMention(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    dir="rtl"
-                  >
-                    <option value="مشرف جدا">مشرف جدا</option>
-                    <option value="مشرف">مشرف</option>
-                  </select>
-                </div>
-              </>
-            ) : (
+              <div className="text-center py-4 text-muted-foreground text-sm">
+                <p>سيتم توليد المحضر مع ترك الحقول التالية فارغة (نقاط) للتعبئة يدوياً:</p>
+                <p className="mt-2 font-medium text-foreground">رقم المحضر • ساعة المناقشة • التقدير</p>
+              </div>
               <>
                 {!isJuryDecision && (
                   <>
