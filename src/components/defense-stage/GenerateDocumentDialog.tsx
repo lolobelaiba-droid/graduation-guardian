@@ -528,7 +528,7 @@ export function GenerateDocumentDialog({
           <div className="space-y-4">
             <div
               ref={printRef}
-              className="border rounded-lg p-8 bg-white min-h-[500px]"
+              className="border rounded-lg bg-white min-h-[500px]"
               style={{
                 fontFamily: template?.font_family || "IBM Plex Sans Arabic",
                 fontSize: `${template?.font_size || 14}px`,
@@ -537,6 +537,10 @@ export function GenerateDocumentDialog({
                 width: "210mm",
                 maxWidth: "100%",
                 margin: "0 auto",
+                paddingTop: `${template?.margin_top ?? 20}mm`,
+                paddingBottom: `${template?.margin_bottom ?? 20}mm`,
+                paddingRight: `${template?.margin_right ?? 15}mm`,
+                paddingLeft: `${template?.margin_left ?? 15}mm`,
                 boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
                 color: "#000",
               }}
