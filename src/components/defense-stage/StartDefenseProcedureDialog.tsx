@@ -227,6 +227,8 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
         defense_date: null,
         province: data.province || 'أم البواقي',
         signature_title: data.signature_title || null,
+        decree_training: data.decree_training,
+        decree_accreditation: data.decree_accreditation,
       };
 
       if (selectedType === 'phd_lmd') {
