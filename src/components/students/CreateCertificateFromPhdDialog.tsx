@@ -45,11 +45,11 @@ import {
   useCreatePhdScienceCertificate,
 } from "@/hooks/useCertificates";
 import {
-  usePhdLmdStudents,
-  usePhdScienceStudents,
-  useDeletePhdLmdStudent,
-  useDeletePhdScienceStudent,
-} from "@/hooks/usePhdStudents";
+  useDefenseStageLmd,
+  useDefenseStageScience,
+  useDeleteDefenseStageLmd,
+  useDeleteDefenseStageScience,
+} from "@/hooks/useDefenseStage";
 import {
   certificateTypeLabels,
   mentionLabels,
@@ -57,7 +57,8 @@ import {
   type CertificateType,
   type MentionType,
 } from "@/types/certificates";
-import type { PhdStudent, PhdLmdStudent } from "@/types/phd-students";
+import type { DefenseStageStudent } from "@/types/defense-stage";
+import { stageStatusLabels } from "@/types/defense-stage";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { UniversityAutocomplete } from "@/components/ui/university-autocomplete";
 import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
@@ -144,8 +145,8 @@ export function CreateCertificateFromPhdDialog({
 }: CreateCertificateFromPhdDialogProps) {
   const [selectedType, setSelectedType] = useState<CertificateType>(initialCertificateType);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState<PhdStudent | null>(null);
-  const [pendingStudent, setPendingStudent] = useState<PhdStudent | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<DefenseStageStudent | null>(null);
+  const [pendingStudent, setPendingStudent] = useState<DefenseStageStudent | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showForm, setShowForm] = useState(false);
   
@@ -159,11 +160,11 @@ export function CreateCertificateFromPhdDialog({
   
   const createPhdLmd = useCreatePhdLmdCertificate();
   const createPhdScience = useCreatePhdScienceCertificate();
-  const deletePhdLmd = useDeletePhdLmdStudent();
-  const deletePhdScience = useDeletePhdScienceStudent();
+  const deleteStageLmd = useDeleteDefenseStageLmd();
+  const deleteStageScience = useDeleteDefenseStageScience();
   
-  const { data: phdLmdStudents = [], isLoading: loadingLmd } = usePhdLmdStudents();
-  const { data: phdScienceStudents = [], isLoading: loadingScience } = usePhdScienceStudents();
+  const { data: stageLmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
+  const { data: stageScienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
   
   const isLoadingStudents = loadingLmd || loadingScience;
   
@@ -190,8 +191,9 @@ export function CreateCertificateFromPhdDialog({
     setInscriptionStatusFr("");
   }, [initialCertificateType, open]);
 
-  // Filter students based on type and search
-  const availableStudents = selectedType === 'phd_lmd' ? phdLmdStudents : phdScienceStudents;
+  // Filter students from defense stage based on type and search
+  const allStageStudents = selectedType === 'phd_lmd' ? stageLmdStudents : stageScienceStudents;
+  const availableStudents = allStageStudents;
   const filteredStudents = availableStudents.filter((student) => {
     if (!searchQuery) return true;
     return (
@@ -256,7 +258,7 @@ export function CreateCertificateFromPhdDialog({
   });
 
   // Show confirmation dialog before selecting student
-  const handleStudentClick = (student: PhdStudent) => {
+  const handleStudentClick = (student: DefenseStageStudent) => {
     setPendingStudent(student);
     setShowConfirmDialog(true);
   };
@@ -294,18 +296,19 @@ export function CreateCertificateFromPhdDialog({
       research_lab_ar: pendingStudent.research_lab_ar || '',
       thesis_title_ar: pendingStudent.thesis_title_ar || '',
       thesis_title_fr: pendingStudent.thesis_title_fr || '',
-      field_ar: (pendingStudent as PhdLmdStudent).field_ar || '',
-      field_fr: (pendingStudent as PhdLmdStudent).field_fr || '',
+      field_ar: pendingStudent.field_ar || '',
+      field_fr: pendingStudent.field_fr || '',
       mention: 'honorable' as MentionType,
-      defense_date: '',
+      defense_date: pendingStudent.defense_date || '',
       certificate_date: new Date().toISOString().split('T')[0],
-      jury_president_ar: '',
-      jury_president_fr: '',
-      jury_members_ar: '',
-      jury_members_fr: '',
-      province: 'أم البواقي',
-      signature_title: getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
-      scientific_council_date: '',
+      jury_president_ar: pendingStudent.jury_president_ar || '',
+      jury_president_fr: pendingStudent.jury_president_fr || '',
+      jury_members_ar: pendingStudent.jury_members_ar || '',
+      jury_members_fr: pendingStudent.jury_members_fr || '',
+      province: pendingStudent.province || 'أم البواقي',
+      signature_title: pendingStudent.signature_title || getDefaultSignatureTitle(pendingStudent.faculty_ar || ''),
+      scientific_council_date: pendingStudent.scientific_council_date || '',
+      // PhD reference data preserved
       // PhD reference data preserved
       registration_number: pendingStudent.registration_number || '',
       employment_status: pendingStudent.employment_status || '',
@@ -369,7 +372,7 @@ export function CreateCertificateFromPhdDialog({
         } as any);
         
         if (selectedStudent) {
-          await deletePhdLmd.mutateAsync(selectedStudent.id);
+          await deleteStageLmd.mutateAsync(selectedStudent.id);
         }
       } else if (selectedType === 'phd_science') {
         await createPhdScience.mutateAsync({
@@ -379,7 +382,7 @@ export function CreateCertificateFromPhdDialog({
         } as any);
         
         if (selectedStudent) {
-          await deletePhdScience.mutateAsync(selectedStudent.id);
+          await deleteStageScience.mutateAsync(selectedStudent.id);
         }
       }
       
@@ -411,7 +414,7 @@ export function CreateCertificateFromPhdDialog({
           </DialogTitle>
           <DialogDescription>
             {!showForm 
-              ? "ابحث عن طالب من قاعدة بيانات طلبة الدكتوراه لإنشاء شهادة جديدة" 
+              ? "اختر طالباً من طور المناقشة لإنشاء شهادة جديدة" 
               : "أكمل البيانات المطلوبة لإصدار الشهادة"
             }
           </DialogDescription>
@@ -456,7 +459,7 @@ export function CreateCertificateFromPhdDialog({
             <div className="border rounded-lg">
               <div className="p-2 bg-muted/30 border-b flex justify-between items-center">
                 <span className="text-sm font-medium">
-                  قائمة طلبة الدكتوراه ({selectedType === 'phd_lmd' ? 'ل م د' : 'علوم'})
+                  طلبة طور المناقشة ({selectedType === 'phd_lmd' ? 'ل م د' : 'علوم'})
                 </span>
                 <Badge variant="secondary">
                   {availableStudents.length} طالب
@@ -471,18 +474,18 @@ export function CreateCertificateFromPhdDialog({
                 ) : availableStudents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
                     <Search className="h-12 w-12 mb-4 opacity-50" />
-                    <p className="font-medium">لا يوجد طلاب في قاعدة البيانات</p>
-                    <p className="text-sm mt-2">أضف طلاباً من صفحة قاعدة بيانات طلبة الدكتوراه أولاً</p>
+                    <p className="font-medium">لا يوجد طلاب في طور المناقشة</p>
+                    <p className="text-sm mt-2">انقل طلاباً من صفحة "طلبة في طور المناقشة" أولاً</p>
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="mt-4"
                       onClick={() => {
                         onOpenChange(false);
-                        window.location.hash = '/phd-students';
+                        window.location.hash = '/defense-stage';
                       }}
                     >
-                      الذهاب إلى قاعدة بيانات طلبة الدكتوراه
+                      الذهاب إلى طلبة طور المناقشة
                     </Button>
                   </div>
                 ) : filteredStudents.length === 0 ? (
