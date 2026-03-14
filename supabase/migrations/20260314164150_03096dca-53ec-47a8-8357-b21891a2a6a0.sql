@@ -1,0 +1,2 @@
+ALTER TABLE public.defense_document_templates 
+ADD COLUMN jury_table_settings jsonb DEFAULT '{"font_size": 12, "border_color": "#333", "header_bg": "#f0f0f0", "padding": 8, "show_number": true, "show_rank": true, "show_university": true, "show_role": true, "col_number_width": 6, "col_name_width": 24, "col_rank_width": 18, "col_university_width": 28, "col_role_width": 24, "include_abbreviation": true}'::jsonb;

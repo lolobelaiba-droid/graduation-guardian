@@ -58,9 +58,11 @@ import {
   useDefenseDocTemplates,
   useUpdateDefenseDocTemplate,
   DEFAULT_VARIABLES,
+  DEFAULT_JURY_TABLE_SETTINGS,
   getTemplateVariables,
   type DefenseDocTemplate,
   type CustomVariable,
+  type JuryTableSettings,
 } from "@/hooks/useDefenseDocTemplates";
 
 const FONT_OPTIONS = [
@@ -96,6 +98,7 @@ interface LocalSettings {
   font_size: number;
   line_height: number;
   custom_variables: CustomVariable[];
+  jury_table_settings: JuryTableSettings;
 }
 
 export default function DefenseDocTemplateEditor() {
@@ -139,6 +142,7 @@ export default function DefenseDocTemplateEditor() {
           font_size: t.font_size || 14,
           line_height: t.line_height || 1.8,
           custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
+          jury_table_settings: t.jury_table_settings || { ...DEFAULT_JURY_TABLE_SETTINGS },
         };
       });
       setLocalSettings(initial);
@@ -325,7 +329,8 @@ export default function DefenseDocTemplateEditor() {
         font_size: settings.font_size,
         line_height: settings.line_height,
         custom_variables: settings.custom_variables,
-      });
+        jury_table_settings: settings.jury_table_settings,
+      } as any);
       toast.success("تم حفظ القالب بنجاح");
     } catch (error) {
       console.error("Error saving template:", error);
@@ -480,6 +485,135 @@ export default function DefenseDocTemplateEditor() {
                         />
                       </div>
                     </div>
+
+                    {/* Jury Table Settings */}
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="gap-2 text-xs w-full justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Table className="h-3.5 w-3.5" />
+                            إعدادات جدول اللجنة الديناميكي
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        {(() => {
+                          const jts = settings.jury_table_settings || DEFAULT_JURY_TABLE_SETTINGS;
+                          const updateJts = (key: keyof JuryTableSettings, value: any) => {
+                            updateLocal(template.id, "jury_table_settings", { ...jts, [key]: value });
+                          };
+                          return (
+                            <div className="border rounded-lg p-4 mt-2 space-y-4 bg-muted/20">
+                              {/* Row 1: Font size, padding, border color, header bg */}
+                              <div className="grid grid-cols-4 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">حجم خط الجدول</Label>
+                                  <Input
+                                    type="number" min={8} max={24} value={jts.font_size}
+                                    onChange={(e) => updateJts("font_size", parseInt(e.target.value) || 12)}
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">المساحة الداخلية (px)</Label>
+                                  <Input
+                                    type="number" min={2} max={20} value={jts.padding}
+                                    onChange={(e) => updateJts("padding", parseInt(e.target.value) || 8)}
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">لون الحدود</Label>
+                                  <div className="flex gap-1">
+                                    <Input
+                                      type="color" value={jts.border_color}
+                                      onChange={(e) => updateJts("border_color", e.target.value)}
+                                      className="h-8 w-10 p-0.5 cursor-pointer"
+                                    />
+                                    <Input
+                                      value={jts.border_color}
+                                      onChange={(e) => updateJts("border_color", e.target.value)}
+                                      className="h-8 text-xs flex-1" dir="ltr"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">لون خلفية الرأس</Label>
+                                  <div className="flex gap-1">
+                                    <Input
+                                      type="color" value={jts.header_bg}
+                                      onChange={(e) => updateJts("header_bg", e.target.value)}
+                                      className="h-8 w-10 p-0.5 cursor-pointer"
+                                    />
+                                    <Input
+                                      value={jts.header_bg}
+                                      onChange={(e) => updateJts("header_bg", e.target.value)}
+                                      className="h-8 text-xs flex-1" dir="ltr"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Row 2: Column visibility toggles */}
+                              <div>
+                                <Label className="text-xs mb-2 block">الأعمدة المرئية</Label>
+                                <div className="flex flex-wrap gap-3">
+                                  {[
+                                    { key: "show_number" as const, label: "رقم" },
+                                    { key: "show_rank" as const, label: "الرتبة" },
+                                    { key: "show_university" as const, label: "مؤسسة الانتماء" },
+                                    { key: "show_role" as const, label: "الصفة" },
+                                  ].map(({ key, label }) => (
+                                    <label key={key} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={jts[key]}
+                                        onChange={(e) => updateJts(key, e.target.checked)}
+                                        className="rounded"
+                                      />
+                                      {label}
+                                    </label>
+                                  ))}
+                                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={jts.include_abbreviation}
+                                      onChange={(e) => updateJts("include_abbreviation", e.target.checked)}
+                                      className="rounded"
+                                    />
+                                    إضافة اختصار الرتبة قبل الاسم
+                                  </label>
+                                </div>
+                              </div>
+
+                              {/* Row 3: Column widths */}
+                              <div>
+                                <Label className="text-xs mb-2 block">عرض الأعمدة (%)</Label>
+                                <div className="grid grid-cols-5 gap-2">
+                                  {[
+                                    { key: "col_number_width" as const, label: "رقم" },
+                                    { key: "col_name_width" as const, label: "الاسم" },
+                                    { key: "col_rank_width" as const, label: "الرتبة" },
+                                    { key: "col_university_width" as const, label: "المؤسسة" },
+                                    { key: "col_role_width" as const, label: "الصفة" },
+                                  ].map(({ key, label }) => (
+                                    <div key={key} className="space-y-1">
+                                      <span className="text-[10px] text-muted-foreground">{label}</span>
+                                      <Input
+                                        type="number" min={3} max={50} value={jts[key]}
+                                        onChange={(e) => updateJts(key, parseInt(e.target.value) || 10)}
+                                        className="h-7 text-xs"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </CollapsibleContent>
+                    </Collapsible>
 
                     {/* Toolbar */}
                     <div className="flex items-center gap-1 flex-wrap border rounded-lg p-2 bg-muted/30">
