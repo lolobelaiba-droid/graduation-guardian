@@ -15,6 +15,7 @@ import {
   AlignLeft,
   Undo2,
   Redo2,
+  Pilcrow,
   Eye,
   EyeOff,
   Plus,
