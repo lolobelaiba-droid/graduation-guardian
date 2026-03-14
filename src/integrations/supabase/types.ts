@@ -406,6 +406,8 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          decision_date: string | null
+          decision_number: string | null
           decree_accreditation: string | null
           decree_training: string | null
           defense_date: string | null
@@ -456,6 +458,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          decision_date?: string | null
+          decision_number?: string | null
           decree_accreditation?: string | null
           decree_training?: string | null
           defense_date?: string | null
@@ -506,6 +510,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          decision_date?: string | null
+          decision_number?: string | null
           decree_accreditation?: string | null
           decree_training?: string | null
           defense_date?: string | null
@@ -559,6 +565,8 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          decision_date: string | null
+          decision_number: string | null
           decree_accreditation: string | null
           decree_training: string | null
           defense_date: string | null
@@ -609,6 +617,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          decision_date?: string | null
+          decision_number?: string | null
           decree_accreditation?: string | null
           decree_training?: string | null
           defense_date?: string | null
@@ -659,6 +669,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          decision_date?: string | null
+          decision_number?: string | null
           decree_accreditation?: string | null
           decree_training?: string | null
           defense_date?: string | null
