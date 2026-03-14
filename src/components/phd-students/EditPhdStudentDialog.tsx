@@ -124,6 +124,20 @@ function SectionHeader({ title }: { title: string }) {
 export function EditPhdStudentDialog({ open, onOpenChange, student, studentType, currentAcademicYear }: EditPhdStudentDialogProps) {
   const updatePhdLmd = useUpdatePhdLmdStudent();
   const updatePhdScience = useUpdatePhdScienceStudent();
+
+  // Record locking
+  const tableName = studentType === 'phd_lmd' ? 'phd_lmd_students' : 'phd_science_students';
+  const { isLocked, lockedBy, acquireLock, releaseLock } = useRecordLock(tableName, open ? student?.id ?? null : null);
+
+  useEffect(() => {
+    if (open && student?.id) acquireLock();
+    if (!open) releaseLock();
+  }, [open, student?.id]);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) releaseLock();
+    onOpenChange(newOpen);
+  }, [onOpenChange, releaseLock]);
   
   // Bilingual dropdown states
   const [employmentStatusAr, setEmploymentStatusAr] = useState("");
