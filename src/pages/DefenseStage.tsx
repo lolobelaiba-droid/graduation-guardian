@@ -51,6 +51,7 @@ import {
 } from "@/hooks/useDefenseStage";
 import { StartDefenseProcedureDialog } from "@/components/defense-stage/StartDefenseProcedureDialog";
 import { GenerateDocumentDialog } from "@/components/defense-stage/GenerateDocumentDialog";
+import { EditDefenseStageDialog } from "@/components/defense-stage/EditDefenseStageDialog";
 import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 
