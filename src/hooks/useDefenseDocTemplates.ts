@@ -28,10 +28,13 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 
 // Default placeholder variables for defense documents
 export const DEFAULT_VARIABLES: CustomVariable[] = [
+  { key: "decision_number", label: "رقم المقرر" },
+  { key: "decision_date", label: "تاريخ المقرر" },
   { key: "full_name_ar", label: "الاسم الكامل (عربي)" },
   { key: "full_name_fr", label: "الاسم الكامل (فرنسي)" },
   { key: "date_of_birth", label: "تاريخ الميلاد" },
   { key: "birthplace_ar", label: "مكان الميلاد" },
+  { key: "province", label: "الولاية" },
   { key: "registration_number", label: "رقم التسجيل" },
   { key: "university_ar", label: "الجامعة" },
   { key: "faculty_ar", label: "الكلية" },
@@ -41,7 +44,9 @@ export const DEFAULT_VARIABLES: CustomVariable[] = [
   { key: "thesis_title_ar", label: "عنوان الأطروحة (عربي)" },
   { key: "thesis_title_fr", label: "عنوان الأطروحة (فرنسي)" },
   { key: "supervisor_ar", label: "المشرف" },
+  { key: "supervisor_university", label: "جامعة المشرف" },
   { key: "co_supervisor_ar", label: "المشرف المساعد" },
+  { key: "co_supervisor_university", label: "جامعة المشرف المساعد" },
   { key: "jury_president_ar", label: "رئيس اللجنة" },
   { key: "jury_members_ar", label: "أعضاء اللجنة" },
   { key: "scientific_council_date", label: "تاريخ المجلس العلمي" },
@@ -49,6 +54,7 @@ export const DEFAULT_VARIABLES: CustomVariable[] = [
   { key: "signature_title", label: "صفة الموقع" },
   { key: "first_registration_year", label: "سنة أول تسجيل" },
   { key: "research_lab_ar", label: "مخبر البحث" },
+  { key: "current_year", label: "السنة الجامعية" },
 ];
 
 export function getTemplateVariables(template: DefenseDocTemplate): CustomVariable[] {
