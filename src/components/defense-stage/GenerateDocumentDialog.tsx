@@ -1,15 +1,32 @@
 import { useState, useRef, useEffect } from "react";
+import { formatCertificateDate } from "@/lib/numerals";
 
-/** Format ISO date (YYYY-MM-DD) to DD/MM/YYYY wrapped in RTL span for Arabic documents */
-function formatIsoDateToDDMMYYYY(dateStr: string | null | undefined): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = String(d.getFullYear());
-  // Wrap in a span with dir="ltr" inside RTL context to keep digit order correct
-  return `<span dir="ltr" style="display:inline-block;direction:ltr;unicode-bidi:embed">${day}/${month}/${year}</span>`;
+/**
+ * Format document dates like certificate birth date (DD/MM/YYYY)
+ * and enforce RTL visual rendering in Arabic templates.
+ */
+function formatArabicDocumentDate(dateStr: string | null | undefined, placeholder = ""): string {
+  const raw = dateStr?.trim();
+  if (!raw) return placeholder;
+
+  let formatted = raw;
+
+  // Common persisted formats
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const ymdSlashMatch = raw.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+  const dmySlashMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+  if (isoMatch) {
+    formatted = `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+  } else if (ymdSlashMatch) {
+    formatted = `${ymdSlashMatch[3]}/${ymdSlashMatch[2]}/${ymdSlashMatch[1]}`;
+  } else if (dmySlashMatch) {
+    formatted = `${dmySlashMatch[1]}/${dmySlashMatch[2]}/${dmySlashMatch[3]}`;
+  } else {
+    formatted = formatCertificateDate(raw, true);
+  }
+
+  return `<span dir="rtl" style="display:inline-block;direction:rtl;unicode-bidi:bidi-override;text-align:right">${formatted}</span>`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
@@ -319,16 +336,18 @@ export function GenerateDocumentDialog({
 
     const variables: Record<string, string> = {
       decision_number: isJuryDecision ? (decisionNumber.trim() || ".....................") : (juryDecisionNumber.trim() || "....................."),
-      decision_date: isJuryDecision ? (decisionDate.trim() || ".....................") : (juryDecisionDate.trim() || "....................."),
+      decision_date: isJuryDecision
+        ? formatArabicDocumentDate(decisionDate, ".....................")
+        : formatArabicDocumentDate(juryDecisionDate, "....................."),
       auth_decision_number: isJuryDecision ? "" : (decisionNumber.trim() || "....................."),
-      auth_decision_date: isJuryDecision ? "" : (decisionDate.trim() || "....................."),
+      auth_decision_date: isJuryDecision ? "" : formatArabicDocumentDate(decisionDate, "....................."),
       dean_letter_number: isJuryDecision ? "" : (deanLetterNumber.trim() || "....................."),
-      dean_letter_date: isJuryDecision ? "" : (deanLetterDate.trim() || "....................."),
+      dean_letter_date: isJuryDecision ? "" : formatArabicDocumentDate(deanLetterDate, "....................."),
       faculty_head_title: facultyHeadTitle,
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
       gender: student.gender || "male",
-      date_of_birth: formatIsoDateToDDMMYYYY(student.date_of_birth),
+      date_of_birth: formatArabicDocumentDate(student.date_of_birth),
       birthplace_ar: student.birthplace_ar || "",
       province: student.province || "",
       registration_number: student.registration_number || "",
@@ -346,8 +365,8 @@ export function GenerateDocumentDialog({
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
       jury_table: buildJuryTableHtml(enrichedJuryMembers),
-      scientific_council_date: formatIsoDateToDDMMYYYY(student.scientific_council_date),
-      defense_date: formatIsoDateToDDMMYYYY(student.defense_date),
+      scientific_council_date: formatArabicDocumentDate(student.scientific_council_date),
+      defense_date: formatArabicDocumentDate(student.defense_date),
       signature_title: student.signature_title || "",
       first_registration_year: student.first_registration_year || "",
       research_lab_ar: student.research_lab_ar || "",
