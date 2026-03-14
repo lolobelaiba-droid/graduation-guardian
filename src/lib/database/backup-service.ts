@@ -500,7 +500,7 @@ export class BackupService {
       await supabase.from('academic_titles').insert(defaultTitles as TablesInsert<'academic_titles'>[]);
     }
 
-    console.log('Rebuilt default academic titles');
+    // academic titles rebuilt
   }
 
   /**
