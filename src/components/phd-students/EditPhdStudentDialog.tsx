@@ -39,6 +39,8 @@ import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 import type { PhdStudentType, PhdStudent, PhdLmdStudent } from "@/types/phd-students";
+import { useRecordLock } from "@/hooks/useRecordLock";
+import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
 import { calculateRegistrationDetails, getDefaultInscriptionStatus, getCurrentYearLabel } from "@/lib/registration-calculation";
 import { toWesternNumerals } from "@/lib/numerals";
