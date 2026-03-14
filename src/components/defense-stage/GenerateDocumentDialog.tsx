@@ -32,10 +32,10 @@ function formatArabicDocumentDate(dateStr: string | null | undefined, placeholde
     day = normalizedMatch[1]; month = normalizedMatch[2]; year = normalizedMatch[3];
   }
 
-  // ترتيب منطقي ثابت: يوم/شهر/سنة
-  const dateFormatted = `${day}/${month}/${year}`;
+  // عرض بصري RTL داخل النص العربي (مثال: 2025/04/10)
+  const visualRtlDate = `${year}/${month}/${day}`;
   // RLI + BDI (RTL) + PDI لعزل الاتجاه داخل الجملة العربية
-  return `\u2067<bdi dir="rtl" style="direction:rtl;unicode-bidi:isolate">${dateFormatted}</bdi>\u2069`;
+  return `\u2067<bdi dir="rtl" style="direction:rtl;unicode-bidi:isolate-override">${visualRtlDate}</bdi>\u2069`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
