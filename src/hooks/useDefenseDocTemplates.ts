@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface CustomVariable {
+  key: string;
+  label: string;
+}
+
 export interface DefenseDocTemplate {
   id: string;
   document_type: string;
@@ -9,6 +14,7 @@ export interface DefenseDocTemplate {
   font_family: string;
   font_size: number;
   line_height: number;
+  custom_variables: CustomVariable[];
   created_at: string;
   updated_at: string;
 }
@@ -20,8 +26,8 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   defense_auth_science: "الترخيص بالمناقشة - دكتوراه علوم",
 };
 
-// Available placeholder variables for defense documents
-export const AVAILABLE_VARIABLES = [
+// Default placeholder variables for defense documents
+export const DEFAULT_VARIABLES: CustomVariable[] = [
   { key: "full_name_ar", label: "الاسم الكامل (عربي)" },
   { key: "full_name_fr", label: "الاسم الكامل (فرنسي)" },
   { key: "date_of_birth", label: "تاريخ الميلاد" },
@@ -45,6 +51,11 @@ export const AVAILABLE_VARIABLES = [
   { key: "research_lab_ar", label: "مخبر البحث" },
 ];
 
+export function getTemplateVariables(template: DefenseDocTemplate): CustomVariable[] {
+  const customs = Array.isArray(template.custom_variables) ? template.custom_variables : [];
+  return [...DEFAULT_VARIABLES, ...customs];
+}
+
 export function useDefenseDocTemplates() {
   return useQuery({
     queryKey: ["defense_document_templates"],
@@ -55,7 +66,10 @@ export function useDefenseDocTemplates() {
         .order("document_type");
 
       if (error) throw error;
-      return (data || []) as unknown as DefenseDocTemplate[];
+      return (data || []).map((d: any) => ({
+        ...d,
+        custom_variables: Array.isArray(d.custom_variables) ? d.custom_variables : [],
+      })) as DefenseDocTemplate[];
     },
   });
 }

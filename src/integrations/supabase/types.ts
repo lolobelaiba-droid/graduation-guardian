@@ -360,6 +360,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          custom_variables: Json | null
           document_type: string
           font_family: string | null
           font_size: number | null
@@ -371,6 +372,7 @@ export type Database = {
         Insert: {
           content?: string
           created_at?: string | null
+          custom_variables?: Json | null
           document_type: string
           font_family?: string | null
           font_size?: number | null
@@ -382,6 +384,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          custom_variables?: Json | null
           document_type?: string
           font_family?: string | null
           font_size?: number | null
