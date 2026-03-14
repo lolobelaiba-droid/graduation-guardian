@@ -13,6 +13,7 @@ import {
   AlignRight,
   AlignCenter,
   AlignLeft,
+  AlignJustify,
   Undo2,
   Redo2,
   Eye,
