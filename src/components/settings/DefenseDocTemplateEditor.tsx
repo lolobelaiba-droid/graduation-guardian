@@ -908,12 +908,18 @@ export default function DefenseDocTemplateEditor() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTableDialog({ open: false, templateId: "" })}>
+            <Button variant="outline" onClick={() => setTableDialog({ open: false, templateId: "", editMode: false })}>
               إلغاء
             </Button>
-            <Button onClick={() => insertTable(tableDialog.templateId)} className="gap-1">
+            {tableDialog.editMode && (
+              <Button variant="destructive" onClick={() => deleteTable(tableDialog.templateId)} className="gap-1">
+                <Trash2 className="h-4 w-4" />
+                حذف الجدول
+              </Button>
+            )}
+            <Button onClick={() => tableDialog.editMode ? updateExistingTable(tableDialog.templateId) : insertTable(tableDialog.templateId)} className="gap-1">
               <Table className="h-4 w-4" />
-              إدراج
+              {tableDialog.editMode ? "تحديث" : "إدراج"}
             </Button>
           </DialogFooter>
         </DialogContent>
