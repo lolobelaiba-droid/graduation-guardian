@@ -87,14 +87,25 @@ export function GenerateDocumentDialog({
     }
   }, [open, student, isJuryDecision]);
 
+  // For defense_auth: also load jury decision data
+  const [juryDecisionNumber, setJuryDecisionNumber] = useState("");
+  const [juryDecisionDate, setJuryDecisionDate] = useState("");
+
+  useEffect(() => {
+    if (open && student && !isJuryDecision) {
+      setJuryDecisionNumber(student.decision_number || "");
+      setJuryDecisionDate(student.decision_date || "");
+    }
+  }, [open, student, isJuryDecision]);
+
   const handleGenerate = async () => {
     if (!isJuryDecision) {
-      if (!decisionNumber.trim()) {
-        toast.error("يرجى إدخال رقم المقرر");
+      if (!juryDecisionNumber.trim()) {
+        toast.error("يرجى إدخال رقم مقرر اللجنة");
         return;
       }
-      if (!decisionDate.trim()) {
-        toast.error("يرجى إدخال تاريخ المقرر");
+      if (!juryDecisionDate.trim()) {
+        toast.error("يرجى إدخال تاريخ مقرر اللجنة");
         return;
       }
       if (!deanLetterNumber.trim()) {
@@ -118,6 +129,8 @@ export function GenerateDocumentDialog({
         // Auto-update status to 'under_review' (قيد الخبرة) when jury decision is generated
         updateData.stage_status = 'under_review';
       } else {
+        updateData.decision_number = juryDecisionNumber.trim();
+        updateData.decision_date = juryDecisionDate.trim();
         updateData.auth_decision_number = decisionNumber.trim();
         updateData.auth_decision_date = decisionDate.trim();
         updateData.dean_letter_number = deanLetterNumber.trim();
@@ -293,12 +306,12 @@ export function GenerateDocumentDialog({
     });
 
     const variables: Record<string, string> = {
-      decision_number: student.decision_number || "",
-      decision_date: student.decision_date || "",
-      auth_decision_number: isJuryDecision ? "" : decisionNumber,
-      auth_decision_date: isJuryDecision ? "" : decisionDate,
-      dean_letter_number: isJuryDecision ? "" : deanLetterNumber,
-      dean_letter_date: isJuryDecision ? "" : deanLetterDate,
+      decision_number: isJuryDecision ? (decisionNumber.trim() || ".....................") : (juryDecisionNumber.trim() || "....................."),
+      decision_date: isJuryDecision ? (decisionDate.trim() || ".....................") : (juryDecisionDate.trim() || "....................."),
+      auth_decision_number: isJuryDecision ? "" : (decisionNumber.trim() || "....................."),
+      auth_decision_date: isJuryDecision ? "" : (decisionDate.trim() || "....................."),
+      dean_letter_number: isJuryDecision ? "" : (deanLetterNumber.trim() || "....................."),
+      dean_letter_date: isJuryDecision ? "" : (deanLetterDate.trim() || "....................."),
       faculty_head_title: facultyHeadTitle,
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
@@ -331,12 +344,6 @@ export function GenerateDocumentDialog({
       decree_accreditation: student.decree_accreditation || "",
     };
 
-    // For jury decision, override with the just-entered values
-    if (isJuryDecision) {
-      variables.decision_number = decisionNumber.trim() || ".....................";
-      variables.decision_date = decisionDate.trim() || ".....................";
-    }
-
     let content = template.content;
     content = content.replace(
       /<span[^>]*class="variable-tag"[^>]*>\{\{(\w+)\}\}<\/span>/g,
@@ -351,8 +358,8 @@ export function GenerateDocumentDialog({
   };
 
   const docTitle = isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
-  const numberLabel = isJuryDecision ? "رقم مقرر اللجنة" : "رقم مقرر الترخيص *";
-  const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة" : "تاريخ مقرر الترخيص *";
+  const numberLabel = isJuryDecision ? "رقم مقرر اللجنة" : "رقم مقرر الترخيص";
+  const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة" : "تاريخ مقرر الترخيص";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -372,6 +379,23 @@ export function GenerateDocumentDialog({
 
         {!showPreview ? (
           <div className="space-y-4 py-2">
+            {!isJuryDecision && (
+              <>
+                <div className="space-y-2">
+                  <Label>رقم مقرر اللجنة *</Label>
+                  <Input
+                    value={juryDecisionNumber}
+                    onChange={(e) => setJuryDecisionNumber(e.target.value)}
+                    placeholder="أدخل رقم مقرر اللجنة..."
+                    dir="rtl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>تاريخ مقرر اللجنة *</Label>
+                  <DateInput value={juryDecisionDate} onChange={setJuryDecisionDate} />
+                </div>
+              </>
+            )}
             <div className="space-y-2">
               <Label>{numberLabel}</Label>
               <Input
