@@ -306,12 +306,12 @@ export function GenerateDocumentDialog({
     });
 
     const variables: Record<string, string> = {
-      decision_number: student.decision_number || "",
-      decision_date: student.decision_date || "",
-      auth_decision_number: isJuryDecision ? "" : decisionNumber,
-      auth_decision_date: isJuryDecision ? "" : decisionDate,
-      dean_letter_number: isJuryDecision ? "" : deanLetterNumber,
-      dean_letter_date: isJuryDecision ? "" : deanLetterDate,
+      decision_number: isJuryDecision ? (decisionNumber.trim() || ".....................") : (juryDecisionNumber.trim() || "....................."),
+      decision_date: isJuryDecision ? (decisionDate.trim() || ".....................") : (juryDecisionDate.trim() || "....................."),
+      auth_decision_number: isJuryDecision ? "" : (decisionNumber.trim() || "....................."),
+      auth_decision_date: isJuryDecision ? "" : (decisionDate.trim() || "....................."),
+      dean_letter_number: isJuryDecision ? "" : (deanLetterNumber.trim() || "....................."),
+      dean_letter_date: isJuryDecision ? "" : (deanLetterDate.trim() || "....................."),
       faculty_head_title: facultyHeadTitle,
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
@@ -343,11 +343,6 @@ export function GenerateDocumentDialog({
       decree_training: student.decree_training || "",
       decree_accreditation: student.decree_accreditation || "",
     };
-
-    // For jury decision, override with the just-entered values
-    if (isJuryDecision) {
-      variables.decision_number = decisionNumber.trim() || ".....................";
-      variables.decision_date = decisionDate.trim() || ".....................";
     }
 
     let content = template.content;
