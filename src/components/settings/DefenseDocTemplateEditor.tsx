@@ -528,6 +528,88 @@ export default function DefenseDocTemplateEditor() {
                         </SelectContent>
                       </Select>
 
+                      {/* Font family for selected text */}
+                      <Select value="" onValueChange={(v) => execCmd(template.id, "fontName", v)}>
+                        <SelectTrigger className="h-8 w-28 text-xs">
+                          <span className="text-xs">خط النص</span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FONT_OPTIONS.map((f) => (
+                            <SelectItem key={f} value={f}>
+                              <span style={{ fontFamily: f }} className="text-xs">{f}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="w-px h-5 bg-border mx-1" />
+
+                      {/* Direction toggle buttons */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-xs gap-1"
+                        onClick={() => {
+                          const ref = editorRefs.current[template.id];
+                          if (!ref) return;
+                          ref.focus();
+                          const sel = window.getSelection();
+                          if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+                            const range = sel.getRangeAt(0);
+                            const span = document.createElement("span");
+                            span.style.direction = "rtl";
+                            span.style.unicodeBidi = "embed";
+                            range.surroundContents(span);
+                            handleEditorInput(template.id);
+                          } else {
+                            execCmd(template.id, "formatBlock", "div");
+                            const block = window.getSelection()?.anchorNode?.parentElement;
+                            if (block) {
+                              block.style.direction = "rtl";
+                              block.style.textAlign = "right";
+                            }
+                            handleEditorInput(template.id);
+                          }
+                        }}
+                        title="اتجاه من اليمين لليسار"
+                      >
+                        <Pilcrow className="h-3.5 w-3.5" />
+                        <span>يمين←</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-xs gap-1"
+                        onClick={() => {
+                          const ref = editorRefs.current[template.id];
+                          if (!ref) return;
+                          ref.focus();
+                          const sel = window.getSelection();
+                          if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+                            const range = sel.getRangeAt(0);
+                            const span = document.createElement("span");
+                            span.style.direction = "ltr";
+                            span.style.unicodeBidi = "embed";
+                            range.surroundContents(span);
+                            handleEditorInput(template.id);
+                          } else {
+                            execCmd(template.id, "formatBlock", "div");
+                            const block = window.getSelection()?.anchorNode?.parentElement;
+                            if (block) {
+                              block.style.direction = "ltr";
+                              block.style.textAlign = "left";
+                            }
+                            handleEditorInput(template.id);
+                          }
+                        }}
+                        title="اتجاه من اليسار لليمين"
+                      >
+                        <Pilcrow className="h-3.5 w-3.5 scale-x-[-1]" />
+                        <span>←يسار</span>
+                      </Button>
+
                       <div className="w-px h-5 bg-border mx-1" />
 
                       {/* Insert Variable */}
