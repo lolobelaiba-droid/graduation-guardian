@@ -974,14 +974,13 @@ export default function DefenseDocTemplateEditor() {
                         }}
                         contentEditable
                         dir="rtl"
-                        className="border rounded-lg p-6 bg-background min-h-[400px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="defense-doc-editor border rounded-lg p-6 bg-background min-h-[400px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         style={{
                           fontFamily: settings.font_family,
                           fontSize: `${settings.font_size}px`,
                           lineHeight: settings.line_height,
-                         paddingRight: `${settings.margin_right}mm`,
+                          paddingRight: `${settings.margin_right}mm`,
                           paddingLeft: `${settings.margin_left}mm`,
-                          textIndent: settings.first_line_indent > 0 ? `${settings.first_line_indent}mm` : undefined,
                         }}
                         onInput={() => handleEditorInput(template.id)}
                         onMouseUp={saveSelection}
