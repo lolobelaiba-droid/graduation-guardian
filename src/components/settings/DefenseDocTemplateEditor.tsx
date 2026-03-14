@@ -194,8 +194,30 @@ export default function DefenseDocTemplateEditor() {
     updateLocal(id, "content", ref.innerHTML);
   }, []);
 
+  // Track selection so toolbar clicks don't lose it
+  const lastSelectionRef = useRef<Range | null>(null);
+
+  const saveSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      lastSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  }, []);
+
+  const restoreSelection = useCallback(() => {
+    const range = lastSelectionRef.current;
+    if (range) {
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, []);
+
   const execCmd = (id: string, cmd: string, value?: string) => {
-    editorRefs.current[id]?.focus();
+    const ref = editorRefs.current[id];
+    if (!ref) return;
+    ref.focus();
+    restoreSelection();
     document.execCommand(cmd, false, value);
     handleEditorInput(id);
   };
