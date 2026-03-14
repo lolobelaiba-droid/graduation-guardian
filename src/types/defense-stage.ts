@@ -54,6 +54,10 @@ export interface DefenseStageStudent {
   decree_accreditation: string | null;
   decision_number: string | null;
   decision_date: string | null;
+  auth_decision_number: string | null;
+  auth_decision_date: string | null;
+  dean_letter_number: string | null;
+  dean_letter_date: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
