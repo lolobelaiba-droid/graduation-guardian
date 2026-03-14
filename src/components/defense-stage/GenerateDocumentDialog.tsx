@@ -274,8 +274,8 @@ export function GenerateDocumentDialog({
   };
 
   const docTitle = isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
-  const numberLabel = isJuryDecision ? "رقم مقرر اللجنة *" : "رقم مقرر الترخيص *";
-  const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة *" : "تاريخ مقرر الترخيص *";
+  const numberLabel = isJuryDecision ? "رقم مقرر اللجنة" : "رقم مقرر الترخيص *";
+  const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة" : "تاريخ مقرر الترخيص *";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
