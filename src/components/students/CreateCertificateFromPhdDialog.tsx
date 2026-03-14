@@ -482,10 +482,10 @@ export function CreateCertificateFromPhdDialog({
                       className="mt-4"
                       onClick={() => {
                         onOpenChange(false);
-                        window.location.hash = '/phd-students';
+                        window.location.hash = '/defense-stage';
                       }}
                     >
-                      الذهاب إلى قاعدة بيانات طلبة الدكتوراه
+                      الذهاب إلى طلبة طور المناقشة
                     </Button>
                   </div>
                 ) : filteredStudents.length === 0 ? (
