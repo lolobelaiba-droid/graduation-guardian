@@ -247,6 +247,9 @@ export default function Settings() {
           case "backup_count":
             if (setting.value) setBackupCount(setting.value);
             break;
+          case "app_password_hash":
+            if (setting.value) setHasExistingPassword(true);
+            break;
         }
       });
     };
