@@ -459,7 +459,7 @@ export function CreateCertificateFromPhdDialog({
             <div className="border rounded-lg">
               <div className="p-2 bg-muted/30 border-b flex justify-between items-center">
                 <span className="text-sm font-medium">
-                  قائمة طلبة الدكتوراه ({selectedType === 'phd_lmd' ? 'ل م د' : 'علوم'})
+                  طلبة طور المناقشة ({selectedType === 'phd_lmd' ? 'ل م د' : 'علوم'})
                 </span>
                 <Badge variant="secondary">
                   {availableStudents.length} طالب
