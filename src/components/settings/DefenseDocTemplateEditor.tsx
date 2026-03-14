@@ -156,6 +156,7 @@ export default function DefenseDocTemplateEditor() {
           margin_bottom: t.margin_bottom ?? 20,
           margin_right: t.margin_right ?? 15,
           margin_left: t.margin_left ?? 15,
+          first_line_indent: 0,
           custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
           jury_table_settings: t.jury_table_settings || { ...DEFAULT_JURY_TABLE_SETTINGS },
         };
