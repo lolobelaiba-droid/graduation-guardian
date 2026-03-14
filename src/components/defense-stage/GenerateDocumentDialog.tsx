@@ -316,7 +316,7 @@ export function GenerateDocumentDialog({
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
       gender: student.gender || "male",
-      date_of_birth: student.date_of_birth || "",
+      date_of_birth: formatIsoDateToDDMMYYYY(student.date_of_birth),
       birthplace_ar: student.birthplace_ar || "",
       province: student.province || "",
       registration_number: student.registration_number || "",
