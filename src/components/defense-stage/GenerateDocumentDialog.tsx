@@ -120,6 +120,8 @@ export function GenerateDocumentDialog({
         updateData.auth_decision_date = decisionDate.trim();
         updateData.dean_letter_number = deanLetterNumber.trim();
         updateData.dean_letter_date = deanLetterDate.trim();
+        // Auto-update status to 'defended' (انتهت إجراءات المناقشة) when defense auth is generated
+        updateData.stage_status = 'defended';
       }
 
       await mutation.mutateAsync({ id: student.id, ...updateData });
