@@ -191,8 +191,9 @@ export function CreateCertificateFromPhdDialog({
     setInscriptionStatusFr("");
   }, [initialCertificateType, open]);
 
-  // Filter students based on type and search
-  const availableStudents = selectedType === 'phd_lmd' ? phdLmdStudents : phdScienceStudents;
+  // Filter students from defense stage based on type and search
+  const allStageStudents = selectedType === 'phd_lmd' ? stageLmdStudents : stageScienceStudents;
+  const availableStudents = allStageStudents;
   const filteredStudents = availableStudents.filter((student) => {
     if (!searchQuery) return true;
     return (
