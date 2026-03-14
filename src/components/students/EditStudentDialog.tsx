@@ -1139,10 +1139,10 @@ export default function EditStudentDialog({
             </div>
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isLocked}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 حفظ التغييرات
               </Button>

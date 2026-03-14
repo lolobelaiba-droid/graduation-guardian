@@ -936,10 +936,10 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
 
             {/* Submit */}
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isLocked}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 حفظ التغييرات
               </Button>
