@@ -149,7 +149,7 @@ export default function DefenseDocTemplateEditor() {
       templates.forEach((t) => {
         initial[t.id] = {
           title: t.title,
-          content: t.content,
+          content: normalizeDefenseTemplateHtml(t.content, t.document_type),
           font_family: t.font_family || "IBM Plex Sans Arabic",
           font_size: t.font_size || 14,
           line_height: t.line_height || 1.8,
