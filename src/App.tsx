@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,9 +14,10 @@ import PrintCertificates from "@/pages/PrintCertificates";
 import ActivityLog from "@/pages/ActivityLog";
 import Settings from "@/pages/Settings";
 import Notes from "@/pages/Notes";
-
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
+import LoginScreen from "@/components/auth/LoginScreen";
+import { isElectron } from "@/lib/database/db-client";
 
 const queryClient = new QueryClient();
 
@@ -24,8 +25,9 @@ const queryClient = new QueryClient();
 const isElectronEnv = typeof window !== 'undefined' && !!(window as any).electronAPI;
 
 const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(!isElectronEnv);
+
   useEffect(() => {
-    // في بيئة Electron، لا نحتاج لـ beforeunload لأن Electron يتعامل مع الإغلاق
     if (isElectronEnv) return;
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -37,6 +39,19 @@ const App = () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
+
+  // في بيئة Electron، عرض شاشة الدخول أولاً
+  if (isElectronEnv && !isAuthenticated) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <LoginScreen onAuthenticated={() => setIsAuthenticated(true)} />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
 
   return (
   <QueryClientProvider client={queryClient}>

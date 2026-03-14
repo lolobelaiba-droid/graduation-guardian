@@ -16,9 +16,13 @@ import {
   StickyNote,
   BarChart3,
   Scale,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
+import { useNetworkInfo } from "@/hooks/useNetworkInfo";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const menuItems = [
   { title: "لوحة التحكم", icon: LayoutDashboard, path: "/" },
@@ -39,6 +43,7 @@ export function AppSidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
   const { data: unreadCount = 0 } = useUnreadNotesCount();
+  const { data: networkInfo } = useNetworkInfo();
 
   return (
     <>
@@ -130,8 +135,47 @@ export function AppSidebar() {
           })}
         </nav>
 
-        {/* Collapse Button - Desktop Only */}
-        <div className="hidden md:block p-4 border-t border-sidebar-border">
+        {/* Network Status + Collapse Button */}
+        <div className="hidden md:block p-4 border-t border-sidebar-border space-y-3">
+          {/* Network Status Indicator */}
+          {networkInfo && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+                  networkInfo.isNetwork 
+                    ? "bg-green-500/10 text-green-400" 
+                    : "bg-sidebar-accent text-sidebar-foreground/60"
+                )}>
+                  <div className={cn(
+                    "w-2.5 h-2.5 rounded-full flex-shrink-0",
+                    networkInfo.isNetwork 
+                      ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]" 
+                      : "bg-muted-foreground/40"
+                  )} />
+                  {networkInfo.isNetwork ? (
+                    <Wifi className="h-3.5 w-3.5 flex-shrink-0" />
+                  ) : (
+                    <WifiOff className="h-3.5 w-3.5 flex-shrink-0" />
+                  )}
+                  {!isCollapsed && (
+                    <span className="font-medium truncate">
+                      {networkInfo.isNetwork ? "وضع الشبكة" : "وضع محلي"}
+                    </span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="text-xs">
+                <p className="font-semibold">{networkInfo.isNetwork ? "متصل بالشبكة المشتركة" : "وضع محلي (جهاز واحد)"}</p>
+                <p className="text-muted-foreground">الجهاز: {networkInfo.hostname}</p>
+                <p className="text-muted-foreground">IP: {networkInfo.ip}</p>
+                {networkInfo.sharedPath && (
+                  <p className="text-muted-foreground truncate max-w-[200px]">المسار: {networkInfo.sharedPath}</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           <Button
             variant="ghost"
             size="sm"
