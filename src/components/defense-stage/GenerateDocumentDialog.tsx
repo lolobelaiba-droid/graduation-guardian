@@ -301,8 +301,7 @@ export function GenerateDocumentDialog({
     if (withSignature) columns.push({ key: "signature", header: "الإمضاء", widthKey: "col_number_width" });
 
     // Calculate total width and normalize so columns fit 100%
-    const signatureWidth = 20;
-    const rawWidths = columns.map(col => col.key === "signature" ? signatureWidth : (jts[col.widthKey] as number));
+    const rawWidths = columns.map(col => col.key === "signature" ? (jts.col_signature_width || 20) : (jts[col.widthKey] as number));
     const totalRaw = rawWidths.reduce((a, b) => a + b, 0);
 
     let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
