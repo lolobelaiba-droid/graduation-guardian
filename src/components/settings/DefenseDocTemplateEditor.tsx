@@ -107,6 +107,7 @@ interface LocalSettings {
   margin_bottom: number;
   margin_right: number;
   margin_left: number;
+  first_line_indent: number;
   custom_variables: CustomVariable[];
   jury_table_settings: JuryTableSettings;
 }
