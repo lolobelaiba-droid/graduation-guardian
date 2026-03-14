@@ -228,6 +228,10 @@ export default function DefenseStage() {
                                 <FileText className="h-4 w-4 ml-2" />
                                 توليد ترخيص المناقشة
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditTarget(student)}>
+                                <Pencil className="h-4 w-4 ml-2" />
+                                تعديل البيانات
+                              </DropdownMenuItem>
                               {student.stage_status === 'pending' && (
                                 <DropdownMenuItem onClick={() => handleUpdateStatus(student, 'authorized')}>
                                   <CheckCircle className="h-4 w-4 ml-2" />
