@@ -329,7 +329,8 @@ export default function DefenseDocTemplateEditor() {
         font_size: settings.font_size,
         line_height: settings.line_height,
         custom_variables: settings.custom_variables,
-      });
+        jury_table_settings: settings.jury_table_settings,
+      } as any);
       toast.success("تم حفظ القالب بنجاح");
     } catch (error) {
       console.error("Error saving template:", error);
