@@ -158,6 +158,9 @@ export function GenerateDocumentDialog({
   const getRenderedContent = () => {
     if (!template || !student) return "";
 
+    const facultyAr = student.faculty_ar || "";
+    const facultyHeadTitle = facultyAr.includes("معهد") ? "مدير" : "عميد";
+
     const variables: Record<string, string> = {
       decision_number: student.decision_number || "",
       decision_date: student.decision_date || "",
@@ -165,6 +168,7 @@ export function GenerateDocumentDialog({
       auth_decision_date: isJuryDecision ? "" : decisionDate,
       dean_letter_number: isJuryDecision ? "" : deanLetterNumber,
       dean_letter_date: isJuryDecision ? "" : deanLetterDate,
+      faculty_head_title: facultyHeadTitle,
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
       gender: student.gender || "male",
@@ -173,7 +177,7 @@ export function GenerateDocumentDialog({
       province: student.province || "",
       registration_number: student.registration_number || "",
       university_ar: student.university_ar || "",
-      faculty_ar: student.faculty_ar || "",
+      faculty_ar: facultyAr,
       field_ar: student.field_ar || "",
       branch_ar: student.branch_ar || "",
       specialty_ar: student.specialty_ar || "",
