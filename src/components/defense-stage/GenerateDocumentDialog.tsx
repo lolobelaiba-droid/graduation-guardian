@@ -12,22 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateInput } from "@/components/ui/date-input";
-import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   useUpdateDefenseStageLmd,
   useUpdateDefenseStageScience,
 } from "@/hooks/useDefenseStage";
 import {
   useDefenseDocTemplates,
-  getTemplateVariables,
-  DOCUMENT_TYPE_LABELS,
+  DEFAULT_VARIABLES,
 } from "@/hooks/useDefenseDocTemplates";
 import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
 import { toast } from "sonner";
@@ -47,8 +38,12 @@ export function GenerateDocumentDialog({
   studentType,
   documentType,
 }: GenerateDocumentDialogProps) {
+  // For jury_decision: decision_number + decision_date
+  // For defense_auth: auth_decision_number + auth_decision_date + dean_letter_number + dean_letter_date
   const [decisionNumber, setDecisionNumber] = useState("");
   const [decisionDate, setDecisionDate] = useState("");
+  const [deanLetterNumber, setDeanLetterNumber] = useState("");
+  const [deanLetterDate, setDeanLetterDate] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -59,13 +54,22 @@ export function GenerateDocumentDialog({
   const fullDocType = `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
   const template = templates.find((t) => t.document_type === fullDocType);
 
+  const isJuryDecision = documentType === "jury_decision";
+
   useEffect(() => {
     if (open && student) {
-      setDecisionNumber(student.decision_number || "");
-      setDecisionDate(student.decision_date || "");
+      if (isJuryDecision) {
+        setDecisionNumber(student.decision_number || "");
+        setDecisionDate(student.decision_date || "");
+      } else {
+        setDecisionNumber(student.auth_decision_number || "");
+        setDecisionDate(student.auth_decision_date || "");
+        setDeanLetterNumber(student.dean_letter_number || "");
+        setDeanLetterDate(student.dean_letter_date || "");
+      }
       setShowPreview(false);
     }
-  }, [open, student]);
+  }, [open, student, isJuryDecision]);
 
   const handleGenerate = async () => {
     if (!decisionNumber.trim()) {
@@ -76,15 +80,33 @@ export function GenerateDocumentDialog({
       toast.error("يرجى إدخال تاريخ المقرر");
       return;
     }
+    if (!isJuryDecision) {
+      if (!deanLetterNumber.trim()) {
+        toast.error("يرجى إدخال رقم إرسال العميد");
+        return;
+      }
+      if (!deanLetterDate.trim()) {
+        toast.error("يرجى إدخال تاريخ إرسال العميد");
+        return;
+      }
+    }
     if (!student) return;
 
     try {
       const mutation = studentType === "phd_lmd" ? updateLmd : updateScience;
-      await mutation.mutateAsync({
-        id: student.id,
-        decision_number: decisionNumber.trim(),
-        decision_date: decisionDate.trim(),
-      });
+      const updateData: Record<string, string> = {};
+
+      if (isJuryDecision) {
+        updateData.decision_number = decisionNumber.trim();
+        updateData.decision_date = decisionDate.trim();
+      } else {
+        updateData.auth_decision_number = decisionNumber.trim();
+        updateData.auth_decision_date = decisionDate.trim();
+        updateData.dean_letter_number = deanLetterNumber.trim();
+        updateData.dean_letter_date = deanLetterDate.trim();
+      }
+
+      await mutation.mutateAsync({ id: student.id, ...updateData });
       setShowPreview(true);
     } catch {
       // Error handled by hook
@@ -137,10 +159,15 @@ export function GenerateDocumentDialog({
     if (!template || !student) return "";
 
     const variables: Record<string, string> = {
-      decision_number: decisionNumber,
-      decision_date: decisionDate,
+      decision_number: student.decision_number || "",
+      decision_date: student.decision_date || "",
+      auth_decision_number: isJuryDecision ? "" : decisionNumber,
+      auth_decision_date: isJuryDecision ? "" : decisionDate,
+      dean_letter_number: isJuryDecision ? "" : deanLetterNumber,
+      dean_letter_date: isJuryDecision ? "" : deanLetterDate,
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
+      gender: student.gender || "male",
       date_of_birth: student.date_of_birth || "",
       birthplace_ar: student.birthplace_ar || "",
       province: student.province || "",
@@ -168,19 +195,28 @@ export function GenerateDocumentDialog({
       decree_accreditation: student.decree_accreditation || "",
     };
 
+    // For jury decision, override with the just-entered values
+    if (isJuryDecision) {
+      variables.decision_number = decisionNumber;
+      variables.decision_date = decisionDate;
+    }
+
     let content = template.content;
-    // Replace variable tags (both styled spans and raw {{var}} syntax)
     content = content.replace(
       /<span[^>]*class="variable-tag"[^>]*>\{\{(\w+)\}\}<\/span>/g,
-      (_, key) => variables[key] || `{{${key}}}`
+      (_, key) => variables[key] ?? `{{${key}}}`
     );
     content = content.replace(
       /\{\{(\w+)\}\}/g,
-      (_, key) => variables[key] || `{{${key}}}`
+      (_, key) => variables[key] ?? `{{${key}}}`
     );
 
     return content;
   };
+
+  const docTitle = isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
+  const numberLabel = isJuryDecision ? "رقم مقرر اللجنة *" : "رقم مقرر الترخيص *";
+  const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة *" : "تاريخ مقرر الترخيص *";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -188,11 +224,11 @@ export function GenerateDocumentDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            {documentType === "jury_decision" ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة"}
+            {docTitle}
           </DialogTitle>
           <DialogDescription>
             {!showPreview
-              ? `أدخل رقم المقرر وتاريخه للطالب: ${student?.full_name_ar || ""}`
+              ? `أدخل بيانات المقرر للطالب: ${student?.full_name_ar || ""}`
               : "معاينة الوثيقة قبل الطباعة"
             }
           </DialogDescription>
@@ -201,7 +237,7 @@ export function GenerateDocumentDialog({
         {!showPreview ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>رقم المقرر *</Label>
+              <Label>{numberLabel}</Label>
               <Input
                 value={decisionNumber}
                 onChange={(e) => setDecisionNumber(e.target.value)}
@@ -210,12 +246,27 @@ export function GenerateDocumentDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>تاريخ المقرر *</Label>
-              <DateInput
-                value={decisionDate}
-                onChange={setDecisionDate}
-              />
+              <Label>{dateLabel}</Label>
+              <DateInput value={decisionDate} onChange={setDecisionDate} />
             </div>
+
+            {!isJuryDecision && (
+              <>
+                <div className="space-y-2">
+                  <Label>رقم إرسال العميد *</Label>
+                  <Input
+                    value={deanLetterNumber}
+                    onChange={(e) => setDeanLetterNumber(e.target.value)}
+                    placeholder="أدخل رقم إرسال العميد..."
+                    dir="rtl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>تاريخ إرسال العميد *</Label>
+                  <DateInput value={deanLetterDate} onChange={setDeanLetterDate} />
+                </div>
+              </>
+            )}
 
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
