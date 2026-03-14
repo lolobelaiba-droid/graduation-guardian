@@ -102,6 +102,12 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
   const { professorNames, ensureProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
 
+  const { data: decreeTrainingOptions = [] } = useDropdownOptions('decree_training');
+  const { data: decreeAccreditationOptions = [] } = useDropdownOptions('decree_accreditation');
+  const addDropdownOption = useAddDropdownOption();
+  const deleteDropdownOption = useDeleteDropdownOption();
+  const updateDropdownOption = useUpdateDropdownOption();
+
   useEffect(() => {
     if (!open) {
       setSelectedStudent(null);
