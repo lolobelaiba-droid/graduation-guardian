@@ -301,6 +301,8 @@ function writeTable(tableName, data) {
     var tmpPath = filePath + '.tmp.' + process.pid;
     fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
     fs.renameSync(tmpPath, filePath);
+    // تحديث الذاكرة المؤقتة
+    invalidateCache(tableName);
     return true;
   } catch (error) {
     console.error('Error writing table ' + tableName + ':', error);
