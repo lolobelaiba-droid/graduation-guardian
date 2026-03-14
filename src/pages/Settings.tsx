@@ -19,6 +19,7 @@ import {
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
 import { CustomFieldsManager } from "@/components/settings/CustomFieldsManager";
+import DefenseDocTemplateEditor from "@/components/settings/DefenseDocTemplateEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
