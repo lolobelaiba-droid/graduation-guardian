@@ -349,6 +349,22 @@ export default function ActivityLog() {
                           </p>
                         </div>
                       </div>
+                      {(selectedActivity.device_hostname || selectedActivity.device_ip) && (
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                          <div>
+                            <span className="text-sm font-medium text-foreground">اسم الجهاز:</span>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {selectedActivity.device_hostname || "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-foreground">عنوان IP:</span>
+                            <p className="text-sm text-muted-foreground font-mono mt-1">
+                              {selectedActivity.device_ip || "-"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </>
                   );
                 })()}
