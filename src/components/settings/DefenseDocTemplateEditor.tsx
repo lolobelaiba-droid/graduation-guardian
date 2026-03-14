@@ -123,6 +123,7 @@ export default function DefenseDocTemplateEditor() {
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
+  const savedSelectionRef = useRef<Range | null>(null);
 
   useEffect(() => {
     if (templates.length > 0) {
