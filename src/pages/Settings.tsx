@@ -95,6 +95,16 @@ export default function Settings() {
   const [restoreProgress, setRestoreProgress] = useState<{ step: string; current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [isNetworkBackup, setIsNetworkBackup] = useState(false);
+  const { data: networkInfo } = useNetworkInfo();
+
+  // Password management
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newAppPassword, setNewAppPassword] = useState("");
+  const [confirmAppPassword, setConfirmAppPassword] = useState("");
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [hasExistingPassword, setHasExistingPassword] = useState(false);
 
   // Selective restore state
   const [selectedRestoreGroups, setSelectedRestoreGroups] = useState<Record<string, boolean>>({});
