@@ -942,7 +942,6 @@ export default function DefenseDocTemplateEditor() {
                     {/* Editor / Preview */}
                     {isPreview ? (
                       <div
-                      <div
                         className="defense-doc-editor border rounded-lg p-8 bg-white min-h-[500px] text-foreground"
                         style={{
                           fontFamily: settings.font_family,
