@@ -259,7 +259,7 @@ export function GenerateDocumentDialog({
       co_supervisor_university: student.co_supervisor_university || "",
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
-      jury_table: buildJuryTableHtml(juryMembers),
+      jury_table: buildJuryTableHtml(enrichedJuryMembers),
       scientific_council_date: student.scientific_council_date || "",
       defense_date: student.defense_date || "",
       signature_title: student.signature_title || "",
