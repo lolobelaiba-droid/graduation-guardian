@@ -84,15 +84,15 @@ export function GenerateDocumentDialog({
   }, [open, student, isJuryDecision]);
 
   const handleGenerate = async () => {
-    if (!decisionNumber.trim()) {
-      toast.error("يرجى إدخال رقم المقرر");
-      return;
-    }
-    if (!decisionDate.trim()) {
-      toast.error("يرجى إدخال تاريخ المقرر");
-      return;
-    }
     if (!isJuryDecision) {
+      if (!decisionNumber.trim()) {
+        toast.error("يرجى إدخال رقم المقرر");
+        return;
+      }
+      if (!decisionDate.trim()) {
+        toast.error("يرجى إدخال تاريخ المقرر");
+        return;
+      }
       if (!deanLetterNumber.trim()) {
         toast.error("يرجى إدخال رقم إرسال العميد");
         return;
