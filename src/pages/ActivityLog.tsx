@@ -188,6 +188,7 @@ export default function ActivityLog() {
                   <TableHead className="text-right font-semibold">المعرّف</TableHead>
                   <TableHead className="text-right font-semibold">التاريخ</TableHead>
                   <TableHead className="text-right font-semibold">المستخدم</TableHead>
+                  <TableHead className="text-right font-semibold">الجهاز</TableHead>
                   <TableHead className="text-right font-semibold w-20">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
