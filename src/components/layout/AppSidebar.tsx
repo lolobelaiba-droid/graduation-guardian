@@ -15,6 +15,7 @@ import {
   Database,
   StickyNote,
   BarChart3,
+  Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
