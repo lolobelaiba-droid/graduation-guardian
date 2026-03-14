@@ -28,14 +28,14 @@ function formatArabicDocumentDate(dateStr: string | null | undefined, placeholde
   } else {
     const normalized = formatCertificateDate(raw, true);
     const normalizedMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!normalizedMatch) return `\u2067<bdi>${normalized}</bdi>\u2069`;
+    if (!normalizedMatch) return `\u2067<bdi dir="rtl" style="direction:rtl;unicode-bidi:isolate">${normalized}</bdi>\u2069`;
     day = normalizedMatch[1]; month = normalizedMatch[2]; year = normalizedMatch[3];
   }
 
   // ترتيب منطقي ثابت: يوم/شهر/سنة
   const dateFormatted = `${day}/${month}/${year}`;
-  // RLI + BDI + PDI لعزل الاتجاه داخل الجملة العربية
-  return `\u2067<bdi>${dateFormatted}</bdi>\u2069`;
+  // RLI + BDI (RTL) + PDI لعزل الاتجاه داخل الجملة العربية
+  return `\u2067<bdi dir="rtl" style="direction:rtl;unicode-bidi:isolate">${dateFormatted}</bdi>\u2069`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
