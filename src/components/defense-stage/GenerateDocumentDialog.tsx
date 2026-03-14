@@ -19,6 +19,8 @@ import {
 import {
   useDefenseDocTemplates,
   DEFAULT_VARIABLES,
+  DEFAULT_JURY_TABLE_SETTINGS,
+  type JuryTableSettings,
 } from "@/hooks/useDefenseDocTemplates";
 import { parseJury, type JuryMember } from "@/components/ui/jury-table-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
