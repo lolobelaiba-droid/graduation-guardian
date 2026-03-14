@@ -1,4 +1,15 @@
 import { useState, useRef, useEffect } from "react";
+
+/** Format ISO date (YYYY-MM-DD) to DD/MM/YYYY for Arabic documents */
+function formatIsoDateToDDMMYYYY(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = String(d.getFullYear());
+  return `${day}/${month}/${year}`;
+}
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
   Dialog,
