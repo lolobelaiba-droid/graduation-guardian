@@ -160,11 +160,11 @@ export function CreateCertificateFromPhdDialog({
   
   const createPhdLmd = useCreatePhdLmdCertificate();
   const createPhdScience = useCreatePhdScienceCertificate();
-  const deletePhdLmd = useDeletePhdLmdStudent();
-  const deletePhdScience = useDeletePhdScienceStudent();
+  const deleteStageLmd = useDeleteDefenseStageLmd();
+  const deleteStageScience = useDeleteDefenseStageScience();
   
-  const { data: phdLmdStudents = [], isLoading: loadingLmd } = usePhdLmdStudents();
-  const { data: phdScienceStudents = [], isLoading: loadingScience } = usePhdScienceStudents();
+  const { data: stageLmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
+  const { data: stageScienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
   
   const isLoadingStudents = loadingLmd || loadingScience;
   
