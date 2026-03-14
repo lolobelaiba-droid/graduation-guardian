@@ -284,7 +284,7 @@ export function GenerateDocumentDialog({
     }
   };
 
-  const buildJuryTableHtml = (members: JuryMember[]): string => {
+  const buildJuryTableHtml = (members: JuryMember[], withSignature = false): string => {
     const jts: JuryTableSettings = template?.jury_table_settings
       ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
       : { ...DEFAULT_JURY_TABLE_SETTINGS };
@@ -292,23 +292,23 @@ export function GenerateDocumentDialog({
     const thStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; background: ${jts.header_bg}; font-weight: bold; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
     const tdStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
     
-    // Build visible columns
     const columns: { key: string; header: string; widthKey: keyof JuryTableSettings }[] = [];
     if (jts.show_number) columns.push({ key: "number", header: "رقم", widthKey: "col_number_width" });
     columns.push({ key: "name", header: "الاسم واللقب", widthKey: "col_name_width" });
     if (jts.show_rank) columns.push({ key: "rank", header: "الرتبة", widthKey: "col_rank_width" });
     if (jts.show_university) columns.push({ key: "university", header: "مؤسسة الانتماء", widthKey: "col_university_width" });
     if (jts.show_role) columns.push({ key: "role", header: "الصفة", widthKey: "col_role_width" });
+    if (withSignature) columns.push({ key: "signature", header: "الإمضاء", widthKey: "col_number_width" });
 
     let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
 <thead><tr>`;
     columns.forEach((col) => {
-      html += `<th style="${thStyle} width: ${jts[col.widthKey]}%;">${col.header}</th>`;
+      const w = col.key === "signature" ? 12 : (jts[col.widthKey] as number);
+      html += `<th style="${thStyle} width: ${w}%;">${col.header}</th>`;
     });
     html += `</tr></thead><tbody>`;
 
     members.forEach((m, i) => {
-      // Display name without rank abbreviation - show just the name as in student data
       const displayName = m.name;
       const roleLabel = JURY_ROLE_DOC_LABELS[m.role] || m.role;
       html += `<tr>`;
@@ -319,6 +319,7 @@ export function GenerateDocumentDialog({
         else if (col.key === "rank") value = m.rankLabel || '&nbsp;';
         else if (col.key === "university") value = m.university || '&nbsp;';
         else if (col.key === "role") value = roleLabel;
+        else if (col.key === "signature") value = '&nbsp;';
         html += `<td style="${tdStyle}">${value}</td>`;
       });
       html += `</tr>`;
