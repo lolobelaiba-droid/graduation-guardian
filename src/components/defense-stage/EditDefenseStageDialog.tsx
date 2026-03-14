@@ -46,6 +46,8 @@ import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions
 import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 import { getDefaultSignatureTitle } from "@/types/certificates";
+import { useRecordLock } from "@/hooks/useRecordLock";
+import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 
 function SectionHeader({ title }: { title: string }) {
   return (
