@@ -419,7 +419,9 @@ export function GenerateDocumentDialog({
     return content;
   };
 
-  const docTitle = isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
+  const docTitle = isDefenseMinutes
+    ? "توليد محضر مداولات لجنة المناقشة"
+    : isJuryDecision ? "توليد مقرر تعيين لجنة المناقشة" : "توليد ترخيص المناقشة";
   const numberLabel = isJuryDecision ? "رقم مقرر اللجنة" : "رقم مقرر الترخيص";
   const dateLabel = isJuryDecision ? "تاريخ مقرر اللجنة" : "تاريخ مقرر الترخيص";
 
@@ -433,7 +435,9 @@ export function GenerateDocumentDialog({
           </DialogTitle>
           <DialogDescription>
             {!showPreview
-              ? `أدخل بيانات المقرر للطالب: ${student?.full_name_ar || ""}`
+              ? isDefenseMinutes
+                ? `أدخل بيانات المحضر للطالب: ${student?.full_name_ar || ""}`
+                : `أدخل بيانات المقرر للطالب: ${student?.full_name_ar || ""}`
               : "معاينة الوثيقة قبل الطباعة"
             }
           </DialogDescription>
@@ -441,52 +445,89 @@ export function GenerateDocumentDialog({
 
         {!showPreview ? (
           <div className="space-y-4 py-2">
-            {!isJuryDecision && (
+            {isDefenseMinutes ? (
               <>
                 <div className="space-y-2">
-                  <Label>رقم مقرر اللجنة *</Label>
+                  <Label>رقم المحضر</Label>
                   <Input
-                    value={juryDecisionNumber}
-                    onChange={(e) => setJuryDecisionNumber(e.target.value)}
-                    placeholder="أدخل رقم مقرر اللجنة..."
+                    value={minutesNumber}
+                    onChange={(e) => setMinutesNumber(e.target.value)}
+                    placeholder="أدخل رقم المحضر..."
                     dir="rtl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>تاريخ مقرر اللجنة *</Label>
-                  <DateInput value={juryDecisionDate} onChange={setJuryDecisionDate} />
+                  <Label>ساعة المناقشة</Label>
+                  <Input
+                    value={defenseTime}
+                    onChange={(e) => setDefenseTime(e.target.value)}
+                    placeholder="مثال: 10:00 صباحا"
+                    dir="rtl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>التقدير</Label>
+                  <select
+                    value={mention}
+                    onChange={(e) => setMention(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    dir="rtl"
+                  >
+                    <option value="مشرف جدا">مشرف جدا</option>
+                    <option value="مشرف">مشرف</option>
+                  </select>
                 </div>
               </>
-            )}
-            <div className="space-y-2">
-              <Label>{numberLabel}</Label>
-              <Input
-                value={decisionNumber}
-                onChange={(e) => setDecisionNumber(e.target.value)}
-                placeholder="أدخل رقم المقرر..."
-                dir="rtl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{dateLabel}</Label>
-              <DateInput value={decisionDate} onChange={setDecisionDate} />
-            </div>
-
-            {!isJuryDecision && (
+            ) : (
               <>
+                {!isJuryDecision && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>رقم مقرر اللجنة *</Label>
+                      <Input
+                        value={juryDecisionNumber}
+                        onChange={(e) => setJuryDecisionNumber(e.target.value)}
+                        placeholder="أدخل رقم مقرر اللجنة..."
+                        dir="rtl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ مقرر اللجنة *</Label>
+                      <DateInput value={juryDecisionDate} onChange={setJuryDecisionDate} />
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
-                  <Label>رقم إرسال العميد *</Label>
+                  <Label>{numberLabel}</Label>
                   <Input
-                    value={deanLetterNumber}
-                    onChange={(e) => setDeanLetterNumber(e.target.value)}
-                    placeholder="أدخل رقم إرسال العميد..."
+                    value={decisionNumber}
+                    onChange={(e) => setDecisionNumber(e.target.value)}
+                    placeholder="أدخل رقم المقرر..."
                     dir="rtl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>تاريخ إرسال العميد *</Label>
-                  <DateInput value={deanLetterDate} onChange={setDeanLetterDate} />
+                  <Label>{dateLabel}</Label>
+                  <DateInput value={decisionDate} onChange={setDecisionDate} />
                 </div>
+
+                {!isJuryDecision && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>رقم إرسال العميد *</Label>
+                      <Input
+                        value={deanLetterNumber}
+                        onChange={(e) => setDeanLetterNumber(e.target.value)}
+                        placeholder="أدخل رقم إرسال العميد..."
+                        dir="rtl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ إرسال العميد *</Label>
+                      <DateInput value={deanLetterDate} onChange={setDeanLetterDate} />
+                    </div>
+                  </>
+                )}
               </>
             )}
 
