@@ -15,10 +15,12 @@ import {
   Calendar,
   Settings2,
   FolderOpen,
+  FileText,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
 import { CustomFieldsManager } from "@/components/settings/CustomFieldsManager";
+import DefenseDocTemplateEditor from "@/components/settings/DefenseDocTemplateEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -915,6 +917,10 @@ export default function Settings() {
             <Printer className="h-4 w-4" />
             إعدادات الطباعة
           </TabsTrigger>
+          <TabsTrigger value="defensedocs" className="gap-2 py-2">
+            <FileText className="h-4 w-4" />
+            قوالب وثائق المناقشة
+          </TabsTrigger>
           <TabsTrigger value="customfields" className="gap-2 py-2">
             <Settings2 className="h-4 w-4" />
             إدارة حقول قاعدة البيانات
@@ -1165,6 +1171,11 @@ export default function Settings() {
         {/* Print Settings Tab */}
         <TabsContent value="print">
           <TemplatePrintSettings />
+        </TabsContent>
+
+        {/* Defense Document Templates Tab */}
+        <TabsContent value="defensedocs">
+          <DefenseDocTemplateEditor />
         </TabsContent>
 
         {/* Custom Fields Tab - Last after Print Settings */}
