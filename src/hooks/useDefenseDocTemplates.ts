@@ -63,6 +63,7 @@ export const DEFAULT_VARIABLES: CustomVariable[] = [
   { key: "current_year", label: "السنة الجامعية" },
   { key: "decree_training", label: "قرار تنظيم التكوين" },
   { key: "decree_accreditation", label: "قرار التأهيل" },
+  { key: "jury_table", label: "جدول أعضاء اللجنة (ديناميكي)" },
 ];
 
 export function getTemplateVariables(template: DefenseDocTemplate): CustomVariable[] {

@@ -20,8 +20,18 @@ import {
   useDefenseDocTemplates,
   DEFAULT_VARIABLES,
 } from "@/hooks/useDefenseDocTemplates";
+import { parseJury, type JuryMember } from "@/components/ui/jury-table-input";
+import { useAcademicTitles } from "@/hooks/useAcademicTitles";
 import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
 import { toast } from "sonner";
+
+const JURY_ROLE_DOC_LABELS: Record<string, string> = {
+  president: "رئيسا",
+  supervisor: "مشرفا ومقررا",
+  co_supervisor: "مشرفا مساعدا",
+  examiner: "ممتحنا",
+  invited: "عضوا مدعوا",
+};
 
 interface GenerateDocumentDialogProps {
   open: boolean;
@@ -50,6 +60,8 @@ export function GenerateDocumentDialog({
   const updateLmd = useUpdateDefenseStageLmd();
   const updateScience = useUpdateDefenseStageScience();
   const { data: templates = [] } = useDefenseDocTemplates();
+  const { titles: academicTitles } = useAcademicTitles();
+  const ranks = academicTitles.map(t => ({ label: t.full_name, abbreviation: t.abbreviation }));
 
   const fullDocType = `${documentType}_${studentType === "phd_lmd" ? "lmd" : "science"}`;
   const template = templates.find((t) => t.document_type === fullDocType);
@@ -155,11 +167,53 @@ export function GenerateDocumentDialog({
     }, 500);
   };
 
+  const buildJuryTableHtml = (members: JuryMember[]): string => {
+    const thStyle = 'border: 1px solid #333; padding: 8px; text-align: center; background: #f0f0f0; font-weight: bold;';
+    const tdStyle = 'border: 1px solid #333; padding: 8px; text-align: center;';
+    
+    let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
+<thead><tr>
+<th style="${thStyle} width: 6%;">رقم</th>
+<th style="${thStyle} width: 24%;">الاسم واللقب</th>
+<th style="${thStyle} width: 18%;">الرتبة</th>
+<th style="${thStyle} width: 28%;">مؤسسة الانتماء</th>
+<th style="${thStyle} width: 24%;">الصفة</th>
+</tr></thead><tbody>`;
+
+    members.forEach((m, i) => {
+      const displayName = m.rankAbbreviation 
+        ? `${m.rankAbbreviation} ${m.name}`.trim() 
+        : m.name;
+      const roleLabel = JURY_ROLE_DOC_LABELS[m.role] || m.role;
+      html += `<tr>
+<td style="${tdStyle}">${i + 1}</td>
+<td style="${tdStyle}">${displayName || '&nbsp;'}</td>
+<td style="${tdStyle}">${m.rankLabel || '&nbsp;'}</td>
+<td style="${tdStyle}">${m.university || '&nbsp;'}</td>
+<td style="${tdStyle}">${roleLabel}</td>
+</tr>`;
+    });
+
+    html += '</tbody></table>';
+    return html;
+  };
+
   const getRenderedContent = () => {
     if (!template || !student) return "";
 
     const facultyAr = student.faculty_ar || "";
     const facultyHeadTitle = facultyAr.includes("معهد") ? "مدير" : "عميد";
+
+    // Parse jury members dynamically
+    const juryMembers = parseJury(
+      student.jury_president_ar || "",
+      student.jury_members_ar || "",
+      student.supervisor_ar || "",
+      student.supervisor_university || "",
+      student.co_supervisor_ar || "",
+      student.co_supervisor_university || "",
+      ranks
+    );
 
     const variables: Record<string, string> = {
       decision_number: student.decision_number || "",
@@ -189,6 +243,7 @@ export function GenerateDocumentDialog({
       co_supervisor_university: student.co_supervisor_university || "",
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
+      jury_table: buildJuryTableHtml(juryMembers),
       scientific_council_date: student.scientific_council_date || "",
       defense_date: student.defense_date || "",
       signature_title: student.signature_title || "",
