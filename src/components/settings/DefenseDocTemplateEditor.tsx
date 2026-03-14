@@ -17,6 +17,8 @@ import {
   AlignJustify,
   Undo2,
   Redo2,
+  IndentIncrease,
+  IndentDecrease,
   Eye,
   EyeOff,
   Plus,
