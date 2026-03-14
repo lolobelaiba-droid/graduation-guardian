@@ -442,6 +442,10 @@ export function GenerateDocumentDialog({
               <Button variant="outline" onClick={() => setShowPreview(false)}>
                 تعديل البيانات
               </Button>
+              <Button variant="outline" onClick={handleDownloadPdf} className="gap-2">
+                <Download className="h-4 w-4" />
+                تحميل PDF
+              </Button>
               <Button onClick={handlePrint} className="gap-2">
                 <Printer className="h-4 w-4" />
                 طباعة
