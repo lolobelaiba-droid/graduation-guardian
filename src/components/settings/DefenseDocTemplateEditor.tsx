@@ -13,6 +13,7 @@ import {
   AlignRight,
   AlignCenter,
   AlignLeft,
+  AlignJustify,
   Undo2,
   Redo2,
   Eye,
@@ -702,6 +703,9 @@ export default function DefenseDocTemplateEditor() {
                       </Button>
                       <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyLeft")} title="محاذاة يسار">
                         <AlignLeft className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyFull")} title="ضبط النص">
+                        <AlignJustify className="h-4 w-4" />
                       </Button>
 
                       <div className="w-px h-5 bg-border mx-1" />
