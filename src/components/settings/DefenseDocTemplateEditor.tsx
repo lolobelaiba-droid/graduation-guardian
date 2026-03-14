@@ -672,6 +672,7 @@ export default function DefenseDocTemplateEditor() {
                           lineHeight: settings.line_height,
                         }}
                         onInput={() => handleEditorInput(template.id)}
+                        onClick={(e) => handleEditorClick(template.id, e)}
                         suppressContentEditableWarning
                       />
                     )}
