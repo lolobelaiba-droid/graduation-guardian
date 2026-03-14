@@ -123,6 +123,10 @@ export function GenerateDocumentDialog({
       if (isJuryDecision) {
         setDecisionNumber(student.decision_number || "");
         setDecisionDate(student.decision_date || "");
+      } else if (isDefenseMinutes) {
+        setMinutesNumber("");
+        setDefenseTime("");
+        setMention("مشرف جدا");
       } else {
         setDecisionNumber(student.auth_decision_number || "");
         setDecisionDate(student.auth_decision_date || "");
@@ -131,7 +135,7 @@ export function GenerateDocumentDialog({
       }
       setShowPreview(false);
     }
-  }, [open, student, isJuryDecision]);
+  }, [open, student, isJuryDecision, isDefenseMinutes]);
 
   // For defense_auth: also load jury decision data
   const [juryDecisionNumber, setJuryDecisionNumber] = useState("");
