@@ -367,6 +367,10 @@ export type Database = {
           id: string
           jury_table_settings: Json | null
           line_height: number | null
+          margin_bottom: number | null
+          margin_left: number | null
+          margin_right: number | null
+          margin_top: number | null
           title: string
           updated_at: string | null
         }
@@ -380,6 +384,10 @@ export type Database = {
           id?: string
           jury_table_settings?: Json | null
           line_height?: number | null
+          margin_bottom?: number | null
+          margin_left?: number | null
+          margin_right?: number | null
+          margin_top?: number | null
           title: string
           updated_at?: string | null
         }
@@ -393,6 +401,10 @@ export type Database = {
           id?: string
           jury_table_settings?: Json | null
           line_height?: number | null
+          margin_bottom?: number | null
+          margin_left?: number | null
+          margin_right?: number | null
+          margin_top?: number | null
           title?: string
           updated_at?: string | null
         }
