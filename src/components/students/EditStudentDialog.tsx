@@ -363,7 +363,8 @@ export default function EditStudentDialog({
     } as FormValues;
 
     const handleSuccess = () => {
-      onOpenChange(false);
+      releaseLock();
+      handleOpenChange(false);
     };
 
     switch (certificateType) {
