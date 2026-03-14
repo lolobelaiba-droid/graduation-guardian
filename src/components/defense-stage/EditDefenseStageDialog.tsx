@@ -219,7 +219,7 @@ const editSchema = z.object({
   jury_members_ar: z.string().min(1, "أعضاء اللجنة مطلوبون"),
   jury_members_fr: z.string().optional().nullable(),
   scientific_council_date: z.string().min(1, "تاريخ المجلس العلمي مطلوب"),
-  stage_status: z.string(),
+  stage_status: z.enum(['pending', 'authorized', 'defended']),
   defense_date: z.string().optional().nullable(),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
