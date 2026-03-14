@@ -300,10 +300,15 @@ export function GenerateDocumentDialog({
     if (jts.show_role) columns.push({ key: "role", header: "الصفة", widthKey: "col_role_width" });
     if (withSignature) columns.push({ key: "signature", header: "الإمضاء", widthKey: "col_number_width" });
 
+    // Calculate total width and normalize so columns fit 100%
+    const signatureWidth = 20;
+    const rawWidths = columns.map(col => col.key === "signature" ? signatureWidth : (jts[col.widthKey] as number));
+    const totalRaw = rawWidths.reduce((a, b) => a + b, 0);
+
     let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
 <thead><tr>`;
-    columns.forEach((col) => {
-      const w = col.key === "signature" ? 20 : (jts[col.widthKey] as number);
+    columns.forEach((col, idx) => {
+      const w = Math.round((rawWidths[idx] / totalRaw) * 100);
       html += `<th style="${thStyle} width: ${w}%;">${col.header}</th>`;
     });
     html += `</tr></thead><tbody>`;
