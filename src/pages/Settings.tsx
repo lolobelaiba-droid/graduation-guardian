@@ -53,7 +53,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { BackupService, type BackupData } from "@/lib/database/backup-service";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { toast } from "sonner";
-import { toast } from "sonner";
 
 interface BackupSummary {
   phdLmdCount: number;
