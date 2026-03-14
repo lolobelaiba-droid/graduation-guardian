@@ -288,8 +288,8 @@ export function GenerateDocumentDialog({
 
     // For jury decision, override with the just-entered values
     if (isJuryDecision) {
-      variables.decision_number = decisionNumber;
-      variables.decision_date = decisionDate;
+      variables.decision_number = decisionNumber.trim() || ".....................";
+      variables.decision_date = decisionDate.trim() || ".....................";
     }
 
     let content = template.content;
