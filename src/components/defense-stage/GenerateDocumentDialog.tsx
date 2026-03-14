@@ -175,50 +175,64 @@ export function GenerateDocumentDialog({
     }, 500);
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!printRef.current) return;
-    const content = printRef.current.innerHTML;
-    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
-    const studentName = student?.full_name_ar || "وثيقة";
-    const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
+    
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const studentName = student?.full_name_ar || "وثيقة";
+      const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
+      const fileName = `${docTitle}_${studentName}.pdf`;
 
-    const pdfWindow = window.open("", "_blank");
-    if (!pdfWindow) {
-      toast.error("فشل فتح نافذة التحميل");
-      return;
+      // Create a clone of the content to avoid modifying the preview
+      const element = printRef.current.cloneNode(true) as HTMLElement;
+      
+      // Set explicit styles on the clone for proper rendering
+      element.style.width = "210mm";
+      element.style.padding = `${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm`;
+      element.style.fontFamily = `'${template?.font_family || "IBM Plex Sans Arabic"}', 'IBM Plex Sans Arabic', sans-serif`;
+      element.style.fontSize = `${template?.font_size || 14}px`;
+      element.style.lineHeight = `${template?.line_height || 1.8}`;
+      element.style.direction = "rtl";
+      element.style.color = "#000";
+      element.style.backgroundColor = "#fff";
+      
+      // Append temporarily to body for rendering
+      element.style.position = "fixed";
+      element.style.left = "-9999px";
+      element.style.top = "0";
+      document.body.appendChild(element);
+
+      // Wait for fonts to load
+      await document.fonts.ready;
+
+      const opt = {
+        margin: 0 as number, // margins already applied via padding
+        filename: fileName,
+        image: { type: "jpeg" as const, quality: 1.0 },
+        html2canvas: {
+          scale: 5,
+          useCORS: true,
+          letterRendering: true,
+          logging: false,
+          windowWidth: 794, // A4 width in px at 96dpi
+        },
+        jsPDF: {
+          unit: "mm" as const,
+          format: "a4" as const,
+          orientation: "portrait" as const,
+        },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      
+      // Cleanup
+      document.body.removeChild(element);
+      toast.success("تم تحميل الوثيقة بنجاح");
+    } catch (err) {
+      console.error("PDF download error:", err);
+      toast.error("فشل في تحميل الوثيقة");
     }
-
-    pdfWindow.document.write(`<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>${docTitle}_${studentName}</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap');
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  @page { size: A4 portrait; margin: ${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm; }
-  body {
-    font-family: '${fontFamily}', 'IBM Plex Sans Arabic', sans-serif;
-    font-size: ${template?.font_size || 14}px;
-    line-height: ${template?.line_height || 1.8};
-    direction: rtl;
-    color: #000;
-  }
-  table { border-collapse: collapse; width: 100%; }
-  td, th { border: 1px solid #333; padding: 8px; text-align: center; }
-  th { background: #f0f0f0; font-weight: bold; }
-  .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
-  @media print { body { -webkit-print-color-adjust: exact; } }
-</style>
-</head>
-<body>${content}</body>
-</html>`);
-    pdfWindow.document.close();
-
-    // Wait for fonts to load then trigger print (user selects "Save as PDF")
-    setTimeout(() => {
-      pdfWindow.print();
-    }, 800);
   };
 
   const buildJuryTableHtml = (members: JuryMember[]): string => {
