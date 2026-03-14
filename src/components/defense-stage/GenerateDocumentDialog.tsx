@@ -142,11 +142,11 @@ export function GenerateDocumentDialog({
   const [juryDecisionDate, setJuryDecisionDate] = useState("");
 
   useEffect(() => {
-    if (open && student && !isJuryDecision) {
+    if (open && student && !isJuryDecision && !isDefenseMinutes) {
       setJuryDecisionNumber(student.decision_number || "");
       setJuryDecisionDate(student.decision_date || "");
     }
-  }, [open, student, isJuryDecision]);
+  }, [open, student, isJuryDecision, isDefenseMinutes]);
 
   const handleGenerate = async () => {
     if (!isJuryDecision) {
