@@ -16,6 +16,9 @@ import {
   Settings2,
   FolderOpen,
   FileText,
+  Network,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
