@@ -336,16 +336,18 @@ export function GenerateDocumentDialog({
 
     const variables: Record<string, string> = {
       decision_number: isJuryDecision ? (decisionNumber.trim() || ".....................") : (juryDecisionNumber.trim() || "....................."),
-      decision_date: isJuryDecision ? (decisionDate.trim() || ".....................") : (juryDecisionDate.trim() || "....................."),
+      decision_date: isJuryDecision
+        ? formatArabicDocumentDate(decisionDate, ".....................")
+        : formatArabicDocumentDate(juryDecisionDate, "....................."),
       auth_decision_number: isJuryDecision ? "" : (decisionNumber.trim() || "....................."),
-      auth_decision_date: isJuryDecision ? "" : (decisionDate.trim() || "....................."),
+      auth_decision_date: isJuryDecision ? "" : formatArabicDocumentDate(decisionDate, "....................."),
       dean_letter_number: isJuryDecision ? "" : (deanLetterNumber.trim() || "....................."),
-      dean_letter_date: isJuryDecision ? "" : (deanLetterDate.trim() || "....................."),
+      dean_letter_date: isJuryDecision ? "" : formatArabicDocumentDate(deanLetterDate, "....................."),
       faculty_head_title: facultyHeadTitle,
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
       gender: student.gender || "male",
-      date_of_birth: formatIsoDateToDDMMYYYY(student.date_of_birth),
+      date_of_birth: formatArabicDocumentDate(student.date_of_birth),
       birthplace_ar: student.birthplace_ar || "",
       province: student.province || "",
       registration_number: student.registration_number || "",
@@ -363,8 +365,8 @@ export function GenerateDocumentDialog({
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
       jury_table: buildJuryTableHtml(enrichedJuryMembers),
-      scientific_council_date: formatIsoDateToDDMMYYYY(student.scientific_council_date),
-      defense_date: formatIsoDateToDDMMYYYY(student.defense_date),
+      scientific_council_date: formatArabicDocumentDate(student.scientific_council_date),
+      defense_date: formatArabicDocumentDate(student.defense_date),
       signature_title: student.signature_title || "",
       first_registration_year: student.first_registration_year || "",
       research_lab_ar: student.research_lab_ar || "",
