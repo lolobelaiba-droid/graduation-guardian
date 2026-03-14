@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { FileText, Loader2, Printer } from "lucide-react";
+import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -173,6 +173,45 @@ export function GenerateDocumentDialog({
     setTimeout(() => {
       printWindow.print();
     }, 500);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!printRef.current) return;
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+      const studentName = student?.full_name_ar || "وثيقة";
+      const docTitle = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : "ترخيص_المناقشة";
+      const fileName = `${docTitle}_${studentName}.pdf`;
+
+      const element = printRef.current;
+      const opt = {
+        margin: [
+          template?.margin_top ?? 20,
+          template?.margin_right ?? 15,
+          template?.margin_bottom ?? 20,
+          template?.margin_left ?? 15,
+        ] as [number, number, number, number],
+        filename: fileName,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+        },
+        jsPDF: {
+          unit: "mm" as const,
+          format: "a4" as const,
+          orientation: "portrait" as const,
+        },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      toast.success("تم تحميل الوثيقة بنجاح");
+    } catch (err) {
+      console.error("PDF download error:", err);
+      toast.error("فشل في تحميل الوثيقة");
+    }
   };
 
   const buildJuryTableHtml = (members: JuryMember[]): string => {
@@ -402,6 +441,10 @@ export function GenerateDocumentDialog({
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setShowPreview(false)}>
                 تعديل البيانات
+              </Button>
+              <Button variant="outline" onClick={handleDownloadPdf} className="gap-2">
+                <Download className="h-4 w-4" />
+                تحميل PDF
               </Button>
               <Button onClick={handlePrint} className="gap-2">
                 <Printer className="h-4 w-4" />
