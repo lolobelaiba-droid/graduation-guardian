@@ -65,6 +65,8 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   jury_decision_science: "مقرر تعيين لجنة المناقشة - دكتوراه علوم",
   defense_auth_lmd: "الترخيص بالمناقشة - دكتوراه ل م د",
   defense_auth_science: "الترخيص بالمناقشة - دكتوراه علوم",
+  defense_minutes_lmd: "محضر مداولات لجنة المناقشة - دكتوراه ل م د",
+  defense_minutes_science: "محضر مداولات لجنة المناقشة - دكتوراه علوم",
 };
 
 // Default placeholder variables for defense documents
