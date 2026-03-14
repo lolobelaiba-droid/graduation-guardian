@@ -405,7 +405,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
   const isResearchLabRequired = studentType === 'phd_lmd';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -413,6 +413,8 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
             <Badge variant="secondary">{phdStudentTypeLabels[studentType].ar}</Badge>
           </DialogTitle>
         </DialogHeader>
+
+        <RecordLockBanner isLocked={isLocked} lockedBy={lockedBy} />
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

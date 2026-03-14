@@ -390,7 +390,7 @@ export default function EditStudentDialog({
   if (!student) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -400,6 +400,8 @@ export default function EditStudentDialog({
             </span>
           </DialogTitle>
         </DialogHeader>
+
+        <RecordLockBanner isLocked={isLocked} lockedBy={lockedBy} />
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
