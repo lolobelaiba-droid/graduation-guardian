@@ -356,6 +356,300 @@ export type Database = {
         }
         Relationships: []
       }
+      defense_stage_lmd: {
+        Row: {
+          birthplace_ar: string
+          birthplace_fr: string | null
+          branch_ar: string
+          branch_fr: string | null
+          co_supervisor_ar: string | null
+          co_supervisor_university: string | null
+          created_at: string | null
+          current_year: string | null
+          date_of_birth: string
+          defense_date: string | null
+          employment_status: string | null
+          faculty_ar: string
+          faculty_fr: string | null
+          field_ar: string
+          field_fr: string | null
+          first_registration_year: string | null
+          full_name_ar: string
+          full_name_fr: string | null
+          gender: string | null
+          id: string
+          inscription_status: string | null
+          jury_members_ar: string
+          jury_members_fr: string | null
+          jury_president_ar: string
+          jury_president_fr: string | null
+          notes: string | null
+          phone_number: string | null
+          professional_email: string | null
+          province: string | null
+          registration_count: number | null
+          registration_number: string
+          registration_type: string | null
+          research_lab_ar: string | null
+          scientific_council_date: string
+          signature_title: string | null
+          specialty_ar: string
+          specialty_fr: string | null
+          stage_status: string
+          supervisor_ar: string
+          supervisor_university: string | null
+          thesis_language: string | null
+          thesis_title_ar: string | null
+          thesis_title_fr: string | null
+          university_ar: string | null
+          university_fr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birthplace_ar: string
+          birthplace_fr?: string | null
+          branch_ar: string
+          branch_fr?: string | null
+          co_supervisor_ar?: string | null
+          co_supervisor_university?: string | null
+          created_at?: string | null
+          current_year?: string | null
+          date_of_birth: string
+          defense_date?: string | null
+          employment_status?: string | null
+          faculty_ar?: string
+          faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          inscription_status?: string | null
+          jury_members_ar: string
+          jury_members_fr?: string | null
+          jury_president_ar: string
+          jury_president_fr?: string | null
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          province?: string | null
+          registration_count?: number | null
+          registration_number?: string
+          registration_type?: string | null
+          research_lab_ar?: string | null
+          scientific_council_date: string
+          signature_title?: string | null
+          specialty_ar: string
+          specialty_fr?: string | null
+          stage_status?: string
+          supervisor_ar: string
+          supervisor_university?: string | null
+          thesis_language?: string | null
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birthplace_ar?: string
+          birthplace_fr?: string | null
+          branch_ar?: string
+          branch_fr?: string | null
+          co_supervisor_ar?: string | null
+          co_supervisor_university?: string | null
+          created_at?: string | null
+          current_year?: string | null
+          date_of_birth?: string
+          defense_date?: string | null
+          employment_status?: string | null
+          faculty_ar?: string
+          faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar?: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          inscription_status?: string | null
+          jury_members_ar?: string
+          jury_members_fr?: string | null
+          jury_president_ar?: string
+          jury_president_fr?: string | null
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          province?: string | null
+          registration_count?: number | null
+          registration_number?: string
+          registration_type?: string | null
+          research_lab_ar?: string | null
+          scientific_council_date?: string
+          signature_title?: string | null
+          specialty_ar?: string
+          specialty_fr?: string | null
+          stage_status?: string
+          supervisor_ar?: string
+          supervisor_university?: string | null
+          thesis_language?: string | null
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      defense_stage_science: {
+        Row: {
+          birthplace_ar: string
+          birthplace_fr: string | null
+          branch_ar: string
+          branch_fr: string | null
+          co_supervisor_ar: string | null
+          co_supervisor_university: string | null
+          created_at: string | null
+          current_year: string | null
+          date_of_birth: string
+          defense_date: string | null
+          employment_status: string | null
+          faculty_ar: string
+          faculty_fr: string | null
+          field_ar: string
+          field_fr: string | null
+          first_registration_year: string | null
+          full_name_ar: string
+          full_name_fr: string | null
+          gender: string | null
+          id: string
+          inscription_status: string | null
+          jury_members_ar: string
+          jury_members_fr: string | null
+          jury_president_ar: string
+          jury_president_fr: string | null
+          notes: string | null
+          phone_number: string | null
+          professional_email: string | null
+          province: string | null
+          registration_count: number | null
+          registration_number: string
+          registration_type: string | null
+          research_lab_ar: string | null
+          scientific_council_date: string
+          signature_title: string | null
+          specialty_ar: string
+          specialty_fr: string | null
+          stage_status: string
+          supervisor_ar: string
+          supervisor_university: string | null
+          thesis_language: string | null
+          thesis_title_ar: string | null
+          thesis_title_fr: string | null
+          university_ar: string | null
+          university_fr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birthplace_ar: string
+          birthplace_fr?: string | null
+          branch_ar: string
+          branch_fr?: string | null
+          co_supervisor_ar?: string | null
+          co_supervisor_university?: string | null
+          created_at?: string | null
+          current_year?: string | null
+          date_of_birth: string
+          defense_date?: string | null
+          employment_status?: string | null
+          faculty_ar?: string
+          faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          inscription_status?: string | null
+          jury_members_ar: string
+          jury_members_fr?: string | null
+          jury_president_ar: string
+          jury_president_fr?: string | null
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          province?: string | null
+          registration_count?: number | null
+          registration_number?: string
+          registration_type?: string | null
+          research_lab_ar?: string | null
+          scientific_council_date: string
+          signature_title?: string | null
+          specialty_ar: string
+          specialty_fr?: string | null
+          stage_status?: string
+          supervisor_ar: string
+          supervisor_university?: string | null
+          thesis_language?: string | null
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birthplace_ar?: string
+          birthplace_fr?: string | null
+          branch_ar?: string
+          branch_fr?: string | null
+          co_supervisor_ar?: string | null
+          co_supervisor_university?: string | null
+          created_at?: string | null
+          current_year?: string | null
+          date_of_birth?: string
+          defense_date?: string | null
+          employment_status?: string | null
+          faculty_ar?: string
+          faculty_fr?: string | null
+          field_ar?: string
+          field_fr?: string | null
+          first_registration_year?: string | null
+          full_name_ar?: string
+          full_name_fr?: string | null
+          gender?: string | null
+          id?: string
+          inscription_status?: string | null
+          jury_members_ar?: string
+          jury_members_fr?: string | null
+          jury_president_ar?: string
+          jury_president_fr?: string | null
+          notes?: string | null
+          phone_number?: string | null
+          professional_email?: string | null
+          province?: string | null
+          registration_count?: number | null
+          registration_number?: string
+          registration_type?: string | null
+          research_lab_ar?: string | null
+          scientific_council_date?: string
+          signature_title?: string | null
+          specialty_ar?: string
+          specialty_fr?: string | null
+          stage_status?: string
+          supervisor_ar?: string
+          supervisor_university?: string | null
+          thesis_language?: string | null
+          thesis_title_ar?: string | null
+          thesis_title_fr?: string | null
+          university_ar?: string | null
+          university_fr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       dropdown_options: {
         Row: {
           created_at: string
