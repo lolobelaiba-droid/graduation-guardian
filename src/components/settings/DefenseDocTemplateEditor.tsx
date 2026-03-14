@@ -17,6 +17,10 @@ import {
   Redo2,
   Eye,
   EyeOff,
+  Plus,
+  Trash2,
+  Table,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +40,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -45,8 +56,10 @@ import { cn } from "@/lib/utils";
 import {
   useDefenseDocTemplates,
   useUpdateDefenseDocTemplate,
-  AVAILABLE_VARIABLES,
+  DEFAULT_VARIABLES,
+  getTemplateVariables,
   type DefenseDocTemplate,
+  type CustomVariable,
 } from "@/hooks/useDefenseDocTemplates";
 
 const FONT_OPTIONS = [
@@ -75,25 +88,45 @@ const typeLabels: Record<string, string> = {
   defense_auth_science: "ترخيص المناقشة - علوم",
 };
 
+interface LocalSettings {
+  title: string;
+  content: string;
+  font_family: string;
+  font_size: number;
+  line_height: number;
+  custom_variables: CustomVariable[];
+}
+
 export default function DefenseDocTemplateEditor() {
   const { data: templates = [], isLoading } = useDefenseDocTemplates();
   const updateTemplate = useUpdateDefenseDocTemplate();
 
   const [openTemplates, setOpenTemplates] = useState<Set<string>>(new Set());
   const [savingTemplates, setSavingTemplates] = useState<Set<string>>(new Set());
-  const [localSettings, setLocalSettings] = useState<Record<string, {
-    title: string;
-    content: string;
-    font_family: string;
-    font_size: number;
-    line_height: number;
-  }>>({});
+  const [localSettings, setLocalSettings] = useState<Record<string, LocalSettings>>({});
   const [previewMode, setPreviewMode] = useState<Record<string, boolean>>({});
   const editorRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Variable management dialog
+  const [variableDialog, setVariableDialog] = useState<{ open: boolean; templateId: string }>({
+    open: false,
+    templateId: "",
+  });
+  const [newVarKey, setNewVarKey] = useState("");
+  const [newVarLabel, setNewVarLabel] = useState("");
+
+  // Table insertion dialog
+  const [tableDialog, setTableDialog] = useState<{ open: boolean; templateId: string }>({
+    open: false,
+    templateId: "",
+  });
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
+  const [tableHeaders, setTableHeaders] = useState<string[]>([]);
+
   useEffect(() => {
     if (templates.length > 0) {
-      const initial: typeof localSettings = {};
+      const initial: Record<string, LocalSettings> = {};
       templates.forEach((t) => {
         initial[t.id] = {
           title: t.title,
@@ -101,13 +134,13 @@ export default function DefenseDocTemplateEditor() {
           font_family: t.font_family || "IBM Plex Sans Arabic",
           font_size: t.font_size || 14,
           line_height: t.line_height || 1.8,
+          custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
         };
       });
       setLocalSettings(initial);
     }
   }, [templates]);
 
-  // Sync editor content when localSettings change from template load
   useEffect(() => {
     Object.entries(editorRefs.current).forEach(([id, ref]) => {
       if (ref && localSettings[id] && !ref.innerHTML) {
@@ -147,8 +180,80 @@ export default function DefenseDocTemplateEditor() {
     const ref = editorRefs.current[id];
     if (!ref) return;
     ref.focus();
-    document.execCommand("insertHTML", false, `<span class="variable-tag" contenteditable="false" style="background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; font-size: 12px; cursor: default;">{{${varKey}}}</span>&nbsp;`);
+    document.execCommand(
+      "insertHTML",
+      false,
+      `<span class="variable-tag" contenteditable="false" style="background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; font-size: 12px; cursor: default;">{{${varKey}}}</span>&nbsp;`
+    );
     handleEditorInput(id);
+  };
+
+  const addCustomVariable = () => {
+    const { templateId } = variableDialog;
+    if (!newVarKey.trim() || !newVarLabel.trim()) {
+      toast.error("يرجى ملء المفتاح والتسمية");
+      return;
+    }
+    const key = newVarKey.trim().replace(/\s+/g, "_").toLowerCase();
+    const settings = localSettings[templateId];
+    if (!settings) return;
+
+    const allVars = [...DEFAULT_VARIABLES, ...settings.custom_variables];
+    if (allVars.some((v) => v.key === key)) {
+      toast.error("هذا المتغير موجود مسبقاً");
+      return;
+    }
+
+    updateLocal(templateId, "custom_variables", [
+      ...settings.custom_variables,
+      { key, label: newVarLabel.trim() },
+    ]);
+    setNewVarKey("");
+    setNewVarLabel("");
+    toast.success("تمت إضافة المتغير");
+  };
+
+  const removeCustomVariable = (templateId: string, key: string) => {
+    const settings = localSettings[templateId];
+    if (!settings) return;
+    updateLocal(
+      templateId,
+      "custom_variables",
+      settings.custom_variables.filter((v) => v.key !== key)
+    );
+    toast.success("تم حذف المتغير");
+  };
+
+  const insertTable = (templateId: string) => {
+    const ref = editorRefs.current[templateId];
+    if (!ref) return;
+    ref.focus();
+
+    let html = '<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">';
+
+    // Header row
+    if (tableHeaders.length > 0) {
+      html += "<thead><tr>";
+      for (let c = 0; c < tableCols; c++) {
+        html += `<th style="border: 1px solid #333; padding: 8px; text-align: center; background: #f0f0f0; font-weight: bold;">${tableHeaders[c] || `عمود ${c + 1}`}</th>`;
+      }
+      html += "</tr></thead>";
+    }
+
+    html += "<tbody>";
+    for (let r = 0; r < tableRows; r++) {
+      html += "<tr>";
+      for (let c = 0; c < tableCols; c++) {
+        html += '<td style="border: 1px solid #333; padding: 8px; text-align: center;">&nbsp;</td>';
+      }
+      html += "</tr>";
+    }
+    html += "</tbody></table><br/>";
+
+    document.execCommand("insertHTML", false, html);
+    handleEditorInput(templateId);
+    setTableDialog({ open: false, templateId: "" });
+    toast.success("تم إدراج الجدول");
   };
 
   const saveTemplate = async (id: string) => {
@@ -164,6 +269,7 @@ export default function DefenseDocTemplateEditor() {
         font_family: settings.font_family,
         font_size: settings.font_size,
         line_height: settings.line_height,
+        custom_variables: settings.custom_variables,
       });
       toast.success("تم حفظ القالب بنجاح");
     } catch (error) {
@@ -208,6 +314,11 @@ export default function DefenseDocTemplateEditor() {
           const isPreview = previewMode[template.id];
 
           if (!settings) return null;
+
+          const allVariables = [
+            ...DEFAULT_VARIABLES,
+            ...settings.custom_variables,
+          ];
 
           return (
             <Collapsible
@@ -317,108 +428,47 @@ export default function DefenseDocTemplateEditor() {
 
                     {/* Toolbar */}
                     <div className="flex items-center gap-1 flex-wrap border rounded-lg p-2 bg-muted/30">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "bold")}
-                        title="عريض"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "bold")} title="عريض">
                         <Bold className="h-4 w-4" />
                       </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "italic")}
-                        title="مائل"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "italic")} title="مائل">
                         <Italic className="h-4 w-4" />
                       </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "underline")}
-                        title="تسطير"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "underline")} title="تسطير">
                         <Underline className="h-4 w-4" />
                       </Button>
 
                       <div className="w-px h-5 bg-border mx-1" />
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "justifyRight")}
-                        title="محاذاة يمين"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyRight")} title="محاذاة يمين">
                         <AlignRight className="h-4 w-4" />
                       </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "justifyCenter")}
-                        title="محاذاة وسط"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyCenter")} title="محاذاة وسط">
                         <AlignCenter className="h-4 w-4" />
                       </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "justifyLeft")}
-                        title="محاذاة يسار"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyLeft")} title="محاذاة يسار">
                         <AlignLeft className="h-4 w-4" />
                       </Button>
 
                       <div className="w-px h-5 bg-border mx-1" />
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "undo")}
-                        title="تراجع"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "undo")} title="تراجع">
                         <Undo2 className="h-4 w-4" />
                       </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => execCmd(template.id, "redo")}
-                        title="إعادة"
-                      >
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "redo")} title="إعادة">
                         <Redo2 className="h-4 w-4" />
                       </Button>
 
                       <div className="w-px h-5 bg-border mx-1" />
 
                       {/* Font size in toolbar */}
-                      <Select
-                        value=""
-                        onValueChange={(v) => execCmd(template.id, "fontSize", v)}
-                      >
+                      <Select value="" onValueChange={(v) => execCmd(template.id, "fontSize", v)}>
                         <SelectTrigger className="h-8 w-20 text-xs">
                           <span className="text-xs">حجم</span>
                         </SelectTrigger>
                         <SelectContent>
                           {[1, 2, 3, 4, 5, 6, 7].map((s) => (
-                            <SelectItem key={s} value={String(s)}>
-                              {s}
-                            </SelectItem>
+                            <SelectItem key={s} value={String(s)}>{s}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -428,34 +478,81 @@ export default function DefenseDocTemplateEditor() {
                       {/* Insert Variable */}
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 gap-1 text-xs"
-                          >
+                          <Button type="button" variant="outline" size="sm" className="h-8 gap-1 text-xs">
                             <Variable className="h-3.5 w-3.5" />
                             إدراج متغير
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-64 p-2" align="start">
+                        <PopoverContent className="w-72 p-2" align="start">
                           <div className="space-y-1 max-h-64 overflow-y-auto">
-                            {AVAILABLE_VARIABLES.map((v) => (
+                            {DEFAULT_VARIABLES.length > 0 && (
+                              <p className="text-xs font-medium text-muted-foreground px-3 py-1">متغيرات أساسية</p>
+                            )}
+                            {DEFAULT_VARIABLES.map((v) => (
                               <button
                                 key={v.key}
                                 type="button"
-                                className="w-full text-right px-3 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
+                                className="w-full text-right px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
                                 onClick={() => insertVariable(template.id, v.key)}
                               >
-                                <span className="text-muted-foreground text-xs font-mono">
-                                  {`{{${v.key}}}`}
-                                </span>
+                                <span className="text-muted-foreground text-xs font-mono">{`{{${v.key}}}`}</span>
                                 <span>{v.label}</span>
                               </button>
                             ))}
+                            {settings.custom_variables.length > 0 && (
+                              <>
+                                <Separator className="my-1" />
+                                <p className="text-xs font-medium text-primary px-3 py-1">متغيرات مخصصة</p>
+                                {settings.custom_variables.map((v) => (
+                                  <button
+                                    key={v.key}
+                                    type="button"
+                                    className="w-full text-right px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
+                                    onClick={() => insertVariable(template.id, v.key)}
+                                  >
+                                    <span className="text-muted-foreground text-xs font-mono">{`{{${v.key}}}`}</span>
+                                    <span>{v.label}</span>
+                                  </button>
+                                ))}
+                              </>
+                            )}
                           </div>
                         </PopoverContent>
                       </Popover>
+
+                      {/* Manage Variables */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 text-xs"
+                        onClick={() => {
+                          setVariableDialog({ open: true, templateId: template.id });
+                          setNewVarKey("");
+                          setNewVarLabel("");
+                        }}
+                        title="إدارة المتغيرات"
+                      >
+                        <Settings2 className="h-3.5 w-3.5" />
+                        المتغيرات
+                      </Button>
+
+                      {/* Insert Table */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 text-xs"
+                        onClick={() => {
+                          setTableDialog({ open: true, templateId: template.id });
+                          setTableRows(3);
+                          setTableCols(3);
+                          setTableHeaders([]);
+                        }}
+                      >
+                        <Table className="h-3.5 w-3.5" />
+                        إدراج جدول
+                      </Button>
 
                       <div className="flex-1" />
 
@@ -472,11 +569,7 @@ export default function DefenseDocTemplateEditor() {
                           }))
                         }
                       >
-                        {isPreview ? (
-                          <EyeOff className="h-3.5 w-3.5" />
-                        ) : (
-                          <Eye className="h-3.5 w-3.5" />
-                        )}
+                        {isPreview ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         {isPreview ? "تحرير" : "معاينة"}
                       </Button>
                     </div>
@@ -484,7 +577,7 @@ export default function DefenseDocTemplateEditor() {
                     {/* Editor / Preview */}
                     {isPreview ? (
                       <div
-                        className="border rounded-lg p-8 bg-white min-h-[500px]"
+                        className="border rounded-lg p-8 bg-white min-h-[500px] text-foreground"
                         style={{
                           fontFamily: settings.font_family,
                           fontSize: `${settings.font_size}px`,
@@ -494,6 +587,7 @@ export default function DefenseDocTemplateEditor() {
                           maxWidth: "100%",
                           margin: "0 auto",
                           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                          color: "#000",
                         }}
                         dangerouslySetInnerHTML={{
                           __html: settings.content.replace(
@@ -530,11 +624,7 @@ export default function DefenseDocTemplateEditor() {
                         disabled={isSaving}
                         className="gap-2"
                       >
-                        {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
+                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                         حفظ القالب
                       </Button>
                     </div>
@@ -545,6 +635,230 @@ export default function DefenseDocTemplateEditor() {
           );
         })}
       </div>
+
+      {/* Variable Management Dialog */}
+      <Dialog
+        open={variableDialog.open}
+        onOpenChange={(open) => setVariableDialog({ open, templateId: variableDialog.templateId })}
+      >
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Variable className="h-5 w-5 text-primary" />
+              إدارة المتغيرات المخصصة
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Add new variable */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">المفتاح (إنجليزي)</Label>
+                <Input
+                  value={newVarKey}
+                  onChange={(e) => setNewVarKey(e.target.value)}
+                  placeholder="custom_field"
+                  dir="ltr"
+                  className="text-sm"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">التسمية (عربي)</Label>
+                <Input
+                  value={newVarLabel}
+                  onChange={(e) => setNewVarLabel(e.target.value)}
+                  placeholder="الحقل المخصص"
+                  className="text-sm"
+                />
+              </div>
+              <Button size="sm" className="gap-1 shrink-0" onClick={addCustomVariable}>
+                <Plus className="h-4 w-4" />
+                إضافة
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Default variables (read-only list) */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">المتغيرات الأساسية ({DEFAULT_VARIABLES.length})</p>
+              <div className="grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
+                {DEFAULT_VARIABLES.map((v) => (
+                  <div key={v.key} className="text-xs px-2 py-1 bg-muted rounded flex items-center justify-between">
+                    <span className="text-muted-foreground font-mono">{v.key}</span>
+                    <span>{v.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom variables (editable) */}
+            {variableDialog.templateId && localSettings[variableDialog.templateId]?.custom_variables.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-primary mb-2">
+                  المتغيرات المخصصة ({localSettings[variableDialog.templateId].custom_variables.length})
+                </p>
+                <div className="space-y-1">
+                  {localSettings[variableDialog.templateId].custom_variables.map((v) => (
+                    <div
+                      key={v.key}
+                      className="flex items-center justify-between px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg"
+                    >
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        onClick={() => removeCustomVariable(variableDialog.templateId, v.key)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm">{v.label}</span>
+                        <span className="text-xs font-mono text-muted-foreground">{`{{${v.key}}}`}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVariableDialog({ open: false, templateId: "" })}>
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Table Insertion Dialog */}
+      <Dialog
+        open={tableDialog.open}
+        onOpenChange={(open) => setTableDialog({ open, templateId: tableDialog.templateId })}
+      >
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Table className="h-5 w-5 text-primary" />
+              إدراج جدول
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>عدد الصفوف</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={tableRows}
+                  onChange={(e) => setTableRows(parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>عدد الأعمدة</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={tableCols}
+                  onChange={(e) => {
+                    const cols = parseInt(e.target.value) || 1;
+                    setTableCols(cols);
+                    setTableHeaders((prev) => {
+                      const newHeaders = [...prev];
+                      while (newHeaders.length < cols) newHeaders.push("");
+                      return newHeaders.slice(0, cols);
+                    });
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>عناوين الأعمدة (اختياري)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {Array.from({ length: tableCols }, (_, i) => (
+                  <Input
+                    key={i}
+                    value={tableHeaders[i] || ""}
+                    onChange={(e) => {
+                      setTableHeaders((prev) => {
+                        const newH = [...prev];
+                        while (newH.length <= i) newH.push("");
+                        newH[i] = e.target.value;
+                        return newH;
+                      });
+                    }}
+                    placeholder={`عمود ${i + 1}`}
+                    className="text-sm"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Table Preview */}
+            <div className="border rounded-lg p-3 bg-muted/30 overflow-x-auto">
+              <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
+                <thead>
+                  <tr>
+                    {Array.from({ length: tableCols }, (_, c) => (
+                      <th
+                        key={c}
+                        style={{
+                          border: "1px solid hsl(var(--border))",
+                          padding: "6px",
+                          textAlign: "center",
+                          fontSize: "12px",
+                          background: "hsl(var(--muted))",
+                        }}
+                      >
+                        {tableHeaders[c] || `عمود ${c + 1}`}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: Math.min(tableRows, 3) }, (_, r) => (
+                    <tr key={r}>
+                      {Array.from({ length: tableCols }, (_, c) => (
+                        <td
+                          key={c}
+                          style={{
+                            border: "1px solid hsl(var(--border))",
+                            padding: "6px",
+                            textAlign: "center",
+                            fontSize: "11px",
+                            color: "hsl(var(--muted-foreground))",
+                          }}
+                        >
+                          ...
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {tableRows > 3 && (
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  + {tableRows - 3} صفوف أخرى
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTableDialog({ open: false, templateId: "" })}>
+              إلغاء
+            </Button>
+            <Button onClick={() => insertTable(tableDialog.templateId)} className="gap-1">
+              <Table className="h-4 w-4" />
+              إدراج
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
