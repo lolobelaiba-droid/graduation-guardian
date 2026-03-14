@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { FileText, Loader2, Printer } from "lucide-react";
+import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
