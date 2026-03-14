@@ -39,6 +39,8 @@ import { useMultipleFieldSuggestions } from "@/hooks/useFieldSuggestions";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 import type { PhdStudentType, PhdStudent, PhdLmdStudent } from "@/types/phd-students";
+import { useRecordLock } from "@/hooks/useRecordLock";
+import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
 import { calculateRegistrationDetails, getDefaultInscriptionStatus, getCurrentYearLabel } from "@/lib/registration-calculation";
 import { toWesternNumerals } from "@/lib/numerals";
@@ -122,6 +124,20 @@ function SectionHeader({ title }: { title: string }) {
 export function EditPhdStudentDialog({ open, onOpenChange, student, studentType, currentAcademicYear }: EditPhdStudentDialogProps) {
   const updatePhdLmd = useUpdatePhdLmdStudent();
   const updatePhdScience = useUpdatePhdScienceStudent();
+
+  // Record locking
+  const tableName = studentType === 'phd_lmd' ? 'phd_lmd_students' : 'phd_science_students';
+  const { isLocked, lockedBy, acquireLock, releaseLock } = useRecordLock(tableName, open ? student?.id ?? null : null);
+
+  useEffect(() => {
+    if (open && student?.id) acquireLock();
+    if (!open) releaseLock();
+  }, [open, student?.id]);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) releaseLock();
+    onOpenChange(newOpen);
+  }, [onOpenChange, releaseLock]);
   
   // Bilingual dropdown states
   const [employmentStatusAr, setEmploymentStatusAr] = useState("");
@@ -376,6 +392,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
           break;
       }
       setBilingualErrors({});
+      releaseLock();
       onOpenChange(false);
     } catch (error) {
       // Error handled by hook
@@ -388,7 +405,7 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
   const isResearchLabRequired = studentType === 'phd_lmd';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -396,6 +413,8 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
             <Badge variant="secondary">{phdStudentTypeLabels[studentType].ar}</Badge>
           </DialogTitle>
         </DialogHeader>
+
+        <RecordLockBanner isLocked={isLocked} lockedBy={lockedBy} />
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -973,10 +992,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
             />
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isLocked}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 حفظ التغييرات
               </Button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,6 +46,8 @@ import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions
 import type { DefenseStageStudent, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 import { getDefaultSignatureTitle } from "@/types/certificates";
+import { useRecordLock } from "@/hooks/useRecordLock";
+import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 
 function SectionHeader({ title }: { title: string }) {
   return (
@@ -244,6 +246,20 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
   const updateLmd = useUpdateDefenseStageLmd();
   const updateScience = useUpdateDefenseStageScience();
 
+  // Record locking
+  const tableName = studentType === 'phd_lmd' ? 'defense_stage_lmd' : 'defense_stage_science';
+  const { isLocked, lockedBy, acquireLock, releaseLock } = useRecordLock(tableName, open ? student?.id ?? null : null);
+
+  useEffect(() => {
+    if (open && student?.id) acquireLock();
+    if (!open) releaseLock();
+  }, [open, student?.id]);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) releaseLock();
+    onOpenChange(newOpen);
+  }, [onOpenChange, releaseLock]);
+
   const { getFrFromAr, getArFromFr } = useFieldDomainSync();
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
@@ -391,6 +407,7 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
       } else {
         await updateScience.mutateAsync(submitData);
       }
+      releaseLock();
       onOpenChange(false);
     } catch (error) {
       // Error handled by hook
@@ -919,10 +936,10 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
 
             {/* Submit */}
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isLocked}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 حفظ التغييرات
               </Button>

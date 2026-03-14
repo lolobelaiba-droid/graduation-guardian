@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,6 +47,8 @@ import { useUniversityOptions } from "@/hooks/useUniversityOptions";
 import { academicYears } from "@/components/print/AddStudentDialog";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
+import { useRecordLock } from "@/hooks/useRecordLock";
+import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 
 // PhD LMD schema
 const phdLmdSchema = z.object({
@@ -195,6 +197,25 @@ export default function EditStudentDialog({
   const updatePhdLmd = useUpdatePhdLmdCertificate();
   const updatePhdScience = useUpdatePhdScienceCertificate();
   const updateMaster = useUpdateMasterCertificate();
+
+  // Record locking
+  const tableName = certificateType === "phd_lmd" ? "phd_lmd_certificates" : certificateType === "phd_science" ? "phd_science_certificates" : "master_certificates";
+  const { isLocked, lockedBy, acquireLock, releaseLock } = useRecordLock(tableName, open ? student?.id ?? null : null);
+
+  // Acquire lock on open, release on close
+  useEffect(() => {
+    if (open && student?.id) {
+      acquireLock();
+    }
+    if (!open) {
+      releaseLock();
+    }
+  }, [open, student?.id]);
+
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) releaseLock();
+    onOpenChange(newOpen);
+  }, [onOpenChange, releaseLock]);
   
   // Fetch suggestions for autocomplete fields
   const { data: suggestions } = useMultipleFieldSuggestions([
@@ -342,7 +363,8 @@ export default function EditStudentDialog({
     } as FormValues;
 
     const handleSuccess = () => {
-      onOpenChange(false);
+      releaseLock();
+      handleOpenChange(false);
     };
 
     switch (certificateType) {
@@ -368,7 +390,7 @@ export default function EditStudentDialog({
   if (!student) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -378,6 +400,8 @@ export default function EditStudentDialog({
             </span>
           </DialogTitle>
         </DialogHeader>
+
+        <RecordLockBanner isLocked={isLocked} lockedBy={lockedBy} />
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -1117,10 +1141,10 @@ export default function EditStudentDialog({
             </div>
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isLocked}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 حفظ التغييرات
               </Button>
