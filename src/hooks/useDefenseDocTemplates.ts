@@ -34,6 +34,7 @@ export const DEFAULT_VARIABLES: CustomVariable[] = [
   { key: "auth_decision_date", label: "تاريخ مقرر الترخيص" },
   { key: "dean_letter_number", label: "رقم إرسال العميد" },
   { key: "dean_letter_date", label: "تاريخ إرسال العميد" },
+  { key: "faculty_head_title", label: "صفة رئيس الكلية/المعهد (عميد/مدير)" },
   { key: "full_name_ar", label: "الاسم الكامل (عربي)" },
   { key: "full_name_fr", label: "الاسم الكامل (فرنسي)" },
   { key: "gender", label: "الجنس" },
