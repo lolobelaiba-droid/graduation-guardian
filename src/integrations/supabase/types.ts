@@ -356,6 +356,42 @@ export type Database = {
         }
         Relationships: []
       }
+      defense_document_templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          document_type: string
+          font_family: string | null
+          font_size: number | null
+          id: string
+          line_height: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string
+          created_at?: string | null
+          document_type: string
+          font_family?: string | null
+          font_size?: number | null
+          id?: string
+          line_height?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          document_type?: string
+          font_family?: string | null
+          font_size?: number | null
+          id?: string
+          line_height?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       defense_stage_lmd: {
         Row: {
           birthplace_ar: string
