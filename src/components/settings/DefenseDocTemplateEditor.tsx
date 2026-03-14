@@ -194,8 +194,30 @@ export default function DefenseDocTemplateEditor() {
     updateLocal(id, "content", ref.innerHTML);
   }, []);
 
+  // Track selection so toolbar clicks don't lose it
+  const lastSelectionRef = useRef<Range | null>(null);
+
+  const saveSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      lastSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  }, []);
+
+  const restoreSelection = useCallback(() => {
+    const range = lastSelectionRef.current;
+    if (range) {
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, []);
+
   const execCmd = (id: string, cmd: string, value?: string) => {
-    editorRefs.current[id]?.focus();
+    const ref = editorRefs.current[id];
+    if (!ref) return;
+    ref.focus();
+    restoreSelection();
     document.execCommand(cmd, false, value);
     handleEditorInput(id);
   };
@@ -688,37 +710,37 @@ export default function DefenseDocTemplateEditor() {
 
                     {/* Toolbar */}
                     <div className="flex items-center gap-1 flex-wrap border rounded-lg p-2 bg-muted/30">
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "bold")} title="عريض">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "bold")} title="عريض">
                         <Bold className="h-4 w-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "italic")} title="مائل">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "italic")} title="مائل">
                         <Italic className="h-4 w-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "underline")} title="تسطير">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "underline")} title="تسطير">
                         <Underline className="h-4 w-4" />
                       </Button>
 
                       <div className="w-px h-5 bg-border mx-1" />
 
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyRight")} title="محاذاة يمين">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "justifyRight")} title="محاذاة يمين">
                         <AlignRight className="h-4 w-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyCenter")} title="محاذاة وسط">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "justifyCenter")} title="محاذاة وسط">
                         <AlignCenter className="h-4 w-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyLeft")} title="محاذاة يسار">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "justifyLeft")} title="محاذاة يسار">
                         <AlignLeft className="h-4 w-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "justifyFull")} title="ضبط النص">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "justifyFull")} title="ضبط النص">
                         <AlignJustify className="h-4 w-4" />
                       </Button>
 
                       <div className="w-px h-5 bg-border mx-1" />
 
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "indent")} title="زيادة المسافة البادئة">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "indent")} title="زيادة المسافة البادئة">
                         <IndentIncrease className="h-4 w-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => execCmd(template.id, "outdent")} title="تقليل المسافة البادئة">
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd(template.id, "outdent")} title="تقليل المسافة البادئة">
                         <IndentDecrease className="h-4 w-4" />
                       </Button>
 
@@ -962,6 +984,8 @@ export default function DefenseDocTemplateEditor() {
                           textIndent: settings.first_line_indent > 0 ? `${settings.first_line_indent}mm` : undefined,
                         }}
                         onInput={() => handleEditorInput(template.id)}
+                        onMouseUp={saveSelection}
+                        onKeyUp={saveSelection}
                         onClick={(e) => handleEditorClick(template.id, e)}
                         suppressContentEditableWarning
                       />
