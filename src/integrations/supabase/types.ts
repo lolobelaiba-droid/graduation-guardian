@@ -406,6 +406,8 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          decree_accreditation: string | null
+          decree_training: string | null
           defense_date: string | null
           employment_status: string | null
           faculty_ar: string
@@ -454,6 +456,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          decree_accreditation?: string | null
+          decree_training?: string | null
           defense_date?: string | null
           employment_status?: string | null
           faculty_ar?: string
@@ -502,6 +506,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          decree_accreditation?: string | null
+          decree_training?: string | null
           defense_date?: string | null
           employment_status?: string | null
           faculty_ar?: string
@@ -553,6 +559,8 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          decree_accreditation: string | null
+          decree_training: string | null
           defense_date: string | null
           employment_status: string | null
           faculty_ar: string
@@ -601,6 +609,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          decree_accreditation?: string | null
+          decree_training?: string | null
           defense_date?: string | null
           employment_status?: string | null
           faculty_ar?: string
@@ -649,6 +659,8 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          decree_accreditation?: string | null
+          decree_training?: string | null
           defense_date?: string | null
           employment_status?: string | null
           faculty_ar?: string
