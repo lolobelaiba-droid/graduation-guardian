@@ -67,6 +67,7 @@ export default function DefenseStage() {
     student: DefenseStageStudent;
     documentType: "jury_decision" | "defense_auth";
   } | null>(null);
+  const [editTarget, setEditTarget] = useState<DefenseStageStudent | null>(null);
 
   const { data: lmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
   const { data: scienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
