@@ -135,9 +135,10 @@ export function useUpdateDefenseDocTemplate() {
   return useMutation({
     mutationFn: async (template: Partial<DefenseDocTemplate> & { id: string }) => {
       const { id, ...updates } = template;
+      const payload: any = { ...updates, updated_at: new Date().toISOString() };
       const { error } = await supabase
         .from("defense_document_templates" as any)
-        .update({ ...updates, updated_at: new Date().toISOString() } as any)
+        .update(payload)
         .eq("id", id);
 
       if (error) throw error;
