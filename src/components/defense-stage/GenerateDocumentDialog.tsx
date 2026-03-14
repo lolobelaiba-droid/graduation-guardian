@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-/** Format ISO date (YYYY-MM-DD) to DD/MM/YYYY for Arabic RTL documents */
+/** Format ISO date (YYYY-MM-DD) to DD/MM/YYYY wrapped in RTL span for Arabic documents */
 function formatIsoDateToDDMMYYYY(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -8,8 +8,8 @@ function formatIsoDateToDDMMYYYY(dateStr: string | null | undefined): string {
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = String(d.getFullYear());
-  // Wrap in RLM + LRE/PDF to preserve digit order in RTL context
-  return `\u200F\u202A${day}/${month}/${year}\u202C\u200F`;
+  // Wrap in a span with dir="ltr" inside RTL context to keep digit order correct
+  return `<span dir="ltr" style="display:inline-block;direction:ltr;unicode-bidi:embed">${day}/${month}/${year}</span>`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
