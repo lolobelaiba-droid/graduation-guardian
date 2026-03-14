@@ -916,6 +916,10 @@ export default function Settings() {
             <Printer className="h-4 w-4" />
             إعدادات الطباعة
           </TabsTrigger>
+          <TabsTrigger value="defensedocs" className="gap-2 py-2">
+            <FileText className="h-4 w-4" />
+            قوالب وثائق المناقشة
+          </TabsTrigger>
           <TabsTrigger value="customfields" className="gap-2 py-2">
             <Settings2 className="h-4 w-4" />
             إدارة حقول قاعدة البيانات
