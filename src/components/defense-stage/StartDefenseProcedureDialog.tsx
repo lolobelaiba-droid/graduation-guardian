@@ -436,7 +436,30 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
                 universitySuggestions={universityNames}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <SectionHeader title="القرارات الوزارية" />
+
+              <DecreeDropdownField
+                form={form}
+                name="decree_training"
+                label="قرار تنظيم التكوين *"
+                optionType="decree_training"
+                options={decreeTrainingOptions}
+                addOption={addDropdownOption}
+                deleteOption={deleteDropdownOption}
+                updateOption={updateDropdownOption}
+              />
+
+              <DecreeDropdownField
+                form={form}
+                name="decree_accreditation"
+                label="قرار التأهيل *"
+                optionType="decree_accreditation"
+                options={decreeAccreditationOptions}
+                addOption={addDropdownOption}
+                deleteOption={deleteDropdownOption}
+                updateOption={updateDropdownOption}
+              />
+
                 <FormField
                   control={form.control}
                   name="province"
