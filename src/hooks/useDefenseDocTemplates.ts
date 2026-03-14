@@ -55,6 +55,8 @@ export const DEFAULT_VARIABLES: CustomVariable[] = [
   { key: "first_registration_year", label: "سنة أول تسجيل" },
   { key: "research_lab_ar", label: "مخبر البحث" },
   { key: "current_year", label: "السنة الجامعية" },
+  { key: "decree_training", label: "قرار تنظيم التكوين" },
+  { key: "decree_accreditation", label: "قرار التأهيل" },
 ];
 
 export function getTemplateVariables(template: DefenseDocTemplate): CustomVariable[] {

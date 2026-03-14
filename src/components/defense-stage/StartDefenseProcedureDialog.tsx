@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Search, Scale } from "lucide-react";
+import { Loader2, Search, Scale, Plus, Trash2, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   usePhdLmdStudents,
   usePhdScienceStudents,
@@ -48,6 +49,8 @@ import {
 } from "@/hooks/useDefenseStage";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
+import { useDropdownOptions, useAddDropdownOption, useDeleteDropdownOption, useUpdateDropdownOption } from "@/hooks/useDropdownOptions";
+import type { OptionType } from "@/hooks/useDropdownOptions";
 import type { PhdStudent, PhdLmdStudent } from "@/types/phd-students";
 import type { DefenseStageType } from "@/types/defense-stage";
 import { getDefaultSignatureTitle } from "@/types/certificates";
@@ -60,6 +63,8 @@ const defenseStageSchema = z.object({
   scientific_council_date: z.string().min(1, "تاريخ مصادقة المجلس العلمي مطلوب"),
   province: z.string().optional().nullable(),
   signature_title: z.string().optional().nullable(),
+  decree_training: z.string().min(1, "قرار تنظيم التكوين مطلوب"),
+  decree_accreditation: z.string().min(1, "قرار التأهيل مطلوب"),
 });
 
 function SectionHeader({ title }: { title: string }) {
