@@ -99,6 +99,10 @@ interface LocalSettings {
   font_family: string;
   font_size: number;
   line_height: number;
+  margin_top: number;
+  margin_bottom: number;
+  margin_right: number;
+  margin_left: number;
   custom_variables: CustomVariable[];
   jury_table_settings: JuryTableSettings;
 }
