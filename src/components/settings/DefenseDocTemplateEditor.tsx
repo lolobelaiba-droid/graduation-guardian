@@ -230,6 +230,16 @@ export default function DefenseDocTemplateEditor() {
     if (!ref) return;
     ref.focus();
 
+    // Restore saved selection if available
+    if (savedSelectionRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+        savedSelectionRef.current = null;
+      }
+    }
+
     let html = '<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">';
 
     // Header row
