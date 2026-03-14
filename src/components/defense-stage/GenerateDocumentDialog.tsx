@@ -241,9 +241,8 @@ export function GenerateDocumentDialog({
     html += `</tr></thead><tbody>`;
 
     members.forEach((m, i) => {
-      const displayName = jts.include_abbreviation && m.rankAbbreviation 
-        ? `${m.rankAbbreviation} ${m.name}`.trim() 
-        : m.name;
+      // Display name without rank abbreviation - show just the name as in student data
+      const displayName = m.name;
       const roleLabel = JURY_ROLE_DOC_LABELS[m.role] || m.role;
       html += `<tr>`;
       columns.forEach((col) => {
