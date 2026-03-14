@@ -793,7 +793,7 @@ export default function DefenseDocTemplateEditor() {
       {/* Table Insertion Dialog */}
       <Dialog
         open={tableDialog.open}
-        onOpenChange={(open) => setTableDialog({ open, templateId: tableDialog.templateId })}
+        onOpenChange={(open) => setTableDialog({ open, templateId: tableDialog.templateId, editMode: tableDialog.editMode })}
       >
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
