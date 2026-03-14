@@ -1,4 +1,15 @@
 import { useState, useRef, useEffect } from "react";
+
+/** Format ISO date (YYYY-MM-DD) to DD/MM/YYYY for Arabic documents */
+function formatIsoDateToDDMMYYYY(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = String(d.getFullYear());
+  return `${day}/${month}/${year}`;
+}
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
   Dialog,
@@ -316,7 +327,7 @@ export function GenerateDocumentDialog({
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
       gender: student.gender || "male",
-      date_of_birth: student.date_of_birth || "",
+      date_of_birth: formatIsoDateToDDMMYYYY(student.date_of_birth),
       birthplace_ar: student.birthplace_ar || "",
       province: student.province || "",
       registration_number: student.registration_number || "",
@@ -334,8 +345,8 @@ export function GenerateDocumentDialog({
       jury_president_ar: student.jury_president_ar || "",
       jury_members_ar: student.jury_members_ar || "",
       jury_table: buildJuryTableHtml(enrichedJuryMembers),
-      scientific_council_date: student.scientific_council_date || "",
-      defense_date: student.defense_date || "",
+      scientific_council_date: formatIsoDateToDDMMYYYY(student.scientific_council_date),
+      defense_date: formatIsoDateToDDMMYYYY(student.defense_date),
       signature_title: student.signature_title || "",
       first_registration_year: student.first_registration_year || "",
       research_lab_ar: student.research_lab_ar || "",
