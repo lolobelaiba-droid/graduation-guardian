@@ -196,7 +196,7 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
   );
 }
 
-
+interface StartDefenseProcedureDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
