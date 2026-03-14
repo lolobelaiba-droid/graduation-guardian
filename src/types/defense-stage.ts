@@ -2,7 +2,7 @@
 
 export type DefenseStageType = 'phd_lmd' | 'phd_science';
 
-export type DefenseStageStatus = 'pending' | 'authorized' | 'defended';
+export type DefenseStageStatus = 'pending' | 'under_review' | 'authorized' | 'defended';
 
 export interface DefenseStageStudent {
   id: string;
