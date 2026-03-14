@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { formatCertificateDate } from "@/lib/numerals";
 
 /**
- * تنسيق جذري لتواريخ الوثائق العربية:
- * - توحيد الإدخال إلى يوم/شهر/سنة
- * - عرض بصري RTL بنفس سلوك قوالب الشهادة (السنة/الشهر/اليوم بصرياً)
+ * تنسيق تواريخ وثائق المناقشة العربية:
+ * - توحيد الإدخال إلى dd/MM/yyyy
+ * - عزل اتجاه اليونيكود عبر LRI (\u2066) و PDI (\u2069)
+ * - تغليف HTML بوسم <bdi dir="ltr"> لضمان عرض يوم/شهر/سنة بالترتيب الصحيح
  */
 function formatArabicDocumentDate(dateStr: string | null | undefined, placeholder = ""): string {
   const raw = dateStr?.trim();
@@ -19,28 +20,22 @@ function formatArabicDocumentDate(dateStr: string | null | undefined, placeholde
   const dmySlashMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
 
   if (isoMatch) {
-    year = isoMatch[1];
-    month = isoMatch[2];
-    day = isoMatch[3];
+    year = isoMatch[1]; month = isoMatch[2]; day = isoMatch[3];
   } else if (ymdSlashMatch) {
-    year = ymdSlashMatch[1];
-    month = ymdSlashMatch[2];
-    day = ymdSlashMatch[3];
+    year = ymdSlashMatch[1]; month = ymdSlashMatch[2]; day = ymdSlashMatch[3];
   } else if (dmySlashMatch) {
-    day = dmySlashMatch[1];
-    month = dmySlashMatch[2];
-    year = dmySlashMatch[3];
+    day = dmySlashMatch[1]; month = dmySlashMatch[2]; year = dmySlashMatch[3];
   } else {
     const normalized = formatCertificateDate(raw, true);
     const normalizedMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!normalizedMatch) return `\u200F${normalized}\u200F`;
-    day = normalizedMatch[1];
-    month = normalizedMatch[2];
-    year = normalizedMatch[3];
+    if (!normalizedMatch) return `\u2066${normalized}\u2069`;
+    day = normalizedMatch[1]; month = normalizedMatch[2]; year = normalizedMatch[3];
   }
 
-  const visualRtl = `${year}/${month}/${day}`;
-  return `\u200F${visualRtl}\u200F`;
+  // dd/MM/yyyy بالترتيب المنطقي الصحيح
+  const dateFormatted = `${day}/${month}/${year}`;
+  // LRI + <bdi dir="ltr"> لعزل الاتجاه داخل النص العربي + PDI للإغلاق
+  return `\u2066<bdi dir="ltr">${dateFormatted}</bdi>\u2069`;
 }
 import { FileText, Loader2, Printer, Download } from "lucide-react";
 import {
