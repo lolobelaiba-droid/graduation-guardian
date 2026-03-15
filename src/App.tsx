@@ -19,6 +19,8 @@ import NotFound from "@/pages/NotFound";
 import LoginScreen from "@/components/auth/LoginScreen";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
