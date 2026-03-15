@@ -70,9 +70,12 @@ interface BackupSummary {
 
 export default function Settings() {
   const [searchParams] = useSearchParams();
-  const [activeSettingsTab, setActiveSettingsTab] = useState(
-    searchParams.get("tab") || "university"
-  );
+  const tabFromUrl = searchParams.get("tab");
+  const [activeSettingsTab, setActiveSettingsTab] = useState(tabFromUrl || "university");
+
+  useEffect(() => {
+    if (tabFromUrl) setActiveSettingsTab(tabFromUrl);
+  }, [tabFromUrl]);
 
   // University Info State
   const [universityName, setUniversityName] = useState("");
