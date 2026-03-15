@@ -1184,6 +1184,219 @@ function getLocalFileUrl(localPath) {
 }
 
 // ============================================
+// إدارة الشبكة والأجهزة
+// ============================================
+
+/**
+ * حفظ أو تحديث ملف network-config.json
+ */
+function saveNetworkConfig(sharedPath) {
+  var configPath = path.join(app.getPath('userData'), 'network-config.json');
+  var cfg = { sharedPath: sharedPath };
+  fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf8');
+  // إعادة تحميل الإعدادات
+  networkConfig = null;
+  dataDir = null;
+  deviceIdentity = null;
+  loadNetworkConfig();
+  return { success: true, path: configPath };
+}
+
+/**
+ * اختبار إمكانية الوصول والكتابة في مسار مشترك
+ */
+function testNetworkPath(testPath) {
+  try {
+    if (!fs.existsSync(testPath)) {
+      return { reachable: false, writable: false, error: 'المسار غير موجود' };
+    }
+    // اختبار كتابة
+    var testFile = path.join(testPath, '.write_test_' + Date.now());
+    fs.writeFileSync(testFile, 'test', 'utf8');
+    fs.unlinkSync(testFile);
+    return { reachable: true, writable: true };
+  } catch (e) {
+    return { reachable: fs.existsSync(testPath), writable: false, error: e.message };
+  }
+}
+
+/**
+ * تحديث سجل الأجهزة (device_registry.json) — مع حماية من التعارض
+ */
+function updateDeviceRegistry() {
+  var identity = getDeviceIdentity();
+  var registryPath = path.join(getDataDir(), 'device_registry.json');
+  var registry = [];
+
+  // قراءة السجل الحالي بأمان
+  try {
+    if (fs.existsSync(registryPath)) {
+      var content = fs.readFileSync(registryPath, 'utf8');
+      if (content && content.trim()) {
+        registry = JSON.parse(content);
+      }
+    }
+  } catch (e) {
+    registry = [];
+  }
+
+  // تحديث أو إضافة الجهاز الحالي
+  var now = new Date().toISOString();
+  var found = false;
+  for (var i = 0; i < registry.length; i++) {
+    if (registry[i].ip === identity.ip && registry[i].hostname === identity.hostname) {
+      registry[i].lastActive = now;
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    registry.push({
+      hostname: identity.hostname,
+      ip: identity.ip,
+      firstSeen: now,
+      lastActive: now
+    });
+  }
+
+  // كتابة ذرية باستخدام ملف مؤقت
+  try {
+    var tmpPath = registryPath + '.tmp.' + process.pid;
+    fs.writeFileSync(tmpPath, JSON.stringify(registry, null, 2), 'utf8');
+    fs.renameSync(tmpPath, registryPath);
+  } catch (e) {
+    // تنظيف
+    try { fs.unlinkSync(registryPath + '.tmp.' + process.pid); } catch (ue) {}
+  }
+
+  return registry;
+}
+
+/**
+ * قراءة سجل الأجهزة
+ */
+function getDeviceRegistry() {
+  var registryPath = path.join(getDataDir(), 'device_registry.json');
+  try {
+    if (fs.existsSync(registryPath)) {
+      var content = fs.readFileSync(registryPath, 'utf8');
+      if (content && content.trim()) {
+        return JSON.parse(content);
+      }
+    }
+  } catch (e) {}
+  return [];
+}
+
+/**
+ * حفظ الأسماء المستعارة للأجهزة
+ */
+function saveDeviceAliases(aliases) {
+  setSetting('device_aliases', JSON.stringify(aliases));
+  return { success: true };
+}
+
+/**
+ * جلب الأسماء المستعارة للأجهزة
+ */
+function getDeviceAliases() {
+  var setting = getSetting('device_aliases');
+  if (setting && setting.value) {
+    try {
+      return JSON.parse(setting.value);
+    } catch (e) {}
+  }
+  return {};
+}
+
+/**
+ * نسخ احتياطي مركزي — نسخ المسار المشترك إلى مجلد محلي
+ */
+function centralizedBackup() {
+  if (!isNetworkMode()) {
+    return { success: false, error: 'غير متصل بالشبكة' };
+  }
+
+  var identity = getDeviceIdentity();
+  var localBackupBase = path.join(app.getPath('userData'), 'centralized_backups');
+  if (!fs.existsSync(localBackupBase)) {
+    fs.mkdirSync(localBackupBase, { recursive: true });
+  }
+
+  var now = new Date();
+  var folderName = 'backup_' + now.toISOString().replace(/[:.]/g, '-') + '_' + identity.hostname;
+  var targetDir = path.join(localBackupBase, folderName);
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  // نسخ جميع ملفات البيانات
+  var sourceDir = getDataDir();
+  var files = fs.readdirSync(sourceDir);
+  var copiedCount = 0;
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    if (f.endsWith('.json') && !f.endsWith('.lock') && !f.endsWith('.tmp')) {
+      var src = path.join(sourceDir, f);
+      var dest = path.join(targetDir, f);
+      try {
+        var stat = fs.statSync(src);
+        if (stat.isFile()) {
+          fs.copyFileSync(src, dest);
+          copiedCount++;
+        }
+      } catch (e) {}
+    }
+  }
+
+  return {
+    success: true,
+    path: targetDir,
+    folderName: folderName,
+    filesCount: copiedCount,
+    created_at: now.toISOString()
+  };
+}
+
+/**
+ * جلب إعدادات الشبكة الحالية
+ */
+function getNetworkConfig() {
+  var candidates = [
+    path.join(path.dirname(app.getPath('exe')), 'network-config.json'),
+    path.join(app.getPath('userData'), 'network-config.json')
+  ];
+  for (var i = 0; i < candidates.length; i++) {
+    if (fs.existsSync(candidates[i])) {
+      try {
+        var content = fs.readFileSync(candidates[i], 'utf8');
+        var cfg = JSON.parse(content);
+        return { found: true, config: cfg, path: candidates[i] };
+      } catch (e) {}
+    }
+  }
+  return { found: false, config: null, path: null };
+}
+
+/**
+ * فصل الاتصال بالشبكة (حذف network-config.json)
+ */
+function disconnectNetwork() {
+  var candidates = [
+    path.join(path.dirname(app.getPath('exe')), 'network-config.json'),
+    path.join(app.getPath('userData'), 'network-config.json')
+  ];
+  for (var i = 0; i < candidates.length; i++) {
+    try {
+      if (fs.existsSync(candidates[i])) {
+        fs.unlinkSync(candidates[i]);
+      }
+    } catch (e) {}
+  }
+  networkConfig = null;
+  dataDir = null;
+  return { success: true };
+}
+
+// ============================================
 // تصدير الوحدة
 // ============================================
 
@@ -1242,5 +1455,16 @@ module.exports = {
   checkRecordLock: checkRecordLock,
   
   // إدارة الذاكرة المؤقتة
-  invalidateAllCache: invalidateAllCache
+  invalidateAllCache: invalidateAllCache,
+  
+  // إدارة الشبكة والأجهزة
+  saveNetworkConfig: saveNetworkConfig,
+  testNetworkPath: testNetworkPath,
+  updateDeviceRegistry: updateDeviceRegistry,
+  getDeviceRegistry: getDeviceRegistry,
+  saveDeviceAliases: saveDeviceAliases,
+  getDeviceAliases: getDeviceAliases,
+  centralizedBackup: centralizedBackup,
+  getNetworkConfig: getNetworkConfig,
+  disconnectNetwork: disconnectNetwork
 };
