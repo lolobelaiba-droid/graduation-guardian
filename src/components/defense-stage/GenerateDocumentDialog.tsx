@@ -249,26 +249,37 @@ export function GenerateDocumentDialog({
     if (!printRef.current) return;
     
     try {
-      const { downloadDefenseDocPdf } = await import("@/lib/defenseDocPdfGenerator");
+      const html2pdf = (await import("html2pdf.js")).default;
       const studentName = student?.full_name_ar || "وثيقة";
       const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
       const fileName = `${docTitlePdf}_${studentName}.pdf`;
 
-      const htmlContent = getRenderedContent();
+      // Wait for fonts to load
+      await document.fonts.ready;
 
-      await downloadDefenseDocPdf({
-        html: htmlContent,
-        fontFamily: template?.font_family || "IBM Plex Sans Arabic",
-        fontSize: template?.font_size || 14,
-        lineHeight: template?.line_height || 1.8,
-        marginTop: template?.margin_top ?? 20,
-        marginBottom: template?.margin_bottom ?? 20,
-        marginRight: template?.margin_right ?? 15,
-        marginLeft: template?.margin_left ?? 15,
-        title: template?.title || "وثيقة",
-        fileName,
-      });
+      const opt = {
+        margin: [
+          template?.margin_top ?? 20,
+          template?.margin_right ?? 15,
+          template?.margin_bottom ?? 20,
+          template?.margin_left ?? 15,
+        ] as [number, number, number, number],
+        filename: fileName,
+        image: { type: "jpeg" as const, quality: 1.0 },
+        html2canvas: {
+          scale: 4,
+          useCORS: true,
+          letterRendering: true,
+          logging: false,
+        },
+        jsPDF: {
+          unit: "mm" as const,
+          format: "a4" as const,
+          orientation: "portrait" as const,
+        },
+      };
 
+      await html2pdf().set(opt).from(printRef.current).save();
       toast.success("تم تحميل الوثيقة بنجاح");
     } catch (err) {
       console.error("PDF download error:", err);
