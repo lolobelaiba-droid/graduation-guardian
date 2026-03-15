@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
   Building2,
@@ -68,6 +69,14 @@ interface BackupSummary {
 
 
 export default function Settings() {
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const [activeSettingsTab, setActiveSettingsTab] = useState(tabFromUrl || "university");
+
+  useEffect(() => {
+    if (tabFromUrl) setActiveSettingsTab(tabFromUrl);
+  }, [tabFromUrl]);
+
   // University Info State
   const [universityName, setUniversityName] = useState("");
   const [universityNameEn, setUniversityNameEn] = useState("");
@@ -1027,7 +1036,7 @@ export default function Settings() {
       </div>
 
       {/* Settings Tabs */}
-      <Tabs defaultValue="university" className="space-y-6">
+      <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="space-y-6">
         <TabsList className="bg-card shadow-card p-1 h-auto flex-wrap">
           <TabsTrigger value="university" className="gap-2 py-2">
             <Building2 className="h-4 w-4" />

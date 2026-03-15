@@ -79,6 +79,12 @@ interface ElectronAPI {
   openPrintersSettings?: () => Promise<boolean>;
   
   db: DbOperations;
+
+  // مراقبة الشبكة
+  startNetworkMonitor?: () => Promise<{ success: boolean; error?: string }>;
+  stopNetworkMonitor?: () => Promise<{ success: boolean; error?: string }>;
+  onNetworkError?: (callback: () => void) => () => void;
+  onNetworkRestored?: (callback: () => void) => () => void;
 }
 
 declare global {

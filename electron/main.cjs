@@ -315,11 +315,16 @@ app.whenReady().then(() => {
   db.initializeDatabase();
   
   // Register all IPC handlers
-  registerDatabaseHandlers();
+  const dbHandlers = registerDatabaseHandlers();
   registerFileHandlers();
   registerPrinterHandlers();
   
   createWindow();
+
+  // بدء مراقبة الشبكة بعد إنشاء النافذة
+  if (mainWindow && dbHandlers && dbHandlers.startNetworkMonitor) {
+    dbHandlers.startNetworkMonitor(mainWindow);
+  }
 
   app.on('activate', () => {
     // On macOS, re-create a window when the dock icon is clicked

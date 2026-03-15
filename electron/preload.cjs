@@ -131,4 +131,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     disconnectNetwork: () =>
       ipcRenderer.invoke('db:disconnectNetwork'),
   },
+
+  // مراقبة الشبكة
+  startNetworkMonitor: () => ipcRenderer.invoke('network:startMonitor'),
+  stopNetworkMonitor: () => ipcRenderer.invoke('network:stopMonitor'),
+  onNetworkError: (callback) => {
+    ipcRenderer.on('network:connection-lost', () => callback());
+    return () => ipcRenderer.removeAllListeners('network:connection-lost');
+  },
+  onNetworkRestored: (callback) => {
+    ipcRenderer.on('network:connection-restored', () => callback());
+    return () => ipcRenderer.removeAllListeners('network:connection-restored');
+  },
 });

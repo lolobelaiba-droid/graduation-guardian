@@ -425,7 +425,111 @@ function registerDatabaseHandlers() {
     }
   });
 
+  // ============================================
+  // مراقبة الشبكة (Network Monitor)
+  // ============================================
+
+  var networkMonitorInterval = null;
+  var previousNetworkState = null; // null = unknown, true = connected, false = disconnected
+  var failureCount = 0;
+  var FAILURE_THRESHOLD = 2; // عدد المحاولات الفاشلة قبل إعلان الانقطاع
+
+  function startNetworkMonitor(mainWindow) {
+    // إيقاف أي مراقب سابق
+    if (networkMonitorInterval) {
+      clearInterval(networkMonitorInterval);
+      networkMonitorInterval = null;
+    }
+
+    // التحقق من وجود وضع شبكة
+    var configResult = db.getNetworkConfig();
+    if (!configResult || !configResult.found || !configResult.config || !configResult.config.sharedPath) {
+      console.log('[NetworkMonitor] No network config found, monitor not started.');
+      previousNetworkState = null;
+      failureCount = 0;
+      return;
+    }
+
+    var sharedPath = configResult.config.sharedPath;
+    console.log('[NetworkMonitor] Starting monitor for:', sharedPath);
+    previousNetworkState = true; // نفترض أن الاتصال يعمل عند البدء
+    failureCount = 0;
+
+    networkMonitorInterval = setInterval(function () {
+      try {
+        var result = db.testNetworkPath(sharedPath);
+        var isReachable = result && result.reachable && result.writable;
+
+        if (isReachable) {
+          failureCount = 0;
+          if (previousNetworkState === false) {
+            // الاتصال عاد
+            previousNetworkState = true;
+            console.log('[NetworkMonitor] Connection restored.');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('network:connection-restored');
+            }
+          } else {
+            previousNetworkState = true;
+          }
+        } else {
+          failureCount++;
+          if (failureCount >= FAILURE_THRESHOLD && previousNetworkState !== false) {
+            previousNetworkState = false;
+            console.log('[NetworkMonitor] Connection lost after', failureCount, 'failures.');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('network:connection-lost');
+            }
+          }
+        }
+      } catch (err) {
+        failureCount++;
+        if (failureCount >= FAILURE_THRESHOLD && previousNetworkState !== false) {
+          previousNetworkState = false;
+          console.log('[NetworkMonitor] Connection lost (error):', err.message);
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('network:connection-lost');
+          }
+        }
+      }
+    }, 30000); // كل 30 ثانية
+  }
+
+  function stopNetworkMonitor() {
+    if (networkMonitorInterval) {
+      clearInterval(networkMonitorInterval);
+      networkMonitorInterval = null;
+      previousNetworkState = null;
+      failureCount = 0;
+      console.log('[NetworkMonitor] Stopped.');
+    }
+  }
+
+  // IPC للتحكم بالمراقب من الواجهة
+  ipcMain.handle('network:startMonitor', async () => {
+    try {
+      var { BrowserWindow } = require('electron');
+      var win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+      startNetworkMonitor(win);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('network:stopMonitor', async () => {
+    try {
+      stopNetworkMonitor();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   console.log('Database IPC handlers registered');
+
+  // إرجاع دوال المراقبة للاستخدام من main.cjs
+  return { startNetworkMonitor, stopNetworkMonitor };
 }
 
 module.exports = { registerDatabaseHandlers };

@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
+import { NetworkStatusBanner } from "./NetworkStatusBanner";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -7,13 +8,16 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="min-h-screen flex w-full bg-background">
-      <AppSidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 md:p-8 max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
+    <div className="min-h-screen flex flex-col w-full bg-background">
+      <NetworkStatusBanner />
+      <div className="flex flex-1">
+        <AppSidebar />
+        <main className="flex-1 overflow-auto">
+          <div className="p-6 md:p-8 max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
