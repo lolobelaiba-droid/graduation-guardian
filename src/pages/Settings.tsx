@@ -1028,7 +1028,7 @@ export default function Settings() {
       </div>
 
       {/* Settings Tabs */}
-      <Tabs defaultValue="university" className="space-y-6">
+      <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="space-y-6">
         <TabsList className="bg-card shadow-card p-1 h-auto flex-wrap">
           <TabsTrigger value="university" className="gap-2 py-2">
             <Building2 className="h-4 w-4" />
