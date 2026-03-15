@@ -364,6 +364,11 @@ function initializeDatabase() {
     }
   });
   
+  // تسجيل الجهاز في سجل الأجهزة عند التشغيل
+  if (isNetworkMode()) {
+    try { updateDeviceRegistry(); } catch (e) {}
+  }
+  
   console.log('Database initialized successfully');
 }
 

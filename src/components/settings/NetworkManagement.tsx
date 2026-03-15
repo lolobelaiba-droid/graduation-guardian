@@ -261,9 +261,9 @@ export default function NetworkManagement() {
 
         {/* Status indicator */}
         {isConnected && (
-          <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-sm">
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-green-700 dark:text-green-400 font-medium">
+          <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-primary/10 border border-primary/30 text-sm">
+            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-primary font-medium">
               متصل بالشبكة
             </span>
             <span className="font-mono text-xs text-muted-foreground mr-auto" dir="ltr">
