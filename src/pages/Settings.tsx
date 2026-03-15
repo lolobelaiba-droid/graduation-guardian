@@ -1053,6 +1053,12 @@ export default function Settings() {
             <Settings2 className="h-4 w-4" />
             إدارة حقول قاعدة البيانات
           </TabsTrigger>
+          {isElectron() && (
+            <TabsTrigger value="network" className="gap-2 py-2">
+              <Network className="h-4 w-4" />
+              إدارة الشبكة
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Date Format Tab */}
