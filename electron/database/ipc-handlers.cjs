@@ -340,6 +340,91 @@ function registerDatabaseHandlers() {
     }
   });
 
+  // ============================================
+  // إدارة الشبكة والأجهزة
+  // ============================================
+
+  ipcMain.handle('db:saveNetworkConfig', async (_, sharedPath) => {
+    try {
+      const result = db.saveNetworkConfig(sharedPath);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:testNetworkPath', async (_, testPath) => {
+    try {
+      const result = db.testNetworkPath(testPath);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:getDeviceRegistry', async () => {
+    try {
+      const data = db.getDeviceRegistry();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:updateDeviceRegistry', async () => {
+    try {
+      const data = db.updateDeviceRegistry();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:saveDeviceAliases', async (_, aliases) => {
+    try {
+      const result = db.saveDeviceAliases(aliases);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:getDeviceAliases', async () => {
+    try {
+      const data = db.getDeviceAliases();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:centralizedBackup', async () => {
+    try {
+      const result = db.centralizedBackup();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:getNetworkConfig', async () => {
+    try {
+      const result = db.getNetworkConfig();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:disconnectNetwork', async () => {
+    try {
+      const result = db.disconnectNetwork();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   console.log('Database IPC handlers registered');
 }
 

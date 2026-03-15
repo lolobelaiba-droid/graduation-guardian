@@ -25,6 +25,7 @@ import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
 import { CustomFieldsManager } from "@/components/settings/CustomFieldsManager";
 import DefenseDocTemplateEditor from "@/components/settings/DefenseDocTemplateEditor";
+import NetworkManagement from "@/components/settings/NetworkManagement";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1052,6 +1053,12 @@ export default function Settings() {
             <Settings2 className="h-4 w-4" />
             إدارة حقول قاعدة البيانات
           </TabsTrigger>
+          {isElectron() && (
+            <TabsTrigger value="network" className="gap-2 py-2">
+              <Network className="h-4 w-4" />
+              إدارة الشبكة
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Date Format Tab */}
@@ -1441,10 +1448,17 @@ export default function Settings() {
           <DefenseDocTemplateEditor />
         </TabsContent>
 
-        {/* Custom Fields Tab - Last after Print Settings */}
+        {/* Custom Fields Tab */}
         <TabsContent value="customfields">
           <CustomFieldsManager />
         </TabsContent>
+
+        {/* Network Management Tab */}
+        {isElectron() && (
+          <TabsContent value="network">
+            <NetworkManagement />
+          </TabsContent>
+        )}
 
       </Tabs>
     </div>

@@ -110,5 +110,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:getCachedFileUrl', remoteUrl, subFolder),
     saveLocalFile: (fileBuffer, fileName, subFolder) =>
       ipcRenderer.invoke('db:saveLocalFile', fileBuffer, fileName, subFolder),
+    
+    // إدارة الشبكة والأجهزة
+    saveNetworkConfig: (sharedPath) =>
+      ipcRenderer.invoke('db:saveNetworkConfig', sharedPath),
+    testNetworkPath: (testPath) =>
+      ipcRenderer.invoke('db:testNetworkPath', testPath),
+    getDeviceRegistry: () =>
+      ipcRenderer.invoke('db:getDeviceRegistry'),
+    updateDeviceRegistry: () =>
+      ipcRenderer.invoke('db:updateDeviceRegistry'),
+    saveDeviceAliases: (aliases) =>
+      ipcRenderer.invoke('db:saveDeviceAliases', aliases),
+    getDeviceAliases: () =>
+      ipcRenderer.invoke('db:getDeviceAliases'),
+    centralizedBackup: () =>
+      ipcRenderer.invoke('db:centralizedBackup'),
+    getNetworkConfig: () =>
+      ipcRenderer.invoke('db:getNetworkConfig'),
+    disconnectNetwork: () =>
+      ipcRenderer.invoke('db:disconnectNetwork'),
   },
 });
