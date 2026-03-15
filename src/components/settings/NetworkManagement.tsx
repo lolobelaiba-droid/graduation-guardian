@@ -337,7 +337,7 @@ export default function NetworkManagement() {
           <div
             className={`mt-4 p-3 rounded-lg border text-sm flex items-center gap-2 ${
               testResult.reachable && testResult.writable
-                ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
+                ? "bg-primary/10 border-primary/30 text-primary"
                 : "bg-destructive/10 border-destructive/30 text-destructive"
             }`}
           >
