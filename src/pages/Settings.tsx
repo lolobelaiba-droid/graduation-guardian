@@ -1448,10 +1448,17 @@ export default function Settings() {
           <DefenseDocTemplateEditor />
         </TabsContent>
 
-        {/* Custom Fields Tab - Last after Print Settings */}
+        {/* Custom Fields Tab */}
         <TabsContent value="customfields">
           <CustomFieldsManager />
         </TabsContent>
+
+        {/* Network Management Tab */}
+        {isElectron() && (
+          <TabsContent value="network">
+            <NetworkManagement />
+          </TabsContent>
+        )}
 
       </Tabs>
     </div>
