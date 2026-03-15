@@ -48,6 +48,7 @@ interface DbOperations {
   centralizedBackup: () => Promise<{ success: boolean; data?: { success: boolean; path?: string; folderName?: string; filesCount?: number; error?: string }; error?: string }>;
   getNetworkConfig: () => Promise<{ success: boolean; data?: { found: boolean; config: { sharedPath: string } | null; path: string | null }; error?: string }>;
   disconnectNetwork: () => Promise<{ success: boolean; error?: string }>;
+}
 
 interface ElectronAPI {
   getVersion: () => string;
