@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
   Building2,
