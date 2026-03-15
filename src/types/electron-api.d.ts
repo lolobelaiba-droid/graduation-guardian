@@ -37,7 +37,17 @@ interface DbOperations {
   cacheRemoteFile: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string; fileName: string; cached: boolean }; error?: string }>;
   getCachedFileUrl: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string }; error?: string }>;
   saveLocalFile: (fileBuffer: number[], fileName: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string; fileName: string }; error?: string }>;
-}
+  
+  // إدارة الشبكة والأجهزة
+  saveNetworkConfig: (sharedPath: string) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+  testNetworkPath: (testPath: string) => Promise<{ success: boolean; data?: { reachable: boolean; writable: boolean; error?: string }; error?: string }>;
+  getDeviceRegistry: () => Promise<{ success: boolean; data?: Array<{ hostname: string; ip: string; firstSeen: string; lastActive: string }>; error?: string }>;
+  updateDeviceRegistry: () => Promise<{ success: boolean; data?: unknown; error?: string }>;
+  saveDeviceAliases: (aliases: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
+  getDeviceAliases: () => Promise<{ success: boolean; data?: Record<string, string>; error?: string }>;
+  centralizedBackup: () => Promise<{ success: boolean; data?: { success: boolean; path?: string; folderName?: string; filesCount?: number; error?: string }; error?: string }>;
+  getNetworkConfig: () => Promise<{ success: boolean; data?: { found: boolean; config: { sharedPath: string } | null; path: string | null }; error?: string }>;
+  disconnectNetwork: () => Promise<{ success: boolean; error?: string }>;
 
 interface ElectronAPI {
   getVersion: () => string;
