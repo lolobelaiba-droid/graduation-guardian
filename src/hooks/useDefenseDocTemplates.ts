@@ -74,6 +74,7 @@ export interface DefenseDocTemplate {
   margin_left: number;
   custom_variables: CustomVariable[];
   jury_table_settings: JuryTableSettings;
+  text_boxes: TextBoxData[];
   created_at: string;
   updated_at: string;
 }
