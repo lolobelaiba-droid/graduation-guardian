@@ -36,21 +36,19 @@ export function UploadStep({ onFileSelect, error, certificateType }: UploadStepP
 
   const handleDownloadTemplate = useCallback(() => {
     const fields = certificateFields[certificateType];
-    // Use unique DB keys to avoid duplicate columns, but use Arabic names as headers
     const seen = new Set<string>();
     const headers: string[] = [];
-    const fieldNames: string[] = [];
+    const statusRow: string[] = [];
     
     for (const f of fields) {
       const dbKey = getDbFieldKey(f.key);
       if (!seen.has(dbKey)) {
         seen.add(dbKey);
-        headers.push(dbKey);
-        fieldNames.push(f.name_ar);
+        headers.push(f.required ? `${f.name_ar} *` : f.name_ar);
+        statusRow.push(f.required ? 'إجباري' : 'اختياري');
       }
     }
 
-    // Also add extra fields useful for historical data but not in certificateFields display list
     const extraFields = [
       { key: 'supervisor_ar', name: 'المشرف' },
       { key: 'gender', name: 'الجنس' },
@@ -60,16 +58,13 @@ export function UploadStep({ onFileSelect, error, certificateType }: UploadStepP
     for (const ef of extraFields) {
       if (!seen.has(ef.key)) {
         seen.add(ef.key);
-        headers.push(ef.key);
-        fieldNames.push(ef.name);
+        headers.push(ef.name);
+        statusRow.push('اختياري');
       }
     }
 
-    // Create worksheet with Arabic headers
-    const ws = XLSX.utils.aoa_to_sheet([fieldNames]);
-    
-    // Set column widths
-    ws['!cols'] = fieldNames.map(() => ({ wch: 22 }));
+    const ws = XLSX.utils.aoa_to_sheet([headers, statusRow]);
+    ws['!cols'] = headers.map(() => ({ wch: 22 }));
     
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'قالب');
