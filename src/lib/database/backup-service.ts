@@ -261,6 +261,7 @@ export class BackupService {
         "phd_lmd_students", "phd_science_students",
         "dropdown_options", "custom_fonts", "academic_titles",
         "activity_log", "user_settings", "settings", "notes", "professors",
+        "defense_document_templates", "defense_stage_lmd", "defense_stage_science",
       ].filter(shouldRestore).map(deleteTable);
       await Promise.all(mainDeletes);
 
