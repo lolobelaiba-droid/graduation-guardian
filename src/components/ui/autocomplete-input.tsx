@@ -38,16 +38,29 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       });
     }, []);
 
+    // Keep position updated continuously while open
     React.useEffect(() => {
-      if (isOpen) {
+      if (!isOpen) return;
+      
+      updateDropdownPosition();
+      
+      // Listen to scroll on all ancestors (capture phase) and window resize
+      window.addEventListener('scroll', updateDropdownPosition, true);
+      window.addEventListener('resize', updateDropdownPosition);
+      
+      // Use RAF loop to handle smooth repositioning during scroll/resize
+      let rafId: number;
+      const tick = () => {
         updateDropdownPosition();
-        window.addEventListener('scroll', updateDropdownPosition, true);
-        window.addEventListener('resize', updateDropdownPosition);
-        return () => {
-          window.removeEventListener('scroll', updateDropdownPosition, true);
-          window.removeEventListener('resize', updateDropdownPosition);
-        };
-      }
+        rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
+      
+      return () => {
+        window.removeEventListener('scroll', updateDropdownPosition, true);
+        window.removeEventListener('resize', updateDropdownPosition);
+        cancelAnimationFrame(rafId);
+      };
     }, [isOpen, updateDropdownPosition]);
 
     React.useEffect(() => {
