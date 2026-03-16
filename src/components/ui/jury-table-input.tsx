@@ -717,8 +717,11 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 )}
               >
                 {/* Number */}
-                <td className="py-1.5 px-2 text-center text-muted-foreground font-mono text-xs align-middle">
-                  {index + 1}
+                <td className="py-2 px-2 text-center text-muted-foreground font-mono text-xs align-middle">
+                  <div className="flex items-center justify-center gap-1">
+                    {getRoleIcon(row.role)}
+                    <span>{index + 1}</span>
+                  </div>
                 </td>
 
                 {/* Abbreviation - before name */}
