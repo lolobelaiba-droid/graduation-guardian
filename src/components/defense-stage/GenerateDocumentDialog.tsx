@@ -221,7 +221,17 @@ export function GenerateDocumentDialog({
 <title>${template?.title || "وثيقة"}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap');
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @font-face { font-family: 'IBM Plex Sans Arabic'; src: url('/fonts/IBMPlexSansArabic-Regular.ttf') format('truetype'); font-weight: 400; }
+  @font-face { font-family: 'IBM Plex Sans Arabic'; src: url('/fonts/IBMPlexSansArabic-Bold.ttf') format('truetype'); font-weight: 700; }
+  @font-face { font-family: 'IBM Plex Sans Arabic'; src: url('/fonts/IBMPlexSansArabic-SemiBold.ttf') format('truetype'); font-weight: 600; }
+  @font-face { font-family: 'IBM Plex Sans Arabic'; src: url('/fonts/IBMPlexSansArabic-Medium.ttf') format('truetype'); font-weight: 500; }
+  @font-face { font-family: 'IBM Plex Sans Arabic'; src: url('/fonts/IBMPlexSansArabic-Light.ttf') format('truetype'); font-weight: 300; }
+  @font-face { font-family: 'Amiri'; src: url('/fonts/Amiri-Regular.ttf') format('truetype'); font-weight: 400; }
+  @font-face { font-family: 'Amiri'; src: url('/fonts/Amiri-Bold.ttf') format('truetype'); font-weight: 700; }
+  @font-face { font-family: 'Tajawal'; src: url('/fonts/Tajawal-Regular.ttf') format('truetype'); font-weight: 400; }
+  @font-face { font-family: 'Tajawal'; src: url('/fonts/Tajawal-Bold.ttf') format('truetype'); font-weight: 700; }
+  @font-face { font-family: 'Cairo'; src: url('/fonts/Cairo-Regular.ttf') format('truetype'); font-weight: 400; }
+  html, body { margin: 0; padding: 0; box-sizing: border-box; }
   @page { size: A4 portrait; margin: ${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm; }
   body {
     font-family: '${fontFamily}', sans-serif;
@@ -230,10 +240,14 @@ export function GenerateDocumentDialog({
     direction: rtl;
     color: #000;
   }
+  /* Preserve all inline styles - do NOT override text-align, direction, font properties */
+  p, div, span, h1, h2, h3, h4, h5, h6, blockquote { margin: 0; padding: 0; }
   table { border-collapse: collapse; width: 100%; }
   td, th { border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height}; }
   th { background: ${jts.header_bg}; font-weight: bold; }
   .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
+  /* Ensure inline styles on elements are never overridden */
+  [style] { /* inline styles have highest priority by default */ }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head>
