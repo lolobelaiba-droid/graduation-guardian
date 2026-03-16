@@ -49,7 +49,12 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       if (!isOpen) return;
 
       updateDropdownPosition();
-      const handleReposition = () => updateDropdownPosition();
+
+      const handleReposition = (event?: Event) => {
+        const target = event?.target as Node | null;
+        if (target && dropdownRef.current?.contains(target)) return;
+        updateDropdownPosition();
+      };
 
       window.addEventListener("resize", handleReposition);
       window.addEventListener("scroll", handleReposition, true);
