@@ -423,6 +423,7 @@ export function ImportExcelDialog({
             <UploadStep 
               onFileSelect={handleFileSelect} 
               error={uploadError}
+              certificateType={certificateType}
             />
           )}
 
