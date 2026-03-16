@@ -33,16 +33,15 @@ interface UniversityCellProps {
   className?: string;
 }
 
-const UniversityCell = React.forwardRef<HTMLInputElement, UniversityCellProps>(({
+const UniversityCell: React.FC<UniversityCellProps> = ({
   value,
   onChange,
   suggestions,
   placeholder = "جامعة الانتماء",
   className,
-}, ref) => {
+}) => {
   return (
     <AutocompleteInput
-      ref={ref}
       value={value}
       onValueChange={onChange}
       suggestions={suggestions}
@@ -51,8 +50,7 @@ const UniversityCell = React.forwardRef<HTMLInputElement, UniversityCellProps>((
       dir="rtl"
     />
   );
-});
-UniversityCell.displayName = "UniversityCell";
+};
 // ======== Types ========
 
 export type JuryRole =
@@ -696,7 +694,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-visible rounded-lg border border-border shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
         <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-muted/70 border-b-2 border-border">

@@ -1,5 +1,4 @@
 import * as React from "react";
-import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
@@ -14,12 +13,9 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
     const [isOpen, setIsOpen] = React.useState(false);
     const [inputValue, setInputValue] = React.useState(value?.toString() || "");
     const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
-    const [dropdownStyle, setDropdownStyle] = React.useState<React.CSSProperties>({});
-
     const containerRef = React.useRef<HTMLDivElement>(null);
     const inputRef = React.useRef<HTMLInputElement>(null);
     const listRef = React.useRef<HTMLDivElement>(null);
-    const dropdownRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
       setInputValue(value?.toString() || "");
@@ -28,55 +24,17 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
     const filteredSuggestions = React.useMemo(() => {
       if (!inputValue.trim()) return suggestions.slice(0, 10);
       const lower = inputValue.toLowerCase();
-      return suggestions.filter((s) => s.toLowerCase().includes(lower)).slice(0, 10);
+      return suggestions
+        .filter(s => s.toLowerCase().includes(lower))
+        .slice(0, 10);
     }, [suggestions, inputValue]);
-
-    const updateDropdownPosition = React.useCallback(() => {
-      const inputNode = inputRef.current;
-      if (!inputNode) return;
-
-      const rect = inputNode.getBoundingClientRect();
-      setDropdownStyle({
-        position: "fixed",
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-        zIndex: 1000,
-      });
-    }, []);
-
-    React.useEffect(() => {
-      if (!isOpen) return;
-
-      updateDropdownPosition();
-
-      const handleReposition = (event?: Event) => {
-        const target = event?.target as Node | null;
-        if (target && dropdownRef.current?.contains(target)) return;
-        updateDropdownPosition();
-      };
-
-      window.addEventListener("resize", handleReposition);
-      window.addEventListener("scroll", handleReposition, true);
-
-      return () => {
-        window.removeEventListener("resize", handleReposition);
-        window.removeEventListener("scroll", handleReposition, true);
-      };
-    }, [isOpen, updateDropdownPosition]);
-
-    React.useEffect(() => {
-      if (isOpen) updateDropdownPosition();
-    }, [isOpen, inputValue, filteredSuggestions.length, updateDropdownPosition]);
 
     React.useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        const target = event.target as Node;
-        if (containerRef.current?.contains(target)) return;
-        if (dropdownRef.current?.contains(target)) return;
-        setIsOpen(false);
+        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
       };
-
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
@@ -119,7 +77,7 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setHighlightedIndex((prev) => {
+          setHighlightedIndex(prev => {
             const next = prev < filteredSuggestions.length - 1 ? prev + 1 : prev;
             scrollToIndex(next);
             return next;
@@ -127,7 +85,7 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
           break;
         case "ArrowUp":
           e.preventDefault();
-          setHighlightedIndex((prev) => {
+          setHighlightedIndex(prev => {
             const next = prev > 0 ? prev - 1 : -1;
             if (next >= 0) scrollToIndex(next);
             return next;
@@ -152,57 +110,11 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       }
     };
 
-    const dropdown = isOpen ? (
-      <div
-        ref={dropdownRef}
-        style={dropdownStyle}
-        className="border border-border rounded-md bg-popover shadow-lg"
-      >
-        <div
-          ref={listRef}
-          className="max-h-[200px] overflow-y-auto overscroll-contain"
-          onWheel={(e) => {
-            const list = listRef.current;
-            if (!list) return;
-
-            const canScroll = list.scrollHeight > list.clientHeight;
-            if (!canScroll) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-            list.scrollTop += e.deltaY;
-          }}
-        >
-          {filteredSuggestions.length > 0 ? (
-            <div className="p-1">
-              {filteredSuggestions.map((suggestion, index) => (
-                <div
-                  key={suggestion}
-                  data-index={index}
-                  className={cn(
-                    "px-3 py-2 cursor-pointer rounded-sm text-sm",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    highlightedIndex === index && "bg-accent text-accent-foreground"
-                  )}
-                  onClick={() => handleSelect(suggestion)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                >
-                  {suggestion}
-                </div>
-              ))}
-            </div>
-          ) : inputValue.trim() ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">{emptyMessage}</div>
-          ) : null}
-        </div>
-      </div>
-    ) : null;
-
     return (
       <div ref={containerRef} className="relative w-full">
         <Input
           ref={(node) => {
-            if (typeof ref === "function") {
+            if (typeof ref === 'function') {
               ref(node);
             } else if (ref) {
               ref.current = node;
@@ -217,8 +129,36 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
           autoComplete="off"
           {...props}
         />
-
-        {typeof document !== "undefined" ? createPortal(dropdown, document.body) : dropdown}
+        
+        {isOpen && (
+          <div className="absolute z-[100] w-full mt-1 bg-popover border border-border rounded-md shadow-lg">
+            <div ref={listRef} className="max-h-[200px] overflow-y-auto">
+              {filteredSuggestions.length > 0 ? (
+                <div className="p-1">
+                  {filteredSuggestions.map((suggestion, index) => (
+                    <div
+                      key={suggestion}
+                      data-index={index}
+                      className={cn(
+                        "px-3 py-2 cursor-pointer rounded-sm text-sm",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        highlightedIndex === index && "bg-accent text-accent-foreground"
+                      )}
+                      onClick={() => handleSelect(suggestion)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </div>
+              ) : inputValue.trim() ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  {emptyMessage}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
