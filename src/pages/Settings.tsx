@@ -519,7 +519,7 @@ export default function Settings() {
       createdAt,
     };
 
-    let currentSummary: BackupSummary = { phdLmdCount: 0, phdScienceCount: 0, masterCount: 0, templatesCount: 0, phdLmdStudentsCount: 0, phdScienceStudentsCount: 0 };
+    let currentSummary: BackupSummary = { phdLmdCount: 0, phdScienceCount: 0, masterCount: 0, templatesCount: 0, phdLmdStudentsCount: 0, phdScienceStudentsCount: 0, defenseDocTemplatesCount: 0, defenseStageLmdCount: 0, defenseStageScienceCount: 0 };
     try {
       const { data: currentExport } = await BackupService.exportAll();
       if (currentExport) {
