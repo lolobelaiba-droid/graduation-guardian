@@ -221,11 +221,16 @@ export function GenerateDocumentDialog({
     // Inject dynamic @media print CSS
     const style = document.createElement('style');
     style.id = 'defense-doc-print-styles';
+    const mt = template?.margin_top ?? 20;
+    const mb = template?.margin_bottom ?? 20;
+    const mr = template?.margin_right ?? 15;
+    const ml = template?.margin_left ?? 15;
+
     style.textContent = `
       @media print {
         @page {
           size: A4 portrait;
-          margin: ${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm;
+          margin: 0;
         }
 
         /* Hide everything */
@@ -252,15 +257,17 @@ export function GenerateDocumentDialog({
           left: 0 !important;
           top: 0 !important;
           width: 210mm !important;
+          min-height: 297mm !important;
           z-index: 999999 !important;
           background: white !important;
           margin: 0 !important;
-          padding: ${template?.margin_top ?? 20}mm ${template?.margin_right ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_left ?? 15}mm !important;
+          padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
           font-family: '${fontFamily}', sans-serif !important;
           font-size: ${template?.font_size || 14}px !important;
           line-height: ${template?.line_height || 1.8} !important;
           direction: rtl !important;
           color: #000 !important;
+          box-sizing: border-box !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
