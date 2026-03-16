@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2 } from "lucide-react";
+import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,7 @@ export function ImportPhdExcelDialog({
   const [importResults, setImportResults] = useState<ImportResults>({ success: 0, failed: 0, errors: [] });
   const [importMode, setImportMode] = useState<ImportMode>("append");
   const [existingCount, setExistingCount] = useState<number>(0);
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
   const queryClient = useQueryClient();
 
   const requiredFields = getPhdStudentFields(studentType);
@@ -346,6 +347,107 @@ export function ImportPhdExcelDialog({
     setStep("complete");
   };
 
+  const handleDownloadTemplate = async () => {
+    setIsGeneratingTemplate(true);
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const ws = workbook.addWorksheet('قالب');
+      const fields = getPhdStudentFields(studentType);
+
+      // Fetch dropdown options from DB
+      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar' };
+      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'status': ['نشط', 'متخرج', 'مؤجل', 'منسحب'] };
+      const dynamicOptions: Record<string, string[]> = {};
+
+      for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
+        // Skip field_ar for science type
+        if (fieldKey === 'field_ar' && studentType === 'phd_science' && !fields.some(f => f.key === 'field_ar')) continue;
+        if (isElectron()) {
+          const db = getDbClient();
+          if (db) {
+            const result = await db.getDropdownOptionsByType(optionType);
+            if (result.success && result.data) dynamicOptions[fieldKey] = result.data.map((o: any) => o.option_value);
+          }
+        } else {
+          const { data } = await supabase.from('dropdown_options').select('option_value').eq('option_type', optionType).order('display_order');
+          if (data) dynamicOptions[fieldKey] = data.map(o => o.option_value);
+        }
+      }
+
+      // Fetch bilingual options (employment_status, registration_type, inscription_status)
+      const bilingualFields = ['employment_status', 'registration_type', 'inscription_status'];
+      for (const optType of bilingualFields) {
+        if (isElectron()) {
+          const db = getDbClient();
+          if (db) {
+            const result = await db.getDropdownOptionsByType(optType);
+            if (result.success && result.data) dynamicOptions[optType] = result.data.map((o: any) => o.value_ar || o.option_value);
+          }
+        } else {
+          const { data } = await supabase.from('dropdown_options').select('option_value, value_ar').eq('option_type', optType).order('display_order');
+          if (data) dynamicOptions[optType] = data.map(o => o.value_ar || o.option_value);
+        }
+      }
+
+      const allOptions = { ...staticOptions, ...dynamicOptions };
+
+      // Add header row with styling
+      const headerRow = ws.addRow(fields.map(f => f.name_ar));
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, size: 12 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } };
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FF4472C4' } } };
+      });
+      fields.forEach((_, idx) => { ws.getColumn(idx + 1).width = 24; });
+
+      // Hidden options sheet
+      const optionsSheet = workbook.addWorksheet('_options', { state: 'hidden' });
+      let optColIdx = 1;
+      const optRangeMap: Record<string, string> = {};
+
+      for (const [key, opts] of Object.entries(allOptions)) {
+        if (opts.length === 0) continue;
+        optionsSheet.getCell(1, optColIdx).value = key;
+        opts.forEach((val, ri) => { optionsSheet.getCell(ri + 2, optColIdx).value = val; });
+        const colLetter = String.fromCharCode(64 + optColIdx);
+        optRangeMap[key] = `'_options'!$${colLetter}$2:$${colLetter}$${opts.length + 1}`;
+        optColIdx++;
+      }
+
+      // Apply data validation
+      fields.forEach((field, idx) => {
+        const colIdx = idx + 1;
+        const optKey = Object.keys(optRangeMap).find(k => field.key === k);
+        if (optKey) {
+          for (let row = 2; row <= 501; row++) {
+            ws.getCell(row, colIdx).dataValidation = {
+              type: 'list',
+              allowBlank: true,
+              formulae: [optRangeMap[optKey]],
+            };
+          }
+        }
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `قالب_استيراد_طلبة_${phdStudentTypeLabels[studentType].ar}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('تم تحميل القالب بنجاح');
+    } catch (e) {
+      console.error('Template download error:', e);
+      toast.error('حدث خطأ أثناء توليد القالب');
+    } finally {
+      setIsGeneratingTemplate(false);
+    }
+  };
+
   const handleModeSelect = (mode: ImportMode) => {
     setImportMode(mode);
     setStep("mapping");
@@ -409,6 +511,14 @@ export function ImportPhdExcelDialog({
                   {uploadError}
                 </div>
               )}
+              <Button
+                variant="outline"
+                onClick={handleDownloadTemplate}
+                disabled={isGeneratingTemplate}
+              >
+                {isGeneratingTemplate ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
+                تحميل القالب
+              </Button>
             </div>
           )}
 
