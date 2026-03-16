@@ -131,8 +131,20 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
           align="start"
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => {
+            // Don't close if clicking inside the input
+            if (inputRef.current?.contains(e.target as Node)) {
+              e.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            if (inputRef.current?.contains(e.target as Node)) {
+              e.preventDefault();
+            }
+          }}
         >
-          <div ref={listRef} className="max-h-[200px] overflow-y-auto">
+          <div ref={listRef} className="max-h-[250px] overflow-y-auto">
             {filteredSuggestions.length > 0 ? (
               <div className="p-1">
                 {filteredSuggestions.map((suggestion, index) => (
