@@ -130,7 +130,8 @@ export default function DefenseDocTemplateEditor() {
   const [localSettings, setLocalSettings] = useState<Record<string, LocalSettings>>({});
   const [previewMode, setPreviewMode] = useState<Record<string, boolean>>({});
   const editorRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
+  const pageContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [selectedTextBox, setSelectedTextBox] = useState<{ templateId: string; boxId: string } | null>(null);
   // Variable management dialog
   const [variableDialog, setVariableDialog] = useState<{ open: boolean; templateId: string }>({
     open: false,
