@@ -184,8 +184,6 @@ export default function DefenseStage() {
                       <TableHead className="text-right">الكلية</TableHead>
                       <TableHead className="text-right">المشرف</TableHead>
                       <TableHead className="text-right">تاريخ المجلس العلمي</TableHead>
-                      <TableHead className="text-right">رقم إرسال العميد</TableHead>
-                      <TableHead className="text-right">تاريخ إرسال العميد</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right w-12">إجراءات</TableHead>
                     </TableRow>
@@ -200,11 +198,15 @@ export default function DefenseStage() {
                         <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
                         <TableCell>
                           {student.scientific_council_date
-                            ? new Date(student.scientific_council_date).toLocaleDateString('ar-DZ')
+                            ? (() => {
+                                const d = new Date(student.scientific_council_date);
+                                const day = String(d.getDate()).padStart(2, '0');
+                                const month = String(d.getMonth() + 1).padStart(2, '0');
+                                const year = d.getFullYear();
+                                return `${day}/${month}/${year}`;
+                              })()
                             : "-"}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{student.dean_letter_number || "-"}</TableCell>
-                        <TableCell className="text-muted-foreground">{student.dean_letter_date || "-"}</TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
