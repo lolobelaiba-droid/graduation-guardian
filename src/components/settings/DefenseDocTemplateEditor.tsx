@@ -440,6 +440,7 @@ export default function DefenseDocTemplateEditor() {
         margin_left: settings.margin_left,
         custom_variables: settings.custom_variables,
         jury_table_settings: settings.jury_table_settings,
+        text_boxes: settings.text_boxes,
       } as any);
       toast.success("تم حفظ القالب بنجاح");
     } catch (error) {
