@@ -700,8 +700,31 @@ export function GenerateDocumentDialog({
             visibility: 'hidden',
             pointerEvents: 'none',
           }}
-          dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
-        />,
+        >
+          <div dangerouslySetInnerHTML={{ __html: getRenderedContent() }} />
+          {(template?.text_boxes || []).map((tb: TextBoxData) => (
+            <div
+              key={tb.id}
+              style={{
+                position: "absolute",
+                left: `${tb.x}mm`,
+                top: `${tb.y}mm`,
+                width: `${tb.width}mm`,
+                minHeight: `${tb.minHeight}mm`,
+                border: `${tb.borderWidth}px solid ${tb.borderColor}`,
+                padding: `${tb.padding}px`,
+                background: tb.bgColor,
+                fontSize: `${tb.fontSize}px`,
+                fontFamily: tb.fontFamily,
+                textAlign: tb.textAlign,
+                direction: "rtl",
+                lineHeight: 1.6,
+                boxSizing: "border-box",
+              }}
+              dangerouslySetInnerHTML={{ __html: tb.content }}
+            />
+          ))}
+        </div>,
         document.body
       )}
     </Dialog>
