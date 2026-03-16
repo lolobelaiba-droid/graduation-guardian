@@ -142,6 +142,7 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
           </div>
         </PopoverTrigger>
         <PopoverContent
+          ref={popoverContentRef}
           className="p-0 w-[var(--radix-popover-trigger-width)]"
           align="start"
           sideOffset={4}
