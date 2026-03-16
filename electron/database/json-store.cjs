@@ -339,15 +339,6 @@ function getCurrentDate() {
 // البيانات الافتراضية لقوالب وثائق المناقشة
 // ============================================
 
-function generateUUID() {
-  var hex = '0123456789abcdef';
-  var result = '';
-  for (var i = 0; i < 32; i++) {
-    result += hex[Math.floor(Math.random() * 16)];
-  }
-  return result.substr(0,8) + '-' + result.substr(8,4) + '-' + result.substr(12,4) + '-' + result.substr(16,4) + '-' + result.substr(20,12);
-}
-
 function seedDefenseDocTemplates() {
   try {
     var existing = readTable('defense_document_templates');
