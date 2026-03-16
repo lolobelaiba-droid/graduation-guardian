@@ -12,7 +12,7 @@ import {
   Loader2,
   GraduationCap,
   Calendar,
-  FileDown,
+  
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -191,22 +191,6 @@ export default function PhdStudents() {
     setEditDialogOpen(true);
   };
 
-  const handleDownloadTemplate = () => {
-    const fields = getPhdStudentFields(selectedType);
-    // Create header row with Arabic field names
-    const headers = fields.map(f => f.name_ar);
-    const ws = XLSX.utils.aoa_to_sheet([headers]);
-    
-    // Set column widths
-    ws['!cols'] = headers.map(() => ({ wch: 20 }));
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "قالب الاستيراد");
-    
-    const fileName = `قالب_استيراد_${phdStudentTypeLabels[selectedType].ar}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    toast.success("تم تحميل قالب الاستيراد");
-  };
 
   const handleExportExcel = () => {
     if (currentData.length === 0) {
@@ -284,10 +268,6 @@ export default function PhdStudents() {
       
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 justify-end">
-        <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
-          <FileDown className="h-4 w-4" />
-          تحميل قالب الاستيراد
-        </Button>
         <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
           <Upload className="h-4 w-4" />
           استيراد Excel
