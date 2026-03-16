@@ -694,7 +694,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
+      <div className="overflow-x-auto overflow-y-visible rounded-lg border border-border shadow-sm">
         <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-muted/70 border-b-2 border-border">
@@ -1139,7 +1139,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
         <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div className="overflow-x-auto overflow-y-visible rounded-md border border-border">
         <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-muted/60 border-b border-border">
