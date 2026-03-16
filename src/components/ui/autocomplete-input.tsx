@@ -26,11 +26,10 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
     }, [value]);
 
     const filteredSuggestions = React.useMemo(() => {
-      if (!inputValue.trim()) return suggestions.slice(0, 10);
+      if (!inputValue.trim()) return suggestions;
       const lower = inputValue.toLowerCase();
       return suggestions
-        .filter(s => s.toLowerCase().includes(lower))
-        .slice(0, 10);
+        .filter(s => s.toLowerCase().includes(lower));
     }, [suggestions, inputValue]);
 
     const scrollToIndex = (index: number) => {
