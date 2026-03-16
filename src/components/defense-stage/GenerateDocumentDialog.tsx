@@ -547,7 +547,7 @@ export function GenerateDocumentDialog({
           <div className="space-y-4">
             <div
               ref={printRef}
-              className="border rounded-lg bg-white min-h-[500px]"
+              className="defense-doc-editor border rounded-lg bg-white min-h-[500px]"
               style={{
                 fontFamily: template?.font_family || "IBM Plex Sans Arabic",
                 fontSize: `${template?.font_size || 14}px`,
