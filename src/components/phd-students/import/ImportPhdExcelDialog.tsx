@@ -360,18 +360,34 @@ export function ImportPhdExcelDialog({
       const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'status': ['نشط', 'متخرج', 'مؤجل', 'منسحب'] };
       const dynamicOptions: Record<string, string[]> = {};
 
+      const fetchedOptionTypes = new Set<string>();
       for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
         // Skip field_ar for science type
         if (fieldKey === 'field_ar' && studentType === 'phd_science' && !fields.some(f => f.key === 'field_ar')) continue;
-        if (isElectron()) {
-          const db = getDbClient();
-          if (db) {
-            const result = await db.getDropdownOptionsByType(optionType);
-            if (result.success && result.data) dynamicOptions[fieldKey] = result.data.map((o: any) => o.option_value);
+        // Avoid duplicate fetches for same option type
+        if (!fetchedOptionTypes.has(optionType)) {
+          fetchedOptionTypes.add(optionType);
+          if (isElectron()) {
+            const db = getDbClient();
+            if (db) {
+              const result = await db.getDropdownOptionsByType(optionType);
+              if (result.success && result.data) {
+                const values = result.data.map((o: any) => o.option_value);
+                // Apply to all fields using this option type
+                for (const [fk, ot] of Object.entries(dropdownFieldMap)) {
+                  if (ot === optionType) dynamicOptions[fk] = values;
+                }
+              }
+            }
+          } else {
+            const { data } = await supabase.from('dropdown_options').select('option_value').eq('option_type', optionType).order('display_order');
+            if (data) {
+              const values = data.map(o => o.option_value);
+              for (const [fk, ot] of Object.entries(dropdownFieldMap)) {
+                if (ot === optionType) dynamicOptions[fk] = values;
+              }
+            }
           }
-        } else {
-          const { data } = await supabase.from('dropdown_options').select('option_value').eq('option_type', optionType).order('display_order');
-          if (data) dynamicOptions[fieldKey] = data.map(o => o.option_value);
         }
       }
 
