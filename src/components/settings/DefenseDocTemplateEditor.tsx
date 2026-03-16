@@ -177,6 +177,7 @@ export default function DefenseDocTemplateEditor() {
           first_line_indent: 0,
           custom_variables: Array.isArray(t.custom_variables) ? t.custom_variables : [],
           jury_table_settings: t.jury_table_settings || { ...DEFAULT_JURY_TABLE_SETTINGS },
+          text_boxes: Array.isArray(t.text_boxes) ? t.text_boxes : [],
         };
       });
       setLocalSettings(initial);
