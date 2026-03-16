@@ -26,6 +26,7 @@ import {
   Table,
   Settings2,
   ArrowRightLeft,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
