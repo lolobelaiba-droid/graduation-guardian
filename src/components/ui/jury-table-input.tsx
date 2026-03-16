@@ -1139,7 +1139,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
         <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div className="overflow-x-auto overflow-y-visible rounded-md border border-border">
         <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
             <tr className="bg-muted/60 border-b border-border">
