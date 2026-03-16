@@ -247,6 +247,16 @@ export function ImportPhdExcelDialog({
         value = statusMap[normalizedValue] || "active";
       }
 
+      if (dbKey === "thesis_language") {
+        const langMap: Record<string, string> = {
+          "عربية": "arabic", "arabic": "arabic",
+          "فرنسية": "french", "french": "french", "français": "french",
+          "إنجليزية": "english", "english": "english", "anglais": "english",
+        };
+        const normalizedValue = String(value || "").toLowerCase().trim();
+        value = langMap[normalizedValue] || value;
+      }
+
       transformed[dbKey] = value;
     });
 
