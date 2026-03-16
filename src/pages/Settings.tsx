@@ -211,6 +211,24 @@ export default function Settings() {
       tables: ["notes"],
       countKey: null,
     },
+    {
+      id: "defense_doc_templates",
+      label: "قوالب وثائق المناقشة",
+      tables: ["defense_document_templates"],
+      countKey: "defenseDocTemplatesCount" as keyof BackupSummary,
+    },
+    {
+      id: "defense_stage_lmd",
+      label: "طور المناقشة - دكتوراه ل م د",
+      tables: ["defense_stage_lmd"],
+      countKey: "defenseStageLmdCount" as keyof BackupSummary,
+    },
+    {
+      id: "defense_stage_science",
+      label: "طور المناقشة - دكتوراه علوم",
+      tables: ["defense_stage_science"],
+      countKey: "defenseStageScienceCount" as keyof BackupSummary,
+    },
   ], []);
 
   // Logo state
