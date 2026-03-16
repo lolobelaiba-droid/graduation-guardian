@@ -336,6 +336,95 @@ function getCurrentDate() {
 }
 
 // ============================================
+// البيانات الافتراضية لقوالب وثائق المناقشة
+// ============================================
+
+function generateUUID() {
+  var hex = '0123456789abcdef';
+  var result = '';
+  for (var i = 0; i < 32; i++) {
+    result += hex[Math.floor(Math.random() * 16)];
+  }
+  return result.substr(0,8) + '-' + result.substr(8,4) + '-' + result.substr(12,4) + '-' + result.substr(16,4) + '-' + result.substr(20,12);
+}
+
+function seedDefenseDocTemplates() {
+  try {
+    var existing = readTable('defense_document_templates');
+    if (existing && existing.length > 0) return;
+
+    var now = getCurrentDateTime();
+    var defaults = [
+      {
+        id: generateUUID(),
+        document_type: 'jury_decision_lmd',
+        title: 'مقرر تعيين لجنة المناقشة - دكتوراه ل م د',
+        content: '<div style="text-align: center; margin-bottom: 24px;"><p style="font-size: 16px; font-weight: bold; margin: 0;">الجمهورية الجزائرية الديمقراطية الشعبية</p><p style="margin: 4px 0;">وزارة التعليم العالي والبحث العلمي</p><p style="font-weight: bold; margin: 4px 0;">{{university_ar}}</p></div><p style="text-align: center; font-weight: bold; font-size: 15px; margin: 24px 0; text-decoration: underline;">مقرر رقم {{decision_number}} مؤرخ في {{decision_date}} يتضمن تعيين لجنة مناقشة أطروحة الدكتوراه.</p><p style="text-align: right; margin-bottom: 12px;">- إن مدير {{university_ar}}،</p><p style="text-align: justify;">- وبناء على اقتراح المجلس العلمي لكلية {{faculty_ar}} المثبت بموجب محضر اجتماعه المنعقد بتاريخ {{scientific_council_date}}،</p><p style="text-align: center; font-weight: bold; margin: 16px 0;">يقرر ما يأتي:</p><p style="text-align: justify;"><b>المادة الأولى:</b> يُعيَّن بموجب هذا المقرر لجنة مناقشة أطروحة الدكتوراه للطالب (ة): <b>{{full_name_ar}}</b>، المولود (ة) بتاريخ: {{date_of_birth}} بـ: {{birthplace_ar}} – {{province}}، والموسومة بـ: <b>{{thesis_title_ar}}</b></p><p style="text-align: justify;">والمسجّل(ة) بكلية {{faculty_ar}}</p><p style="text-align: justify;"><b>المادة 2:</b> تتشكّل اللجنة المشار إليها في المادة الأولى من الأعضاء الآتي ذكرهم:</p><p>{{jury_table}}</p><p style="text-align: justify;"><b>المادة 3:</b> يُكلَّف عميد كلية {{faculty_ar}} بتنفيذ هذا المقرر.</p><p style="text-align: left; margin-top: 30px;">حُرر بـ{{province}}، في: {{decision_date}}</p><p style="text-align: left; margin-top: 20px; font-weight: bold;">{{signature_title}}</p>',
+        font_family: 'IBM Plex Sans Arabic', font_size: 14, line_height: 1.8,
+        margin_top: 20, margin_bottom: 20, margin_right: 20, margin_left: 20,
+        custom_variables: '[]', jury_table_settings: '{}', text_boxes: '[]',
+        created_at: now, updated_at: now
+      },
+      {
+        id: generateUUID(),
+        document_type: 'jury_decision_science',
+        title: 'مقرر تعيين لجنة المناقشة - دكتوراه علوم',
+        content: '<div style="text-align: center; margin-bottom: 24px;"><p style="font-size: 16px; font-weight: bold; margin: 0;">الجمهورية الجزائرية الديمقراطية الشعبية</p><p style="margin: 4px 0;">وزارة التعليم العالي والبحث العلمي</p><p style="font-weight: bold; margin: 4px 0;">{{university_ar}}</p></div><p style="text-align: center; font-weight: bold; font-size: 15px; margin: 24px 0; text-decoration: underline;">مقرر رقم {{decision_number}} مؤرخ في {{decision_date}} يتضمن تعيين لجنة مناقشة أطروحة الدكتوراه.</p><p style="text-align: right; margin-bottom: 12px;">- إن مدير {{university_ar}}،</p><p style="text-align: justify;">- وبناء على اقتراح المجلس العلمي لكلية {{faculty_ar}} المثبت بموجب محضر اجتماعه المنعقد بتاريخ {{scientific_council_date}}،</p><p style="text-align: center; font-weight: bold; margin: 16px 0;">يقرر ما يأتي:</p><p style="text-align: justify;"><b>المادة الأولى:</b> يُعيَّن بموجب هذا المقرر لجنة مناقشة أطروحة الدكتوراه للطالب (ة): <b>{{full_name_ar}}</b>، المولود (ة) بتاريخ: {{date_of_birth}} بـ: {{birthplace_ar}} – {{province}}، والموسومة بـ: <b>{{thesis_title_ar}}</b></p><p style="text-align: justify;">والمسجّل(ة) بكلية {{faculty_ar}}</p><p style="text-align: justify;"><b>المادة 2:</b> تتشكّل اللجنة المشار إليها في المادة الأولى من الأعضاء الآتي ذكرهم:</p><p>{{jury_table}}</p><p style="text-align: justify;"><b>المادة 3:</b> يُكلَّف عميد كلية {{faculty_ar}} بتنفيذ هذا المقرر.</p><p style="text-align: left; margin-top: 30px;">حُرر بـ{{province}}، في: {{decision_date}}</p><p style="text-align: left; margin-top: 20px; font-weight: bold;">{{signature_title}}</p>',
+        font_family: 'IBM Plex Sans Arabic', font_size: 14, line_height: 1.8,
+        margin_top: 20, margin_bottom: 20, margin_right: 20, margin_left: 20,
+        custom_variables: '[]', jury_table_settings: '{}', text_boxes: '[]',
+        created_at: now, updated_at: now
+      },
+      {
+        id: generateUUID(),
+        document_type: 'defense_auth_lmd',
+        title: 'الترخيص بالمناقشة - دكتوراه ل م د',
+        content: '<div style="text-align: center; font-weight: bold; font-size: 18px;">الجمهورية الجزائرية الديمقراطية الشعبية</div><div style="text-align: center;">وزارة التعليم العالي والبحث العلمي</div><div style="text-align: center;">{{university_ar}}</div><div style="text-align: center;">{{faculty_ar}}</div><br/><div style="text-align: center; font-weight: bold; font-size: 20px;">ترخيص بالمناقشة</div><div style="text-align: center;">دكتوراه الطور الثالث (ل م د)</div><br/><div>يرخص للطالب(ة): {{full_name_ar}}</div><div>المولود(ة) في: {{date_of_birth}} بـ {{birthplace_ar}}</div><div>رقم التسجيل: {{registration_number}}</div><div>الميدان: {{field_ar}}</div><div>الفرع: {{branch_ar}}</div><div>التخصص: {{specialty_ar}}</div><br/><div>بمناقشة أطروحته(ا) الموسومة بـ:</div><div style="font-weight: bold; text-align: center;">{{thesis_title_ar}}</div><br/><div>تحت إشراف: {{supervisor_ar}}</div><div>تاريخ المناقشة: {{defense_date}}</div><br/><div style="font-weight: bold;">أمام اللجنة المكونة من:</div><p>{{jury_table}}</p><br/><div style="text-align: left;">{{signature_title}}</div>',
+        font_family: 'IBM Plex Sans Arabic', font_size: 14, line_height: 1.8,
+        margin_top: 20, margin_bottom: 20, margin_right: 20, margin_left: 20,
+        custom_variables: '[]', jury_table_settings: '{}', text_boxes: '[]',
+        created_at: now, updated_at: now
+      },
+      {
+        id: generateUUID(),
+        document_type: 'defense_auth_science',
+        title: 'الترخيص بالمناقشة - دكتوراه علوم',
+        content: '<div style="text-align: center; font-weight: bold; font-size: 18px;">الجمهورية الجزائرية الديمقراطية الشعبية</div><div style="text-align: center;">وزارة التعليم العالي والبحث العلمي</div><div style="text-align: center;">{{university_ar}}</div><div style="text-align: center;">{{faculty_ar}}</div><br/><div style="text-align: center; font-weight: bold; font-size: 20px;">ترخيص بالمناقشة</div><div style="text-align: center;">دكتوراه علوم</div><br/><div>يرخص للطالب(ة): {{full_name_ar}}</div><div>المولود(ة) في: {{date_of_birth}} بـ {{birthplace_ar}}</div><div>رقم التسجيل: {{registration_number}}</div><div>الميدان: {{field_ar}}</div><div>الفرع: {{branch_ar}}</div><div>التخصص: {{specialty_ar}}</div><br/><div>بمناقشة أطروحته(ا) الموسومة بـ:</div><div style="font-weight: bold; text-align: center;">{{thesis_title_ar}}</div><br/><div>تحت إشراف: {{supervisor_ar}}</div><div>تاريخ المناقشة: {{defense_date}}</div><br/><div style="font-weight: bold;">أمام اللجنة المكونة من:</div><p>{{jury_table}}</p><br/><div style="text-align: left;">{{signature_title}}</div>',
+        font_family: 'IBM Plex Sans Arabic', font_size: 14, line_height: 1.8,
+        margin_top: 20, margin_bottom: 20, margin_right: 20, margin_left: 20,
+        custom_variables: '[]', jury_table_settings: '{}', text_boxes: '[]',
+        created_at: now, updated_at: now
+      },
+      {
+        id: generateUUID(),
+        document_type: 'defense_minutes_lmd',
+        title: 'محضر مداولات لجنة المناقشة - دكتوراه ل م د',
+        content: '<p style="text-align: center; direction: rtl; font-weight: bold; font-size: 16px;">الجمهورية الجزائرية الديمقراطية الشعبية</p><p style="text-align: center; direction: rtl; font-weight: bold; font-size: 14px;">وزارة التعليم العالي والبحث العلمي</p><p style="text-align: center; direction: rtl; font-weight: bold; font-size: 15px;">{{university_ar}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl;">رقم: {{minutes_number}}/ {{minutes_year}}</p><p style="text-align: center; direction: rtl; font-weight: bold; font-size: 16px; text-decoration: underline;">محضر مداولات لجنة مناقشة أطروحة الدكتوراه</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl;">في يوم: {{defense_date}} على الساعة: {{defense_time}} بـ{{university_ar}}</p><p style="text-align: right; direction: rtl;">ناقش(ت) علنـــا الطالـــب(ة): {{full_name_ar}}</p><p style="text-align: right; direction: rtl;">المولـــود(ة) بتاريـــخ: {{date_of_birth}} بـ: {{birthplace_ar}} - {{province}}</p><p style="text-align: right; direction: rtl;">أطروحة الدكتوراه لنيـــل شهـــادة: دكتوراه ل م د</p><p style="text-align: right; direction: rtl;">الشعبة: {{branch_ar}}</p><p style="text-align: right; direction: rtl;">التخصـــص: {{specialty_ar}}</p><p style="text-align: right; direction: rtl;">عنوان أطروحة الدكتوراه: {{thesis_title_ar}}</p><p style="text-align: right; direction: rtl;">{{thesis_title_fr}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl; font-weight: bold;">أمـــام اللجنـــة المكونـــة مـــن:</p><p style="text-align: right; direction: rtl;">{{jury_table_with_signature}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl; font-weight: bold;">ملاحظات:</p><p style="text-align: right; direction: rtl;">...............................................................................................................................................................</p><p style="text-align: right; direction: rtl;">...............................................................................................................................................................</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl; font-weight: bold;">بعد المناقشة العلنية و المداولات السرية تقترح اللجنة منح المترشح(ة) شهادة الدكتوراه بتقدير: {{mention}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: left; direction: rtl;">رئيس اللجنة</p>',
+        font_family: 'IBM Plex Sans Arabic', font_size: 13, line_height: 1.8,
+        margin_top: 15, margin_bottom: 15, margin_right: 20, margin_left: 20,
+        custom_variables: '[]', jury_table_settings: '{}', text_boxes: '[]',
+        created_at: now, updated_at: now
+      },
+      {
+        id: generateUUID(),
+        document_type: 'defense_minutes_science',
+        title: 'محضر مداولات لجنة المناقشة - دكتوراه علوم',
+        content: '<p style="text-align: center; direction: rtl; font-weight: bold; font-size: 16px;">الجمهورية الجزائرية الديمقراطية الشعبية</p><p style="text-align: center; direction: rtl; font-weight: bold; font-size: 14px;">وزارة التعليم العالي والبحث العلمي</p><p style="text-align: center; direction: rtl; font-weight: bold; font-size: 15px;">{{university_ar}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl;">رقم: {{minutes_number}}/ {{minutes_year}}</p><p style="text-align: center; direction: rtl; font-weight: bold; font-size: 16px; text-decoration: underline;">محضر مداولات لجنة مناقشة أطروحة الدكتوراه</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl;">في يوم: {{defense_date}} على الساعة: {{defense_time}} بـ{{university_ar}}</p><p style="text-align: right; direction: rtl;">ناقش(ت) علنـــا الطالـــب(ة): {{full_name_ar}}</p><p style="text-align: right; direction: rtl;">المولـــود(ة) بتاريـــخ: {{date_of_birth}} بـ: {{birthplace_ar}} - {{province}}</p><p style="text-align: right; direction: rtl;">أطروحة الدكتوراه لنيـــل شهـــادة: دكتوراه علوم</p><p style="text-align: right; direction: rtl;">الشعبة: {{branch_ar}}</p><p style="text-align: right; direction: rtl;">التخصـــص: {{specialty_ar}}</p><p style="text-align: right; direction: rtl;">عنوان أطروحة الدكتوراه: {{thesis_title_ar}}</p><p style="text-align: right; direction: rtl;">{{thesis_title_fr}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl; font-weight: bold;">أمـــام اللجنـــة المكونـــة مـــن:</p><p style="text-align: right; direction: rtl;">{{jury_table_with_signature}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl; font-weight: bold;">ملاحظات:</p><p style="text-align: right; direction: rtl;">...............................................................................................................................................................</p><p style="text-align: right; direction: rtl;">...............................................................................................................................................................</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: right; direction: rtl; font-weight: bold;">بعد المناقشة العلنية و المداولات السرية تقترح اللجنة منح المترشح(ة) شهادة الدكتوراه بتقدير: {{mention}}</p><p style="text-align: right; direction: rtl;">&nbsp;</p><p style="text-align: left; direction: rtl;">رئيس اللجنة</p>',
+        font_family: 'IBM Plex Sans Arabic', font_size: 13, line_height: 1.8,
+        margin_top: 15, margin_bottom: 15, margin_right: 20, margin_left: 20,
+        custom_variables: '[]', jury_table_settings: '{}', text_boxes: '[]',
+        created_at: now, updated_at: now
+      }
+    ];
+
+    writeTable('defense_document_templates', defaults);
+    console.log('[JSON Store] Seeded defense_document_templates with', defaults.length, 'templates');
+  } catch (e) {
+    console.error('[JSON Store] Error seeding defense_document_templates:', e.message);
+  }
+}
+
+// ============================================
 // تهيئة قاعدة البيانات
 // ============================================
 
