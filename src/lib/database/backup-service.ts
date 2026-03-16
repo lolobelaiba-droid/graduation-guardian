@@ -218,6 +218,7 @@ export class BackupService {
         "phd_lmd_certificates", "phd_science_certificates", "master_certificates",
         "phd_lmd_students", "phd_science_students", "dropdown_options", "custom_fonts",
         "academic_titles", "activity_log", "settings", "user_settings", "notes", "professors",
+        "defense_document_templates", "defense_stage_lmd", "defense_stage_science",
         "certificate_templates", "custom_fields",
         "certificate_template_fields", "custom_field_values", "custom_field_options", "print_history",
       ];
