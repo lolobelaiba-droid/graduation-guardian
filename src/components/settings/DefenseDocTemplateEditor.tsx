@@ -1022,55 +1022,74 @@ export default function DefenseDocTemplateEditor() {
                       />
                     </div>
 
-                    {/* Editor / Preview */}
-                    {isPreview ? (
-                      <div
-                        className="defense-doc-editor border rounded-lg p-8 bg-white min-h-[500px] text-foreground"
-                        style={{
-                          fontFamily: settings.font_family,
-                          fontSize: `${settings.font_size}px`,
-                          lineHeight: settings.line_height,
-                          direction: "rtl",
-                          width: "210mm",
-                          maxWidth: "100%",
-                          margin: "0 auto",
-                          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                          color: "#000",
-                          paddingRight: `${settings.margin_right}mm`,
-                          paddingLeft: `${settings.margin_left}mm`,
-                        }}
-                        dangerouslySetInnerHTML={{
-                          __html: normalizeDefenseTemplateHtml(settings.content, template.document_type).replace(
-                            /\{\{(\w+)\}\}/g,
-                            '<span style="background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; font-size: 12px;">$1</span>'
-                          ),
-                        }}
-                      />
-                    ) : (
-                      <div
-                        ref={(el) => {
-                          editorRefs.current[template.id] = el;
-                          if (el && !el.innerHTML && settings.content) {
-                            el.innerHTML = settings.content;
-                          }
-                        }}
-                        contentEditable
-                        dir="rtl"
-                        className="defense-doc-editor border rounded-lg p-6 bg-background min-h-[400px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        style={{
-                          fontFamily: settings.font_family,
-                          fontSize: `${settings.font_size}px`,
-                          lineHeight: settings.line_height,
-                          paddingRight: `${settings.margin_right}mm`,
-                          paddingLeft: `${settings.margin_left}mm`,
-                        }}
-                        onInput={() => handleEditorInput(template.id)}
-                        onMouseUp={saveSelection}
-                        onKeyUp={saveSelection}
-                        onClick={(e) => handleEditorClick(template.id, e)}
-                        suppressContentEditableWarning
-                      />
-                    )}
+                    {/* Editor / Preview with Text Boxes */}
+                    <div
+                      ref={(el) => { pageContainerRefs.current[template.id] = el; }}
+                      style={{ position: "relative", width: "210mm", maxWidth: "100%", margin: "0 auto", minHeight: "297mm" }}
+                      onClick={() => setSelectedTextBox(null)}
+                    >
+                      {isPreview ? (
+                        <div
+                          className="defense-doc-editor border rounded-lg p-8 bg-white min-h-[500px] text-foreground"
+                          style={{
+                            fontFamily: settings.font_family,
+                            fontSize: `${settings.font_size}px`,
+                            lineHeight: settings.line_height,
+                            direction: "rtl",
+                            width: "100%",
+                            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                            color: "#000",
+                            paddingRight: `${settings.margin_right}mm`,
+                            paddingLeft: `${settings.margin_left}mm`,
+                          }}
+                          dangerouslySetInnerHTML={{
+                            __html: normalizeDefenseTemplateHtml(settings.content, template.document_type).replace(
+                              /\{\{(\w+)\}\}/g,
+                              '<span style="background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); padding: 1px 6px; border-radius: 4px; font-size: 12px;">$1</span>'
+                            ),
+                          }}
+                        />
+                      ) : (
+                        <div
+                          ref={(el) => {
+                            editorRefs.current[template.id] = el;
+                            if (el && !el.innerHTML && settings.content) {
+                              el.innerHTML = settings.content;
+                            }
+                          }}
+                          contentEditable
+                          dir="rtl"
+                          className="defense-doc-editor border rounded-lg p-6 bg-background min-h-[400px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          style={{
+                            fontFamily: settings.font_family,
+                            fontSize: `${settings.font_size}px`,
+                            lineHeight: settings.line_height,
+                            paddingRight: `${settings.margin_right}mm`,
+                            paddingLeft: `${settings.margin_left}mm`,
+                          }}
+                          onInput={() => handleEditorInput(template.id)}
+                          onMouseUp={saveSelection}
+                          onKeyUp={saveSelection}
+                          onClick={(e) => { e.stopPropagation(); handleEditorClick(template.id, e); }}
+                          suppressContentEditableWarning
+                        />
+                      )}
+
+                      {/* Text Box Overlays */}
+                      {settings.text_boxes.map((tb) => (
+                        <DefenseTextBox
+                          key={tb.id}
+                          data={tb}
+                          containerRef={{ current: pageContainerRefs.current[template.id] ?? null }}
+                          selected={selectedTextBox?.templateId === template.id && selectedTextBox?.boxId === tb.id}
+                          onSelect={() => setSelectedTextBox({ templateId: template.id, boxId: tb.id })}
+                          onChange={(updated) => updateTextBox(template.id, updated)}
+                          onDelete={() => deleteTextBox(template.id, tb.id)}
+                          onOpenSettings={() => openTextBoxSettings(template.id, tb.id)}
+                          readOnly={isPreview}
+                        />
+                      ))}
+                    </div>
 
 
                     {/* Save Button */}
