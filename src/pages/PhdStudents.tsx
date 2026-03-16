@@ -268,10 +268,6 @@ export default function PhdStudents() {
       
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 justify-end">
-        <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
-          <FileDown className="h-4 w-4" />
-          تحميل قالب الاستيراد
-        </Button>
         <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
           <Upload className="h-4 w-4" />
           استيراد Excel
