@@ -49,7 +49,12 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       if (!isOpen) return;
 
       updateDropdownPosition();
-      const handleReposition = () => updateDropdownPosition();
+
+      const handleReposition = (event?: Event) => {
+        const target = event?.target as Node | null;
+        if (target && dropdownRef.current?.contains(target)) return;
+        updateDropdownPosition();
+      };
 
       window.addEventListener("resize", handleReposition);
       window.addEventListener("scroll", handleReposition, true);
@@ -152,9 +157,12 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
         ref={dropdownRef}
         style={dropdownStyle}
         className="border border-border rounded-md bg-popover shadow-lg"
-        onMouseDown={(e) => e.preventDefault()}
       >
-        <div ref={listRef} className="max-h-[200px] overflow-y-auto">
+        <div
+          ref={listRef}
+          className="max-h-[200px] overflow-y-auto overscroll-contain"
+          onWheel={(e) => e.stopPropagation()}
+        >
           {filteredSuggestions.length > 0 ? (
             <div className="p-1">
               {filteredSuggestions.map((suggestion, index) => (
