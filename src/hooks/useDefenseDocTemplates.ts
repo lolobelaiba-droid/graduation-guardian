@@ -139,24 +139,43 @@ export function getTemplateVariables(template: DefenseDocTemplate): CustomVariab
   return [...DEFAULT_VARIABLES, ...customs];
 }
 
+function parseTemplate(d: any): DefenseDocTemplate {
+  return {
+    ...d,
+    custom_variables: Array.isArray(d.custom_variables) ? d.custom_variables
+      : (typeof d.custom_variables === 'string' ? (() => { try { return JSON.parse(d.custom_variables); } catch { return []; } })() : []),
+    jury_table_settings: (() => {
+      let jts = d.jury_table_settings;
+      if (typeof jts === 'string') { try { jts = JSON.parse(jts); } catch { jts = null; } }
+      return jts && typeof jts === 'object' ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...jts } : { ...DEFAULT_JURY_TABLE_SETTINGS };
+    })(),
+    text_boxes: (() => {
+      let tb = d.text_boxes;
+      if (typeof tb === 'string') { try { tb = JSON.parse(tb); } catch { tb = []; } }
+      return Array.isArray(tb) ? tb : [];
+    })(),
+  } as DefenseDocTemplate;
+}
+
 export function useDefenseDocTemplates() {
   return useQuery({
     queryKey: ["defense_document_templates"],
     queryFn: async () => {
+      if (isElectron()) {
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
+        const result = await db.getAll('defense_document_templates', 'document_type', 'ASC');
+        if (!result.success) throw new Error("فشل جلب قوالب وثائق المناقشة");
+        return ((result.data as any[]) || []).map(parseTemplate);
+      }
+
       const { data, error } = await supabase
         .from("defense_document_templates" as any)
         .select("*")
         .order("document_type");
 
       if (error) throw error;
-      return (data || []).map((d: any) => ({
-        ...d,
-        custom_variables: Array.isArray(d.custom_variables) ? d.custom_variables : [],
-        jury_table_settings: d.jury_table_settings && typeof d.jury_table_settings === 'object'
-          ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...d.jury_table_settings }
-          : { ...DEFAULT_JURY_TABLE_SETTINGS },
-        text_boxes: Array.isArray(d.text_boxes) ? d.text_boxes : [],
-      })) as DefenseDocTemplate[];
+      return (data || []).map(parseTemplate);
     },
   });
 }
@@ -168,6 +187,19 @@ export function useUpdateDefenseDocTemplate() {
     mutationFn: async (template: Partial<DefenseDocTemplate> & { id: string }) => {
       const { id, ...updates } = template;
       const payload: any = { ...updates, updated_at: new Date().toISOString() };
+
+      if (isElectron()) {
+        const db = getDbClient();
+        if (!db) throw new Error("فشل الاتصال بقاعدة البيانات المحلية");
+        // Serialize JSONB fields for SQLite
+        if (payload.custom_variables) payload.custom_variables = JSON.stringify(payload.custom_variables);
+        if (payload.jury_table_settings) payload.jury_table_settings = JSON.stringify(payload.jury_table_settings);
+        if (payload.text_boxes) payload.text_boxes = JSON.stringify(payload.text_boxes);
+        const result = await db.update('defense_document_templates', id, payload);
+        if (!result.success) throw new Error("فشل تحديث القالب");
+        return;
+      }
+
       const { error } = await supabase
         .from("defense_document_templates" as any)
         .update(payload)
