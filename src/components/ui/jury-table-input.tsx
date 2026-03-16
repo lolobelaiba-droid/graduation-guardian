@@ -1132,42 +1132,58 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
 
   return (
     <div className={cn("w-full space-y-2", className)}>
-      <div className="flex items-center justify-end gap-1">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={sResetWidths} title="إعادة ضبط عرض الأعمدة">
-          <RotateCcw className="h-3.5 w-3.5" />
-        </Button>
-        <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
+      {/* Header with legend + controls */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40 border border-emerald-500/60" />
+            <span className="text-muted-foreground">المشرف</span>
+          </div>
+          {showCoSupervisor && (
+            <div className="flex items-center gap-1.5 text-[10px]">
+              <div className="w-2.5 h-2.5 rounded-full bg-sky-500/40 border border-sky-500/60" />
+              <span className="text-muted-foreground">المشرف المساعد</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={sResetWidths} title="إعادة ضبط عرض الأعمدة">
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+          <ManageAcademicTitlesDialog onTitlesChange={refetchTitles} />
+        </div>
       </div>
 
-      <div className="overflow-x-auto overflow-y-visible rounded-md border border-border">
+      <div className="overflow-x-auto overflow-y-visible rounded-lg border border-border shadow-sm">
         <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
-            <tr className="bg-muted/60 border-b border-border">
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('role')}>الصفة<ResizeHandle {...sGetRH('role')} /></th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground relative" {...sGetHP('abbr')}>الاختصار<ResizeHandle {...sGetRH('abbr')} /></th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('name')}>الاسم واللقب<ResizeHandle {...sGetRH('name')} /></th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('rank')}>الرتبة<ResizeHandle {...sGetRH('rank')} /></th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...sGetHP('university')}>جامعة الانتماء<ResizeHandle {...sGetRH('university')} /></th>
+            <tr className="bg-muted/70 border-b-2 border-border">
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...sGetHP('role')}>الصفة<ResizeHandle {...sGetRH('role')} /></th>
+              <th className="py-2.5 px-2 text-center text-xs font-semibold text-muted-foreground relative" {...sGetHP('abbr')}>الاختصار<ResizeHandle {...sGetRH('abbr')} /></th>
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...sGetHP('name')}>الاسم واللقب<ResizeHandle {...sGetRH('name')} /></th>
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...sGetHP('rank')}>الرتبة<ResizeHandle {...sGetRH('rank')} /></th>
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...sGetHP('university')}>جامعة الانتماء<ResizeHandle {...sGetRH('university')} /></th>
             </tr>
           </thead>
           <tbody>
             {/* Supervisor row */}
-            <tr className="border-b border-border bg-secondary/30">
-              <td className="py-1.5 px-2 align-middle">
-                <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded-md whitespace-nowrap">
+            <tr className="border-b border-border bg-emerald-500/5 border-r-2 border-r-emerald-500">
+              <td className="py-2 px-2 align-middle">
+                <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
+                  <GraduationCap className="h-3.5 w-3.5" />
                   المشرف *
                 </span>
               </td>
-              <td className="py-1.5 px-2 align-middle">
+              <td className="py-2 px-2 align-middle">
                 <Input
-                  className="h-8 text-xs font-mono text-center w-16"
+                  className="h-8 text-xs font-mono text-center w-16 bg-transparent"
                   value={supervisor.rankAbbreviation}
                   onChange={(e) => handleSupervisorChange({ rankAbbreviation: e.target.value })}
                   placeholder="—"
                   dir="rtl"
                 />
               </td>
-              <td className="py-1.5 px-2 align-middle">
+              <td className="py-2 px-2 align-middle">
                 <AutocompleteInput
                   value={supervisor.name}
                   onValueChange={(v) => {
@@ -1184,11 +1200,11 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                   }}
                   suggestions={nameSuggestions}
                   placeholder="اسم ولقب المشرف"
-                  className="h-8 text-xs"
+                  className="h-8 text-xs bg-transparent"
                   dir="rtl"
                 />
               </td>
-              <td className="py-1.5 px-2 align-middle">
+              <td className="py-2 px-2 align-middle">
                 <Select
                   value={supervisor.rankLabel || undefined}
                   onValueChange={(v) => handleRankSelect(v, handleSupervisorChange)}
@@ -1205,7 +1221,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                   </SelectContent>
                 </Select>
               </td>
-              <td className="py-1.5 px-2 align-middle">
+              <td className="py-2 px-2 align-middle">
                 <UniversityCell
                   value={supervisor.university}
                   onChange={(v) => handleSupervisorChange({ university: v })}
@@ -1217,22 +1233,23 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
 
             {/* Co-supervisor row */}
             {showCoSupervisor && (
-              <tr className="bg-accent/30">
-                <td className="py-1.5 px-2 align-middle">
-                  <span className="text-xs font-medium bg-accent text-accent-foreground px-2 py-1 rounded-md whitespace-nowrap">
+              <tr className="bg-sky-500/5 border-r-2 border-r-sky-500">
+                <td className="py-2 px-2 align-middle">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap bg-sky-500/10 text-sky-700 border border-sky-500/20">
+                    <UserCheck className="h-3.5 w-3.5" />
                     المشرف المساعد
                   </span>
                 </td>
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                   <Input
-                    className="h-8 text-xs font-mono text-center w-16"
+                    className="h-8 text-xs font-mono text-center w-16 bg-transparent"
                     value={coSupervisor.rankAbbreviation}
                     onChange={(e) => handleCoSupervisorChange({ rankAbbreviation: e.target.value })}
                     placeholder="—"
                     dir="rtl"
                   />
                 </td>
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                   <AutocompleteInput
                     value={coSupervisor.name}
                     onValueChange={(v) => {
@@ -1249,11 +1266,11 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                     }}
                     suggestions={nameSuggestions}
                     placeholder="اسم ولقب المشرف المساعد (اختياري)"
-                    className="h-8 text-xs"
+                    className="h-8 text-xs bg-transparent"
                     dir="rtl"
                   />
                 </td>
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                   <Select
                     value={coSupervisor.rankLabel || undefined}
                     onValueChange={(v) => handleRankSelect(v, handleCoSupervisorChange)}
@@ -1270,7 +1287,7 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                   <UniversityCell
                     value={coSupervisor.university}
                     onChange={(v) => handleCoSupervisorChange({ university: v })}
@@ -1283,8 +1300,6 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
           </tbody>
         </table>
       </div>
-
-      {/* ManageAcademicTitlesDialog moved to header */}
     </div>
   );
 };
