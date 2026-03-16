@@ -1321,154 +1321,193 @@ export default function DefenseDocTemplateEditor() {
         </DialogContent>
       </Dialog>
 
-      {/* Text Box Dialog */}
+      {/* Text Box Settings Dialog */}
       <Dialog
         open={textBoxDialog.open}
-        onOpenChange={(open) => setTextBoxDialog({ open, templateId: textBoxDialog.templateId, editMode: textBoxDialog.editMode })}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTextBoxDialog({ open: false, templateId: "", boxId: "" });
+            setEditingTextBoxSettings(null);
+          }
+        }}
       >
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Square className="h-5 w-5 text-primary" />
-              {textBoxDialog.editMode ? "تعديل مربع النص" : "إدراج مربع نص"}
+              إعدادات مربع النص
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>العرض (%)</Label>
-                <Input
-                  type="number"
-                  min={10}
-                  max={100}
-                  value={textBoxWidth}
-                  onChange={(e) => setTextBoxWidth(parseInt(e.target.value) || 100)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>الارتفاع الأدنى (px)</Label>
-                <Input
-                  type="number"
-                  min={20}
-                  max={500}
-                  value={textBoxMinHeight}
-                  onChange={(e) => setTextBoxMinHeight(parseInt(e.target.value) || 60)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>سمك الحدود (px)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={10}
-                  value={textBoxBorderWidth}
-                  onChange={(e) => setTextBoxBorderWidth(parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>لون الحدود</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={textBoxBorderColor}
-                    onChange={(e) => setTextBoxBorderColor(e.target.value)}
-                    className="h-9 w-10 rounded border cursor-pointer"
-                  />
+          {editingTextBoxSettings && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>العرض (mm)</Label>
                   <Input
-                    value={textBoxBorderColor}
-                    onChange={(e) => setTextBoxBorderColor(e.target.value)}
-                    className="flex-1 text-xs"
-                    dir="ltr"
+                    type="number"
+                    min={10}
+                    max={200}
+                    value={editingTextBoxSettings.width}
+                    onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, width: parseFloat(e.target.value) || 60 })}
                   />
                 </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>الحشو الداخلي (px)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={50}
-                  value={textBoxPadding}
-                  onChange={(e) => setTextBoxPadding(parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>لون الخلفية</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={textBoxBgColor}
-                    onChange={(e) => setTextBoxBgColor(e.target.value)}
-                    className="h-9 w-10 rounded border cursor-pointer"
-                  />
+                <div className="space-y-2">
+                  <Label>الارتفاع الأدنى (mm)</Label>
                   <Input
-                    value={textBoxBgColor}
-                    onChange={(e) => setTextBoxBgColor(e.target.value)}
-                    className="flex-1 text-xs"
-                    dir="ltr"
+                    type="number"
+                    min={5}
+                    max={250}
+                    value={editingTextBoxSettings.minHeight}
+                    onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, minHeight: parseFloat(e.target.value) || 25 })}
                   />
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>محاذاة المربع</Label>
-              <Select value={textBoxAlign} onValueChange={(v) => setTextBoxAlign(v as typeof textBoxAlign)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="right">يمين</SelectItem>
-                  <SelectItem value="center">وسط</SelectItem>
-                  <SelectItem value="left">يسار</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Preview */}
-            <div className="border rounded-lg p-4 bg-muted/30">
-              <p className="text-xs text-muted-foreground mb-2">معاينة:</p>
-              <div style={{
-                display: "flex",
-                justifyContent: textBoxAlign === "center" ? "center" : textBoxAlign === "left" ? "flex-start" : "flex-end",
-              }}>
-                <div style={{
-                  width: `${textBoxWidth}%`,
-                  border: `${textBoxBorderWidth}px solid ${textBoxBorderColor}`,
-                  padding: `${textBoxPadding}px`,
-                  background: textBoxBgColor,
-                  minHeight: `${Math.min(textBoxMinHeight, 80)}px`,
-                  direction: "rtl",
-                  textAlign: "right",
-                  fontSize: "11px",
-                  color: "hsl(var(--muted-foreground))",
-                }}>
-                  اكتب هنا...
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>الموقع X (mm)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={200}
+                    value={Math.round(editingTextBoxSettings.x)}
+                    onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, x: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>الموقع Y (mm)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={280}
+                    value={Math.round(editingTextBoxSettings.y)}
+                    onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, y: parseFloat(e.target.value) || 0 })}
+                  />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>سمك الحدود (px)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={editingTextBoxSettings.borderWidth}
+                    onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, borderWidth: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>لون الحدود</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={editingTextBoxSettings.borderColor}
+                      onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, borderColor: e.target.value })}
+                      className="h-9 w-10 rounded border cursor-pointer"
+                    />
+                    <Input
+                      value={editingTextBoxSettings.borderColor}
+                      onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, borderColor: e.target.value })}
+                      className="flex-1 text-xs"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>الحشو الداخلي (px)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={editingTextBoxSettings.padding}
+                    onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, padding: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>لون الخلفية</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={editingTextBoxSettings.bgColor}
+                      onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, bgColor: e.target.value })}
+                      className="h-9 w-10 rounded border cursor-pointer"
+                    />
+                    <Input
+                      value={editingTextBoxSettings.bgColor}
+                      onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, bgColor: e.target.value })}
+                      className="flex-1 text-xs"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>حجم الخط (px)</Label>
+                  <Input
+                    type="number"
+                    min={8}
+                    max={48}
+                    value={editingTextBoxSettings.fontSize}
+                    onChange={(e) => setEditingTextBoxSettings({ ...editingTextBoxSettings, fontSize: parseInt(e.target.value) || 14 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>محاذاة النص</Label>
+                  <Select
+                    value={editingTextBoxSettings.textAlign}
+                    onValueChange={(v) => setEditingTextBoxSettings({ ...editingTextBoxSettings, textAlign: v as "right" | "center" | "left" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="right">يمين</SelectItem>
+                      <SelectItem value="center">وسط</SelectItem>
+                      <SelectItem value="left">يسار</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>الخط</Label>
+                <Select
+                  value={editingTextBoxSettings.fontFamily}
+                  onValueChange={(v) => setEditingTextBoxSettings({ ...editingTextBoxSettings, fontFamily: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FONT_OPTIONS.map((f) => (
+                      <SelectItem key={f} value={f}>
+                        <span style={{ fontFamily: f }}>{f}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTextBoxDialog({ open: false, templateId: "", editMode: false })}>
+            <Button variant="outline" onClick={() => { setTextBoxDialog({ open: false, templateId: "", boxId: "" }); setEditingTextBoxSettings(null); }}>
               إلغاء
             </Button>
-            {textBoxDialog.editMode && (
-              <Button variant="destructive" onClick={() => deleteTextBox(textBoxDialog.templateId)} className="gap-1">
-                <Trash2 className="h-4 w-4" />
-                حذف
-              </Button>
-            )}
-            <Button onClick={() => textBoxDialog.editMode ? updateExistingTextBox(textBoxDialog.templateId) : insertTextBox(textBoxDialog.templateId)} className="gap-1">
-              <Square className="h-4 w-4" />
-              {textBoxDialog.editMode ? "تحديث" : "إدراج"}
+            <Button variant="destructive" onClick={() => deleteTextBox(textBoxDialog.templateId, textBoxDialog.boxId)} className="gap-1">
+              <Trash2 className="h-4 w-4" />
+              حذف
+            </Button>
+            <Button onClick={saveTextBoxSettings} className="gap-1">
+              <Save className="h-4 w-4" />
+              حفظ
             </Button>
           </DialogFooter>
         </DialogContent>
