@@ -511,6 +511,14 @@ export function ImportPhdExcelDialog({
                   {uploadError}
                 </div>
               )}
+              <Button
+                variant="outline"
+                onClick={handleDownloadTemplate}
+                disabled={isGeneratingTemplate}
+              >
+                {isGeneratingTemplate ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
+                تحميل القالب
+              </Button>
             </div>
           )}
 
