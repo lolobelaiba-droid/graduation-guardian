@@ -166,8 +166,8 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
           {...props}
         />
         
-        {isOpen && (
-          <div className="absolute z-[100] w-full mt-1 bg-popover border border-border rounded-md shadow-lg">
+        {isOpen && createPortal(
+          <div ref={dropdownRef} style={dropdownStyle} className="bg-popover border border-border rounded-md shadow-lg animate-in fade-in-0 zoom-in-95">
             <div ref={listRef} className="max-h-[200px] overflow-y-auto">
               {filteredSuggestions.length > 0 ? (
                 <div className="p-1">
@@ -193,7 +193,8 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
                 </div>
               ) : null}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     );
