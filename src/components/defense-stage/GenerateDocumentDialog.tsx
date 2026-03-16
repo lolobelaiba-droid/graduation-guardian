@@ -201,65 +201,143 @@ export function GenerateDocumentDialog({
     }
   };
 
-  const handlePrint = async () => {
-    if (!printRef.current) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("فشل فتح نافذة الطباعة");
-      return;
-    }
+  const printStyleRef = useRef<HTMLStyleElement | null>(null);
 
-    const content = printRef.current.innerHTML;
+  const handlePrint = useCallback(() => {
+    if (!printRef.current) return;
+
     const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
     const jts: JuryTableSettings = template?.jury_table_settings
       ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
       : { ...DEFAULT_JURY_TABLE_SETTINGS };
 
-    // Build embedded base64 font CSS for offline/Electron support
-    let embeddedFontCss = '';
-    try {
-      embeddedFontCss = await buildEmbeddedFontCss();
-    } catch (err) {
-      console.warn('Failed to embed fonts, falling back to path-based fonts:', err);
+    // Remove previous print styles if any
+    if (printStyleRef.current) {
+      printStyleRef.current.remove();
+      printStyleRef.current = null;
     }
 
-    // Use Google Fonts as online fallback only if base64 embedding failed
-    const fontFallback = !embeddedFontCss
-      ? `@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&display=swap');`
-      : '';
+    // Inject dynamic @media print CSS
+    const style = document.createElement('style');
+    style.id = 'defense-doc-print-styles';
+    style.textContent = `
+      @media print {
+        @page {
+          size: A4 portrait;
+          margin: ${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm;
+        }
 
-    printWindow.document.write(`<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>${template?.title || "وثيقة"}</title>
-<style>
-  ${fontFallback}
-  ${embeddedFontCss}
-  html, body { margin: 0; padding: 0; box-sizing: border-box; }
-  @page { size: A4 portrait; margin: ${template?.margin_top ?? 20}mm ${template?.margin_left ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_right ?? 15}mm; }
-  body {
-    font-family: '${fontFamily}', sans-serif;
-    font-size: ${template?.font_size || 14}px;
-    line-height: ${template?.line_height || 1.8};
-    direction: rtl;
-    color: #000;
-  }
-  p, div, span, h1, h2, h3, h4, h5, h6, blockquote { margin: 0; padding: 0; }
-  table { border-collapse: collapse; width: 100%; }
-  td, th { border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height}; }
-  th { background: ${jts.header_bg}; font-weight: bold; }
-  .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style>
-</head>
-<body>${content}</body>
-</html>`);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-    }, 700);
-  };
+        /* Hide everything */
+        body * {
+          visibility: hidden !important;
+        }
+
+        /* Show the defense document wrapper and all descendants */
+        #defense-doc-print-wrapper,
+        #defense-doc-print-wrapper * {
+          visibility: visible !important;
+        }
+
+        body, html {
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: visible !important;
+          background: white !important;
+        }
+
+        #defense-doc-print-wrapper {
+          display: block !important;
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          z-index: 999999 !important;
+          background: white !important;
+          margin: 0 !important;
+          padding: ${template?.margin_top ?? 20}mm ${template?.margin_right ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_left ?? 15}mm !important;
+          font-family: '${fontFamily}', sans-serif !important;
+          font-size: ${template?.font_size || 14}px !important;
+          line-height: ${template?.line_height || 1.8} !important;
+          direction: rtl !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        #defense-doc-print-wrapper p,
+        #defense-doc-print-wrapper div,
+        #defense-doc-print-wrapper span,
+        #defense-doc-print-wrapper blockquote {
+          margin: 0;
+          padding: 0;
+        }
+
+        #defense-doc-print-wrapper table {
+          border-collapse: collapse !important;
+          width: 100% !important;
+        }
+
+        #defense-doc-print-wrapper td,
+        #defense-doc-print-wrapper th {
+          border: 1px solid ${jts.border_color} !important;
+          padding: ${jts.padding}px !important;
+          text-align: center !important;
+          font-size: ${jts.font_size}px !important;
+          line-height: ${jts.line_height} !important;
+        }
+
+        #defense-doc-print-wrapper th {
+          background: ${jts.header_bg} !important;
+          font-weight: bold !important;
+        }
+
+        #defense-doc-print-wrapper .variable-tag {
+          background: transparent !important;
+          color: inherit !important;
+          padding: 0 !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    printStyleRef.current = style;
+
+    // Temporarily clear document title to suppress browser header/footer
+    const originalTitle = document.title;
+    document.title = ' ';
+
+    const cleanup = () => {
+      document.title = originalTitle;
+      if (printStyleRef.current) {
+        printStyleRef.current.remove();
+        printStyleRef.current = null;
+      }
+    };
+
+    const isElectronEnv = !!(window as unknown as { electronAPI?: { printNative?: unknown } }).electronAPI?.printNative;
+
+    if (isElectronEnv) {
+      const electronAPI = (window as unknown as { electronAPI: { printNative: (opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
+      electronAPI.printNative({
+        pageSize: { width: 210 * 1000, height: 297 * 1000 },
+        landscape: false,
+      }).then((result) => {
+        cleanup();
+        if (!result.success) {
+          toast.error(result.error || "فشلت الطباعة");
+        }
+      }).catch(() => {
+        cleanup();
+        toast.error("فشلت الطباعة");
+      });
+    } else {
+      const afterPrint = () => {
+        cleanup();
+        window.removeEventListener('afterprint', afterPrint);
+      };
+      window.addEventListener('afterprint', afterPrint);
+      window.print();
+    }
+  }, [template]);
 
   const handleDownloadPdf = async () => {
     if (!printRef.current) return;
