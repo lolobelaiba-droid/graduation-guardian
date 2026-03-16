@@ -34,6 +34,50 @@ export function UploadStep({ onFileSelect, error, certificateType }: UploadStepP
     e.preventDefault();
   };
 
+  const handleDownloadTemplate = useCallback(() => {
+    const fields = certificateFields[certificateType];
+    // Use unique DB keys to avoid duplicate columns, but use Arabic names as headers
+    const seen = new Set<string>();
+    const headers: string[] = [];
+    const fieldNames: string[] = [];
+    
+    for (const f of fields) {
+      const dbKey = getDbFieldKey(f.key);
+      if (!seen.has(dbKey)) {
+        seen.add(dbKey);
+        headers.push(dbKey);
+        fieldNames.push(f.name_ar);
+      }
+    }
+
+    // Also add extra fields useful for historical data but not in certificateFields display list
+    const extraFields = [
+      { key: 'supervisor_ar', name: 'المشرف' },
+      { key: 'gender', name: 'الجنس' },
+      { key: 'first_registration_year', name: 'سنة أول تسجيل' },
+      { key: 'research_lab_ar', name: 'مخبر البحث' },
+    ];
+    for (const ef of extraFields) {
+      if (!seen.has(ef.key)) {
+        seen.add(ef.key);
+        headers.push(ef.key);
+        fieldNames.push(ef.name);
+      }
+    }
+
+    // Create worksheet with Arabic headers
+    const ws = XLSX.utils.aoa_to_sheet([fieldNames]);
+    
+    // Set column widths
+    ws['!cols'] = fieldNames.map(() => ({ wch: 22 }));
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'قالب');
+    
+    const typeLabel = certificateTypeLabels[certificateType].ar;
+    XLSX.writeFile(wb, `قالب_استيراد_${typeLabel}.xlsx`);
+  }, [certificateType]);
+
   return (
     <div className="space-y-4">
       {error && (
@@ -42,6 +86,25 @@ export function UploadStep({ onFileSelect, error, certificateType }: UploadStepP
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      {/* Download Template Section */}
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
+        <div className="flex-1">
+          <h4 className="font-medium text-sm mb-1">تحميل قالب الاستيراد</h4>
+          <p className="text-xs text-muted-foreground">
+            حمّل قالب Excel فارغ يحتوي على جميع الأعمدة المطلوبة ({certificateTypeLabels[certificateType].ar})، ثم قم بملئه ورفعه
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadTemplate}
+          className="gap-2 mr-4 shrink-0"
+        >
+          <Download className="h-4 w-4" />
+          تحميل القالب
+        </Button>
+      </div>
 
       <div
         className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-all"
@@ -80,10 +143,10 @@ export function UploadStep({ onFileSelect, error, certificateType }: UploadStepP
       <div className="bg-muted/50 rounded-lg p-4">
         <h4 className="font-medium mb-2 text-sm">تعليمات الاستيراد:</h4>
         <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+          <li>حمّل القالب أعلاه واملأه بالبيانات القديمة</li>
           <li>تأكد أن الصف الأول يحتوي على عناوين الأعمدة</li>
           <li>سيتم ربط الأعمدة تلقائياً بناءً على التشابه</li>
           <li>يمكنك تعديل الربط يدوياً قبل الاستيراد</li>
-          <li>سيتم مراجعة البيانات قبل إضافتها للنظام</li>
         </ul>
       </div>
     </div>
