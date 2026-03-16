@@ -28,7 +28,7 @@ export class CertificateService {
     
     if (isElectron()) {
       const db = getDbClient()!;
-      const result = await db.getAll(tableName, 'created_at', 'DESC');
+      const result = await db.getAll(tableName, 'defense_date', 'DESC');
       if (result.success) {
         return { data: result.data as Certificate[], error: null };
       }
@@ -39,13 +39,13 @@ export class CertificateService {
       const { data, error } = await supabase
         .from("phd_lmd_certificates")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("defense_date", { ascending: false });
       return { data: data as Certificate[] | null, error };
     } else if (type === 'phd_science') {
       const { data, error } = await supabase
         .from("phd_science_certificates")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("defense_date", { ascending: false });
       return { data: data as Certificate[] | null, error };
     } else {
       const { data, error } = await supabase
