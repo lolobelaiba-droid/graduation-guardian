@@ -725,9 +725,9 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 </td>
 
                 {/* Abbreviation - before name */}
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                   <Input
-                    className="h-8 text-xs font-mono text-center w-16"
+                    className="h-8 text-xs font-mono text-center w-16 bg-background/50"
                     value={row.rankAbbreviation}
                     onChange={(e) =>
                       updateRow(row.id, { rankAbbreviation: e.target.value })
