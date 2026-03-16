@@ -1,0 +1,1 @@
+ALTER TABLE public.defense_document_templates ADD COLUMN text_boxes jsonb DEFAULT '[]';
