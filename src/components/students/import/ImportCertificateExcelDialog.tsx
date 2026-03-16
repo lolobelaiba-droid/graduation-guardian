@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2 } from "lucide-react";
+import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2, Download } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
