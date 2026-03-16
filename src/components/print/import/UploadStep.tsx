@@ -1,15 +1,18 @@
-import { useRef } from "react";
-import { Upload, FileSpreadsheet, AlertCircle } from "lucide-react";
+import { useRef, useCallback } from "react";
+import { Upload, FileSpreadsheet, AlertCircle, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MAX_FILE_SIZE, MAX_ROWS } from "./types";
+import { MAX_FILE_SIZE, MAX_ROWS, getDbFieldKey } from "./types";
+import { type CertificateType, certificateFields, certificateTypeLabels } from "@/types/certificates";
 
 interface UploadStepProps {
   onFileSelect: (file: File) => void;
   error?: string;
+  certificateType: CertificateType;
 }
 
-export function UploadStep({ onFileSelect, error }: UploadStepProps) {
+export function UploadStep({ onFileSelect, error, certificateType }: UploadStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
