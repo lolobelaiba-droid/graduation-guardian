@@ -160,6 +160,20 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
 
       transformed[dbKey] = value;
     });
+
+    // Default NOT NULL fields to empty string if not mapped
+    const notNullDefaults: Record<string, string> = {
+      'jury_president_ar': '',
+      'jury_members_ar': '',
+      'supervisor_ar': '',
+      'thesis_title_ar': '',
+    };
+    for (const [key, defaultVal] of Object.entries(notNullDefaults)) {
+      if (transformed[key] === undefined || transformed[key] === null) {
+        transformed[key] = defaultVal;
+      }
+    }
+
     return transformed;
   }, [columnMapping]);
 
