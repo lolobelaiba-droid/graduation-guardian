@@ -26,6 +26,7 @@ import {
   Table,
   Settings2,
   ArrowRightLeft,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,6 +147,22 @@ export default function DefenseDocTemplateEditor() {
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
   const savedSelectionRef = useRef<Range | null>(null);
   const editingTableRef = useRef<HTMLTableElement | null>(null);
+
+  // Text box dialog
+  const [textBoxDialog, setTextBoxDialog] = useState<{ open: boolean; templateId: string; editMode: boolean }>({
+    open: false,
+    templateId: "",
+    editMode: false,
+  });
+  const [textBoxWidth, setTextBoxWidth] = useState(100);
+  const [textBoxBorder, setTextBoxBorder] = useState("1px solid #333");
+  const [textBoxBorderColor, setTextBoxBorderColor] = useState("#333333");
+  const [textBoxBorderWidth, setTextBoxBorderWidth] = useState(1);
+  const [textBoxPadding, setTextBoxPadding] = useState(10);
+  const [textBoxBgColor, setTextBoxBgColor] = useState("#ffffff");
+  const [textBoxAlign, setTextBoxAlign] = useState<"right" | "center" | "left">("center");
+  const [textBoxMinHeight, setTextBoxMinHeight] = useState(60);
+  const editingTextBoxRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (templates.length > 0) {
@@ -339,8 +356,93 @@ export default function DefenseDocTemplateEditor() {
     toast.success("تم حذف الجدول");
   };
 
+  const buildTextBoxHtml = () => {
+    const marginStyle = textBoxAlign === "center" ? "auto" : textBoxAlign === "left" ? "0 auto 0 0" : "0 0 0 auto";
+    return `<div class="template-text-box" contenteditable="true" style="width: ${textBoxWidth}%; border: ${textBoxBorderWidth}px solid ${textBoxBorderColor}; padding: ${textBoxPadding}px; background: ${textBoxBgColor}; min-height: ${textBoxMinHeight}px; margin: 12px ${marginStyle === "auto" ? "auto" : "0"}; ${marginStyle === "auto" ? "margin-left: auto; margin-right: auto;" : marginStyle === "0 auto 0 0" ? "margin-right: auto;" : "margin-left: auto;"} direction: rtl; text-align: right; box-sizing: border-box;">&#8204;</div>`;
+  };
+
+  const insertTextBox = (templateId: string) => {
+    const ref = editorRefs.current[templateId];
+    if (!ref) return;
+    ref.focus();
+
+    if (savedSelectionRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+        savedSelectionRef.current = null;
+      }
+    }
+
+    document.execCommand("insertHTML", false, "<br/>" + buildTextBoxHtml() + "<br/>");
+    handleEditorInput(templateId);
+    setTextBoxDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم إدراج مربع النص");
+  };
+
+  const updateExistingTextBox = (templateId: string) => {
+    if (!editingTextBoxRef.current) return;
+    const el = editingTextBoxRef.current;
+    const marginStyle = textBoxAlign === "center" ? "auto" : textBoxAlign === "left" ? "0 auto 0 0" : "0 0 0 auto";
+    el.style.width = `${textBoxWidth}%`;
+    el.style.border = `${textBoxBorderWidth}px solid ${textBoxBorderColor}`;
+    el.style.padding = `${textBoxPadding}px`;
+    el.style.background = textBoxBgColor;
+    el.style.minHeight = `${textBoxMinHeight}px`;
+    if (marginStyle === "auto") {
+      el.style.marginLeft = "auto";
+      el.style.marginRight = "auto";
+    } else if (textBoxAlign === "left") {
+      el.style.marginLeft = "0";
+      el.style.marginRight = "auto";
+    } else {
+      el.style.marginLeft = "auto";
+      el.style.marginRight = "0";
+    }
+    editingTextBoxRef.current = null;
+    handleEditorInput(templateId);
+    setTextBoxDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم تحديث مربع النص");
+  };
+
+  const deleteTextBox = (templateId: string) => {
+    if (!editingTextBoxRef.current) return;
+    editingTextBoxRef.current.remove();
+    editingTextBoxRef.current = null;
+    handleEditorInput(templateId);
+    setTextBoxDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم حذف مربع النص");
+  };
+
   const handleEditorClick = (templateId: string, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
+
+    // Check for text box click
+    const textBox = target.closest(".template-text-box") as HTMLDivElement | null;
+    if (textBox && e.detail >= 2) {
+      // Double-click to edit text box settings
+      editingTextBoxRef.current = textBox;
+      const style = textBox.style;
+      setTextBoxWidth(parseInt(style.width) || 100);
+      setTextBoxBorderColor(style.borderColor || "#333333");
+      setTextBoxBorderWidth(parseInt(style.borderWidth) || 1);
+      setTextBoxPadding(parseInt(style.padding) || 10);
+      setTextBoxBgColor(style.backgroundColor || style.background || "#ffffff");
+      setTextBoxMinHeight(parseInt(style.minHeight) || 60);
+      // Detect alignment from margins
+      const ml = style.marginLeft;
+      const mr = style.marginRight;
+      if (ml === "auto" && mr === "auto") setTextBoxAlign("center");
+      else if (mr === "auto") setTextBoxAlign("left");
+      else setTextBoxAlign("right");
+      setTextBoxDialog({ open: true, templateId, editMode: true });
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    // Check for table click
     const table = target.closest("table");
     if (!table) return;
 
@@ -914,6 +1016,31 @@ export default function DefenseDocTemplateEditor() {
                         إدراج جدول
                       </Button>
 
+                      {/* Insert Text Box */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 text-xs"
+                        onClick={() => {
+                          const sel = window.getSelection();
+                          if (sel && sel.rangeCount > 0) {
+                            savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+                          }
+                          setTextBoxDialog({ open: true, templateId: template.id, editMode: false });
+                          setTextBoxWidth(100);
+                          setTextBoxBorderColor("#333333");
+                          setTextBoxBorderWidth(1);
+                          setTextBoxPadding(10);
+                          setTextBoxBgColor("#ffffff");
+                          setTextBoxAlign("center");
+                          setTextBoxMinHeight(60);
+                        }}
+                      >
+                        <Square className="h-3.5 w-3.5" />
+                        مربع نص
+                      </Button>
+
                       <div className="flex-1" />
 
                       {/* Preview Toggle */}
@@ -1243,6 +1370,159 @@ export default function DefenseDocTemplateEditor() {
             <Button onClick={() => tableDialog.editMode ? updateExistingTable(tableDialog.templateId) : insertTable(tableDialog.templateId)} className="gap-1">
               <Table className="h-4 w-4" />
               {tableDialog.editMode ? "تحديث" : "إدراج"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Text Box Dialog */}
+      <Dialog
+        open={textBoxDialog.open}
+        onOpenChange={(open) => setTextBoxDialog({ open, templateId: textBoxDialog.templateId, editMode: textBoxDialog.editMode })}
+      >
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Square className="h-5 w-5 text-primary" />
+              {textBoxDialog.editMode ? "تعديل مربع النص" : "إدراج مربع نص"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>العرض (%)</Label>
+                <Input
+                  type="number"
+                  min={10}
+                  max={100}
+                  value={textBoxWidth}
+                  onChange={(e) => setTextBoxWidth(parseInt(e.target.value) || 100)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الارتفاع الأدنى (px)</Label>
+                <Input
+                  type="number"
+                  min={20}
+                  max={500}
+                  value={textBoxMinHeight}
+                  onChange={(e) => setTextBoxMinHeight(parseInt(e.target.value) || 60)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>سمك الحدود (px)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={textBoxBorderWidth}
+                  onChange={(e) => setTextBoxBorderWidth(parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>لون الحدود</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={textBoxBorderColor}
+                    onChange={(e) => setTextBoxBorderColor(e.target.value)}
+                    className="h-9 w-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={textBoxBorderColor}
+                    onChange={(e) => setTextBoxBorderColor(e.target.value)}
+                    className="flex-1 text-xs"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>الحشو الداخلي (px)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={textBoxPadding}
+                  onChange={(e) => setTextBoxPadding(parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>لون الخلفية</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={textBoxBgColor}
+                    onChange={(e) => setTextBoxBgColor(e.target.value)}
+                    className="h-9 w-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={textBoxBgColor}
+                    onChange={(e) => setTextBoxBgColor(e.target.value)}
+                    className="flex-1 text-xs"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>محاذاة المربع</Label>
+              <Select value={textBoxAlign} onValueChange={(v) => setTextBoxAlign(v as typeof textBoxAlign)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="right">يمين</SelectItem>
+                  <SelectItem value="center">وسط</SelectItem>
+                  <SelectItem value="left">يسار</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Preview */}
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <p className="text-xs text-muted-foreground mb-2">معاينة:</p>
+              <div style={{
+                display: "flex",
+                justifyContent: textBoxAlign === "center" ? "center" : textBoxAlign === "left" ? "flex-start" : "flex-end",
+              }}>
+                <div style={{
+                  width: `${textBoxWidth}%`,
+                  border: `${textBoxBorderWidth}px solid ${textBoxBorderColor}`,
+                  padding: `${textBoxPadding}px`,
+                  background: textBoxBgColor,
+                  minHeight: `${Math.min(textBoxMinHeight, 80)}px`,
+                  direction: "rtl",
+                  textAlign: "right",
+                  fontSize: "11px",
+                  color: "hsl(var(--muted-foreground))",
+                }}>
+                  اكتب هنا...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTextBoxDialog({ open: false, templateId: "", editMode: false })}>
+              إلغاء
+            </Button>
+            {textBoxDialog.editMode && (
+              <Button variant="destructive" onClick={() => deleteTextBox(textBoxDialog.templateId)} className="gap-1">
+                <Trash2 className="h-4 w-4" />
+                حذف
+              </Button>
+            )}
+            <Button onClick={() => textBoxDialog.editMode ? updateExistingTextBox(textBoxDialog.templateId) : insertTextBox(textBoxDialog.templateId)} className="gap-1">
+              <Square className="h-4 w-4" />
+              {textBoxDialog.editMode ? "تحديث" : "إدراج"}
             </Button>
           </DialogFooter>
         </DialogContent>
