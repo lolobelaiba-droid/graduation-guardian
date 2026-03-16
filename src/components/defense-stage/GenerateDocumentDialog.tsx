@@ -662,6 +662,23 @@ export function GenerateDocumentDialog({
           </div>
         )}
       </DialogContent>
+
+      {/* Hidden portal for CSS-based printing - renders at document body root */}
+      {showPreview && createPortal(
+        <div
+          id="defense-doc-print-wrapper"
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: 0,
+            width: '210mm',
+            visibility: 'hidden',
+            pointerEvents: 'none',
+          }}
+          dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
+        />,
+        document.body
+      )}
     </Dialog>
   );
 }
