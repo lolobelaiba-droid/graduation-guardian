@@ -864,7 +864,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
         type="button"
         variant="outline"
         size="sm"
-        className="gap-1.5 text-xs"
+        className="gap-1.5 text-xs border-dashed hover:border-solid"
         onClick={addRow}
       >
         <Plus className="h-3.5 w-3.5" />
@@ -873,7 +873,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
 
       {/* Summary preview */}
       {rows.length > 0 && (
-        <div className="rounded-md bg-muted/40 border border-border p-2 text-xs space-y-1" dir="rtl">
+        <div className="rounded-lg bg-muted/30 border border-border/60 p-3 text-xs space-y-1.5" dir="rtl">
           <p className="text-muted-foreground font-medium text-[11px] mb-1">معاينة البيانات المحفوظة:</p>
           {(() => {
             const formatMember = (m: JuryMember) => {
