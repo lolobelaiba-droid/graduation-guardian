@@ -161,7 +161,17 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
         <div
           ref={listRef}
           className="max-h-[200px] overflow-y-auto overscroll-contain"
-          onWheel={(e) => e.stopPropagation()}
+          onWheel={(e) => {
+            const list = listRef.current;
+            if (!list) return;
+
+            const canScroll = list.scrollHeight > list.clientHeight;
+            if (!canScroll) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            list.scrollTop += e.deltaY;
+          }}
         >
           {filteredSuggestions.length > 0 ? (
             <div className="p-1">
