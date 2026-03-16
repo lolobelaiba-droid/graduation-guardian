@@ -284,14 +284,85 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  onClick={async () => {
                     const fields = getCertificateFields(certificateType).filter(f => f.required);
                     const headers = fields.map(f => f.name_ar);
                     const ws = XLSX.utils.aoa_to_sheet([headers]);
                     ws['!cols'] = headers.map(() => ({ wch: 22 }));
+
+                    // Fetch dropdown options for data validation
+                    try {
+                      const dropdownFieldMap: Record<string, string> = {
+                        'faculty_ar': 'faculty',
+                        'field_ar': 'field_ar',
+                      };
+                      const staticOptions: Record<string, string[]> = {
+                        'gender': ['ذكر', 'أنثى'],
+                        'mention': ['مشرف', 'مشرف جدا'],
+                      };
+
+                      // Fetch dynamic options
+                      const dynamicOptions: Record<string, string[]> = {};
+                      for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
+                        if (isElectron()) {
+                          const db = getDbClient();
+                          if (db) {
+                            const result = await db.getDropdownOptionsByType(optionType);
+                            if (result.success && result.data) {
+                              dynamicOptions[fieldKey] = result.data.map((o: any) => o.option_value);
+                            }
+                          }
+                        } else {
+                          const { data } = await supabase
+                            .from('dropdown_options')
+                            .select('option_value')
+                            .eq('option_type', optionType)
+                            .order('display_order');
+                          if (data) {
+                            dynamicOptions[fieldKey] = data.map(o => o.option_value);
+                          }
+                        }
+                      }
+
+                      const allOptions = { ...staticOptions, ...dynamicOptions };
+
+                      // Add a hidden sheet for dropdown lists
+                      const optionSheetData: string[][] = [];
+                      const optionColMap: Record<string, number> = {};
+                      let colIdx = 0;
+                      for (const [key, values] of Object.entries(allOptions)) {
+                        optionColMap[key] = colIdx;
+                        values.forEach((v, rowIdx) => {
+                          if (!optionSheetData[rowIdx]) optionSheetData[rowIdx] = [];
+                          optionSheetData[rowIdx][colIdx] = v;
+                        });
+                        colIdx++;
+                      }
+                      const optionsWs = XLSX.utils.aoa_to_sheet(optionSheetData);
+
+                      // Apply data validation to main sheet columns
+                      if (!ws['!dataValidation']) ws['!dataValidation'] = [];
+                      fields.forEach((field, fieldIdx) => {
+                        const optKey = Object.keys(allOptions).find(k => field.key === k || field.key.startsWith(k));
+                        if (optKey && allOptions[optKey]) {
+                          const values = allOptions[optKey];
+                          const colLetter = XLSX.utils.encode_col(fieldIdx);
+                          // Use inline list validation (works in most Excel versions)
+                          (ws['!dataValidation'] as any[]).push({
+                            sqref: `${colLetter}2:${colLetter}501`,
+                            type: 'list',
+                            formula1: `"${values.join(',')}"`,
+                          });
+                        }
+                      });
+                    } catch (e) {
+                      console.warn('Could not add data validation:', e);
+                    }
+
                     const wb = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(wb, ws, 'قالب');
                     XLSX.writeFile(wb, `قالب_استيراد_${certificateTypeLabels[certificateType].ar}.xlsx`);
+                    toast.success('تم تحميل القالب بنجاح');
                   }}
                   className="gap-2 mr-4 shrink-0"
                 >
