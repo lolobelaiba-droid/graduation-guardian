@@ -69,7 +69,9 @@ import {
   type DefenseDocTemplate,
   type CustomVariable,
   type JuryTableSettings,
+  type TextBoxData,
 } from "@/hooks/useDefenseDocTemplates";
+import { DefenseTextBox, DEFAULT_TEXT_BOX } from "./DefenseTextBox";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
