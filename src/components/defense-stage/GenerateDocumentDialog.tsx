@@ -502,7 +502,7 @@ export function GenerateDocumentDialog({
       jury_table: buildJuryTableHtml(enrichedJuryMembers),
       jury_table_with_signature: buildJuryTableHtml(enrichedJuryMembers, true),
       scientific_council_date: formatArabicDocumentDate(student.scientific_council_date),
-      defense_date: formatArabicDocumentDate(student.defense_date),
+      defense_date: formatArabicDocumentDate(student.defense_date, "....................."),
       signature_title: student.signature_title || "",
       first_registration_year: student.first_registration_year || "",
       research_lab_ar: student.research_lab_ar || "",
