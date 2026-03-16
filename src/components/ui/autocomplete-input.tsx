@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
@@ -13,9 +14,41 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
     const [isOpen, setIsOpen] = React.useState(false);
     const [inputValue, setInputValue] = React.useState(value?.toString() || "");
     const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
+    const [dropdownStyle, setDropdownStyle] = React.useState<React.CSSProperties>({});
     const containerRef = React.useRef<HTMLDivElement>(null);
     const inputRef = React.useRef<HTMLInputElement>(null);
     const listRef = React.useRef<HTMLDivElement>(null);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Calculate dropdown position relative to viewport
+    const updateDropdownPosition = React.useCallback(() => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropdownHeight = 220; // max-h approximate
+      const openAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+      
+      setDropdownStyle({
+        position: 'fixed',
+        width: rect.width,
+        left: rect.left,
+        top: openAbove ? undefined : rect.bottom + 2,
+        bottom: openAbove ? window.innerHeight - rect.top + 2 : undefined,
+        zIndex: 9999,
+      });
+    }, []);
+
+    React.useEffect(() => {
+      if (isOpen) {
+        updateDropdownPosition();
+        window.addEventListener('scroll', updateDropdownPosition, true);
+        window.addEventListener('resize', updateDropdownPosition);
+        return () => {
+          window.removeEventListener('scroll', updateDropdownPosition, true);
+          window.removeEventListener('resize', updateDropdownPosition);
+        };
+      }
+    }, [isOpen, updateDropdownPosition]);
 
     React.useEffect(() => {
       setInputValue(value?.toString() || "");
@@ -31,7 +64,10 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
 
     React.useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        if (
+          containerRef.current && !containerRef.current.contains(event.target as Node) &&
+          dropdownRef.current && !dropdownRef.current.contains(event.target as Node)
+        ) {
           setIsOpen(false);
         }
       };
@@ -130,8 +166,8 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
           {...props}
         />
         
-        {isOpen && (
-          <div className="absolute z-[100] w-full mt-1 bg-popover border border-border rounded-md shadow-lg">
+        {isOpen && createPortal(
+          <div ref={dropdownRef} style={dropdownStyle} className="bg-popover border border-border rounded-md shadow-lg animate-in fade-in-0 zoom-in-95">
             <div ref={listRef} className="max-h-[200px] overflow-y-auto">
               {filteredSuggestions.length > 0 ? (
                 <div className="p-1">
@@ -157,7 +193,8 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
                 </div>
               ) : null}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     );
