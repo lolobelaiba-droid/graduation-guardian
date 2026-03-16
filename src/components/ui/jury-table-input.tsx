@@ -654,13 +654,37 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
   const isFixed = (role: JuryRole) =>
     role === "president";
 
+  const getRoleIcon = (role: JuryRole) => {
+    switch (role) {
+      case "president": return <Crown className="h-3.5 w-3.5 text-amber-600" />;
+      case "supervisor": return <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />;
+      case "co_supervisor": return <UserCheck className="h-3.5 w-3.5 text-sky-600" />;
+      case "invited": return <UserPlus className="h-3.5 w-3.5 text-violet-500" />;
+      default: return <Users className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+  };
+
+  const getRowClassName = (role: JuryRole) => {
+    switch (role) {
+      case "president": return "bg-amber-500/5 border-r-2 border-r-amber-500";
+      case "supervisor": return "bg-emerald-500/5 border-r-2 border-r-emerald-500";
+      case "co_supervisor": return "bg-sky-500/5 border-r-2 border-r-sky-500";
+      case "invited": return "bg-violet-500/5 border-r-2 border-r-violet-500";
+      default: return "hover:bg-muted/40";
+    }
+  };
+
   return (
-    <div className={cn("w-full space-y-2", className)}>
+    <div className={cn("w-full space-y-3", className)}>
       {/* Header with manage button */}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          الصف 1 = رئيس اللجنة، الصف 2 = المشرف (تلقائي)، الصف 3 = المشرف المساعد (تلقائي إن وجد)
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-500" /> رئيس
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2" /> مشرف
+            <span className="inline-block w-2 h-2 rounded-full bg-sky-500 mr-2" /> مشرف مساعد
+          </div>
+        </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={jResetWidths} title="إعادة ضبط عرض الأعمدة">
             <RotateCcw className="h-3.5 w-3.5" />
@@ -670,17 +694,17 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
         <table className="text-sm table-fixed" dir="rtl" style={{ minWidth: '100%' }}>
           <thead>
-            <tr className="bg-muted/60 border-b border-border">
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground" style={{ width: 32 }}>#</th>
-              <th className="py-2 px-2 text-center text-xs font-medium text-muted-foreground relative" {...jGetHP('abbr')}>الاختصار<ResizeHandle {...jGetRH('abbr')} /></th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('name')}>الاسم واللقب<ResizeHandle {...jGetRH('name')} /></th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('role')}>الصفة<ResizeHandle {...jGetRH('role')} /></th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('rank')}>الرتبة<ResizeHandle {...jGetRH('rank')} /></th>
-              <th className="py-2 px-2 text-right text-xs font-medium text-muted-foreground relative" {...jGetHP('university')}>جامعة الانتماء<ResizeHandle {...jGetRH('university')} /></th>
-              <th className="py-2 px-1" style={{ width: 32 }} />
+            <tr className="bg-muted/70 border-b-2 border-border">
+              <th className="py-2.5 px-2 text-center text-xs font-semibold text-muted-foreground" style={{ width: 32 }}>#</th>
+              <th className="py-2.5 px-2 text-center text-xs font-semibold text-muted-foreground relative" {...jGetHP('abbr')}>الاختصار<ResizeHandle {...jGetRH('abbr')} /></th>
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...jGetHP('name')}>الاسم واللقب<ResizeHandle {...jGetRH('name')} /></th>
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...jGetHP('role')}>الصفة<ResizeHandle {...jGetRH('role')} /></th>
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...jGetHP('rank')}>الرتبة<ResizeHandle {...jGetRH('rank')} /></th>
+              <th className="py-2.5 px-2 text-right text-xs font-semibold text-muted-foreground relative" {...jGetHP('university')}>جامعة الانتماء<ResizeHandle {...jGetRH('university')} /></th>
+              <th className="py-2.5 px-1" style={{ width: 32 }} />
             </tr>
           </thead>
           <tbody>
@@ -688,14 +712,8 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
               <tr
                 key={row.id}
                 className={cn(
-                  "border-b border-border last:border-0",
-                  row.role === "president"
-                    ? "bg-primary/5"
-                    : row.role === "supervisor"
-                    ? "bg-secondary/30"
-                    : row.role === "co_supervisor"
-                    ? "bg-accent/30"
-                    : "hover:bg-muted/30"
+                  "border-b border-border/60 last:border-0 transition-colors",
+                  getRowClassName(row.role)
                 )}
               >
                 {/* Number */}
