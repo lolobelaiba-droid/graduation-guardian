@@ -42,7 +42,13 @@ export function normalizeDefenseTemplateHtml(content: string, documentType?: str
     return cleaned ? `style='${cleaned}'` : "";
   });
 
+  // Replace blockquotes with paragraphs, preserving any text-align from inline styles
   return withCleanSingleQuotes
-    .replace(/<blockquote\b[^>]*>/gi, "<p style=\"text-align: right; direction: rtl; unicode-bidi: isolate\">")
+    .replace(/<blockquote\b([^>]*)>/gi, (_match, attrs: string) => {
+      // Try to extract text-align from existing inline style
+      const alignMatch = attrs.match(/style=["'][^"']*text-align\s*:\s*(\w+)/i);
+      const align = alignMatch ? alignMatch[1] : "right";
+      return `<p style="text-align: ${align}; direction: rtl; unicode-bidi: isolate">`;
+    })
     .replace(/<\/blockquote>/gi, "</p>");
 }
