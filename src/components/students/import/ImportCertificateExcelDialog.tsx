@@ -271,10 +271,9 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const fields = getCertificateFields(certificateType);
-                    const headers = fields.map(f => f.required ? `${f.name_ar} *` : f.name_ar);
-                    const statusRow = fields.map(f => f.required ? 'إجباري' : 'اختياري');
-                    const ws = XLSX.utils.aoa_to_sheet([headers, statusRow]);
+                    const fields = getCertificateFields(certificateType).filter(f => f.required);
+                    const headers = fields.map(f => f.name_ar);
+                    const ws = XLSX.utils.aoa_to_sheet([headers]);
                     ws['!cols'] = headers.map(() => ({ wch: 22 }));
                     const wb = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(wb, ws, 'قالب');
