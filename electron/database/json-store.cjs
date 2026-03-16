@@ -214,7 +214,8 @@ var CACHED_TABLES = [
   'phd_lmd_certificates', 'phd_science_certificates', 'master_certificates',
   'phd_lmd_students', 'phd_science_students', 'professors',
   'certificate_templates', 'certificate_template_fields',
-  'dropdown_options', 'academic_titles', 'custom_fonts'
+  'dropdown_options', 'academic_titles', 'custom_fonts',
+  'defense_document_templates'
 ];
 var readCache = {}; // { tableName: { data, timestamp } }
 
@@ -338,15 +339,6 @@ function getCurrentDate() {
 // ============================================
 // البيانات الافتراضية لقوالب وثائق المناقشة
 // ============================================
-
-function generateUUID() {
-  var hex = '0123456789abcdef';
-  var result = '';
-  for (var i = 0; i < 32; i++) {
-    result += hex[Math.floor(Math.random() * 16)];
-  }
-  return result.substr(0,8) + '-' + result.substr(8,4) + '-' + result.substr(12,4) + '-' + result.substr(16,4) + '-' + result.substr(20,12);
-}
 
 function seedDefenseDocTemplates() {
   try {
@@ -964,7 +956,10 @@ function exportAllData() {
       custom_field_options: readTable('custom_field_options'),
       print_history: readTable('print_history'),
       notes: readTable('notes'),
-      professors: readTable('professors')
+      professors: readTable('professors'),
+      defense_document_templates: readTable('defense_document_templates'),
+      defense_stage_lmd: readTable('defense_stage_lmd'),
+      defense_stage_science: readTable('defense_stage_science')
     }
   };
 }
@@ -1076,7 +1071,8 @@ function importAllData(backupData) {
     'dropdown_options', 'custom_fonts', 'settings', 'user_settings',
     'activity_log', 'phd_lmd_students', 'phd_science_students',
     'academic_titles', 'custom_fields', 'custom_field_values', 'custom_field_options',
-    'print_history', 'notes', 'professors'
+    'print_history', 'notes', 'professors',
+    'defense_document_templates', 'defense_stage_lmd', 'defense_stage_science'
   ];
   
   tableNames.forEach(function(tableName) {
