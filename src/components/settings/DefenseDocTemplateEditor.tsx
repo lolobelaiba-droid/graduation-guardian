@@ -1374,6 +1374,159 @@ export default function DefenseDocTemplateEditor() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Text Box Dialog */}
+      <Dialog
+        open={textBoxDialog.open}
+        onOpenChange={(open) => setTextBoxDialog({ open, templateId: textBoxDialog.templateId, editMode: textBoxDialog.editMode })}
+      >
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Square className="h-5 w-5 text-primary" />
+              {textBoxDialog.editMode ? "تعديل مربع النص" : "إدراج مربع نص"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>العرض (%)</Label>
+                <Input
+                  type="number"
+                  min={10}
+                  max={100}
+                  value={textBoxWidth}
+                  onChange={(e) => setTextBoxWidth(parseInt(e.target.value) || 100)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الارتفاع الأدنى (px)</Label>
+                <Input
+                  type="number"
+                  min={20}
+                  max={500}
+                  value={textBoxMinHeight}
+                  onChange={(e) => setTextBoxMinHeight(parseInt(e.target.value) || 60)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>سمك الحدود (px)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={textBoxBorderWidth}
+                  onChange={(e) => setTextBoxBorderWidth(parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>لون الحدود</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={textBoxBorderColor}
+                    onChange={(e) => setTextBoxBorderColor(e.target.value)}
+                    className="h-9 w-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={textBoxBorderColor}
+                    onChange={(e) => setTextBoxBorderColor(e.target.value)}
+                    className="flex-1 text-xs"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>الحشو الداخلي (px)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={textBoxPadding}
+                  onChange={(e) => setTextBoxPadding(parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>لون الخلفية</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={textBoxBgColor}
+                    onChange={(e) => setTextBoxBgColor(e.target.value)}
+                    className="h-9 w-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={textBoxBgColor}
+                    onChange={(e) => setTextBoxBgColor(e.target.value)}
+                    className="flex-1 text-xs"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>محاذاة المربع</Label>
+              <Select value={textBoxAlign} onValueChange={(v) => setTextBoxAlign(v as typeof textBoxAlign)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="right">يمين</SelectItem>
+                  <SelectItem value="center">وسط</SelectItem>
+                  <SelectItem value="left">يسار</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Preview */}
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <p className="text-xs text-muted-foreground mb-2">معاينة:</p>
+              <div style={{
+                display: "flex",
+                justifyContent: textBoxAlign === "center" ? "center" : textBoxAlign === "left" ? "flex-start" : "flex-end",
+              }}>
+                <div style={{
+                  width: `${textBoxWidth}%`,
+                  border: `${textBoxBorderWidth}px solid ${textBoxBorderColor}`,
+                  padding: `${textBoxPadding}px`,
+                  background: textBoxBgColor,
+                  minHeight: `${Math.min(textBoxMinHeight, 80)}px`,
+                  direction: "rtl",
+                  textAlign: "right",
+                  fontSize: "11px",
+                  color: "hsl(var(--muted-foreground))",
+                }}>
+                  اكتب هنا...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTextBoxDialog({ open: false, templateId: "", editMode: false })}>
+              إلغاء
+            </Button>
+            {textBoxDialog.editMode && (
+              <Button variant="destructive" onClick={() => deleteTextBox(textBoxDialog.templateId)} className="gap-1">
+                <Trash2 className="h-4 w-4" />
+                حذف
+              </Button>
+            )}
+            <Button onClick={() => textBoxDialog.editMode ? updateExistingTextBox(textBoxDialog.templateId) : insertTextBox(textBoxDialog.templateId)} className="gap-1">
+              <Square className="h-4 w-4" />
+              {textBoxDialog.editMode ? "تحديث" : "إدراج"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
