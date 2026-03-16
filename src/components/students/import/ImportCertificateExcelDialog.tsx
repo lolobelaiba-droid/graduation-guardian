@@ -218,16 +218,35 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
       });
       fields.forEach((_, idx) => { ws.getColumn(idx + 1).width = 24; });
 
-      // Apply data validation for dropdown fields
+      // Put dropdown options in a hidden sheet and reference them
+      const optionsSheet = workbook.addWorksheet('_options', { state: 'hidden' });
+      let optColIdx = 1;
+      const optRangeMap: Record<string, string> = {};
+
+      for (const [key, opts] of Object.entries(allOptions)) {
+        if (opts.length === 0) continue;
+        // Write header
+        optionsSheet.getCell(1, optColIdx).value = key;
+        // Write values
+        opts.forEach((val, ri) => {
+          optionsSheet.getCell(ri + 2, optColIdx).value = val;
+        });
+        // Build range reference like _options!$A$2:$A$10
+        const colLetter = String.fromCharCode(64 + optColIdx);
+        optRangeMap[key] = `'_options'!$${colLetter}$2:$${colLetter}$${opts.length + 1}`;
+        optColIdx++;
+      }
+
+      // Apply data validation for dropdown fields using sheet references
       fields.forEach((field, idx) => {
         const colIdx = idx + 1;
-        const optKey = Object.keys(allOptions).find(k => field.key === k);
-        if (optKey && allOptions[optKey]?.length > 0) {
+        const optKey = Object.keys(optRangeMap).find(k => field.key === k);
+        if (optKey) {
           for (let row = 2; row <= 501; row++) {
             ws.getCell(row, colIdx).dataValidation = {
               type: 'list',
               allowBlank: true,
-              formulae: [`"${allOptions[optKey].join(',')}"`],
+              formulae: [optRangeMap[optKey]],
             };
           }
         }
