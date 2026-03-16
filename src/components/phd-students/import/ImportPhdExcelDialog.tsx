@@ -356,7 +356,7 @@ export function ImportPhdExcelDialog({
       const fields = getPhdStudentFields(studentType);
 
       // Fetch dropdown options from DB
-      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar' };
+      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'supervisor_university': 'university', 'co_supervisor_university': 'university' };
       const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'status': ['نشط', 'متخرج', 'مؤجل', 'منسحب'] };
       const dynamicOptions: Record<string, string[]> = {};
 
