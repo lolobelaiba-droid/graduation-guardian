@@ -64,6 +64,9 @@ interface BackupSummary {
   templatesCount: number;
   phdLmdStudentsCount: number;
   phdScienceStudentsCount: number;
+  defenseDocTemplatesCount?: number;
+  defenseStageLmdCount?: number;
+  defenseStageScienceCount?: number;
   createdAt?: string;
 }
 
