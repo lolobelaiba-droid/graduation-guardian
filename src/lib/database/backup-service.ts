@@ -121,6 +121,9 @@ export class BackupService {
         this.fetchAllRows("print_history"),
         this.fetchAllRows("notes"),
         this.fetchAllRows("professors"),
+        this.fetchAllRows("defense_document_templates"),
+        this.fetchAllRows("defense_stage_lmd"),
+        this.fetchAllRows("defense_stage_science"),
       ]);
 
       const backupData: BackupData = {
