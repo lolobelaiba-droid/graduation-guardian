@@ -428,10 +428,12 @@ export function GenerateDocumentDialog({
     };
 
     let content = normalizeDefenseTemplateHtml(template.content, template.document_type);
+    // Replace variable-tag spans (robust: handles single/double quotes, extra classes, nested attributes)
     content = content.replace(
-      /<span[^>]*class="variable-tag"[^>]*>\{\{(\w+)\}\}<\/span>/g,
+      /<span[^>]*class=["'][^"']*variable-tag[^"']*["'][^>]*>\{\{(\w+)\}\}<\/span>/g,
       (_, key) => variables[key] ?? `{{${key}}}`
     );
+    // Replace any remaining plain {{variable}} placeholders
     content = content.replace(
       /\{\{(\w+)\}\}/g,
       (_, key) => variables[key] ?? `{{${key}}}`
