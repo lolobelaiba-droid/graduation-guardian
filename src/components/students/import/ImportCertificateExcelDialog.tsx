@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2 } from "lucide-react";
+import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2, Download } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -258,7 +258,34 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
         <div className="flex-1 overflow-y-auto px-1">
           {/* Upload */}
           {step === "upload" && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              {/* Download Template Section */}
+              <div className="w-full bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm mb-1">تحميل قالب الاستيراد</h4>
+                  <p className="text-xs text-muted-foreground">
+                    حمّل قالب Excel فارغ يحتوي على جميع الأعمدة المطلوبة ({certificateTypeLabels[certificateType].ar})، ثم قم بملئه ورفعه
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const fields = getCertificateFields(certificateType);
+                    const headers = fields.map(f => f.name_ar);
+                    const ws = XLSX.utils.aoa_to_sheet([headers]);
+                    ws['!cols'] = headers.map(() => ({ wch: 22 }));
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'قالب');
+                    XLSX.writeFile(wb, `قالب_استيراد_${certificateTypeLabels[certificateType].ar}.xlsx`);
+                  }}
+                  className="gap-2 mr-4 shrink-0"
+                >
+                  <Download className="h-4 w-4" />
+                  تحميل القالب
+                </Button>
+              </div>
+
               <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
                 <Upload className="h-10 w-10 text-primary" />
               </div>
