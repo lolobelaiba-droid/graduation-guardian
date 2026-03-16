@@ -118,6 +118,7 @@ interface LocalSettings {
   first_line_indent: number;
   custom_variables: CustomVariable[];
   jury_table_settings: JuryTableSettings;
+  text_boxes: TextBoxData[];
 }
 
 export default function DefenseDocTemplateEditor() {
