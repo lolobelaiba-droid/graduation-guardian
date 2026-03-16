@@ -33,15 +33,16 @@ interface UniversityCellProps {
   className?: string;
 }
 
-const UniversityCell: React.FC<UniversityCellProps> = ({
+const UniversityCell = React.forwardRef<HTMLInputElement, UniversityCellProps>(({
   value,
   onChange,
   suggestions,
   placeholder = "جامعة الانتماء",
   className,
-}) => {
+}, ref) => {
   return (
     <AutocompleteInput
+      ref={ref}
       value={value}
       onValueChange={onChange}
       suggestions={suggestions}
@@ -50,7 +51,8 @@ const UniversityCell: React.FC<UniversityCellProps> = ({
       dir="rtl"
     />
   );
-};
+});
+UniversityCell.displayName = "UniversityCell";
 // ======== Types ========
 
 export type JuryRole =
