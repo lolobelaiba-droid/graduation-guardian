@@ -354,7 +354,9 @@ function initializeDatabase() {
     'custom_fonts', 'dropdown_options', 'activity_log', 'print_history',
     'phd_lmd_students', 'phd_science_students',
     'academic_titles', 'custom_fields', 'custom_field_values', 'custom_field_options',
-    'notes', 'professors'
+    'notes', 'professors',
+    'defense_document_templates',
+    'defense_stage_lmd', 'defense_stage_science'
   ];
   
   tables.forEach(function(table) {
@@ -363,6 +365,9 @@ function initializeDatabase() {
       writeTable(table, []);
     }
   });
+  
+  // إدراج قوالب وثائق المناقشة الافتراضية إذا كان الجدول فارغاً
+  seedDefenseDocTemplates();
   
   // تسجيل الجهاز في سجل الأجهزة عند التشغيل
   if (isNetworkMode()) {
