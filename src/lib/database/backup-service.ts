@@ -29,6 +29,9 @@ export interface BackupData {
     print_history?: TablesInsert<'print_history'>[];
     notes?: TablesInsert<'notes'>[];
     professors?: TablesInsert<'professors'>[];
+    defense_document_templates?: Record<string, unknown>[];
+    defense_stage_lmd?: Record<string, unknown>[];
+    defense_stage_science?: Record<string, unknown>[];
   };
 }
 
@@ -98,6 +101,9 @@ export class BackupService {
         printHistory,
         notes,
         professors,
+        defenseDocTemplates,
+        defenseStageLmd,
+        defenseStageScience,
       ] = await Promise.all([
         this.fetchAllRows("phd_lmd_certificates"),
         this.fetchAllRows("phd_science_certificates"),
@@ -118,6 +124,9 @@ export class BackupService {
         this.fetchAllRows("print_history"),
         this.fetchAllRows("notes"),
         this.fetchAllRows("professors"),
+        this.fetchAllRows("defense_document_templates"),
+        this.fetchAllRows("defense_stage_lmd"),
+        this.fetchAllRows("defense_stage_science"),
       ]);
 
       const backupData: BackupData = {
@@ -143,6 +152,9 @@ export class BackupService {
           print_history: printHistory as TablesInsert<'print_history'>[],
           notes: notes as TablesInsert<'notes'>[],
           professors: professors as TablesInsert<'professors'>[],
+          defense_document_templates: defenseDocTemplates as Record<string, unknown>[],
+          defense_stage_lmd: defenseStageLmd as Record<string, unknown>[],
+          defense_stage_science: defenseStageScience as Record<string, unknown>[],
         },
       };
 
@@ -180,6 +192,9 @@ export class BackupService {
       print_history: "سجل الطباعة",
       notes: "الملاحظات",
       professors: "الأساتذة",
+      defense_document_templates: "قوالب وثائق المناقشة",
+      defense_stage_lmd: "طور المناقشة - دكتوراه ل م د",
+      defense_stage_science: "طور المناقشة - دكتوراه علوم",
     };
 
     if (isElectron()) {
@@ -203,6 +218,7 @@ export class BackupService {
         "phd_lmd_certificates", "phd_science_certificates", "master_certificates",
         "phd_lmd_students", "phd_science_students", "dropdown_options", "custom_fonts",
         "academic_titles", "activity_log", "settings", "user_settings", "notes", "professors",
+        "defense_document_templates", "defense_stage_lmd", "defense_stage_science",
         "certificate_templates", "custom_fields",
         "certificate_template_fields", "custom_field_values", "custom_field_options", "print_history",
       ];
@@ -245,6 +261,7 @@ export class BackupService {
         "phd_lmd_students", "phd_science_students",
         "dropdown_options", "custom_fonts", "academic_titles",
         "activity_log", "user_settings", "settings", "notes", "professors",
+        "defense_document_templates", "defense_stage_lmd", "defense_stage_science",
       ].filter(shouldRestore).map(deleteTable);
       await Promise.all(mainDeletes);
 
@@ -323,6 +340,9 @@ export class BackupService {
         ["user_settings", tableData.user_settings],
         ["notes", tableData.notes],
         ["professors", tableData.professors],
+        ["defense_document_templates", tableData.defense_document_templates],
+        ["defense_stage_lmd", tableData.defense_stage_lmd],
+        ["defense_stage_science", tableData.defense_stage_science],
       ];
       for (const [name, data] of independentTables) {
         if (shouldRestore(name)) await restoreTable(name, data);

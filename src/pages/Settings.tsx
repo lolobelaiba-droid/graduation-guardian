@@ -64,6 +64,9 @@ interface BackupSummary {
   templatesCount: number;
   phdLmdStudentsCount: number;
   phdScienceStudentsCount: number;
+  defenseDocTemplatesCount?: number;
+  defenseStageLmdCount?: number;
+  defenseStageScienceCount?: number;
   createdAt?: string;
 }
 
@@ -207,6 +210,24 @@ export default function Settings() {
       label: "الملاحظات",
       tables: ["notes"],
       countKey: null,
+    },
+    {
+      id: "defense_doc_templates",
+      label: "قوالب وثائق المناقشة",
+      tables: ["defense_document_templates"],
+      countKey: "defenseDocTemplatesCount" as keyof BackupSummary,
+    },
+    {
+      id: "defense_stage_lmd",
+      label: "طور المناقشة - دكتوراه ل م د",
+      tables: ["defense_stage_lmd"],
+      countKey: "defenseStageLmdCount" as keyof BackupSummary,
+    },
+    {
+      id: "defense_stage_science",
+      label: "طور المناقشة - دكتوراه علوم",
+      tables: ["defense_stage_science"],
+      countKey: "defenseStageScienceCount" as keyof BackupSummary,
     },
   ], []);
 
@@ -380,6 +401,9 @@ export default function Settings() {
     templatesCount: data.certificate_templates?.length || 0,
     phdLmdStudentsCount: data.phd_lmd_students?.length || 0,
     phdScienceStudentsCount: data.phd_science_students?.length || 0,
+    defenseDocTemplatesCount: data.defense_document_templates?.length || 0,
+    defenseStageLmdCount: data.defense_stage_lmd?.length || 0,
+    defenseStageScienceCount: data.defense_stage_science?.length || 0,
   });
 
   const downloadBackup = async () => {
@@ -495,7 +519,7 @@ export default function Settings() {
       createdAt,
     };
 
-    let currentSummary: BackupSummary = { phdLmdCount: 0, phdScienceCount: 0, masterCount: 0, templatesCount: 0, phdLmdStudentsCount: 0, phdScienceStudentsCount: 0 };
+    let currentSummary: BackupSummary = { phdLmdCount: 0, phdScienceCount: 0, masterCount: 0, templatesCount: 0, phdLmdStudentsCount: 0, phdScienceStudentsCount: 0, defenseDocTemplatesCount: 0, defenseStageLmdCount: 0, defenseStageScienceCount: 0 };
     try {
       const { data: currentExport } = await BackupService.exportAll();
       if (currentExport) {
