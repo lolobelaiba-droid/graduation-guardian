@@ -189,19 +189,33 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
       const fields = getCertificateFields(certificateType).filter(f => f.required);
 
       // Fetch dropdown options
-      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar' };
+      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'supervisor_university': 'university', 'co_supervisor_university': 'university' };
       const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'] };
       const dynamicOptions: Record<string, string[]> = {};
+      const fetchedOptionTypes = new Set<string>();
       for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
-        if (isElectron()) {
-          const db = getDbClient();
-          if (db) {
-            const result = await db.getDropdownOptionsByType(optionType);
-            if (result.success && result.data) dynamicOptions[fieldKey] = result.data.map((o: any) => o.option_value);
+        if (!fetchedOptionTypes.has(optionType)) {
+          fetchedOptionTypes.add(optionType);
+          if (isElectron()) {
+            const db = getDbClient();
+            if (db) {
+              const result = await db.getDropdownOptionsByType(optionType);
+              if (result.success && result.data) {
+                const values = result.data.map((o: any) => o.option_value);
+                for (const [fk, ot] of Object.entries(dropdownFieldMap)) {
+                  if (ot === optionType) dynamicOptions[fk] = values;
+                }
+              }
+            }
+          } else {
+            const { data } = await supabase.from('dropdown_options').select('option_value').eq('option_type', optionType).order('display_order');
+            if (data) {
+              const values = data.map(o => o.option_value);
+              for (const [fk, ot] of Object.entries(dropdownFieldMap)) {
+                if (ot === optionType) dynamicOptions[fk] = values;
+              }
+            }
           }
-        } else {
-          const { data } = await supabase.from('dropdown_options').select('option_value').eq('option_type', optionType).order('display_order');
-          if (data) dynamicOptions[fieldKey] = data.map(o => o.option_value);
         }
       }
       const allOptions = { ...staticOptions, ...dynamicOptions };
