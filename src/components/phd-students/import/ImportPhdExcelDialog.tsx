@@ -55,6 +55,7 @@ export function ImportPhdExcelDialog({
   const [importResults, setImportResults] = useState<ImportResults>({ success: 0, failed: 0, errors: [] });
   const [importMode, setImportMode] = useState<ImportMode>("append");
   const [existingCount, setExistingCount] = useState<number>(0);
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
   const queryClient = useQueryClient();
 
   const requiredFields = getPhdStudentFields(studentType);
