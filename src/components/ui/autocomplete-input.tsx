@@ -152,6 +152,7 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
         ref={dropdownRef}
         style={dropdownStyle}
         className="border border-border rounded-md bg-popover shadow-lg"
+        onMouseDown={(e) => e.preventDefault()}
       >
         <div ref={listRef} className="max-h-[200px] overflow-y-auto">
           {filteredSuggestions.length > 0 ? (
