@@ -104,11 +104,14 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
     };
 
     // Close dropdown when any ancestor scrolls (e.g. dialog content)
+    // but NOT when scrolling inside the dropdown list itself
+    const popoverContentRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
       if (!isOpen) return;
       const handleScroll = (e: Event) => {
-        // Don't close if scrolling inside the popover list itself
-        if (listRef.current?.contains(e.target as Node)) return;
+        const target = e.target as Node;
+        // Don't close if scrolling inside the popover dropdown
+        if (listRef.current?.contains(target) || popoverContentRef.current?.contains(target)) return;
         setIsOpen(false);
       };
       window.addEventListener('scroll', handleScroll, true);
@@ -139,6 +142,7 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
           </div>
         </PopoverTrigger>
         <PopoverContent
+          ref={popoverContentRef}
           className="p-0 w-[var(--radix-popover-trigger-width)]"
           align="start"
           sideOffset={4}
