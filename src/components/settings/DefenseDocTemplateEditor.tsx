@@ -148,6 +148,22 @@ export default function DefenseDocTemplateEditor() {
   const savedSelectionRef = useRef<Range | null>(null);
   const editingTableRef = useRef<HTMLTableElement | null>(null);
 
+  // Text box dialog
+  const [textBoxDialog, setTextBoxDialog] = useState<{ open: boolean; templateId: string; editMode: boolean }>({
+    open: false,
+    templateId: "",
+    editMode: false,
+  });
+  const [textBoxWidth, setTextBoxWidth] = useState(100);
+  const [textBoxBorder, setTextBoxBorder] = useState("1px solid #333");
+  const [textBoxBorderColor, setTextBoxBorderColor] = useState("#333333");
+  const [textBoxBorderWidth, setTextBoxBorderWidth] = useState(1);
+  const [textBoxPadding, setTextBoxPadding] = useState(10);
+  const [textBoxBgColor, setTextBoxBgColor] = useState("#ffffff");
+  const [textBoxAlign, setTextBoxAlign] = useState<"right" | "center" | "left">("center");
+  const [textBoxMinHeight, setTextBoxMinHeight] = useState(60);
+  const editingTextBoxRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (templates.length > 0) {
       const initial: Record<string, LocalSettings> = {};
