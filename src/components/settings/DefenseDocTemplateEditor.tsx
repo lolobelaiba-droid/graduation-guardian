@@ -356,8 +356,93 @@ export default function DefenseDocTemplateEditor() {
     toast.success("تم حذف الجدول");
   };
 
+  const buildTextBoxHtml = () => {
+    const marginStyle = textBoxAlign === "center" ? "auto" : textBoxAlign === "left" ? "0 auto 0 0" : "0 0 0 auto";
+    return `<div class="template-text-box" contenteditable="true" style="width: ${textBoxWidth}%; border: ${textBoxBorderWidth}px solid ${textBoxBorderColor}; padding: ${textBoxPadding}px; background: ${textBoxBgColor}; min-height: ${textBoxMinHeight}px; margin: 12px ${marginStyle === "auto" ? "auto" : "0"}; ${marginStyle === "auto" ? "margin-left: auto; margin-right: auto;" : marginStyle === "0 auto 0 0" ? "margin-right: auto;" : "margin-left: auto;"} direction: rtl; text-align: right; box-sizing: border-box;">&#8204;</div>`;
+  };
+
+  const insertTextBox = (templateId: string) => {
+    const ref = editorRefs.current[templateId];
+    if (!ref) return;
+    ref.focus();
+
+    if (savedSelectionRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+        savedSelectionRef.current = null;
+      }
+    }
+
+    document.execCommand("insertHTML", false, "<br/>" + buildTextBoxHtml() + "<br/>");
+    handleEditorInput(templateId);
+    setTextBoxDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم إدراج مربع النص");
+  };
+
+  const updateExistingTextBox = (templateId: string) => {
+    if (!editingTextBoxRef.current) return;
+    const el = editingTextBoxRef.current;
+    const marginStyle = textBoxAlign === "center" ? "auto" : textBoxAlign === "left" ? "0 auto 0 0" : "0 0 0 auto";
+    el.style.width = `${textBoxWidth}%`;
+    el.style.border = `${textBoxBorderWidth}px solid ${textBoxBorderColor}`;
+    el.style.padding = `${textBoxPadding}px`;
+    el.style.background = textBoxBgColor;
+    el.style.minHeight = `${textBoxMinHeight}px`;
+    if (marginStyle === "auto") {
+      el.style.marginLeft = "auto";
+      el.style.marginRight = "auto";
+    } else if (textBoxAlign === "left") {
+      el.style.marginLeft = "0";
+      el.style.marginRight = "auto";
+    } else {
+      el.style.marginLeft = "auto";
+      el.style.marginRight = "0";
+    }
+    editingTextBoxRef.current = null;
+    handleEditorInput(templateId);
+    setTextBoxDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم تحديث مربع النص");
+  };
+
+  const deleteTextBox = (templateId: string) => {
+    if (!editingTextBoxRef.current) return;
+    editingTextBoxRef.current.remove();
+    editingTextBoxRef.current = null;
+    handleEditorInput(templateId);
+    setTextBoxDialog({ open: false, templateId: "", editMode: false });
+    toast.success("تم حذف مربع النص");
+  };
+
   const handleEditorClick = (templateId: string, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
+
+    // Check for text box click
+    const textBox = target.closest(".template-text-box") as HTMLDivElement | null;
+    if (textBox && e.detail >= 2) {
+      // Double-click to edit text box settings
+      editingTextBoxRef.current = textBox;
+      const style = textBox.style;
+      setTextBoxWidth(parseInt(style.width) || 100);
+      setTextBoxBorderColor(style.borderColor || "#333333");
+      setTextBoxBorderWidth(parseInt(style.borderWidth) || 1);
+      setTextBoxPadding(parseInt(style.padding) || 10);
+      setTextBoxBgColor(style.backgroundColor || style.background || "#ffffff");
+      setTextBoxMinHeight(parseInt(style.minHeight) || 60);
+      // Detect alignment from margins
+      const ml = style.marginLeft;
+      const mr = style.marginRight;
+      if (ml === "auto" && mr === "auto") setTextBoxAlign("center");
+      else if (mr === "auto") setTextBoxAlign("left");
+      else setTextBoxAlign("right");
+      setTextBoxDialog({ open: true, templateId, editMode: true });
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    // Check for table click
     const table = target.closest("table");
     if (!table) return;
 
