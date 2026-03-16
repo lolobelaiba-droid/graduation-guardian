@@ -154,6 +154,7 @@ export function useDefenseDocTemplates() {
         jury_table_settings: d.jury_table_settings && typeof d.jury_table_settings === 'object'
           ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...d.jury_table_settings }
           : { ...DEFAULT_JURY_TABLE_SETTINGS },
+        text_boxes: Array.isArray(d.text_boxes) ? d.text_boxes : [],
       })) as DefenseDocTemplate[];
     },
   });
