@@ -38,32 +38,17 @@ export function UploadStep({ onFileSelect, error, certificateType }: UploadStepP
     const fields = certificateFields[certificateType];
     const seen = new Set<string>();
     const headers: string[] = [];
-    const statusRow: string[] = [];
     
     for (const f of fields) {
+      if (!f.required) continue;
       const dbKey = getDbFieldKey(f.key);
       if (!seen.has(dbKey)) {
         seen.add(dbKey);
-        headers.push(f.required ? `${f.name_ar} *` : f.name_ar);
-        statusRow.push(f.required ? 'إجباري' : 'اختياري');
+        headers.push(f.name_ar);
       }
     }
 
-    const extraFields = [
-      { key: 'supervisor_ar', name: 'المشرف' },
-      { key: 'gender', name: 'الجنس' },
-      { key: 'first_registration_year', name: 'سنة أول تسجيل' },
-      { key: 'research_lab_ar', name: 'مخبر البحث' },
-    ];
-    for (const ef of extraFields) {
-      if (!seen.has(ef.key)) {
-        seen.add(ef.key);
-        headers.push(ef.name);
-        statusRow.push('اختياري');
-      }
-    }
-
-    const ws = XLSX.utils.aoa_to_sheet([headers, statusRow]);
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
     ws['!cols'] = headers.map(() => ({ wch: 22 }));
     
     const wb = XLSX.utils.book_new();
