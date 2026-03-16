@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { formatCertificateDate } from "@/lib/numerals";
 import { normalizeDefenseTemplateHtml } from "@/lib/defenseTemplateHtml";
+import { buildEmbeddedFontCss } from "@/lib/fontEmbedder";
 
 /**
  * تنسيق تواريخ وثائق المناقشة العربية:
