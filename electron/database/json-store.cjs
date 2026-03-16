@@ -1070,7 +1070,8 @@ function importAllData(backupData) {
     'dropdown_options', 'custom_fonts', 'settings', 'user_settings',
     'activity_log', 'phd_lmd_students', 'phd_science_students',
     'academic_titles', 'custom_fields', 'custom_field_values', 'custom_field_options',
-    'print_history', 'notes', 'professors'
+    'print_history', 'notes', 'professors',
+    'defense_document_templates', 'defense_stage_lmd', 'defense_stage_science'
   ];
   
   tableNames.forEach(function(tableName) {
