@@ -6,6 +6,22 @@ export interface CustomVariable {
   label: string;
 }
 
+export interface TextBoxData {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  minHeight: number;
+  borderWidth: number;
+  borderColor: string;
+  padding: number;
+  bgColor: string;
+  fontSize: number;
+  fontFamily: string;
+  textAlign: "right" | "center" | "left";
+}
+
 export interface JuryTableSettings {
   font_size: number;
   padding: number;
