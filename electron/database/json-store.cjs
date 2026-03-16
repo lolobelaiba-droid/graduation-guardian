@@ -214,7 +214,8 @@ var CACHED_TABLES = [
   'phd_lmd_certificates', 'phd_science_certificates', 'master_certificates',
   'phd_lmd_students', 'phd_science_students', 'professors',
   'certificate_templates', 'certificate_template_fields',
-  'dropdown_options', 'academic_titles', 'custom_fonts'
+  'dropdown_options', 'academic_titles', 'custom_fonts',
+  'defense_document_templates'
 ];
 var readCache = {}; // { tableName: { data, timestamp } }
 
