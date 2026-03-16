@@ -955,7 +955,10 @@ function exportAllData() {
       custom_field_options: readTable('custom_field_options'),
       print_history: readTable('print_history'),
       notes: readTable('notes'),
-      professors: readTable('professors')
+      professors: readTable('professors'),
+      defense_document_templates: readTable('defense_document_templates'),
+      defense_stage_lmd: readTable('defense_stage_lmd'),
+      defense_stage_science: readTable('defense_stage_science')
     }
   };
 }
