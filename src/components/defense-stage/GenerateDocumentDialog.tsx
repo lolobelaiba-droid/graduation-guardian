@@ -61,6 +61,7 @@ import {
   DEFAULT_VARIABLES,
   DEFAULT_JURY_TABLE_SETTINGS,
   type JuryTableSettings,
+  type TextBoxData,
 } from "@/hooks/useDefenseDocTemplates";
 import { parseJury, type JuryMember } from "@/components/ui/jury-table-input";
 import { useAcademicTitles } from "@/hooks/useAcademicTitles";
@@ -625,26 +626,50 @@ export function GenerateDocumentDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <div
-              ref={printRef}
-              className="defense-doc-editor border rounded-lg bg-white min-h-[500px]"
-              style={{
-                fontFamily: template?.font_family || "IBM Plex Sans Arabic",
-                fontSize: `${template?.font_size || 14}px`,
-                lineHeight: template?.line_height || 1.8,
-                direction: "rtl",
-                width: "210mm",
-                maxWidth: "100%",
-                margin: "0 auto",
-                paddingTop: `${template?.margin_top ?? 20}mm`,
-                paddingBottom: `${template?.margin_bottom ?? 20}mm`,
-                paddingRight: `${template?.margin_right ?? 15}mm`,
-                paddingLeft: `${template?.margin_left ?? 15}mm`,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                color: "#000",
-              }}
-              dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
-            />
+            <div style={{ position: "relative", width: "210mm", maxWidth: "100%", margin: "0 auto" }}>
+              <div
+                ref={printRef}
+                className="defense-doc-editor border rounded-lg bg-white min-h-[500px]"
+                style={{
+                  fontFamily: template?.font_family || "IBM Plex Sans Arabic",
+                  fontSize: `${template?.font_size || 14}px`,
+                  lineHeight: template?.line_height || 1.8,
+                  direction: "rtl",
+                  width: "100%",
+                  paddingTop: `${template?.margin_top ?? 20}mm`,
+                  paddingBottom: `${template?.margin_bottom ?? 20}mm`,
+                  paddingRight: `${template?.margin_right ?? 15}mm`,
+                  paddingLeft: `${template?.margin_left ?? 15}mm`,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                  color: "#000",
+                }}
+                dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
+              />
+              {/* Text Box Overlays */}
+              {(template?.text_boxes || []).map((tb: TextBoxData) => (
+                <div
+                  key={tb.id}
+                  style={{
+                    position: "absolute",
+                    left: `${tb.x}mm`,
+                    top: `${tb.y}mm`,
+                    width: `${tb.width}mm`,
+                    minHeight: `${tb.minHeight}mm`,
+                    border: `${tb.borderWidth}px solid ${tb.borderColor}`,
+                    padding: `${tb.padding}px`,
+                    background: tb.bgColor,
+                    fontSize: `${tb.fontSize}px`,
+                    fontFamily: tb.fontFamily,
+                    textAlign: tb.textAlign,
+                    direction: "rtl",
+                    lineHeight: 1.6,
+                    boxSizing: "border-box",
+                    wordBreak: "break-word",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: tb.content }}
+                />
+              ))}
+            </div>
 
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setShowPreview(false)}>
@@ -675,8 +700,31 @@ export function GenerateDocumentDialog({
             visibility: 'hidden',
             pointerEvents: 'none',
           }}
-          dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
-        />,
+        >
+          <div dangerouslySetInnerHTML={{ __html: getRenderedContent() }} />
+          {(template?.text_boxes || []).map((tb: TextBoxData) => (
+            <div
+              key={tb.id}
+              style={{
+                position: "absolute",
+                left: `${tb.x}mm`,
+                top: `${tb.y}mm`,
+                width: `${tb.width}mm`,
+                minHeight: `${tb.minHeight}mm`,
+                border: `${tb.borderWidth}px solid ${tb.borderColor}`,
+                padding: `${tb.padding}px`,
+                background: tb.bgColor,
+                fontSize: `${tb.fontSize}px`,
+                fontFamily: tb.fontFamily,
+                textAlign: tb.textAlign,
+                direction: "rtl",
+                lineHeight: 1.6,
+                boxSizing: "border-box",
+              }}
+              dangerouslySetInnerHTML={{ __html: tb.content }}
+            />
+          ))}
+        </div>,
         document.body
       )}
     </Dialog>

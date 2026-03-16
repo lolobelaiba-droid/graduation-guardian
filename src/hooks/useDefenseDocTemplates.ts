@@ -6,6 +6,22 @@ export interface CustomVariable {
   label: string;
 }
 
+export interface TextBoxData {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  minHeight: number;
+  borderWidth: number;
+  borderColor: string;
+  padding: number;
+  bgColor: string;
+  fontSize: number;
+  fontFamily: string;
+  textAlign: "right" | "center" | "left";
+}
+
 export interface JuryTableSettings {
   font_size: number;
   padding: number;
@@ -58,6 +74,7 @@ export interface DefenseDocTemplate {
   margin_left: number;
   custom_variables: CustomVariable[];
   jury_table_settings: JuryTableSettings;
+  text_boxes: TextBoxData[];
   created_at: string;
   updated_at: string;
 }
@@ -137,6 +154,7 @@ export function useDefenseDocTemplates() {
         jury_table_settings: d.jury_table_settings && typeof d.jury_table_settings === 'object'
           ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...d.jury_table_settings }
           : { ...DEFAULT_JURY_TABLE_SETTINGS },
+        text_boxes: Array.isArray(d.text_boxes) ? d.text_boxes : [],
       })) as DefenseDocTemplate[];
     },
   });

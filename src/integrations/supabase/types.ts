@@ -371,6 +371,7 @@ export type Database = {
           margin_left: number | null
           margin_right: number | null
           margin_top: number | null
+          text_boxes: Json | null
           title: string
           updated_at: string | null
         }
@@ -388,6 +389,7 @@ export type Database = {
           margin_left?: number | null
           margin_right?: number | null
           margin_top?: number | null
+          text_boxes?: Json | null
           title: string
           updated_at?: string | null
         }
@@ -405,6 +407,7 @@ export type Database = {
           margin_left?: number | null
           margin_right?: number | null
           margin_top?: number | null
+          text_boxes?: Json | null
           title?: string
           updated_at?: string | null
         }
