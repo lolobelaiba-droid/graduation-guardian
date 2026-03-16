@@ -192,6 +192,9 @@ export class BackupService {
       print_history: "سجل الطباعة",
       notes: "الملاحظات",
       professors: "الأساتذة",
+      defense_document_templates: "قوالب وثائق المناقشة",
+      defense_stage_lmd: "طور المناقشة - دكتوراه ل م د",
+      defense_stage_science: "طور المناقشة - دكتوراه علوم",
     };
 
     if (isElectron()) {
