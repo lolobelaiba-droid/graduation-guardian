@@ -38,6 +38,7 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
   const [importResults, setImportResults] = useState<ImportResults>({ success: 0, failed: 0, errors: [] });
   const [importMode, setImportMode] = useState<ImportMode>("append");
   const [existingCount, setExistingCount] = useState(0);
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
   const queryClient = useQueryClient();
 
   const requiredFields = getCertificateFields(certificateType);
@@ -179,6 +180,77 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
 
   const transformedData = excelData.map(transformRow);
 
+  const handleDownloadTemplate = async () => {
+    setIsGeneratingTemplate(true);
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const ws = workbook.addWorksheet('قالب');
+      const fields = getCertificateFields(certificateType).filter(f => f.required);
+
+      // Fetch dropdown options
+      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar' };
+      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'] };
+      const dynamicOptions: Record<string, string[]> = {};
+      for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
+        if (isElectron()) {
+          const db = getDbClient();
+          if (db) {
+            const result = await db.getDropdownOptionsByType(optionType);
+            if (result.success && result.data) dynamicOptions[fieldKey] = result.data.map((o: any) => o.option_value);
+          }
+        } else {
+          const { data } = await supabase.from('dropdown_options').select('option_value').eq('option_type', optionType).order('display_order');
+          if (data) dynamicOptions[fieldKey] = data.map(o => o.option_value);
+        }
+      }
+      const allOptions = { ...staticOptions, ...dynamicOptions };
+
+      // Add header row with styling
+      const headerRow = ws.addRow(fields.map(f => f.name_ar));
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, size: 12 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } };
+        cell.border = {
+          bottom: { style: 'thin', color: { argb: 'FF4472C4' } },
+        };
+      });
+      fields.forEach((_, idx) => { ws.getColumn(idx + 1).width = 24; });
+
+      // Apply data validation for dropdown fields
+      fields.forEach((field, idx) => {
+        const colIdx = idx + 1;
+        const optKey = Object.keys(allOptions).find(k => field.key === k);
+        if (optKey && allOptions[optKey]?.length > 0) {
+          for (let row = 2; row <= 501; row++) {
+            ws.getCell(row, colIdx).dataValidation = {
+              type: 'list',
+              allowBlank: true,
+              formulae: [`"${allOptions[optKey].join(',')}"`],
+            };
+          }
+        }
+      });
+
+      // Generate and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `قالب_استيراد_${certificateTypeLabels[certificateType].ar}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('تم تحميل القالب بنجاح');
+    } catch (e) {
+      console.error('Template download error:', e);
+      toast.error('حدث خطأ أثناء توليد القالب');
+    } finally {
+      setIsGeneratingTemplate(false);
+    }
+  };
+
   const handleImport = async () => {
     setStep("importing");
     const tableName = getCertificateTable(certificateType);
@@ -278,25 +350,18 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
                 <div className="flex-1">
                   <h4 className="font-medium text-sm mb-1">تحميل قالب الاستيراد</h4>
                   <p className="text-xs text-muted-foreground">
-                    حمّل قالب Excel فارغ يحتوي على جميع الأعمدة المطلوبة ({certificateTypeLabels[certificateType].ar})، ثم قم بملئه ورفعه
+                    حمّل قالب Excel يحتوي على الأعمدة الإجبارية مع قوائم منسدلة جاهزة ({certificateTypeLabels[certificateType].ar})
                   </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    const fields = getCertificateFields(certificateType).filter(f => f.required);
-                    const headers = fields.map(f => f.name_ar);
-                    const ws = XLSX.utils.aoa_to_sheet([headers]);
-                    ws['!cols'] = headers.map(() => ({ wch: 22 }));
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, 'قالب');
-                    XLSX.writeFile(wb, `قالب_استيراد_${certificateTypeLabels[certificateType].ar}.xlsx`);
-                  }}
+                  onClick={handleDownloadTemplate}
+                  disabled={isGeneratingTemplate}
                   className="gap-2 mr-4 shrink-0"
                 >
-                  <Download className="h-4 w-4" />
-                  تحميل القالب
+                  {isGeneratingTemplate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {isGeneratingTemplate ? 'جاري التحميل...' : 'تحميل القالب'}
                 </Button>
               </div>
 
