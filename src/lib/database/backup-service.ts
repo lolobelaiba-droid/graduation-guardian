@@ -29,6 +29,9 @@ export interface BackupData {
     print_history?: TablesInsert<'print_history'>[];
     notes?: TablesInsert<'notes'>[];
     professors?: TablesInsert<'professors'>[];
+    defense_document_templates?: Record<string, unknown>[];
+    defense_stage_lmd?: Record<string, unknown>[];
+    defense_stage_science?: Record<string, unknown>[];
   };
 }
 
