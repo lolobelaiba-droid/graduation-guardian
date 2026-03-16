@@ -201,7 +201,6 @@ export function RichTextEditor({
       <div
         ref={editorRef}
         contentEditable
-        spellCheck={true}
         dir={effectiveDir}
         className="px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-b-md"
         style={{
