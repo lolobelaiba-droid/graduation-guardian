@@ -39,6 +39,9 @@ function createWindow() {
     show: false,
   });
 
+  // Configure spellchecker languages (French + English)
+  mainWindow.webContents.session.setSpellCheckerLanguages(['fr', 'en-US']);
+
   // Create a simple menu
   const template = [
     {
