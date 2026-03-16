@@ -101,6 +101,9 @@ export class BackupService {
         printHistory,
         notes,
         professors,
+        defenseDocTemplates,
+        defenseStageLmd,
+        defenseStageScience,
       ] = await Promise.all([
         this.fetchAllRows("phd_lmd_certificates"),
         this.fetchAllRows("phd_science_certificates"),
