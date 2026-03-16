@@ -980,20 +980,8 @@ export default function DefenseDocTemplateEditor() {
                         variant="outline"
                         size="sm"
                         className="h-8 gap-1 text-xs"
-                        onClick={() => {
-                          const sel = window.getSelection();
-                          if (sel && sel.rangeCount > 0) {
-                            savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
-                          }
-                          setTextBoxDialog({ open: true, templateId: template.id, editMode: false });
-                          setTextBoxWidth(100);
-                          setTextBoxBorderColor("#333333");
-                          setTextBoxBorderWidth(1);
-                          setTextBoxPadding(10);
-                          setTextBoxBgColor("#ffffff");
-                          setTextBoxAlign("center");
-                          setTextBoxMinHeight(60);
-                        }}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => addTextBox(template.id)}
                       >
                         <Square className="h-3.5 w-3.5" />
                         مربع نص
