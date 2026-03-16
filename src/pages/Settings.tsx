@@ -401,6 +401,9 @@ export default function Settings() {
     templatesCount: data.certificate_templates?.length || 0,
     phdLmdStudentsCount: data.phd_lmd_students?.length || 0,
     phdScienceStudentsCount: data.phd_science_students?.length || 0,
+    defenseDocTemplatesCount: data.defense_document_templates?.length || 0,
+    defenseStageLmdCount: data.defense_stage_lmd?.length || 0,
+    defenseStageScienceCount: data.defense_stage_science?.length || 0,
   });
 
   const downloadBackup = async () => {

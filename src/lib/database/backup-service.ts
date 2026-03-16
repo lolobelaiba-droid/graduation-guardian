@@ -340,6 +340,9 @@ export class BackupService {
         ["user_settings", tableData.user_settings],
         ["notes", tableData.notes],
         ["professors", tableData.professors],
+        ["defense_document_templates", tableData.defense_document_templates],
+        ["defense_stage_lmd", tableData.defense_stage_lmd],
+        ["defense_stage_science", tableData.defense_stage_science],
       ];
       for (const [name, data] of independentTables) {
         if (shouldRestore(name)) await restoreTable(name, data);
