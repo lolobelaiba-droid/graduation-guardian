@@ -738,13 +738,12 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 </td>
 
                 {/* Name */}
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                   <div className="relative">
                     <AutocompleteInput
                       value={row.name}
                       onValueChange={(v) => {
                         const patch: Partial<JuryMember> = { name: v };
-                        // Auto-fill rank and university from professor database
                         if (findProfessor) {
                           const prof = findProfessor(v);
                           if (prof) {
@@ -761,7 +760,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                       dir="rtl"
                     />
                     {(row.role === "supervisor" || row.role === "co_supervisor") && (
-                      <span className="absolute -top-2 end-1 text-[9px] text-muted-foreground bg-muted px-1 rounded leading-tight">
+                      <span className="absolute -top-2 end-1 text-[9px] text-muted-foreground bg-muted px-1 rounded-full leading-tight border border-border">
                         تلقائي
                       </span>
                     )}
@@ -769,16 +768,20 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 </td>
 
                 {/* Role */}
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                   {isFixed(row.role) ? (
-                    <span className="text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap bg-primary/10 text-primary">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap bg-amber-500/10 text-amber-700 border border-amber-500/20">
+                      {getRoleIcon(row.role)}
                       {JURY_ROLE_LABELS[row.role]}
                     </span>
                   ) : row.role === "supervisor" || row.role === "co_supervisor" ? (
                     <span className={cn(
-                      "text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap",
-                      row.role === "supervisor" ? "bg-secondary text-secondary-foreground" : "bg-accent text-accent-foreground"
+                      "inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap border",
+                      row.role === "supervisor" 
+                        ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" 
+                        : "bg-sky-500/10 text-sky-700 border-sky-500/20"
                     )}>
+                      {getRoleIcon(row.role)}
                       {JURY_ROLE_LABELS[row.role]}
                     </span>
                   ) : (
@@ -803,7 +806,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 </td>
 
                 {/* Rank */}
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                     <Select
                       value={row.rankLabel || undefined}
                       onValueChange={(label) => {
@@ -825,7 +828,7 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 </td>
 
                 {/* University */}
-                <td className="py-1.5 px-2 align-middle">
+                <td className="py-2 px-2 align-middle">
                     <UniversityCell
                       value={row.university}
                       onChange={(v) => updateRow(row.id, { university: v })}
@@ -835,13 +838,13 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                 </td>
 
                 {/* Delete */}
-                <td className="py-1.5 px-1 align-middle">
+                <td className="py-2 px-1 align-middle">
                   {!isFixed(row.role) && row.role !== "supervisor" && row.role !== "co_supervisor" ? (
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                      className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-full"
                       onClick={() => removeRow(row.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
