@@ -149,6 +149,9 @@ export class BackupService {
           print_history: printHistory as TablesInsert<'print_history'>[],
           notes: notes as TablesInsert<'notes'>[],
           professors: professors as TablesInsert<'professors'>[],
+          defense_document_templates: defenseDocTemplates as Record<string, unknown>[],
+          defense_stage_lmd: defenseStageLmd as Record<string, unknown>[],
+          defense_stage_science: defenseStageScience as Record<string, unknown>[],
         },
       };
 
