@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Search,
   Scale,
@@ -13,6 +13,7 @@ import {
   FilePlus,
   Pencil,
   ClipboardList,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ import { EditDefenseStageDialog } from "@/components/defense-stage/EditDefenseSt
 import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -117,6 +119,105 @@ export default function DefenseStage() {
     await mutation.mutateAsync({ id: student.id, stage_status: newStatus });
   };
 
+  const handleExportExcel = useCallback(async () => {
+    if (filteredStudents.length === 0) {
+      toast.error("لا توجد بيانات للتصدير");
+      return;
+    }
+    try {
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      const typeName = activeTab === "phd_lmd" ? "دكتوراه ل م د" : "دكتوراه علوم";
+      const sheet = workbook.addWorksheet(`طور المناقشة - ${typeName}`);
+
+      const columns = [
+        { header: "الاسم بالعربية", key: "full_name_ar", width: 30 },
+        { header: "الاسم بالفرنسية", key: "full_name_fr", width: 30 },
+        { header: "رقم التسجيل", key: "registration_number", width: 18 },
+        { header: "تاريخ الميلاد", key: "date_of_birth", width: 15 },
+        { header: "مكان الميلاد", key: "birthplace_ar", width: 20 },
+        { header: "الجنس", key: "gender", width: 10 },
+        { header: "الكلية", key: "faculty_ar", width: 25 },
+        { header: "الميدان", key: "field_ar", width: 20 },
+        { header: "الشعبة", key: "branch_ar", width: 20 },
+        { header: "التخصص", key: "specialty_ar", width: 25 },
+        { header: "المشرف", key: "supervisor_ar", width: 25 },
+        { header: "المشرف المساعد", key: "co_supervisor_ar", width: 25 },
+        { header: "عنوان الأطروحة", key: "thesis_title_ar", width: 40 },
+        { header: "سنة أول تسجيل", key: "first_registration_year", width: 18 },
+        { header: "مخبر البحث", key: "research_lab_ar", width: 25 },
+        { header: "رئيس اللجنة", key: "jury_president_ar", width: 25 },
+        { header: "أعضاء اللجنة", key: "jury_members_ar", width: 40 },
+        { header: "تاريخ المجلس العلمي", key: "scientific_council_date", width: 20 },
+        { header: "تاريخ المناقشة", key: "defense_date", width: 18 },
+        { header: "الحالة", key: "stage_status", width: 18 },
+        { header: "رقم القرار 961", key: "decision_number", width: 18 },
+        { header: "تاريخ القرار 961", key: "decision_date", width: 18 },
+        { header: "رقم القرار 962", key: "auth_decision_number", width: 18 },
+        { header: "تاريخ القرار 962", key: "auth_decision_date", width: 18 },
+      ];
+
+      sheet.columns = columns;
+      sheet.views = [{ rightToLeft: true }];
+
+      // Style header
+      const headerRow = sheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
+      headerRow.alignment = { horizontal: "center", vertical: "middle" };
+      headerRow.height = 28;
+
+      filteredStudents.forEach((s) => {
+        const formatDate = (d: string | null) => {
+          if (!d) return "";
+          const date = new Date(d);
+          if (isNaN(date.getTime())) return d;
+          return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+        };
+
+        sheet.addRow({
+          full_name_ar: s.full_name_ar,
+          full_name_fr: s.full_name_fr || "",
+          registration_number: s.registration_number,
+          date_of_birth: formatDate(s.date_of_birth),
+          birthplace_ar: s.birthplace_ar,
+          gender: s.gender === "male" ? "ذكر" : s.gender === "female" ? "أنثى" : s.gender || "",
+          faculty_ar: s.faculty_ar,
+          field_ar: s.field_ar,
+          branch_ar: s.branch_ar,
+          specialty_ar: s.specialty_ar,
+          supervisor_ar: s.supervisor_ar,
+          co_supervisor_ar: s.co_supervisor_ar || "",
+          thesis_title_ar: s.thesis_title_ar || "",
+          first_registration_year: s.first_registration_year || "",
+          research_lab_ar: s.research_lab_ar || "",
+          jury_president_ar: s.jury_president_ar,
+          jury_members_ar: s.jury_members_ar,
+          scientific_council_date: formatDate(s.scientific_council_date),
+          defense_date: formatDate(s.defense_date),
+          stage_status: stageStatusLabels[s.stage_status]?.ar || s.stage_status,
+          decision_number: s.decision_number || "",
+          decision_date: s.decision_date || "",
+          auth_decision_number: s.auth_decision_number || "",
+          auth_decision_date: s.auth_decision_date || "",
+        });
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `طور_المناقشة_${typeName.replace(/ /g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`تم تصدير ${filteredStudents.length} طالب بنجاح`);
+    } catch (err) {
+      console.error(err);
+      toast.error("فشل في تصدير البيانات");
+    }
+  }, [filteredStudents, activeTab]);
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -130,10 +231,16 @@ export default function DefenseStage() {
             إدارة إجراءات المناقشة - مقرر اللجنة وترخيص المناقشة
           </p>
         </div>
-        <Button onClick={() => setShowStartDialog(true)} className="gap-2">
-          <Scale className="h-4 w-4" />
-          بدء إجراءات المناقشة
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportExcel} className="gap-2" disabled={students.length === 0}>
+            <Download className="h-4 w-4" />
+            تصدير Excel
+          </Button>
+          <Button onClick={() => setShowStartDialog(true)} className="gap-2">
+            <Scale className="h-4 w-4" />
+            بدء إجراءات المناقشة
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
