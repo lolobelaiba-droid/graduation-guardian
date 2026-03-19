@@ -57,6 +57,7 @@ import { EditDefenseStageDialog } from "@/components/defense-stage/EditDefenseSt
 import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 15;
 
