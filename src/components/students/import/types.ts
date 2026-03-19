@@ -40,6 +40,18 @@ export const getDbFieldKey = (fieldKey: string): string => {
   return mappings[fieldKey] || fieldKey;
 };
 
+// Common Excel column name aliases that map to field keys
+export const COLUMN_ALIASES: Record<string, string> = {
+  'عنوان الأطروحة': 'thesis_title_ar',
+  'عنوان الاطروحة': 'thesis_title_ar',
+  'الاسم': 'full_name_ar',
+  'الاسم الكامل': 'full_name_ar',
+  'مكان الميلاد': 'birthplace_ar',
+  'الشعبة': 'branch_ar',
+  'التخصص': 'specialty_ar',
+  'الجامعة': 'university_ar',
+};
+
 // PhD LMD certificate fields
 export const phdLmdCertificateFields: FieldDefinition[] = [
   { key: 'student_number', name_ar: 'رقم الشهادة', name_fr: 'Numéro de certificat', required: true },
