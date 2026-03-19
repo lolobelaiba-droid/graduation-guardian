@@ -449,7 +449,7 @@ export class BackupService {
         // Jury members (separated by " - ")
         const membersRaw = cert.jury_members_ar as string;
         if (membersRaw) {
-          const members = membersRaw.split(/\s*-\s*/);
+          const members = membersRaw.split(/\s+-\s+/);
           for (const member of members) {
             const trimmed = member.trim();
             if (!trimmed) continue;

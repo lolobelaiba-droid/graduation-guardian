@@ -351,7 +351,7 @@ export default function EditStudentDialog({
     if (d.co_supervisor_ar) ensureProfessor(String(d.co_supervisor_ar));
     if (d.jury_president_ar) ensureProfessor(String(d.jury_president_ar));
     if (d.jury_members_ar) {
-      String(d.jury_members_ar).split(/\s*-\s*/).forEach(m => ensureProfessor(m));
+      String(d.jury_members_ar).split(/\s+-\s+/).forEach(m => ensureProfessor(m));
     }
 
     // Override bilingual dropdown values
