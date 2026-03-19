@@ -18,6 +18,8 @@ import {
   Scale,
   Wifi,
   WifiOff,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
@@ -67,90 +69,104 @@ export function AppSidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed md:sticky top-0 right-0 h-screen bg-sidebar text-sidebar-foreground z-50 transition-all duration-300 ease-in-out flex flex-col",
-          isCollapsed ? "w-20" : "w-64",
+          "fixed md:sticky top-0 right-0 h-screen z-50 transition-all duration-300 ease-in-out flex flex-col",
+          "bg-sidebar/80 backdrop-blur-xl border-l border-sidebar-border/50",
+          "shadow-[inset_-1px_0_0_0_hsl(var(--sidebar-border)/0.3)]",
+          isCollapsed ? "w-[72px]" : "w-64",
           isMobileOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
         )}
       >
         {/* Logo Section */}
-        <div className="p-6 border-b border-sidebar-border">
+        <div className="p-5 border-b border-sidebar-border/30">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
+            <div className={cn(
+              "rounded-xl bg-sidebar-primary/20 flex items-center justify-center flex-shrink-0 transition-all duration-300",
+              isCollapsed ? "w-10 h-10" : "w-11 h-11"
+            )}>
+              <GraduationCap className="h-6 w-6 text-sidebar-primary" />
             </div>
             {!isCollapsed && (
               <div className="animate-fade-in">
-                <h1 className="text-lg font-bold">نظام إدارة</h1>
-                <p className="text-xs text-sidebar-foreground/60">طلبة الدكتوراه</p>
+                <h1 className="text-base font-bold text-sidebar-foreground">نظام إدارة</h1>
+                <p className="text-[11px] text-sidebar-foreground/50 font-medium">طلبة الدكتوراه</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             const isNotesItem = item.path === "/notes";
             const showBadge = isNotesItem && unreadCount > 0;
             
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg"
-                    : "hover:bg-sidebar-accent text-sidebar-foreground/80 hover:text-sidebar-foreground"
-                )}
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="relative">
-                  <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "animate-pulse-subtle")} />
-                  {showBadge && isCollapsed && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-ping" />
-                  )}
-                </div>
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1 font-medium">{item.title}</span>
-                    {showBadge && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-destructive text-destructive-foreground rounded-full animate-pulse">
-                        {unreadCount}
-                      </span>
+              <Tooltip key={item.path} delayDuration={isCollapsed ? 100 : 1000}>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to={item.path}
+                    onClick={() => setIsMobileOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                      isActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_0_20px_hsl(var(--sidebar-primary)/0.35)]"
+                        : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                     )}
-                    <ChevronRight
-                      className={cn(
-                        "h-4 w-4 transition-transform duration-200 rotate-180",
-                        isActive && "rotate-90"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <item.icon className={cn(
+                        "h-[18px] w-[18px]",
+                        isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
+                      )} />
+                      {showBadge && isCollapsed && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-ping" />
                       )}
-                    />
-                  </>
+                    </div>
+                    {!isCollapsed && (
+                      <>
+                        <span className={cn(
+                          "flex-1 text-sm font-medium truncate",
+                          isActive ? "text-sidebar-primary-foreground" : ""
+                        )}>{item.title}</span>
+                        {showBadge && (
+                          <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-destructive text-destructive-foreground rounded-full">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="left" className="text-xs font-medium">
+                    {item.title}
+                    {showBadge && <span className="mr-1 text-destructive">({unreadCount})</span>}
+                  </TooltipContent>
                 )}
-              </NavLink>
+              </Tooltip>
             );
           })}
         </nav>
 
         {/* Network Status + Collapse Button */}
-        <div className="hidden md:block p-4 border-t border-sidebar-border space-y-3">
+        <div className="hidden md:block px-3 pb-4 pt-2 border-t border-sidebar-border/30 space-y-2">
           {/* Network Status Indicator */}
           {networkInfo && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors",
                   networkInfo.isNetwork 
                     ? "bg-green-500/10 text-green-400" 
-                    : "bg-sidebar-accent text-sidebar-foreground/60"
+                    : "bg-sidebar-accent/30 text-sidebar-foreground/50"
                 )}>
                   <div className={cn(
-                    "w-2.5 h-2.5 rounded-full flex-shrink-0",
+                    "w-2 h-2 rounded-full flex-shrink-0",
                     networkInfo.isNetwork 
                       ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]" 
-                      : "bg-muted-foreground/40"
+                      : "bg-sidebar-foreground/30"
                   )} />
                   {networkInfo.isNetwork ? (
                     <Wifi className="h-3.5 w-3.5 flex-shrink-0" />
@@ -179,15 +195,16 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-full justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full justify-center text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/40 h-9 rounded-lg"
           >
-            <ChevronRight
-              className={cn(
-                "h-5 w-5 transition-transform duration-300",
-                isCollapsed ? "rotate-180" : ""
-              )}
-            />
-            {!isCollapsed && <span className="mr-2">طي القائمة</span>}
+            {isCollapsed ? (
+              <PanelRightOpen className="h-4 w-4" />
+            ) : (
+              <>
+                <PanelRightClose className="h-4 w-4" />
+                <span className="mr-2 text-xs">طي القائمة</span>
+              </>
+            )}
           </Button>
         </div>
       </aside>
