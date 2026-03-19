@@ -32,6 +32,7 @@ import {
   getDbFieldKey,
   getPhdStudentFields,
   getPhdStudentTable,
+  COLUMN_ALIASES,
 } from "./types";
 
 interface ImportPhdExcelDialogProps {
