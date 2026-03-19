@@ -428,6 +428,7 @@ export default function Students() {
                         <TableHead className="text-right font-semibold">الاسم بالفرنسية</TableHead>
                         <TableHead className="text-right font-semibold">التخصص</TableHead>
                         <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>
+                        <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>
                         <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>
                         <TableHead className="text-right font-semibold">التقدير</TableHead>
                         <TableHead className="text-right font-semibold">تاريخ المناقشة</TableHead>
