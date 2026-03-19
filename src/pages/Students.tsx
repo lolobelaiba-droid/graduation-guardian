@@ -51,6 +51,7 @@ import { CreateCertificateFromPhdDialog } from "@/components/students/CreateCert
 import { DeleteStudentDialog } from "@/components/students/DeleteStudentDialog";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { useRestoreStudentToPhd } from "@/hooks/useRestoreStudent";
+import { useRestoreStudentToDefenseStage } from "@/hooks/useRestoreStudentToDefenseStage";
 import { ImportCertificateExcelDialog } from "@/components/students/import";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
