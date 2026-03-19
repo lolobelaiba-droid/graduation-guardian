@@ -243,7 +243,7 @@ export default function PhdStudents() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">قاعدة بيانات طلبة الدكتوراه</h1>
               <p className="text-muted-foreground mt-1">
-                إدارة بيانات طلبة الدكتوراه قبل المناقشة
+                إدارة طلبة الدكتوراه المسجلين
               </p>
             </div>
           </div>
