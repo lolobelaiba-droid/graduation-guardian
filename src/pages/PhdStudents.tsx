@@ -332,7 +332,7 @@ export default function PhdStudents() {
                     <TableBody>
                       {filteredStudents.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                          <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                             لا يوجد طلاب مسجلين
                           </TableCell>
                         </TableRow>
