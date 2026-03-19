@@ -61,6 +61,7 @@ import { getPhdStudentFields } from "@/components/phd-students/import/types";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { toast } from "sonner";
 import { toWesternNumerals } from "@/lib/numerals";
+import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 // Generate academic years from 2000/2001 to current+1
 const generateAcademicYears = (): string[] => {

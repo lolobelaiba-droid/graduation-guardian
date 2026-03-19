@@ -176,13 +176,15 @@ export default function DefenseStage() {
             <>
               <div className="border rounded-lg overflow-hidden">
                 <Table>
-                  <TableHeader>
+                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">الاسم بالعربية</TableHead>
                       <TableHead className="text-right">الاسم بالفرنسية</TableHead>
                       <TableHead className="text-right">التخصص</TableHead>
                       <TableHead className="text-right">الكلية</TableHead>
                       <TableHead className="text-right">المشرف</TableHead>
+                      <TableHead className="text-right">سنة أول تسجيل</TableHead>
+                      <TableHead className="text-right">حالة التسجيل</TableHead>
                       <TableHead className="text-right">تاريخ المجلس العلمي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right w-12">إجراءات</TableHead>
@@ -196,6 +198,23 @@ export default function DefenseStage() {
                         <TableCell>{student.specialty_ar}</TableCell>
                         <TableCell>{student.faculty_ar}</TableCell>
                         <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
+                        <TableCell>{student.first_registration_year || "-"}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            if (!student.first_registration_year) return "-";
+                            const now = new Date();
+                            const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+                            const currentAcYear = `${year}/${year + 1}`;
+                            const phdType = activeTab === "phd_lmd" ? "phd_lmd" : "phd_science";
+                            const details = calculateRegistrationDetails(currentAcYear, student.first_registration_year, phdType as any);
+                            if (details.registrationCount === null) return "-";
+                            return (
+                              <Badge variant="outline" className={details.isLate ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-green-500/10 text-green-600 border-green-500/20"}>
+                                {details.isLate ? "متأخر" : "منتظم"}
+                              </Badge>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell>
                           {student.scientific_council_date
                             ? (() => {
