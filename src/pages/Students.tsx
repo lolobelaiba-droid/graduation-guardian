@@ -54,6 +54,7 @@ import { useRestoreStudentToPhd } from "@/hooks/useRestoreStudent";
 import { ImportCertificateExcelDialog } from "@/components/students/import";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
+import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");

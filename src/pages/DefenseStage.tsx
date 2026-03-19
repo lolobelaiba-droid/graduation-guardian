@@ -55,6 +55,7 @@ import { GenerateDocumentDialog } from "@/components/defense-stage/GenerateDocum
 import { EditDefenseStageDialog } from "@/components/defense-stage/EditDefenseStageDialog";
 import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "@/types/defense-stage";
 import { stageStatusLabels } from "@/types/defense-stage";
+import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 const ITEMS_PER_PAGE = 15;
 
