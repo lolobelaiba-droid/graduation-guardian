@@ -39,6 +39,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
+import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   useCreatePhdLmdCertificate,
@@ -172,6 +173,11 @@ export function CreateCertificateFromPhdDialog({
     'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 
     'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
+
+  // Fetch bilingual options for French value lookup
+  const { data: employmentOptions = [] } = useBilingualDropdownOptions("employment_status");
+  const { data: registrationOptions = [] } = useBilingualDropdownOptions("registration_type");
+  const { data: inscriptionOptions = [] } = useBilingualDropdownOptions("inscription_status");
 
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
@@ -320,13 +326,21 @@ export function CreateCertificateFromPhdDialog({
       notes: pendingStudent.notes || '',
     });
     
-    // Initialize bilingual dropdown states from student data
-    setEmploymentStatusAr(pendingStudent.employment_status || '');
-    setEmploymentStatusFr('');
-    setRegistrationTypeAr(pendingStudent.registration_type || '');
-    setRegistrationTypeFr('');
-    setInscriptionStatusAr(pendingStudent.inscription_status || '');
-    setInscriptionStatusFr('');
+    // Initialize bilingual dropdown states from student data with French lookup
+    const empAr = pendingStudent.employment_status || '';
+    setEmploymentStatusAr(empAr);
+    const empOpt = employmentOptions.find(opt => opt.value_ar === empAr);
+    setEmploymentStatusFr(empOpt?.value_fr || '');
+
+    const regAr = pendingStudent.registration_type || '';
+    setRegistrationTypeAr(regAr);
+    const regOpt = registrationOptions.find(opt => opt.value_ar === regAr);
+    setRegistrationTypeFr(regOpt?.value_fr || '');
+
+    const inscAr = pendingStudent.inscription_status || '';
+    setInscriptionStatusAr(inscAr);
+    const inscOpt = inscriptionOptions.find(opt => opt.value_ar === inscAr);
+    setInscriptionStatusFr(inscOpt?.value_fr || '');
     
     setShowForm(true);
     setShowConfirmDialog(false);
