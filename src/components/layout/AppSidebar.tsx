@@ -120,7 +120,7 @@ export function AppSidebar() {
                     {!isCollapsed && (
                       <>
                         <span className={cn(
-                          "flex-1 text-[13.5px] font-medium transition-colors",
+                          "flex-1 text-[15px] font-medium transition-colors",
                           isActive ? "text-white" : "text-white/55 group-hover:text-white/80"
                         )}>{item.title}</span>
                         {showBadge && (
