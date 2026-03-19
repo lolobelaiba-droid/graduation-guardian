@@ -8,7 +8,6 @@ import {
   Printer,
   Activity,
   Settings,
-  ChevronRight,
   GraduationCap,
   Menu,
   X,
@@ -18,8 +17,8 @@ import {
   Scale,
   Wifi,
   WifiOff,
-  PanelRightClose,
-  PanelRightOpen,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
@@ -32,8 +31,8 @@ const menuItems = [
   { title: "طلبة في طور المناقشة", icon: Scale, path: "/defense-stage" },
   { title: "إدارة الطلبة المناقشين", icon: Users, path: "/students" },
   { title: "طباعة الشهادات", icon: Printer, path: "/print" },
-  { title: "إدارة القوالب", icon: FileText, path: "/templates" },
-  { title: "تقرير الأداء", icon: BarChart3, path: "/reports" },
+  { title: "إدارة القوالب", icon: FileText, path: "/templates", hasChevron: true },
+  { title: "تقرير الأداء", icon: BarChart3, path: "/reports", hasChevron: true },
   { title: "سجل الأنشطة", icon: Activity, path: "/activity" },
   { title: "سجل الملاحظات", icon: StickyNote, path: "/notes" },
   { title: "الإعدادات", icon: Settings, path: "/settings" },
@@ -69,34 +68,29 @@ export function AppSidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed md:sticky top-0 right-0 h-screen z-50 transition-all duration-300 ease-in-out flex flex-col",
-          "bg-sidebar/80 backdrop-blur-xl border-l border-sidebar-border/50",
-          "shadow-[inset_-1px_0_0_0_hsl(var(--sidebar-border)/0.3)]",
-          isCollapsed ? "w-[72px]" : "w-64",
+          "fixed md:sticky top-0 right-0 h-screen z-50 transition-all duration-300 ease-in-out flex flex-col sidebar-glass",
+          isCollapsed ? "w-[76px]" : "w-[270px]",
           isMobileOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
         )}
       >
-        {/* Logo Section */}
-        <div className="p-5 border-b border-sidebar-border/30">
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "rounded-xl bg-sidebar-primary/20 flex items-center justify-center flex-shrink-0 transition-all duration-300",
-              isCollapsed ? "w-10 h-10" : "w-11 h-11"
-            )}>
-              <GraduationCap className="h-6 w-6 text-sidebar-primary" />
-            </div>
-            {!isCollapsed && (
-              <div className="animate-fade-in">
-                <h1 className="text-base font-bold text-sidebar-foreground">نظام إدارة</h1>
-                <p className="text-[11px] text-sidebar-foreground/50 font-medium">طلبة الدكتوراه</p>
-              </div>
-            )}
+        {/* Logo Section - Centered */}
+        <div className={cn("pt-7 pb-5 flex flex-col items-center gap-3 border-b border-white/[0.06]", isCollapsed && "pt-5 pb-4")}>
+          <div className={cn(
+            "rounded-2xl bg-white/[0.08] flex items-center justify-center flex-shrink-0 backdrop-blur-sm border border-white/[0.08]",
+            isCollapsed ? "w-10 h-10" : "w-14 h-14"
+          )}>
+            <GraduationCap className={cn("text-white/90", isCollapsed ? "h-5 w-5" : "h-7 w-7")} />
           </div>
+          {!isCollapsed && (
+            <div className="text-center animate-fade-in">
+              <h1 className="text-[15px] font-bold text-white/95 leading-tight">نظام إدارة طلبة الدكتوراه</h1>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item, index) => {
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto sidebar-scrollbar">
+          {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             const isNotesItem = item.path === "/notes";
             const showBadge = isNotesItem && unreadCount > 0;
@@ -108,17 +102,16 @@ export function AppSidebar() {
                     to={item.path}
                     onClick={() => setIsMobileOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
                       isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_0_20px_hsl(var(--sidebar-primary)/0.35)]"
-                        : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        ? "sidebar-active-glow"
+                        : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
                     )}
-                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="relative flex-shrink-0">
                       <item.icon className={cn(
-                        "h-[18px] w-[18px]",
-                        isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
+                        "h-[18px] w-[18px] transition-colors",
+                        isActive ? "text-white" : "text-white/50 group-hover:text-white/70"
                       )} />
                       {showBadge && isCollapsed && (
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-ping" />
@@ -127,13 +120,16 @@ export function AppSidebar() {
                     {!isCollapsed && (
                       <>
                         <span className={cn(
-                          "flex-1 text-sm font-medium truncate",
-                          isActive ? "text-sidebar-primary-foreground" : ""
+                          "flex-1 text-[13.5px] font-medium transition-colors",
+                          isActive ? "text-white" : "text-white/55 group-hover:text-white/80"
                         )}>{item.title}</span>
                         {showBadge && (
                           <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-destructive text-destructive-foreground rounded-full">
                             {unreadCount}
                           </span>
+                        )}
+                        {item.hasChevron && (
+                          <ChevronDown className="h-3.5 w-3.5 text-white/25" />
                         )}
                       </>
                     )}
@@ -150,23 +146,23 @@ export function AppSidebar() {
           })}
         </nav>
 
-        {/* Network Status + Collapse Button */}
-        <div className="hidden md:block px-3 pb-4 pt-2 border-t border-sidebar-border/30 space-y-2">
-          {/* Network Status Indicator */}
+        {/* Bottom Section */}
+        <div className="hidden md:block px-3 pb-4 pt-2 border-t border-white/[0.06] space-y-2">
+          {/* Network Status */}
           {networkInfo && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors",
+                  "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs transition-colors",
                   networkInfo.isNetwork 
-                    ? "bg-green-500/10 text-green-400" 
-                    : "bg-sidebar-accent/30 text-sidebar-foreground/50"
+                    ? "bg-green-500/[0.08] text-green-400/80" 
+                    : "text-white/30"
                 )}>
                   <div className={cn(
                     "w-2 h-2 rounded-full flex-shrink-0",
                     networkInfo.isNetwork 
-                      ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]" 
-                      : "bg-sidebar-foreground/30"
+                      ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.4)]" 
+                      : "bg-white/20"
                   )} />
                   {networkInfo.isNetwork ? (
                     <Wifi className="h-3.5 w-3.5 flex-shrink-0" />
@@ -191,21 +187,14 @@ export function AppSidebar() {
             </Tooltip>
           )}
 
-          <Button
-            variant="ghost"
-            size="sm"
+          {/* Collapse Button */}
+          <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-full justify-center text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/40 h-9 rounded-lg"
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-white/30 hover:text-white/50 hover:bg-white/[0.04] transition-all text-xs"
           >
-            {isCollapsed ? (
-              <PanelRightOpen className="h-4 w-4" />
-            ) : (
-              <>
-                <PanelRightClose className="h-4 w-4" />
-                <span className="mr-2 text-xs">طي القائمة</span>
-              </>
-            )}
-          </Button>
+            <LogOut className={cn("h-4 w-4 flex-shrink-0 transition-transform", isCollapsed && "rotate-180")} />
+            {!isCollapsed && <span className="font-medium">طي القائمة</span>}
+          </button>
         </div>
       </aside>
     </>
