@@ -114,7 +114,7 @@ const JuryMembersInput = React.forwardRef<HTMLInputElement, JuryMembersInputProp
     // Parse initial value into members array
     React.useEffect(() => {
       if (value) {
-        const parsed = value.split(/[-،,]/).map(m => m.trim()).filter(Boolean);
+        const parsed = value.split(/\s+-\s+|،|,/).map(m => m.trim()).filter(Boolean);
         setMembers(parsed);
       } else {
         setMembers([]);
