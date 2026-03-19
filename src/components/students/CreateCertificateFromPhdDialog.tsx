@@ -173,6 +173,11 @@ export function CreateCertificateFromPhdDialog({
     'supervisor_ar', 'jury_president_ar', 'jury_members_ar'
   ]);
 
+  // Fetch bilingual options for French value lookup
+  const { data: employmentOptions = [] } = useBilingualDropdownOptions("employment_status");
+  const { data: registrationOptions = [] } = useBilingualDropdownOptions("registration_type");
+  const { data: inscriptionOptions = [] } = useBilingualDropdownOptions("inscription_status");
+
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
 
