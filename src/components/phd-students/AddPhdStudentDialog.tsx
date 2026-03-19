@@ -277,6 +277,14 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
       return;
     }
 
+    // التحقق من عدم تكرار الطالب في جداول أخرى
+    const { checkDuplicateStudent } = await import("@/lib/duplicate-student-checker");
+    const dupCheck = await checkDuplicateStudent(data.full_name_ar, data.date_of_birth, 'phd_student');
+    if (dupCheck.isDuplicate) {
+      toast.error(`هذا الطالب موجود بالفعل في: ${dupCheck.foundIn}`);
+      return;
+    }
+
     // حفظ أسماء الأساتذة في قاعدة البيانات
     if (data.supervisor_ar) ensureProfessor(data.supervisor_ar);
     if (data.co_supervisor_ar) ensureProfessor(data.co_supervisor_ar);
