@@ -373,7 +373,7 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
     if (data.co_supervisor_ar) ensureProfessor(data.co_supervisor_ar);
     if (data.jury_president_ar) ensureProfessor(data.jury_president_ar);
     if (data.jury_members_ar) {
-      data.jury_members_ar.split(/\s*-\s*/).forEach(m => {
+      data.jury_members_ar.split(/\s+-\s+/).forEach(m => {
         const clean = m.replace(/\s*\(مدعو\)/g, '').trim();
         if (clean) ensureProfessor(clean);
       });

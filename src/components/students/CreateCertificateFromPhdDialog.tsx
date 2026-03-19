@@ -342,7 +342,7 @@ export function CreateCertificateFromPhdDialog({
       if (data.co_supervisor_ar) ensureProfessor(data.co_supervisor_ar);
       if (data.jury_president_ar) ensureProfessor(data.jury_president_ar);
       if (data.jury_members_ar) {
-        data.jury_members_ar.split(/\s*-\s*/).forEach(m => ensureProfessor(m));
+        data.jury_members_ar.split(/\s+-\s+/).forEach(m => ensureProfessor(m));
       }
 
       // All data comes from the form now (including PhD reference fields)

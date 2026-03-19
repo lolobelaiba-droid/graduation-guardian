@@ -976,7 +976,7 @@ export function ExportStatsDialog() {
               }
               // Members (excluding supervisor/co_supervisor to avoid double counting)
               const membersStr = (record as any).jury_members_ar || "";
-              const members = membersStr.split(/[،,;\n]|\s-\s|\s–\s/).map((m: string) => m.trim()).filter(Boolean);
+              const members = membersStr.split(/[،,;\n]|\s+-\s+|\s+–\s+/).map((m: string) => m.trim()).filter(Boolean);
               const supLower = (supervisor || "").toLowerCase();
               const coSupLower = (coSupervisor || "").toLowerCase();
               members.forEach((member: string) => {
