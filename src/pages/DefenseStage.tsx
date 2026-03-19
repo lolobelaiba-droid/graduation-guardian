@@ -231,10 +231,16 @@ export default function DefenseStage() {
             إدارة إجراءات المناقشة - مقرر اللجنة وترخيص المناقشة
           </p>
         </div>
-        <Button onClick={() => setShowStartDialog(true)} className="gap-2">
-          <Scale className="h-4 w-4" />
-          بدء إجراءات المناقشة
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportExcel} className="gap-2" disabled={students.length === 0}>
+            <Download className="h-4 w-4" />
+            تصدير Excel
+          </Button>
+          <Button onClick={() => setShowStartDialog(true)} className="gap-2">
+            <Scale className="h-4 w-4" />
+            بدء إجراءات المناقشة
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
