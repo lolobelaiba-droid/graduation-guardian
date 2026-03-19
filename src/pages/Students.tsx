@@ -100,6 +100,7 @@ export default function Students() {
   const deletePhdScience = useDeletePhdScienceCertificate();
   const deleteMaster = useDeleteMasterCertificate();
   const restoreStudent = useRestoreStudentToPhd();
+  const restoreToDefense = useRestoreStudentToDefenseStage();
 
   const getCurrentData = (): Certificate[] => {
     switch (selectedCertType) {
