@@ -204,6 +204,26 @@ export default function DefenseStage() {
                         <TableCell>
                           {(() => {
                             if (!student.first_registration_year) return "-";
+                            let refYear: number;
+                            if (student.scientific_council_date) {
+                              const scDate = new Date(student.scientific_council_date);
+                              refYear = scDate.getMonth() >= 8 ? scDate.getFullYear() : scDate.getFullYear() - 1;
+                            } else if (student.defense_date) {
+                              const dDate = new Date(student.defense_date);
+                              refYear = dDate.getMonth() >= 8 ? dDate.getFullYear() : dDate.getFullYear() - 1;
+                            } else {
+                              const now = new Date();
+                              refYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+                            }
+                            const refAcYear = `${refYear}/${refYear + 1}`;
+                            const phdType = activeTab === "phd_lmd" ? "phd_lmd" : "phd_science";
+                            const details = calculateRegistrationDetails(refAcYear, student.first_registration_year, phdType as any);
+                            return details.registrationCount ?? "-";
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            if (!student.first_registration_year) return "-";
                             // Use scientific_council_date to freeze registration count
                             let refYear: number;
                             if (student.scientific_council_date) {

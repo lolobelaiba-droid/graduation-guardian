@@ -450,6 +450,28 @@ export default function Students() {
                           <TableCell>
                             {(() => {
                               const fry = (student as any).first_registration_year;
+                              if (!fry || selectedCertType === "master") return "-";
+                              const scDate = (student as any).scientific_council_date;
+                              let refYear: number;
+                              if (scDate) {
+                                const d = new Date(scDate);
+                                refYear = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+                              } else if ((student as any).defense_date) {
+                                const d = new Date((student as any).defense_date);
+                                refYear = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+                              } else {
+                                const now = new Date();
+                                refYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+                              }
+                              const refAcYear = `${refYear}/${refYear + 1}`;
+                              const phdType = selectedCertType === "phd_lmd" ? "phd_lmd" : "phd_science";
+                              const details = calculateRegistrationDetails(refAcYear, fry, phdType as any);
+                              return details.registrationCount ?? "-";
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const fry = (student as any).first_registration_year;
                               if (!fry) return "-";
                               if (selectedCertType === "master") return "-";
                               // Use scientific_council_date to freeze registration count
