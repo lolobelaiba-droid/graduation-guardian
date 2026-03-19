@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Undo2, Trash2 } from "lucide-react";
+import { Loader2, Undo2, Trash2, Scale } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,8 +20,10 @@ interface DeleteStudentDialogProps {
   certificateType: CertificateType;
   onDeletePermanently: () => void;
   onRestoreToDatabase: () => void;
+  onRestoreToDefenseStage?: () => void;
   isDeleting: boolean;
   isRestoring: boolean;
+  isRestoringToDefense?: boolean;
 }
 
 export function DeleteStudentDialog({
@@ -31,17 +33,21 @@ export function DeleteStudentDialog({
   certificateType,
   onDeletePermanently,
   onRestoreToDatabase,
+  onRestoreToDefenseStage,
   isDeleting,
   isRestoring,
+  isRestoringToDefense = false,
 }: DeleteStudentDialogProps) {
-  const [deleteOption, setDeleteOption] = useState<"restore" | "permanent">("restore");
+  const [deleteOption, setDeleteOption] = useState<"restore_defense" | "restore" | "permanent">("restore_defense");
 
   // Check if it's a PhD type (can be restored) or Master (only permanent delete)
   const isPhdType = certificateType === "phd_lmd" || certificateType === "phd_science";
-  const isLoading = isDeleting || isRestoring;
+  const isLoading = isDeleting || isRestoring || isRestoringToDefense;
 
   const handleConfirm = () => {
-    if (deleteOption === "restore" && isPhdType) {
+    if (deleteOption === "restore_defense" && isPhdType && onRestoreToDefenseStage) {
+      onRestoreToDefenseStage();
+    } else if (deleteOption === "restore" && isPhdType) {
       onRestoreToDatabase();
     } else {
       onDeletePermanently();
@@ -85,9 +91,22 @@ export function DeleteStudentDialog({
           <div className="py-4">
             <RadioGroup
               value={deleteOption}
-              onValueChange={(v) => setDeleteOption(v as "restore" | "permanent")}
+              onValueChange={(v) => setDeleteOption(v as "restore_defense" | "restore" | "permanent")}
               className="space-y-3"
             >
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="restore_defense" id="restore_defense" className="mt-1" />
+                <Label htmlFor="restore_defense" className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2 font-medium">
+                    <Scale className="h-4 w-4 text-blue-600" />
+                    إرجاع إلى طور المناقشة
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    سيتم نقل الطالب إلى طور المناقشة مع الاحتفاظ بكافة بياناته بما فيها بيانات اللجنة
+                  </p>
+                </Label>
+              </div>
+
               <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
                 <RadioGroupItem value="restore" id="restore" className="mt-1" />
                 <Label htmlFor="restore" className="flex-1 cursor-pointer">
@@ -135,6 +154,11 @@ export function DeleteStudentDialog({
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 جاري التنفيذ...
+              </>
+            ) : deleteOption === "restore_defense" && isPhdType ? (
+              <>
+                <Scale className="h-4 w-4" />
+                إرجاع إلى طور المناقشة
               </>
             ) : deleteOption === "restore" && isPhdType ? (
               <>
