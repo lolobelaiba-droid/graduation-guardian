@@ -679,8 +679,10 @@ export default function Students() {
         certificateType={deleteType}
         onDeletePermanently={handleDeletePermanently}
         onRestoreToDatabase={handleRestoreToDatabase}
+        onRestoreToDefenseStage={handleRestoreToDefenseStage}
         isDeleting={deletePhdLmd.isPending || deletePhdScience.isPending || deleteMaster.isPending}
         isRestoring={restoreStudent.isPending}
+        isRestoringToDefense={restoreToDefense.isPending}
       />
 
       <ImportCertificateExcelDialog
