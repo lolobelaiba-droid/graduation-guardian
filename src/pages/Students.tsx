@@ -457,6 +457,9 @@ export default function Students() {
                               if (scDate) {
                                 const d = new Date(scDate);
                                 refYear = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+                              } else if ((student as any).defense_date) {
+                                const d = new Date((student as any).defense_date);
+                                refYear = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
                               } else {
                                 const now = new Date();
                                 refYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
