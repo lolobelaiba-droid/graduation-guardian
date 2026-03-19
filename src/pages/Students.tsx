@@ -51,6 +51,7 @@ import { CreateCertificateFromPhdDialog } from "@/components/students/CreateCert
 import { DeleteStudentDialog } from "@/components/students/DeleteStudentDialog";
 import { AddStudentDialog } from "@/components/print/AddStudentDialog";
 import { useRestoreStudentToPhd } from "@/hooks/useRestoreStudent";
+import { useRestoreStudentToDefenseStage } from "@/hooks/useRestoreStudentToDefenseStage";
 import { ImportCertificateExcelDialog } from "@/components/students/import";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
@@ -99,6 +100,7 @@ export default function Students() {
   const deletePhdScience = useDeletePhdScienceCertificate();
   const deleteMaster = useDeleteMasterCertificate();
   const restoreStudent = useRestoreStudentToPhd();
+  const restoreToDefense = useRestoreStudentToDefenseStage();
 
   const getCurrentData = (): Certificate[] => {
     switch (selectedCertType) {
@@ -192,6 +194,20 @@ export default function Students() {
   const handleRestoreToDatabase = () => {
     if (studentToDelete && (deleteType === "phd_lmd" || deleteType === "phd_science")) {
       restoreStudent.mutate(
+        { student: studentToDelete, certificateType: deleteType },
+        {
+          onSuccess: () => {
+            setDeleteDialogOpen(false);
+            setStudentToDelete(null);
+          },
+        }
+      );
+    }
+  };
+
+  const handleRestoreToDefenseStage = () => {
+    if (studentToDelete && (deleteType === "phd_lmd" || deleteType === "phd_science")) {
+      restoreToDefense.mutate(
         { student: studentToDelete, certificateType: deleteType },
         {
           onSuccess: () => {
@@ -663,8 +679,10 @@ export default function Students() {
         certificateType={deleteType}
         onDeletePermanently={handleDeletePermanently}
         onRestoreToDatabase={handleRestoreToDatabase}
+        onRestoreToDefenseStage={handleRestoreToDefenseStage}
         isDeleting={deletePhdLmd.isPending || deletePhdScience.isPending || deleteMaster.isPending}
         isRestoring={restoreStudent.isPending}
+        isRestoringToDefense={restoreToDefense.isPending}
       />
 
       <ImportCertificateExcelDialog
