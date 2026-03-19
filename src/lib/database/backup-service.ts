@@ -281,8 +281,104 @@ export class BackupService {
           'position_x', 'position_y', 'font_size', 'font_name', 'font_color',
           'text_align', 'is_rtl', 'is_visible', 'field_order', 'field_width', 'line_height', 'created_at'
         ],
+        certificate_templates: [
+          'id', 'template_name', 'certificate_type', 'language', 'page_orientation', 'page_size',
+          'created_at', 'updated_at', 'background_image_url', 'background_offset_x', 'background_offset_y',
+          'background_scale', 'print_paper_size', 'print_custom_width', 'print_custom_height',
+          'print_margin_top', 'print_margin_bottom', 'print_margin_right', 'print_margin_left',
+          'background_scale_x', 'background_scale_y', 'is_active'
+        ],
         custom_fonts: ['id', 'font_name', 'font_family', 'font_url', 'font_weight', 'font_style', 'is_arabic', 'created_at'],
         dropdown_options: ['id', 'option_type', 'option_value', 'value_ar', 'value_fr', 'display_order', 'created_at'],
+        professors: ['id', 'full_name', 'rank_label', 'rank_abbreviation', 'university', 'created_at'],
+        defense_document_templates: [
+          'id', 'document_type', 'title', 'content', 'font_family', 'font_size', 'line_height',
+          'created_at', 'updated_at', 'custom_variables', 'jury_table_settings',
+          'margin_top', 'margin_bottom', 'margin_right', 'margin_left', 'text_boxes'
+        ],
+        settings: ['id', 'key', 'value', 'updated_at'],
+        user_settings: ['id', 'setting_key', 'setting_value', 'updated_at'],
+        notes: ['id', 'title', 'content', 'color', 'is_pinned', 'is_read', 'created_at', 'updated_at'],
+        phd_lmd_certificates: [
+          'id', 'student_number', 'full_name_ar', 'full_name_fr', 'date_of_birth', 'birthplace_ar', 'birthplace_fr',
+          'thesis_title_ar', 'thesis_title_fr', 'field_ar', 'field_fr', 'branch_ar', 'branch_fr',
+          'specialty_ar', 'specialty_fr', 'mention', 'defense_date', 'jury_president_ar', 'jury_president_fr',
+          'jury_members_ar', 'jury_members_fr', 'certificate_date', 'created_at', 'updated_at',
+          'faculty_ar', 'faculty_fr', 'university_ar', 'university_fr', 'gender',
+          'first_registration_year', 'professional_email', 'phone_number', 'supervisor_ar',
+          'research_lab_ar', 'registration_number', 'co_supervisor_ar', 'supervisor_university',
+          'co_supervisor_university', 'employment_status', 'registration_type', 'inscription_status',
+          'current_year', 'registration_count', 'thesis_language', 'notes', 'province',
+          'signature_title', 'scientific_council_date'
+        ],
+        phd_science_certificates: [
+          'id', 'student_number', 'full_name_ar', 'full_name_fr', 'date_of_birth', 'birthplace_ar', 'birthplace_fr',
+          'thesis_title_ar', 'thesis_title_fr', 'field_ar', 'field_fr', 'branch_ar', 'branch_fr',
+          'specialty_ar', 'specialty_fr', 'mention', 'defense_date', 'jury_president_ar', 'jury_president_fr',
+          'jury_members_ar', 'jury_members_fr', 'certificate_date', 'created_at', 'updated_at',
+          'faculty_ar', 'faculty_fr', 'university_ar', 'university_fr', 'gender',
+          'first_registration_year', 'professional_email', 'phone_number', 'supervisor_ar',
+          'research_lab_ar', 'registration_number', 'co_supervisor_ar', 'supervisor_university',
+          'co_supervisor_university', 'employment_status', 'registration_type', 'inscription_status',
+          'current_year', 'registration_count', 'thesis_language', 'notes', 'province',
+          'signature_title', 'scientific_council_date'
+        ],
+        master_certificates: [
+          'id', 'student_number', 'full_name_ar', 'full_name_fr', 'date_of_birth', 'birthplace_ar', 'birthplace_fr',
+          'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr', 'mention', 'defense_date',
+          'certificate_date', 'created_at', 'updated_at', 'faculty_ar', 'faculty_fr',
+          'university_ar', 'university_fr', 'gender', 'first_registration_year',
+          'professional_email', 'phone_number', 'supervisor_ar', 'research_lab_ar',
+          'province', 'signature_title', 'scientific_council_date'
+        ],
+        phd_lmd_students: [
+          'id', 'registration_number', 'full_name_ar', 'full_name_fr', 'gender', 'date_of_birth',
+          'birthplace_ar', 'birthplace_fr', 'university_ar', 'university_fr', 'faculty_ar', 'faculty_fr',
+          'field_ar', 'field_fr', 'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr',
+          'first_registration_year', 'professional_email', 'phone_number', 'supervisor_ar',
+          'co_supervisor_ar', 'supervisor_university', 'co_supervisor_university',
+          'thesis_title_ar', 'thesis_title_fr', 'thesis_language', 'research_lab_ar',
+          'employment_status', 'registration_type', 'inscription_status', 'current_year',
+          'registration_count', 'notes', 'status', 'created_at', 'updated_at'
+        ],
+        phd_science_students: [
+          'id', 'registration_number', 'full_name_ar', 'full_name_fr', 'gender', 'date_of_birth',
+          'birthplace_ar', 'birthplace_fr', 'university_ar', 'university_fr', 'faculty_ar', 'faculty_fr',
+          'field_ar', 'field_fr', 'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr',
+          'first_registration_year', 'professional_email', 'phone_number', 'supervisor_ar',
+          'co_supervisor_ar', 'supervisor_university', 'co_supervisor_university',
+          'thesis_title_ar', 'thesis_title_fr', 'thesis_language', 'research_lab_ar',
+          'employment_status', 'registration_type', 'inscription_status', 'current_year',
+          'registration_count', 'notes', 'status', 'created_at', 'updated_at'
+        ],
+        defense_stage_lmd: [
+          'id', 'registration_number', 'full_name_ar', 'full_name_fr', 'gender', 'date_of_birth',
+          'birthplace_ar', 'birthplace_fr', 'university_ar', 'university_fr', 'faculty_ar', 'faculty_fr',
+          'field_ar', 'field_fr', 'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr',
+          'first_registration_year', 'professional_email', 'phone_number', 'supervisor_ar',
+          'co_supervisor_ar', 'supervisor_university', 'co_supervisor_university',
+          'thesis_title_ar', 'thesis_title_fr', 'thesis_language', 'research_lab_ar',
+          'employment_status', 'registration_type', 'inscription_status', 'current_year',
+          'registration_count', 'notes', 'jury_president_ar', 'jury_president_fr',
+          'jury_members_ar', 'jury_members_fr', 'scientific_council_date', 'stage_status',
+          'defense_date', 'province', 'signature_title', 'created_at', 'updated_at',
+          'decree_training', 'decree_accreditation', 'decision_number', 'decision_date',
+          'auth_decision_number', 'auth_decision_date', 'dean_letter_number', 'dean_letter_date'
+        ],
+        defense_stage_science: [
+          'id', 'registration_number', 'full_name_ar', 'full_name_fr', 'gender', 'date_of_birth',
+          'birthplace_ar', 'birthplace_fr', 'university_ar', 'university_fr', 'faculty_ar', 'faculty_fr',
+          'field_ar', 'field_fr', 'branch_ar', 'branch_fr', 'specialty_ar', 'specialty_fr',
+          'first_registration_year', 'professional_email', 'phone_number', 'supervisor_ar',
+          'co_supervisor_ar', 'supervisor_university', 'co_supervisor_university',
+          'thesis_title_ar', 'thesis_title_fr', 'thesis_language', 'research_lab_ar',
+          'employment_status', 'registration_type', 'inscription_status', 'current_year',
+          'registration_count', 'notes', 'jury_president_ar', 'jury_president_fr',
+          'jury_members_ar', 'jury_members_fr', 'scientific_council_date', 'stage_status',
+          'defense_date', 'province', 'signature_title', 'created_at', 'updated_at',
+          'decree_training', 'decree_accreditation', 'decision_number', 'decision_date',
+          'auth_decision_number', 'auth_decision_date', 'dean_letter_number', 'dean_letter_date'
+        ],
       };
 
       const cleanBatchData = (tableName: string, batch: Record<string, unknown>[]) => {
