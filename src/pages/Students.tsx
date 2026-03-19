@@ -54,6 +54,7 @@ import { useRestoreStudentToPhd } from "@/hooks/useRestoreStudent";
 import { ImportCertificateExcelDialog } from "@/components/students/import";
 import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
+import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 export default function Students() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -420,12 +421,14 @@ export default function Students() {
               <>
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
+                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="text-right font-semibold">الرقم</TableHead>
                         <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>
                         <TableHead className="text-right font-semibold">الاسم بالفرنسية</TableHead>
                         <TableHead className="text-right font-semibold">التخصص</TableHead>
+                        <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>
+                        <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>
                         <TableHead className="text-right font-semibold">التقدير</TableHead>
                         <TableHead className="text-right font-semibold">تاريخ المناقشة</TableHead>
                         <TableHead className="text-right font-semibold">الإجراءات</TableHead>
@@ -442,6 +445,25 @@ export default function Students() {
                           <TableCell className="font-medium">{student.full_name_ar}</TableCell>
                           <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>
                           <TableCell>{student.specialty_ar}</TableCell>
+                          <TableCell>{(student as any).first_registration_year || "-"}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              const fry = (student as any).first_registration_year;
+                              if (!fry) return "-";
+                              const now = new Date();
+                              const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+                              const currentAcYear = `${year}/${year + 1}`;
+                              const phdType = selectedCertType === "phd_lmd" ? "phd_lmd" : "phd_science";
+                              if (selectedCertType === "master") return "-";
+                              const details = calculateRegistrationDetails(currentAcYear, fry, phdType as any);
+                              if (details.registrationCount === null) return "-";
+                              return (
+                                <Badge variant="outline" className={details.isLate ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-green-500/10 text-green-600 border-green-500/20"}>
+                                  {details.isLate ? "متأخر" : "منتظم"}
+                                </Badge>
+                              );
+                            })()}
+                          </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                               {mentionLabels[student.mention as MentionType]?.ar || student.mention}

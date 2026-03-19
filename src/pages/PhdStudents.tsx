@@ -61,6 +61,7 @@ import { getPhdStudentFields } from "@/components/phd-students/import/types";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { toast } from "sonner";
 import { toWesternNumerals } from "@/lib/numerals";
+import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 // Generate academic years from 2000/2001 to current+1
 const generateAcademicYears = (): string[] => {
@@ -321,7 +322,8 @@ export default function PhdStudents() {
                         <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>
                         <TableHead className="text-right font-semibold">التخصص</TableHead>
                         <TableHead className="text-right font-semibold">المشرف</TableHead>
-                        <TableHead className="text-right font-semibold">سنة التسجيل</TableHead>
+                        <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>
+                        <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>
                         <TableHead className="text-right font-semibold">الحالة</TableHead>
                         <TableHead className="text-right font-semibold">الإجراءات</TableHead>
                       </TableRow>
@@ -329,7 +331,7 @@ export default function PhdStudents() {
                     <TableBody>
                       {filteredStudents.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                          <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                             لا يوجد طلاب مسجلين
                           </TableCell>
                         </TableRow>
@@ -345,6 +347,18 @@ export default function PhdStudents() {
                             <TableCell>{student.specialty_ar}</TableCell>
                             <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
                             <TableCell>{student.first_registration_year || "-"}</TableCell>
+                            <TableCell>
+                              {(() => {
+                                if (!student.first_registration_year || !currentAcademicYear) return "-";
+                                const details = calculateRegistrationDetails(currentAcademicYear, student.first_registration_year, selectedType);
+                                if (details.registrationCount === null) return "-";
+                                return (
+                                  <Badge variant="outline" className={details.isLate ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-green-500/10 text-green-600 border-green-500/20"}>
+                                    {details.isLate ? "متأخر" : "منتظم"}
+                                  </Badge>
+                                );
+                              })()}
+                            </TableCell>
                             <TableCell>
                               <Badge 
                                 variant="outline" 
