@@ -19,6 +19,7 @@ import { certificateTypeLabels } from "@/types/certificates";
 import {
   ImportStep, ImportMode, ColumnMapping, ImportProgress, ImportResults, ExcelRow,
   MAX_FILE_SIZE, MAX_ROWS, getDbFieldKey, getCertificateFields, getCertificateTable,
+  COLUMN_ALIASES,
 } from "./types";
 
 interface ImportCertificateExcelDialogProps {
