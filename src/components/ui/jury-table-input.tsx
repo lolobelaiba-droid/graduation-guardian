@@ -196,7 +196,7 @@ export function parseJury(
   // Pre-parse jury_members_ar to extract rank data for supervisor/co-supervisor
   // since supervisor_ar is stored as a clean name without abbreviation
   const juryParts = juryMembersAr?.trim()
-    ? juryMembersAr.split(/\s*-\s*/).map((s) => s.trim()).filter(Boolean)
+    ? juryMembersAr.split(/\s+-\s+/).map((s) => s.trim()).filter(Boolean)
     : [];
   const parsedJuryParts = juryParts.map((p) => ({ raw: p, parsed: parseMember(p, "examiner") }));
 
