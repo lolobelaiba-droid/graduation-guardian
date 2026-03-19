@@ -19,6 +19,7 @@ import { certificateTypeLabels } from "@/types/certificates";
 import {
   ImportStep, ImportMode, ColumnMapping, ImportProgress, ImportResults, ExcelRow,
   MAX_FILE_SIZE, MAX_ROWS, getDbFieldKey, getCertificateFields, getCertificateTable,
+  COLUMN_ALIASES,
 } from "./types";
 
 interface ImportCertificateExcelDialogProps {
@@ -97,7 +98,16 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
       const autoMapping: ColumnMapping = {};
       columns.forEach((col) => {
         const normalizedCol = col.toLowerCase().trim();
+        
+        // Check aliases first for exact match
+        const aliasKey = COLUMN_ALIASES[col.trim()];
+        if (aliasKey && !Object.values(autoMapping).includes(aliasKey)) {
+          autoMapping[col] = aliasKey;
+          return;
+        }
+        
         const matched = requiredFields.find((f) => {
+          if (f.name_ar === col.trim()) return true;
           return f.name_ar.includes(col) || col.includes(f.name_ar)
             || f.name_fr.toLowerCase().includes(normalizedCol) || normalizedCol.includes(f.name_fr.toLowerCase())
             || f.key.includes(normalizedCol) || normalizedCol.includes(f.key);

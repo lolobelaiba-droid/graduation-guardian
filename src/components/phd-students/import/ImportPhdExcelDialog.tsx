@@ -32,6 +32,7 @@ import {
   getDbFieldKey,
   getPhdStudentFields,
   getPhdStudentTable,
+  COLUMN_ALIASES,
 } from "./types";
 
 interface ImportPhdExcelDialogProps {
@@ -150,7 +151,17 @@ export function ImportPhdExcelDialog({
       const autoMapping: ColumnMapping = {};
       columns.forEach((col) => {
         const normalizedCol = col.toLowerCase().trim();
+        
+        // Check aliases first for exact match
+        const aliasKey = COLUMN_ALIASES[col.trim()];
+        if (aliasKey && !Object.values(autoMapping).includes(aliasKey)) {
+          autoMapping[col] = aliasKey;
+          return;
+        }
+        
         const matchedField = requiredFields.find((f) => {
+          // Exact match first
+          if (f.name_ar === col.trim()) return true;
           const nameArMatch = f.name_ar.includes(col) || col.includes(f.name_ar);
           const nameFrMatch = f.name_fr.toLowerCase().includes(normalizedCol) || normalizedCol.includes(f.name_fr.toLowerCase());
           const keyMatch = f.key.includes(normalizedCol) || normalizedCol.includes(f.key);
