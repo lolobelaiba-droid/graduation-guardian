@@ -49,7 +49,8 @@ import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 import { useRecordLock } from "@/hooks/useRecordLock";
 import { RecordLockBanner } from "@/components/ui/record-lock-banner";
-
+import { calculateRegistrationDetails } from "@/lib/registration-calculation";
+import { extractStartYear } from "@/lib/registration-calculation";
 // PhD LMD schema
 const phdLmdSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
