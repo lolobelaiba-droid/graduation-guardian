@@ -384,13 +384,42 @@ export class BackupService {
       const cleanBatchData = (tableName: string, batch: Record<string, unknown>[]) => {
         const allowedCols = TABLE_COLUMNS[tableName];
         if (!allowedCols) return batch; // no filtering needed
-        return batch.map(row => {
+
+        const cleanedRows = batch.map((row) => {
           const cleaned: Record<string, unknown> = {};
           for (const col of allowedCols) {
             if (col in row) cleaned[col] = row[col];
           }
           return cleaned;
         });
+
+        // professors.full_name has a unique constraint, so we must deduplicate backup rows
+        // that may contain repeated names with different ids/details.
+        if (tableName === 'professors') {
+          const byName = new Map<string, Record<string, unknown>>();
+
+          const scoreRow = (row: Record<string, unknown>) => {
+            const hasRankLabel = !!String(row.rank_label ?? '').trim();
+            const hasRankAbbreviation = !!String(row.rank_abbreviation ?? '').trim();
+            const hasUniversity = !!String(row.university ?? '').trim();
+            return Number(hasRankLabel) + Number(hasRankAbbreviation) + Number(hasUniversity);
+          };
+
+          for (const row of cleanedRows) {
+            const fullName = String(row.full_name ?? '').trim();
+            if (!fullName) continue;
+
+            const normalized = { ...row, full_name: fullName };
+            const existing = byName.get(fullName);
+            if (!existing || scoreRow(normalized) >= scoreRow(existing)) {
+              byName.set(fullName, normalized);
+            }
+          }
+
+          return Array.from(byName.values());
+        }
+
+        return cleanedRows;
       };
 
       const restoreTable = async (tableName: string, data: unknown[] | undefined) => {
