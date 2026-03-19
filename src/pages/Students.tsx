@@ -205,6 +205,20 @@ export default function Students() {
     }
   };
 
+  const handleRestoreToDefenseStage = () => {
+    if (studentToDelete && (deleteType === "phd_lmd" || deleteType === "phd_science")) {
+      restoreToDefense.mutate(
+        { student: studentToDelete, certificateType: deleteType },
+        {
+          onSuccess: () => {
+            setDeleteDialogOpen(false);
+            setStudentToDelete(null);
+          },
+        }
+      );
+    }
+  };
+
   const handleViewDetails = (student: Certificate) => {
     requestAnimationFrame(() => {
       setTimeout(() => {
