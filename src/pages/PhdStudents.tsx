@@ -321,7 +321,8 @@ export default function PhdStudents() {
                         <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>
                         <TableHead className="text-right font-semibold">التخصص</TableHead>
                         <TableHead className="text-right font-semibold">المشرف</TableHead>
-                        <TableHead className="text-right font-semibold">سنة التسجيل</TableHead>
+                        <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>
+                        <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>
                         <TableHead className="text-right font-semibold">الحالة</TableHead>
                         <TableHead className="text-right font-semibold">الإجراءات</TableHead>
                       </TableRow>
