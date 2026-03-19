@@ -347,6 +347,18 @@ export default function PhdStudents() {
                             <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
                             <TableCell>{student.first_registration_year || "-"}</TableCell>
                             <TableCell>
+                              {(() => {
+                                if (!student.first_registration_year || !currentAcademicYear) return "-";
+                                const details = calculateRegistrationDetails(currentAcademicYear, student.first_registration_year, selectedType);
+                                if (details.registrationCount === null) return "-";
+                                return (
+                                  <Badge variant="outline" className={details.isLate ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-green-500/10 text-green-600 border-green-500/20"}>
+                                    {details.isLate ? "متأخر" : "منتظم"}
+                                  </Badge>
+                                );
+                              })()}
+                            </TableCell>
+                            <TableCell>
                               <Badge 
                                 variant="outline" 
                                 className={studentStatusLabels[student.status]?.color || ""}
