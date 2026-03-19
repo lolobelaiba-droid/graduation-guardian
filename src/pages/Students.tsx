@@ -450,12 +450,20 @@ export default function Students() {
                             {(() => {
                               const fry = (student as any).first_registration_year;
                               if (!fry) return "-";
-                              const now = new Date();
-                              const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
-                              const currentAcYear = `${year}/${year + 1}`;
-                              const phdType = selectedCertType === "phd_lmd" ? "phd_lmd" : "phd_science";
                               if (selectedCertType === "master") return "-";
-                              const details = calculateRegistrationDetails(currentAcYear, fry, phdType as any);
+                              // Use scientific_council_date to freeze registration count
+                              const scDate = (student as any).scientific_council_date;
+                              let refYear: number;
+                              if (scDate) {
+                                const d = new Date(scDate);
+                                refYear = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+                              } else {
+                                const now = new Date();
+                                refYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+                              }
+                              const refAcYear = `${refYear}/${refYear + 1}`;
+                              const phdType = selectedCertType === "phd_lmd" ? "phd_lmd" : "phd_science";
+                              const details = calculateRegistrationDetails(refAcYear, fry, phdType as any);
                               if (details.registrationCount === null) return "-";
                               return (
                                 <Badge variant="outline" className={details.isLate ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-green-500/10 text-green-600 border-green-500/20"}>
