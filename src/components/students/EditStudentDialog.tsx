@@ -49,7 +49,8 @@ import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
 import { useBilingualDropdownOptions } from "@/hooks/useBilingualDropdownOptions";
 import { useRecordLock } from "@/hooks/useRecordLock";
 import { RecordLockBanner } from "@/components/ui/record-lock-banner";
-
+import { calculateRegistrationDetails } from "@/lib/registration-calculation";
+import { extractStartYear } from "@/lib/registration-calculation";
 // PhD LMD schema
 const phdLmdSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
@@ -1027,23 +1028,37 @@ export default function EditStudentDialog({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={"registration_count" as keyof FormValues}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>عدد التسجيلات</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            value={field.value != null ? String(field.value) : ""} 
-                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {/* Dynamic registration count - read only */}
+                  {(certificateType === "phd_lmd" || certificateType === "phd_science") && (
+                    <FormItem>
+                      <FormLabel>عدد التسجيلات</FormLabel>
+                      <Input
+                        readOnly
+                        className="bg-muted"
+                        value={(() => {
+                          const fry = form.watch("first_registration_year" as keyof FormValues) as string;
+                          if (!fry) return "-";
+                          const scDate = form.watch("scientific_council_date" as keyof FormValues) as string;
+                          const defDate = form.watch("defense_date" as keyof FormValues) as string;
+                          let refYear: number;
+                          if (scDate) {
+                            const d = new Date(scDate);
+                            refYear = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+                          } else if (defDate) {
+                            const d = new Date(defDate);
+                            refYear = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+                          } else {
+                            const now = new Date();
+                            refYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+                          }
+                          const refAcYear = `${refYear}/${refYear + 1}`;
+                          const phdType = certificateType === "phd_lmd" ? "phd_lmd" : "phd_science";
+                          const details = calculateRegistrationDetails(refAcYear, fry, phdType as any);
+                          return details.registrationCount ?? "-";
+                        })()}
+                      />
+                    </FormItem>
+                  )}
                   <FormField
                     control={form.control}
                     name={"notes" as keyof FormValues}
