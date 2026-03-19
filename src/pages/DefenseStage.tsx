@@ -208,6 +208,9 @@ export default function DefenseStage() {
                             if (student.scientific_council_date) {
                               const scDate = new Date(student.scientific_council_date);
                               refYear = scDate.getMonth() >= 8 ? scDate.getFullYear() : scDate.getFullYear() - 1;
+                            } else if (student.defense_date) {
+                              const dDate = new Date(student.defense_date);
+                              refYear = dDate.getMonth() >= 8 ? dDate.getFullYear() : dDate.getFullYear() - 1;
                             } else {
                               const now = new Date();
                               refYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
