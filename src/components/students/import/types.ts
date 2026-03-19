@@ -78,7 +78,6 @@ export const phdLmdCertificateFields: FieldDefinition[] = [
   { key: 'supervisor_university', name_ar: 'جامعة انتماء المشرف', name_fr: 'Université du directeur', required: false },
   { key: 'co_supervisor_university', name_ar: 'جامعة انتماء مساعد المشرف', name_fr: 'Université du co-directeur', required: false },
   { key: 'thesis_title_ar', name_ar: 'عنوان الأطروحة', name_fr: 'Titre de thèse', required: true },
-  { key: 'thesis_title_fr', name_ar: 'عنوان الأطروحة بالفرنسية', name_fr: 'Titre de thèse (fr)', required: false },
   { key: 'thesis_language', name_ar: 'لغة الأطروحة', name_fr: 'Langue de thèse', required: false },
   { key: 'jury_president_ar', name_ar: 'رئيس اللجنة', name_fr: 'Président du jury', required: false },
   { key: 'jury_president_fr', name_ar: 'رئيس اللجنة بالفرنسية', name_fr: 'Président du jury (fr)', required: false },
@@ -121,7 +120,7 @@ export const phdScienceCertificateFields: FieldDefinition[] = [
   { key: 'supervisor_university', name_ar: 'جامعة انتماء المشرف', name_fr: 'Université du directeur', required: false },
   { key: 'co_supervisor_university', name_ar: 'جامعة انتماء مساعد المشرف', name_fr: 'Université du co-directeur', required: false },
   { key: 'thesis_title_ar', name_ar: 'عنوان الأطروحة', name_fr: 'Titre de thèse', required: true },
-  { key: 'thesis_title_fr', name_ar: 'عنوان الأطروحة بالفرنسية', name_fr: 'Titre de thèse (fr)', required: false },
+  
   { key: 'thesis_language', name_ar: 'لغة الأطروحة', name_fr: 'Langue de thèse', required: false },
   { key: 'jury_president_ar', name_ar: 'رئيس اللجنة', name_fr: 'Président du jury', required: false },
   { key: 'jury_president_fr', name_ar: 'رئيس اللجنة بالفرنسية', name_fr: 'Président du jury (fr)', required: false },
