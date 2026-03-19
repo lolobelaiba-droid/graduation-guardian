@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -274,6 +275,14 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
     // Validate bilingual dropdown fields
     if (!validateBilingualFields()) {
+      return;
+    }
+
+    // التحقق من عدم تكرار الطالب في جداول أخرى
+    const { checkDuplicateStudent } = await import("@/lib/duplicate-student-checker");
+    const dupCheck = await checkDuplicateStudent(data.full_name_ar, data.date_of_birth, 'phd_student');
+    if (dupCheck.isDuplicate) {
+      toast.error(`هذا الطالب موجود بالفعل في: ${dupCheck.foundIn}`);
       return;
     }
 

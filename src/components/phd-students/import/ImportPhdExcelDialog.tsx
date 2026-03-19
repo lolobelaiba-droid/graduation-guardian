@@ -292,11 +292,28 @@ export function ImportPhdExcelDialog({
       setImportProgress({ current: 0, total: excelData.length });
     }
 
+    const { checkDuplicateStudent } = await import("@/lib/duplicate-student-checker");
+
     for (let i = 0; i < excelData.length; i++) {
       const row = excelData[i];
       const transformedDataRow = transformRow(row);
 
       try {
+        // التحقق من التكرار عبر الجداول الأخرى
+        if (importMode !== "replace" && transformedDataRow.full_name_ar && transformedDataRow.date_of_birth) {
+          const dupCheck = await checkDuplicateStudent(
+            transformedDataRow.full_name_ar as string,
+            transformedDataRow.date_of_birth as string,
+            'phd_student'
+          );
+          if (dupCheck.isDuplicate) {
+            failedCount++;
+            errors.push(`السجل ${toWesternNumerals(i + 1)}: الطالب "${transformedDataRow.full_name_ar}" موجود في ${dupCheck.foundIn}`);
+            setImportProgress({ current: i + 1, total: excelData.length });
+            continue;
+          }
+        }
+
         if (useLocal && db) {
           const result = await db.insert(tableName, transformedDataRow);
           if (!result.success) {
