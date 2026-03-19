@@ -323,6 +323,7 @@ export default function PhdStudents() {
                         <TableHead className="text-right font-semibold">التخصص</TableHead>
                         <TableHead className="text-right font-semibold">المشرف</TableHead>
                         <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>
+                        <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>
                         <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>
                         <TableHead className="text-right font-semibold">الحالة</TableHead>
                         <TableHead className="text-right font-semibold">الإجراءات</TableHead>
@@ -331,7 +332,7 @@ export default function PhdStudents() {
                     <TableBody>
                       {filteredStudents.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                          <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                             لا يوجد طلاب مسجلين
                           </TableCell>
                         </TableRow>
@@ -347,6 +348,13 @@ export default function PhdStudents() {
                             <TableCell>{student.specialty_ar}</TableCell>
                             <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
                             <TableCell>{student.first_registration_year || "-"}</TableCell>
+                            <TableCell>
+                              {(() => {
+                                if (!student.first_registration_year || !currentAcademicYear) return "-";
+                                const details = calculateRegistrationDetails(currentAcademicYear, student.first_registration_year, selectedType);
+                                return details.registrationCount ?? "-";
+                              })()}
+                            </TableCell>
                             <TableCell>
                               {(() => {
                                 if (!student.first_registration_year || !currentAcademicYear) return "-";
