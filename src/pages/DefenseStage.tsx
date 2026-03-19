@@ -203,11 +203,18 @@ export default function DefenseStage() {
                         <TableCell>
                           {(() => {
                             if (!student.first_registration_year) return "-";
-                            const now = new Date();
-                            const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
-                            const currentAcYear = `${year}/${year + 1}`;
+                            // Use scientific_council_date to freeze registration count
+                            let refYear: number;
+                            if (student.scientific_council_date) {
+                              const scDate = new Date(student.scientific_council_date);
+                              refYear = scDate.getMonth() >= 8 ? scDate.getFullYear() : scDate.getFullYear() - 1;
+                            } else {
+                              const now = new Date();
+                              refYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+                            }
+                            const refAcYear = `${refYear}/${refYear + 1}`;
                             const phdType = activeTab === "phd_lmd" ? "phd_lmd" : "phd_science";
-                            const details = calculateRegistrationDetails(currentAcYear, student.first_registration_year, phdType as any);
+                            const details = calculateRegistrationDetails(refAcYear, student.first_registration_year, phdType as any);
                             if (details.registrationCount === null) return "-";
                             return (
                               <Badge variant="outline" className={details.isLate ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-green-500/10 text-green-600 border-green-500/20"}>
