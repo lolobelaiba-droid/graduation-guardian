@@ -326,13 +326,21 @@ export function CreateCertificateFromPhdDialog({
       notes: pendingStudent.notes || '',
     });
     
-    // Initialize bilingual dropdown states from student data
-    setEmploymentStatusAr(pendingStudent.employment_status || '');
-    setEmploymentStatusFr('');
-    setRegistrationTypeAr(pendingStudent.registration_type || '');
-    setRegistrationTypeFr('');
-    setInscriptionStatusAr(pendingStudent.inscription_status || '');
-    setInscriptionStatusFr('');
+    // Initialize bilingual dropdown states from student data with French lookup
+    const empAr = pendingStudent.employment_status || '';
+    setEmploymentStatusAr(empAr);
+    const empOpt = employmentOptions.find(opt => opt.value_ar === empAr);
+    setEmploymentStatusFr(empOpt?.value_fr || '');
+
+    const regAr = pendingStudent.registration_type || '';
+    setRegistrationTypeAr(regAr);
+    const regOpt = registrationOptions.find(opt => opt.value_ar === regAr);
+    setRegistrationTypeFr(regOpt?.value_fr || '');
+
+    const inscAr = pendingStudent.inscription_status || '';
+    setInscriptionStatusAr(inscAr);
+    const inscOpt = inscriptionOptions.find(opt => opt.value_ar === inscAr);
+    setInscriptionStatusFr(inscOpt?.value_fr || '');
     
     setShowForm(true);
     setShowConfirmDialog(false);
