@@ -118,7 +118,7 @@ export default function Dashboard() {
         </div>
 
         {/* Defended Students Stats */}
-        <div className="bg-card rounded-2xl shadow-card p-6 space-y-4">
+        <div className="bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-shadow duration-300 p-6 space-y-4">
           <div className="flex items-center gap-2 text-primary">
             <Award className="h-5 w-5" />
             <h2 className="text-lg font-semibold">قاعدة بيانات الطلبة المناقشين</h2>
