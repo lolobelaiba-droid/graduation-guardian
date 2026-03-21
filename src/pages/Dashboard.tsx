@@ -19,7 +19,7 @@ export default function Dashboard() {
   const subTitle = "نيابة المديرية للدراسات العليا والبحث العلمي";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* University Header - Modern Design */}
       <div className="max-w-4xl mx-auto">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border border-primary/20 shadow-lg">
@@ -82,9 +82,9 @@ export default function Dashboard() {
       </div>
 
       {/* Main Stats Grid - Split by Data Source */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* PhD Candidates Stats */}
-        <div className="bg-card rounded-2xl shadow-card p-6 space-y-4">
+        <div className="bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-shadow duration-300 p-6 space-y-4">
           <div className="flex items-center gap-2 text-primary">
             <Database className="h-5 w-5" />
             <h2 className="text-lg font-semibold">قاعدة بيانات طلبة الدكتوراه</h2>
@@ -118,7 +118,7 @@ export default function Dashboard() {
         </div>
 
         {/* Defended Students Stats */}
-        <div className="bg-card rounded-2xl shadow-card p-6 space-y-4">
+        <div className="bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-shadow duration-300 p-6 space-y-4">
           <div className="flex items-center gap-2 text-primary">
             <Award className="h-5 w-5" />
             <h2 className="text-lg font-semibold">قاعدة بيانات الطلبة المناقشين</h2>
