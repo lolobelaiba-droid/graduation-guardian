@@ -40,7 +40,7 @@ export function StatCard({
     return (
       <div
         className={cn(
-          "relative overflow-hidden rounded-xl p-4 text-white shadow-card transition-transform duration-300 hover:scale-[1.02]",
+          "relative overflow-hidden rounded-2xl p-4 text-white shadow-card transition-all duration-300 hover:scale-[1.02] hover:shadow-card-hover",
           className
         )}
         style={gradientStyle}
