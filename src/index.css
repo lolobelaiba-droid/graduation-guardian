@@ -45,8 +45,8 @@
 
 @layer base {
   :root {
-    /* University Certificate System - Premium Academic Edition */
-    --background: 210 40% 97%;
+    /* University Certificate System - Professional Blue Theme */
+    --background: 210 20% 98%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -495,48 +495,6 @@ html.theme-slate {
 }
 
 /* ============================================
-   Sidebar Glassmorphism Styles
-   ============================================ */
-
-.sidebar-glass {
-  background: linear-gradient(
-    180deg,
-    hsl(220 30% 8% / 0.97) 0%,
-    hsl(220 25% 5% / 0.99) 50%,
-    hsl(220 20% 4% / 1) 100%
-  );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-left: 1px solid hsl(220 20% 20% / 0.15);
-}
-
-.sidebar-active-glow {
-  background: hsl(0 0% 100% / 0.04);
-  border: 1px solid hsl(0 0% 100% / 0.18);
-  box-shadow:
-    0 0 15px hsl(0 0% 100% / 0.04),
-    inset 0 0 15px hsl(0 0% 100% / 0.02);
-}
-
-.sidebar-scrollbar::-webkit-scrollbar {
-  width: 3px;
-}
-
-.sidebar-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 100% / 0.08);
-  border-radius: 10px;
-}
-
-.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(0 0% 100% / 0.15);
-}
-
-/* ============================================
-
    Print Styles - CSS-based native printing
    ============================================ */
 

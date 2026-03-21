@@ -13,7 +13,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex flex-1">
         <AppSidebar />
         <main className="flex-1 overflow-auto">
-          <div className="p-6 md:p-10 max-w-7xl mx-auto animate-fade-in">
+          <div className="p-6 md:p-8 max-w-7xl mx-auto">
             {children}
           </div>
         </main>
