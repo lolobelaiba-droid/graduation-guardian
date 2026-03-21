@@ -19,7 +19,7 @@ export default function Dashboard() {
   const subTitle = "نيابة المديرية للدراسات العليا والبحث العلمي";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* University Header - Modern Design */}
       <div className="max-w-4xl mx-auto">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border border-primary/20 shadow-lg">
