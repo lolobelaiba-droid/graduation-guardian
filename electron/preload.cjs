@@ -146,6 +146,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:deleteUser', userId),
     changePassword: (userId, oldPassword, newPassword) =>
       ipcRenderer.invoke('db:changePassword', userId, oldPassword, newPassword),
+    recoverPasswordByQuestion: (username, securityAnswer, newPassword) =>
+      ipcRenderer.invoke('db:recoverPasswordByQuestion', username, securityAnswer, newPassword),
+    getSecurityQuestion: (username) =>
+      ipcRenderer.invoke('db:getSecurityQuestion', username),
+    checkEmergencyReset: () =>
+      ipcRenderer.invoke('db:checkEmergencyReset'),
   },
 
   // مراقبة الشبكة

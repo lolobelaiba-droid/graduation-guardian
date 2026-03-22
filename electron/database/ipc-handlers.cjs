@@ -586,6 +586,30 @@ function registerDatabaseHandlers() {
     }
   });
 
+  ipcMain.handle('db:recoverPasswordByQuestion', async (_, username, securityAnswer, newPassword) => {
+    try {
+      return db.recoverPasswordByQuestion(username, securityAnswer, newPassword);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:getSecurityQuestion', async (_, username) => {
+    try {
+      return db.getSecurityQuestion(username);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:checkEmergencyReset', async () => {
+    try {
+      return db.checkEmergencyReset();
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   console.log('Database IPC handlers registered');
 
   // إرجاع دوال المراقبة للاستخدام من main.cjs
