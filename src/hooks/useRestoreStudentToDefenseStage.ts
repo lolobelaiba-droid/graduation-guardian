@@ -90,6 +90,7 @@ export function useRestoreStudentToDefenseStage() {
           description: `تم إرجاع الطالب ${student.full_name_ar} إلى طور المناقشة`,
           entity_id: student.id,
           entity_type: defenseTable,
+          created_by: getCurrentUserName(),
         });
 
         return student;
