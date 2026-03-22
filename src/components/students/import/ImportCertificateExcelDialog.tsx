@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { toWesternNumerals } from "@/lib/numerals";
 import type { CertificateType } from "@/types/certificates";
 import { certificateTypeLabels } from "@/types/certificates";
