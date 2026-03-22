@@ -881,6 +881,10 @@ export default function DataExplorer() {
         <TabsContent value="reference" className="mt-4">
           <ReferenceDataManager />
         </TabsContent>
+
+        <TabsContent value="integrity" className="mt-4">
+          <DataIntegrityTools />
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
