@@ -414,6 +414,7 @@ export default function DefenseStage() {
                                 <CheckCircle className="h-4 w-4 ml-2" />
                                 انتهت إجراءات المناقشة
                               </DropdownMenuItem>
+                              {canDelete && (
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => setDeleteTarget({
@@ -425,6 +426,7 @@ export default function DefenseStage() {
                                 <Trash2 className="h-4 w-4 ml-2" />
                                 حذف
                               </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>

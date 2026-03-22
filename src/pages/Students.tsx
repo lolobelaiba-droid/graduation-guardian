@@ -549,6 +549,7 @@ export default function Students() {
                                   <Edit className="h-4 w-4" />
                                   تعديل
                                 </DropdownMenuItem>
+                                {canDelete && (
                                 <DropdownMenuItem
                                   className="gap-2 text-destructive"
                                   onSelect={(e) => {
@@ -559,6 +560,7 @@ export default function Students() {
                                   <Trash2 className="h-4 w-4" />
                                   حذف
                                 </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

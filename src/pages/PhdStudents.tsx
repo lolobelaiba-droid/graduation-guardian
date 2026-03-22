@@ -398,6 +398,7 @@ export default function PhdStudents() {
                                     <Edit className="h-4 w-4" />
                                     تعديل
                                   </DropdownMenuItem>
+                                  {canDelete && (
                                   <DropdownMenuItem
                                     className="gap-2 text-destructive"
                                     onClick={() => handleDeleteClick(student.id, selectedType)}
@@ -405,6 +406,7 @@ export default function PhdStudents() {
                                     <Trash2 className="h-4 w-4" />
                                     حذف
                                   </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>

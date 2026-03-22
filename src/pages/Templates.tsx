@@ -184,11 +184,15 @@ export default function Templates() {
                         </>
                       )}
                     </DropdownMenuItem>
+                    {canDelete && (
                     <DropdownMenuItem
                       className="gap-2 text-destructive"
                       onClick={() => handleDeleteClick(template.id)}
                     >
                       <Trash2 className="h-4 w-4" />
+                      حذف القالب
+                    </DropdownMenuItem>
+                    )}
                       حذف
                     </DropdownMenuItem>
                   </DropdownMenuContent>
