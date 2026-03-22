@@ -873,6 +873,10 @@ export default function DataExplorer() {
         <TabsContent value="browse" className="mt-4">
           <CollectionBrowser />
         </TabsContent>
+
+        <TabsContent value="reference" className="mt-4">
+          <ReferenceDataManager />
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
