@@ -303,6 +303,7 @@ export function useCreateMasterCertificate() {
         description: `تم إضافة طالب ماجستير: ${data.full_name_ar}`,
         entity_id: certificate.id,
         entity_type: "master_certificate",
+        created_by: getCurrentUserName(),
       });
 
       return certificate;
