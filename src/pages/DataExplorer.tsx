@@ -487,6 +487,10 @@ function CollectionBrowser() {
         </>
       )}
 
+      {!loading && data.length > 0 && (
+        <CollectionStats data={filtered} isProfessors={isProfessors} />
+      )}
+
       {!loading && !selectedTable && (
         <div className="text-center py-16">
           <Database className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
