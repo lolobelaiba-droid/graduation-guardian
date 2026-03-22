@@ -13,6 +13,7 @@ import Templates from "@/pages/Templates";
 import PrintCertificates from "@/pages/PrintCertificates";
 import ActivityLog from "@/pages/ActivityLog";
 import Settings from "@/pages/Settings";
+import DataExplorer from "@/pages/DataExplorer";
 import Notes from "@/pages/Notes";
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
