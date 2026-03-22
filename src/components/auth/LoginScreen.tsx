@@ -68,14 +68,15 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       const db = getDbClient()!;
 
       // التحقق من وجود نظام المستخدمين الجديد
+      const dbAny = db as any;
       if ("hasUsers" in db) {
-        const result = await (db as any).hasUsers();
+        const result = await dbAny.hasUsers();
         if (result.success && result.data) {
           // يوجد مستخدمون - شاشة الدخول
           setScreenState("login");
         } else {
           // التحقق من وجود كلمة مرور قديمة
-          const oldHash = await db.getSetting("app_password_hash");
+          const oldHash = await dbAny.getSetting("app_password_hash");
           if (oldHash.success && oldHash.data && (oldHash.data as any).value) {
             // نظام قديم بكلمة مرور واحدة
             setScreenState("legacy_login");
@@ -86,7 +87,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         }
       } else {
         // إصدار قديم من Electron بدون دعم المستخدمين
-        const oldHash = await db.getSetting("app_password_hash");
+        const oldHash = await dbAny.getSetting("app_password_hash");
         if (oldHash.success && oldHash.data && (oldHash.data as any).value) {
           setScreenState("legacy_login");
         } else {
