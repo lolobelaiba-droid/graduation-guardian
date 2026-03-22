@@ -469,6 +469,7 @@ export default function DataExplorer() {
   const { grouped, loading, query, search, results } = useDataExplorer();
   const [searchInput, setSearchInput] = useState("");
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "journey" | "profile">("list");
   const [activeTab, setActiveTab] = useState("search");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const totalResults = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
@@ -479,15 +480,49 @@ export default function DataExplorer() {
     debounceRef.current = setTimeout(() => search(value), 400);
   };
 
-  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); };
+  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); setViewMode("list"); };
 
-  if (selectedResult) {
+  const handleBack = () => { setViewMode("list"); };
+
+  // Journey view
+  if (selectedResult && viewMode === "journey") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto" dir="rtl">
+        <StudentJourney result={selectedResult} onBack={handleBack} />
+      </div>
+    );
+  }
+
+  // Professor profile view
+  if (selectedResult && viewMode === "profile") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto" dir="rtl">
+        <ProfessorProfile result={selectedResult} onBack={handleBack} />
+      </div>
+    );
+  }
+
+  if (selectedResult && viewMode === "list") {
     return (
       <div className="p-6 max-w-4xl mx-auto" dir="rtl">
         {selectedResult.type === "professor" ? (
-          <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+          <div className="space-y-4">
+            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" className="gap-2" onClick={() => setViewMode("profile")}>
+                <UserCircle className="h-4 w-4" />ملف الأستاذ الشامل
+              </Button>
+            </div>
+          </div>
         ) : (
-          <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+          <div className="space-y-4">
+            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" className="gap-2" onClick={() => setViewMode("journey")}>
+                <Route className="h-4 w-4" />تتبع المسار الأكاديمي
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     );
