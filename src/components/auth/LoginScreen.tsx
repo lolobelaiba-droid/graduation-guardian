@@ -136,9 +136,9 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
     if (!password.trim()) return;
     setIsVerifying(true);
     try {
-      const db = getDbClient()!;
-      const saltResult = await db.getSetting("app_password_salt");
-      const hashResult = await db.getSetting("app_password_hash");
+      const dbAny = getDbClient()! as any;
+      const saltResult = await dbAny.getSetting("app_password_salt");
+      const hashResult = await dbAny.getSetting("app_password_hash");
 
       if (!saltResult.success || !hashResult.success) {
         toast.error("خطأ في قراءة الإعدادات");
