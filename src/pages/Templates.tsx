@@ -193,8 +193,6 @@ export default function Templates() {
                       حذف القالب
                     </DropdownMenuItem>
                     )}
-                      حذف
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
