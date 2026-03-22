@@ -526,6 +526,66 @@ function registerDatabaseHandlers() {
     }
   });
 
+  // ============================================
+  // إدارة المستخدمين (Multi-User System)
+  // ============================================
+
+  ipcMain.handle('db:hasUsers', async () => {
+    try {
+      return { success: true, data: db.hasUsers() };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:authenticateUser', async (_, username, password) => {
+    try {
+      return db.authenticateUser(username, password);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:getAllUsers', async () => {
+    try {
+      return { success: true, data: db.getAllUsers() };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:addUser', async (_, userData) => {
+    try {
+      return db.addUser(userData);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:updateUser', async (_, userId, updateData) => {
+    try {
+      return db.updateUser(userId, updateData);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:deleteUser', async (_, userId) => {
+    try {
+      return db.deleteUser(userId);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:changePassword', async (_, userId, oldPassword, newPassword) => {
+    try {
+      return db.changePassword(userId, oldPassword, newPassword);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   console.log('Database IPC handlers registered');
 
   // إرجاع دوال المراقبة للاستخدام من main.cjs
