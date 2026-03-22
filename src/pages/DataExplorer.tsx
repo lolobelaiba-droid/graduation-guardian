@@ -781,6 +781,9 @@ export default function DataExplorer() {
           <TabsTrigger value="reference" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Library className="h-4 w-4" />البيانات المرجعية
           </TabsTrigger>
+          <TabsTrigger value="integrity" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <ShieldCheck className="h-4 w-4" />سلامة البيانات
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="space-y-4 mt-4">
