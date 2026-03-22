@@ -565,9 +565,12 @@ export default function DataExplorer() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="search" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Search className="h-4 w-4" />البحث الشامل
+          </TabsTrigger>
+          <TabsTrigger value="network" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Network className="h-4 w-4" />خريطة العلاقات
           </TabsTrigger>
           <TabsTrigger value="browse" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Table2 className="h-4 w-4" />استعراض المجموعات
