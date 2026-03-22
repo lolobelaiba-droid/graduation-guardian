@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle, Star, StarOff, Clock, Trash2, Printer, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Bookmark, Filter, GitCompare, Copy, BarChart3 } from "lucide-react";
+import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle, Star, StarOff, Clock, Trash2, Printer, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Bookmark, Filter, GitCompare, Copy, BarChart3, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { AdvancedFilters } from "@/components/data-explorer/AdvancedFilters";
 import { CollectionStats } from "@/components/data-explorer/CollectionStats";
 import { RecordComparison } from "@/components/data-explorer/RecordComparison";
 import { DuplicateDetector } from "@/components/data-explorer/DuplicateDetector";
+import { QuickEditDialog } from "@/components/data-explorer/QuickEditDialog";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { StudentJourney } from "@/components/data-explorer/StudentJourney";
@@ -144,7 +145,7 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-center text-muted-foreground py-8">{text}</p>;
 }
 
-function DetailHeader({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint?: () => void }) {
+function DetailHeader({ result, onBack, onPrint, onEdit }: { result: SearchResult; onBack: () => void; onPrint?: () => void; onEdit?: () => void }) {
   const config = TYPE_CONFIG[result.type];
   const Icon = config?.icon || Info;
   return (
@@ -158,17 +159,24 @@ function DetailHeader({ result, onBack, onPrint }: { result: SearchResult; onBac
           {result.subType && <Badge variant="outline" className="text-xs">{result.subType}</Badge>}
         </div>
       </div>
-      {onPrint && (
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={onPrint}>
-          <Printer className="h-4 w-4" />بطاقة
-        </Button>
-      )}
+      <div className="flex gap-1">
+        {onEdit && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={onEdit}>
+            <Pencil className="h-4 w-4" />تصحيح
+          </Button>
+        )}
+        {onPrint && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={onPrint}>
+            <Printer className="h-4 w-4" />بطاقة
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
 
 // =================== PROFESSOR DETAILS ===================
-function ProfessorDetailsPanel({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint: () => void }) {
+function ProfessorDetailsPanel({ result, onBack, onPrint, onEdit }: { result: SearchResult; onBack: () => void; onPrint: () => void; onEdit?: () => void }) {
   const [relations, setRelations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -179,7 +187,7 @@ function ProfessorDetailsPanel({ result, onBack, onPrint }: { result: SearchResu
 
   return (
     <div className="space-y-4">
-      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} />
+      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} onEdit={onEdit} />
       <Tabs defaultValue="info" dir="rtl">
         <TabsList className="w-full">
           <TabsTrigger value="info" className="flex-1 gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Info className="h-4 w-4" />البيانات</TabsTrigger>
@@ -227,7 +235,7 @@ function ProfessorDetailsPanel({ result, onBack, onPrint }: { result: SearchResu
 }
 
 // =================== ENTITY DETAILS ===================
-function EntityDetailsPanel({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint: () => void }) {
+function EntityDetailsPanel({ result, onBack, onPrint, onEdit }: { result: SearchResult; onBack: () => void; onPrint: () => void; onEdit?: () => void }) {
   const [relations, setRelations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -244,7 +252,7 @@ function EntityDetailsPanel({ result, onBack, onPrint }: { result: SearchResult;
 
   return (
     <div className="space-y-4">
-      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} />
+      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} onEdit={onEdit} />
       <Tabs defaultValue="info" dir="rtl">
         <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="info" className="flex-1 gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Info className="h-4 w-4" />البيانات</TabsTrigger>
@@ -317,6 +325,8 @@ function CollectionBrowser() {
   const [filterText, setFilterText] = useState("");
   const [sorts, setSorts] = useState<SortConfig[]>([]);
   const [customExportOpen, setCustomExportOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<Record<string, unknown> | null>(null);
 
   const loadCollection = useCallback(async (table: string) => {
     if (!table) return;
@@ -455,7 +465,7 @@ function CollectionBrowser() {
 
           <ScrollArea className="h-[calc(100vh-350px)]">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
+               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="p-2 text-right font-semibold">#</th>
@@ -467,6 +477,7 @@ function CollectionBrowser() {
                         </span>
                       </th>
                     ))}
+                    <th className="p-2 text-center font-semibold w-16">تصحيح</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -478,6 +489,11 @@ function CollectionBrowser() {
                           {row[col.key] || "—"}
                         </td>
                       ))}
+                      <td className="p-2 text-center">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRecord(row); setEditOpen(true); }} title="تصحيح سريع">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -499,6 +515,7 @@ function CollectionBrowser() {
       )}
 
       <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={filtered} fileName={collectionLabel || "بيانات_مخصصة"} />
+      <QuickEditDialog open={editOpen} onOpenChange={setEditOpen} record={editRecord} sourceTable={selectedTable} onSaved={() => loadCollection(selectedTable)} />
     </div>
   );
 }
@@ -586,7 +603,19 @@ export default function DataExplorer() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [quickEditOpen, setQuickEditOpen] = useState(false);
+  const [quickEditRecord, setQuickEditRecord] = useState<{ raw: Record<string, unknown>; sourceTable: string } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const openQuickEdit = (raw: Record<string, unknown>, sourceTable: string) => {
+    setQuickEditRecord({ raw, sourceTable });
+    setQuickEditOpen(true);
+  };
+
+  const handleQuickEditSaved = () => {
+    // Re-run search to refresh results
+    if (query) search(query);
+  };
 
   // Use filtered results when filters are active
   const displayResults = filteredResults.length > 0 || results.length === 0 ? filteredResults : results;
@@ -661,7 +690,7 @@ export default function DataExplorer() {
       <div className="p-6 max-w-4xl mx-auto" dir="rtl">
         {selectedResult.type === "professor" ? (
           <div className="space-y-4">
-            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} />
+            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} onEdit={() => openQuickEdit(selectedResult.raw, selectedResult.sourceTable || "professors")} />
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="gap-2" onClick={() => setViewMode("profile")}>
                 <UserCircle className="h-4 w-4" />ملف الأستاذ الشامل
@@ -670,7 +699,7 @@ export default function DataExplorer() {
           </div>
         ) : (
           <div className="space-y-4">
-            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} />
+            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} onEdit={() => openQuickEdit(selectedResult.raw, selectedResult.sourceTable || "")} />
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="gap-2" onClick={() => setViewMode("journey")}>
                 <Route className="h-4 w-4" />تتبع المسار الأكاديمي
@@ -679,6 +708,7 @@ export default function DataExplorer() {
           </div>
         )}
         {printCardResult && <RecordPrintCard open={printCardOpen} onOpenChange={setPrintCardOpen} result={printCardResult} />}
+        <QuickEditDialog open={quickEditOpen} onOpenChange={setQuickEditOpen} record={quickEditRecord?.raw || null} sourceTable={quickEditRecord?.sourceTable || ""} onSaved={handleQuickEditSaved} />
       </div>
     );
   }
@@ -708,9 +738,14 @@ export default function DataExplorer() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {!compareMode && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
-                        <Printer className="h-3.5 w-3.5" />
-                      </Button>
+                      <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openQuickEdit(item.raw, item.sourceTable || ""); }} title="تصحيح سريع">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
+                          <Printer className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
                     )}
                     <Badge className={`${config.badge} text-xs`}>{item.typeLabel}</Badge>
                   </div>
@@ -841,6 +876,7 @@ export default function DataExplorer() {
       <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={displayResults.map(r => r.raw)} fileName={`نتائج_البحث_${query}`} />
       {compareSelection.length === 2 && <RecordComparison open={compareOpen} onOpenChange={setCompareOpen} recordA={compareSelection[0]} recordB={compareSelection[1]} />}
       <DuplicateDetector open={duplicateOpen} onOpenChange={setDuplicateOpen} />
+      <QuickEditDialog open={quickEditOpen} onOpenChange={setQuickEditOpen} record={quickEditRecord?.raw || null} sourceTable={quickEditRecord?.sourceTable || ""} onSaved={handleQuickEditSaved} />
     </div>
   );
 }
