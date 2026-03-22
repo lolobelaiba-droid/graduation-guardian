@@ -721,9 +721,14 @@ export default function DataExplorer() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {!compareMode && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
-                        <Printer className="h-3.5 w-3.5" />
-                      </Button>
+                      <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openQuickEdit(item.raw, item.sourceTable || ""); }} title="تصحيح سريع">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
+                          <Printer className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
                     )}
                     <Badge className={`${config.badge} text-xs`}>{item.typeLabel}</Badge>
                   </div>
