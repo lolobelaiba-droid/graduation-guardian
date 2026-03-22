@@ -1731,6 +1731,84 @@ function changePassword(userId, oldPassword, newPassword) {
   return { success: true };
 }
 
+/**
+ * استعادة كلمة المرور عبر سؤال الأمان
+ */
+function recoverPasswordByQuestion(username, securityAnswer, newPassword) {
+  var users = readUsers();
+  var user = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].username === username) { user = users[i]; break; }
+  }
+  if (!user) return { success: false, error: 'اسم المستخدم غير موجود' };
+  if (!user.security_question || !user.security_answer_hash) {
+    return { success: false, error: 'لا يوجد سؤال أمان مسجل لهذا الحساب' };
+  }
+  var answerHash = hashPasswordNode(securityAnswer.trim().toLowerCase(), user.security_answer_salt);
+  if (answerHash !== user.security_answer_hash) {
+    return { success: false, error: 'إجابة سؤال الأمان غير صحيحة' };
+  }
+  var newSalt = generateSaltNode();
+  user.salt = newSalt;
+  user.password_hash = hashPasswordNode(newPassword, newSalt);
+  user.failed_attempts = 0;
+  user.locked_until = null;
+  writeUsers(users);
+  return { success: true };
+}
+
+/**
+ * الحصول على سؤال الأمان لمستخدم
+ */
+function getSecurityQuestion(username) {
+  var users = readUsers();
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].username === username) {
+      return { success: true, question: users[i].security_question || null };
+    }
+  }
+  return { success: false, error: 'اسم المستخدم غير موجود' };
+}
+
+/**
+ * إعادة تعيين كلمة المرور عبر ملف الطوارئ
+ * يتحقق من وجود ملف reset.txt في مجلد البيانات
+ */
+function checkEmergencyReset() {
+  try {
+    var resetFilePath = path.join(getDataDir(), 'reset.txt');
+    if (fs.existsSync(resetFilePath)) {
+      var content = fs.readFileSync(resetFilePath, 'utf8').trim();
+      // يجب أن يحتوي على الكلمة السرية: RESET_ADMIN_PASSWORD
+      if (content === 'RESET_ADMIN_PASSWORD') {
+        // إعادة تعيين كلمة مرور أول مدير إلى admin123
+        var users = readUsers();
+        var adminUser = null;
+        for (var i = 0; i < users.length; i++) {
+          if (users[i].role === 'admin') { adminUser = users[i]; break; }
+        }
+        if (adminUser) {
+          var newSalt = generateSaltNode();
+          adminUser.salt = newSalt;
+          adminUser.password_hash = hashPasswordNode('admin123', newSalt);
+          adminUser.failed_attempts = 0;
+          adminUser.locked_until = null;
+          adminUser.must_change_password = true;
+          writeUsers(users);
+          // حذف ملف الطوارئ بعد الاستخدام
+          fs.unlinkSync(resetFilePath);
+          return { success: true, username: adminUser.username, message: 'تم إعادة تعيين كلمة المرور إلى: admin123' };
+        }
+      }
+      // حذف الملف حتى لو كان المحتوى خاطئ
+      try { fs.unlinkSync(resetFilePath); } catch (e) {}
+    }
+  } catch (e) {
+    console.error('[EmergencyReset] Error:', e.message);
+  }
+  return { success: false };
+}
+
 // ============================================
 // تصدير الوحدة
 // ============================================
