@@ -515,6 +515,7 @@ function CollectionBrowser() {
       )}
 
       <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={filtered} fileName={collectionLabel || "بيانات_مخصصة"} />
+      <QuickEditDialog open={editOpen} onOpenChange={setEditOpen} record={editRecord} sourceTable={selectedTable} onSaved={() => loadCollection(selectedTable)} />
     </div>
   );
 }
