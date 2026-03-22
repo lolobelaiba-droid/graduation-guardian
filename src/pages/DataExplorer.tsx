@@ -252,7 +252,7 @@ function EntityDetailsPanel({ result, onBack, onPrint, onEdit }: { result: Searc
 
   return (
     <div className="space-y-4">
-      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} />
+      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} onEdit={onEdit} />
       <Tabs defaultValue="info" dir="rtl">
         <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="info" className="flex-1 gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Info className="h-4 w-4" />البيانات</TabsTrigger>
