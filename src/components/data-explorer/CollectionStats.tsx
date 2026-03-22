@@ -31,6 +31,31 @@ interface Props {
 }
 
 export function CollectionStats({ data, isProfessors }: Props) {
+  const genderStats = useMemo(() => {
+    if (isProfessors || !data.length) return [];
+    return countBy(data, "gender").map(g => ({
+      ...g,
+      name: g.name === "male" ? "ذكر" : g.name === "female" ? "أنثى" : g.name,
+    }));
+  }, [data, isProfessors]);
+
+  const primaryStats = useMemo(() => {
+    if (!data.length) return [];
+    if (isProfessors) return countBy(data, "university").slice(0, 8);
+    return countBy(data, "faculty_ar").slice(0, 8);
+  }, [data, isProfessors]);
+
+  const secondaryStats = useMemo(() => {
+    if (!data.length) return [];
+    if (isProfessors) return countBy(data, "rank_label").slice(0, 8);
+    return countBy(data, "specialty_ar").slice(0, 10);
+  }, [data, isProfessors]);
+
+  const supervisorStats = useMemo(() => {
+    if (isProfessors || !data.length) return [];
+    return countBy(data, "supervisor_ar").slice(0, 10);
+  }, [data, isProfessors]);
+
   if (!data.length) return null;
 
   const genderStats = useMemo(() => {
