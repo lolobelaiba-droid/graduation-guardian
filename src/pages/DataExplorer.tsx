@@ -596,10 +596,15 @@ export default function DataExplorer() {
 
   // Save to history when results arrive
   useEffect(() => {
-    if (query && !loading && totalResults >= 0) {
-      addToHistory(query, totalResults);
+    if (query && !loading && results.length >= 0) {
+      addToHistory(query, results.length);
     }
-  }, [query, loading, totalResults]);
+  }, [query, loading, results.length]);
+
+  // Sync filtered results when results change
+  useEffect(() => {
+    setFilteredResults(results);
+  }, [results]);
 
   const handleInputChange = (value: string) => {
     setSearchInput(value);
