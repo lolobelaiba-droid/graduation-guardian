@@ -235,7 +235,7 @@ function ProfessorDetailsPanel({ result, onBack, onPrint, onEdit }: { result: Se
 }
 
 // =================== ENTITY DETAILS ===================
-function EntityDetailsPanel({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint: () => void }) {
+function EntityDetailsPanel({ result, onBack, onPrint, onEdit }: { result: SearchResult; onBack: () => void; onPrint: () => void; onEdit?: () => void }) {
   const [relations, setRelations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
