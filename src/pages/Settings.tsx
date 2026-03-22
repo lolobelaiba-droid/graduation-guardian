@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+// @ts-ignore
+import UserManagement from "@/components/settings/UserManagement";
 import { useSearchParams } from "react-router-dom";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
