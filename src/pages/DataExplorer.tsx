@@ -1,12 +1,15 @@
-import { useState, useEffect, useRef } from "react";
-import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2 } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDataExplorer, getProfessorRelations, getStudentRelations, SearchResult } from "@/hooks/useDataExplorer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDataExplorer, getProfessorRelations, getStudentRelations, SearchResult, COLLECTIONS, fetchCollection } from "@/hooks/useDataExplorer";
+import { toast } from "sonner";
+import ExcelJS from "exceljs";
 
 const TYPE_CONFIG: Record<string, any> = {
   professor: { icon: User, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950", badge: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
@@ -33,11 +36,73 @@ const FIELD_LABELS: Record<string, string> = {
   supervisor_university: "جامعة المشرف", co_supervisor_university: "جامعة المشرف المساعد",
   thesis_language: "لغة الأطروحة", phone_number: "الهاتف", professional_email: "البريد",
   province: "الولاية", registration_count: "عدد التسجيلات", notes: "ملاحظات",
-  rank_abbreviation: "اختصار الرتبة",
+  rank_abbreviation: "اختصار الرتبة", birthplace_fr: "مكان الميلاد بالفرنسية",
+  faculty_fr: "الكلية بالفرنسية", field_fr: "الميدان بالفرنسية",
+  branch_fr: "الفرع بالفرنسية", specialty_fr: "التخصص بالفرنسية",
+  thesis_title_fr: "عنوان الأطروحة بالفرنسية", university_fr: "الجامعة بالفرنسية",
+  jury_president_fr: "رئيس اللجنة بالفرنسية", jury_members_fr: "أعضاء اللجنة بالفرنسية",
+  scientific_council_date: "تاريخ المجلس العلمي", signature_title: "صفة الموقع",
+  decision_number: "رقم القرار", decision_date: "تاريخ القرار",
+  decree_accreditation: "مرسوم الاعتماد", decree_training: "مرسوم التكوين",
+  auth_decision_number: "رقم قرار الترخيص", auth_decision_date: "تاريخ قرار الترخيص",
+  dean_letter_number: "رقم رسالة العميد", dean_letter_date: "تاريخ رسالة العميد",
 };
 
 const HIDDEN_FIELDS = ["id", "created_at", "updated_at", "_source", "_role"];
 
+// =================== EXPORT HELPER ===================
+async function exportToExcel(data: any[], fileName: string) {
+  if (!data || data.length === 0) {
+    toast.error("لا توجد بيانات للتصدير");
+    return;
+  }
+  try {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("البيانات");
+
+    // Get all keys from data
+    const allKeys = Array.from(new Set(data.flatMap(r => Object.keys(r)))).filter(k => !HIDDEN_FIELDS.includes(k));
+
+    // Headers
+    ws.columns = allKeys.map(k => ({
+      header: FIELD_LABELS[k] || k,
+      key: k,
+      width: 22,
+    }));
+
+    // Style header
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
+    headerRow.height = 28;
+
+    // Data rows
+    data.forEach(record => {
+      const row: any = {};
+      allKeys.forEach(k => { row[k] = record[k] ?? ""; });
+      ws.addRow(row);
+    });
+
+    // RTL
+    ws.views = [{ rightToLeft: true, state: "normal" }];
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fileName}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("تم التصدير بنجاح");
+  } catch (err) {
+    console.error("Export error:", err);
+    toast.error("حدث خطأ أثناء التصدير");
+  }
+}
+
+// =================== SHARED COMPONENTS ===================
 function SourceBadge({ source }: { source?: string }) {
   if (!source) return null;
   const labels: Record<string, string> = {
@@ -164,7 +229,7 @@ function ProfessorDetailsPanel({ result, onBack }: { result: SearchResult; onBac
   );
 }
 
-// =================== STUDENT / DEFENSE / CERTIFICATE DETAILS ===================
+// =================== ENTITY DETAILS ===================
 function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: () => void }) {
   const [relations, setRelations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -174,12 +239,10 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
     getStudentRelations(result.name, result.raw).then((data) => { setRelations(data); setLoading(false); });
   }, [result.name]);
 
-  // Filter out current record from relations
   const filteredCerts = relations?.certificates?.filter((r: any) => r.id !== result.raw.id) || [];
   const filteredDefense = relations?.defenseRecords?.filter((r: any) => r.id !== result.raw.id) || [];
   const filteredStudents = relations?.studentRecords?.filter((r: any) => r.id !== result.raw.id) || [];
   const professors = relations?.relatedProfessors || [];
-
   const totalRelations = filteredCerts.length + filteredDefense.length + filteredStudents.length + professors.length;
 
   return (
@@ -192,11 +255,7 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
             <Link2 className="h-4 w-4" />الارتباطات ({loading ? "..." : totalRelations})
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="info">
-          <ScrollArea className="h-[550px]"><FieldsGrid data={result.raw} /></ScrollArea>
-        </TabsContent>
-
+        <TabsContent value="info"><ScrollArea className="h-[550px]"><FieldsGrid data={result.raw} /></ScrollArea></TabsContent>
         <TabsContent value="relations">
           <ScrollArea className="h-[550px]">
             {loading ? (
@@ -214,7 +273,6 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
                     <div className="space-y-2">{professors.map((p: any, i: number) => <RelatedRecordCard key={i} record={p} />)}</div>
                   </div>
                 )}
-
                 {filteredStudents.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2">
@@ -224,7 +282,6 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
                     <div className="space-y-2">{filteredStudents.map((s: any, i: number) => <RelatedRecordCard key={i} record={s} />)}</div>
                   </div>
                 )}
-
                 {filteredDefense.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2">
@@ -234,7 +291,6 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
                     <div className="space-y-2">{filteredDefense.map((s: any, i: number) => <RelatedRecordCard key={i} record={s} />)}</div>
                   </div>
                 )}
-
                 {filteredCerts.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2">
@@ -253,11 +309,164 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
   );
 }
 
+// =================== RAW COLLECTION BROWSER ===================
+function CollectionBrowser() {
+  const [selectedTable, setSelectedTable] = useState("");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filterText, setFilterText] = useState("");
+
+  const loadCollection = useCallback(async (table: string) => {
+    if (!table) return;
+    setSelectedTable(table);
+    setLoading(true);
+    setFilterText("");
+    try {
+      const result = await fetchCollection(table);
+      setData(result);
+    } catch (err) {
+      console.error("Load error:", err);
+      setData([]);
+      toast.error("حدث خطأ أثناء تحميل البيانات");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const collectionLabel = COLLECTIONS.find(c => c.table === selectedTable)?.label || "";
+  const nameField = COLLECTIONS.find(c => c.table === selectedTable)?.nameField || "full_name_ar";
+
+  const filtered = filterText
+    ? data.filter(r => {
+        const name = r[nameField] || r.full_name_ar || r.full_name || "";
+        return String(name).toLowerCase().includes(filterText.toLowerCase());
+      })
+    : data;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Select value={selectedTable} onValueChange={loadCollection}>
+          <SelectTrigger className="w-full sm:w-[280px]">
+            <SelectValue placeholder="اختر قاعدة البيانات..." />
+          </SelectTrigger>
+          <SelectContent>
+            {COLLECTIONS.map(c => (
+              <SelectItem key={c.table} value={c.table}>{c.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {data.length > 0 && (
+          <>
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="تصفية حسب الاسم..."
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                className="pr-9"
+                dir="rtl"
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="gap-2 shrink-0"
+              onClick={() => exportToExcel(filtered, collectionLabel || "بيانات")}
+            >
+              <Download className="h-4 w-4" />
+              تصدير Excel ({filtered.length})
+            </Button>
+          </>
+        )}
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="mr-2 text-muted-foreground">جارٍ التحميل...</span>
+        </div>
+      )}
+
+      {!loading && selectedTable && data.length === 0 && (
+        <EmptyState text="لا توجد بيانات في هذا الجدول" />
+      )}
+
+      {!loading && data.length > 0 && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              إجمالي: <span className="font-bold text-foreground">{data.length}</span> سجل
+              {filterText && filtered.length !== data.length && (
+                <span> — عرض <span className="font-bold text-foreground">{filtered.length}</span></span>
+              )}
+            </p>
+          </div>
+
+          <ScrollArea className="h-[calc(100vh-350px)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="p-2 text-right font-semibold">#</th>
+                    <th className="p-2 text-right font-semibold">الاسم</th>
+                    {selectedTable !== "professors" && (
+                      <>
+                        <th className="p-2 text-right font-semibold">التخصص</th>
+                        <th className="p-2 text-right font-semibold">المشرف</th>
+                      </>
+                    )}
+                    {selectedTable === "professors" && (
+                      <>
+                        <th className="p-2 text-right font-semibold">الرتبة</th>
+                        <th className="p-2 text-right font-semibold">الجامعة</th>
+                      </>
+                    )}
+                    <th className="p-2 text-right font-semibold">الكلية</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((row, idx) => (
+                    <tr key={row.id || idx} className="border-b hover:bg-muted/30 transition-colors">
+                      <td className="p-2 text-muted-foreground">{idx + 1}</td>
+                      <td className="p-2 font-medium">{row[nameField] || row.full_name_ar || row.full_name || "—"}</td>
+                      {selectedTable !== "professors" ? (
+                        <>
+                          <td className="p-2">{row.specialty_ar || "—"}</td>
+                          <td className="p-2">{row.supervisor_ar || "—"}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="p-2">{row.rank_label || "—"}</td>
+                          <td className="p-2">{row.university || "—"}</td>
+                        </>
+                      )}
+                      <td className="p-2">{row.faculty_ar || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ScrollArea>
+        </>
+      )}
+
+      {!loading && !selectedTable && (
+        <div className="text-center py-16">
+          <Database className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
+          <p className="text-lg text-muted-foreground">اختر قاعدة بيانات لاستعراض محتوياتها</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // =================== MAIN PAGE ===================
 export default function DataExplorer() {
-  const { grouped, loading, query, search } = useDataExplorer();
+  const { grouped, loading, query, search, results } = useDataExplorer();
   const [searchInput, setSearchInput] = useState("");
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [activeTab, setActiveTab] = useState("search");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const totalResults = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
 
@@ -311,54 +520,81 @@ export default function DataExplorer() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6" dir="rtl">
+    <div className="p-6 max-w-5xl mx-auto space-y-6" dir="rtl">
       <div>
         <h1 className="text-2xl font-bold">مستعرض البيانات</h1>
-        <p className="text-muted-foreground text-sm">ابحث عن أي طالب أو أستاذ أو شهادة واكتشف جميع الارتباطات</p>
+        <p className="text-muted-foreground text-sm">ابحث واستعرض جميع البيانات من مكان واحد</p>
       </div>
 
-      <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input placeholder="ابحث بالاسم، رقم التسجيل، اسم المشرف..." value={searchInput} onChange={(e) => handleInputChange(e.target.value)} className="pr-10 pl-10 h-12 text-base" dir="rtl" />
-        {searchInput && (
-          <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleClear}><X className="h-4 w-4" /></Button>
-        )}
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+        <TabsList>
+          <TabsTrigger value="search" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Search className="h-4 w-4" />البحث الشامل
+          </TabsTrigger>
+          <TabsTrigger value="browse" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Table2 className="h-4 w-4" />استعراض المجموعات
+          </TabsTrigger>
+        </TabsList>
 
-      {loading && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="mr-2 text-muted-foreground">جارٍ البحث...</span>
-        </div>
-      )}
+        <TabsContent value="search" className="space-y-4 mt-4">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input placeholder="ابحث بالاسم، رقم التسجيل، اسم المشرف..." value={searchInput} onChange={(e) => handleInputChange(e.target.value)} className="pr-10 pl-10 h-12 text-base" dir="rtl" />
+            {searchInput && (
+              <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleClear}><X className="h-4 w-4" /></Button>
+            )}
+          </div>
 
-      {!loading && query && (
-        <div className="space-y-6">
-          <p className="text-sm text-muted-foreground">تم العثور على <span className="font-bold text-foreground">{totalResults}</span> نتيجة</p>
-          <ScrollArea className="h-[calc(100vh-300px)]">
-            <div className="space-y-6">
-              {renderGroup("الأساتذة", grouped.professors, <User className="h-4 w-4" />)}
-              {renderGroup("طلبة الدكتوراه", grouped.students, <GraduationCap className="h-4 w-4" />)}
-              {renderGroup("طور المناقشة", grouped.defense, <Scale className="h-4 w-4" />)}
-              {renderGroup("الشهادات", grouped.certificates, <Award className="h-4 w-4" />)}
-            </div>
-          </ScrollArea>
-          {totalResults === 0 && (
-            <div className="text-center py-12">
-              <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground">لم يتم العثور على نتائج لـ "{query}"</p>
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="mr-2 text-muted-foreground">جارٍ البحث...</span>
             </div>
           )}
-        </div>
-      )}
 
-      {!loading && !query && (
-        <div className="text-center py-16">
-          <Search className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
-          <p className="text-lg text-muted-foreground">ابدأ بكتابة اسم أو رقم للبحث</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">يمكنك البحث في جميع قواعد البيانات في آن واحد</p>
-        </div>
-      )}
+          {!loading && query && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">تم العثور على <span className="font-bold text-foreground">{totalResults}</span> نتيجة</p>
+                {totalResults > 0 && (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                    const allData = results.map(r => r.raw);
+                    exportToExcel(allData, `نتائج_البحث_${query}`);
+                  }}>
+                    <Download className="h-4 w-4" />تصدير النتائج
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="h-[calc(100vh-350px)]">
+                <div className="space-y-6">
+                  {renderGroup("الأساتذة", grouped.professors, <User className="h-4 w-4" />)}
+                  {renderGroup("طلبة الدكتوراه", grouped.students, <GraduationCap className="h-4 w-4" />)}
+                  {renderGroup("طور المناقشة", grouped.defense, <Scale className="h-4 w-4" />)}
+                  {renderGroup("الشهادات", grouped.certificates, <Award className="h-4 w-4" />)}
+                </div>
+              </ScrollArea>
+              {totalResults === 0 && (
+                <div className="text-center py-12">
+                  <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-muted-foreground">لم يتم العثور على نتائج لـ "{query}"</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!loading && !query && (
+            <div className="text-center py-16">
+              <Search className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
+              <p className="text-lg text-muted-foreground">ابدأ بكتابة اسم أو رقم للبحث</p>
+              <p className="text-sm text-muted-foreground/60 mt-1">يمكنك البحث في جميع قواعد البيانات في آن واحد</p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="browse" className="mt-4">
+          <CollectionBrowser />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
