@@ -489,9 +489,9 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
           {/* ===== رسالة إعادة التعيين الطارئ ===== */}
           {screenState === "emergency_reset_done" && (
             <>
-              <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="whitespace-pre-line text-amber-800 dark:text-amber-300">
+              <Alert className="border-destructive/50 bg-destructive/5">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="whitespace-pre-line text-destructive">
                   {emergencyMessage}
                 </AlertDescription>
               </Alert>
