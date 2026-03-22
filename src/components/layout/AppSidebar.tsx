@@ -141,8 +141,42 @@ export function AppSidebar() {
           })}
         </nav>
 
-        {/* Network Status + Collapse Button */}
+        {/* User Info + Network Status + Collapse Button */}
         <div className="hidden md:block p-4 border-t border-sidebar-border space-y-3">
+          {/* User Info */}
+          {currentUser && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent/50">
+              <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+                {currentUser.role === "admin" ? (
+                  <Shield className="h-4 w-4 text-sidebar-primary-foreground" />
+                ) : (
+                  <UserCog className="h-4 w-4 text-sidebar-primary-foreground" />
+                )}
+              </div>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.display_name}</p>
+                  <p className="text-xs text-sidebar-foreground/60">
+                    {currentUser.role === "admin" ? "مدير" : "موظف"}
+                  </p>
+                </div>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                    onClick={logout}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">تسجيل الخروج</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+
           {/* Network Status Indicator */}
           {networkInfo && (
             <Tooltip>
