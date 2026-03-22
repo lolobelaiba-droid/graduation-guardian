@@ -47,6 +47,7 @@ export function useCreateDefenseStageLmd() {
           description: `تم نقل الطالب ${data.full_name_ar} إلى طور المناقشة (ل م د)`,
           entity_id: (result.data as { id: string }).id,
           entity_type: 'defense_stage_lmd',
+          created_by: getCurrentUserName(),
         });
         
         return result.data;
