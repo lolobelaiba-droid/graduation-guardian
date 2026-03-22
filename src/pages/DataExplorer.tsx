@@ -17,6 +17,7 @@ import { AdvancedFilters } from "@/components/data-explorer/AdvancedFilters";
 import { CollectionStats } from "@/components/data-explorer/CollectionStats";
 import { RecordComparison } from "@/components/data-explorer/RecordComparison";
 import { DuplicateDetector } from "@/components/data-explorer/DuplicateDetector";
+import { QuickEditDialog } from "@/components/data-explorer/QuickEditDialog";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { StudentJourney } from "@/components/data-explorer/StudentJourney";
