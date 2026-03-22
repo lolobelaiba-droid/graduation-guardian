@@ -202,7 +202,12 @@ async function searchElectron(query: string): Promise<SearchResult[]> {
         const filtered = result.data.filter((row: any) =>
           config.searchFields.some((field) => {
             const val = row[field];
-            return val && String(val).toLowerCase().includes(lowerQuery);
+            if (!val) return false;
+            const strVal = String(val);
+            // Exact substring match
+            if (strVal.toLowerCase().includes(lowerQuery)) return true;
+            // Fuzzy match for Arabic names
+            return fuzzyMatch(strVal, query);
           })
         );
         filtered.forEach((row: any) => {
