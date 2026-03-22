@@ -189,8 +189,8 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
 
     setIsVerifying(true);
     try {
-      const db = getDbClient()!;
-      const result = await (db as any).addUser({
+      const dbAny = getDbClient()! as any;
+      const result = await dbAny.addUser({
         username: adminUsername.trim(),
         display_name: adminDisplayName.trim() || adminUsername.trim(),
         password: adminPassword,
