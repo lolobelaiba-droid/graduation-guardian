@@ -75,6 +75,7 @@ interface BackupSummary {
 
 
 export default function Settings() {
+  const { canManageSettings, canRestoreBackup, canManageNetwork, isAdmin } = usePermissions();
   const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const [activeSettingsTab, setActiveSettingsTab] = useState(tabFromUrl || "university");
