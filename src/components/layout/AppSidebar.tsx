@@ -19,11 +19,15 @@ import {
   Wifi,
   WifiOff,
   Search,
+  LogOut,
+  Shield,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { title: "لوحة التحكم", icon: LayoutDashboard, path: "/" },
