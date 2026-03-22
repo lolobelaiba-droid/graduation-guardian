@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2 } from "lucide-react";
+import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDataExplorer, getProfessorRelations, getStudentRelations, SearchResult, COLLECTIONS, fetchCollection } from "@/hooks/useDataExplorer";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
+import { StudentJourney } from "@/components/data-explorer/StudentJourney";
+import { ProfessorProfile } from "@/components/data-explorer/ProfessorProfile";
+import { RelationshipNetwork } from "@/components/data-explorer/RelationshipNetwork";
 
 const TYPE_CONFIG: Record<string, any> = {
   professor: { icon: User, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950", badge: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
@@ -466,6 +469,7 @@ export default function DataExplorer() {
   const { grouped, loading, query, search, results } = useDataExplorer();
   const [searchInput, setSearchInput] = useState("");
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "journey" | "profile">("list");
   const [activeTab, setActiveTab] = useState("search");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const totalResults = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
@@ -476,15 +480,49 @@ export default function DataExplorer() {
     debounceRef.current = setTimeout(() => search(value), 400);
   };
 
-  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); };
+  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); setViewMode("list"); };
 
-  if (selectedResult) {
+  const handleBack = () => { setViewMode("list"); };
+
+  // Journey view
+  if (selectedResult && viewMode === "journey") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto" dir="rtl">
+        <StudentJourney result={selectedResult} onBack={handleBack} />
+      </div>
+    );
+  }
+
+  // Professor profile view
+  if (selectedResult && viewMode === "profile") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto" dir="rtl">
+        <ProfessorProfile result={selectedResult} onBack={handleBack} />
+      </div>
+    );
+  }
+
+  if (selectedResult && viewMode === "list") {
     return (
       <div className="p-6 max-w-4xl mx-auto" dir="rtl">
         {selectedResult.type === "professor" ? (
-          <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+          <div className="space-y-4">
+            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" className="gap-2" onClick={() => setViewMode("profile")}>
+                <UserCircle className="h-4 w-4" />ملف الأستاذ الشامل
+              </Button>
+            </div>
+          </div>
         ) : (
-          <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+          <div className="space-y-4">
+            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" className="gap-2" onClick={() => setViewMode("journey")}>
+                <Route className="h-4 w-4" />تتبع المسار الأكاديمي
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -527,9 +565,12 @@ export default function DataExplorer() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="search" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Search className="h-4 w-4" />البحث الشامل
+          </TabsTrigger>
+          <TabsTrigger value="network" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Network className="h-4 w-4" />خريطة العلاقات
           </TabsTrigger>
           <TabsTrigger value="browse" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Table2 className="h-4 w-4" />استعراض المجموعات
@@ -589,6 +630,10 @@ export default function DataExplorer() {
               <p className="text-sm text-muted-foreground/60 mt-1">يمكنك البحث في جميع قواعد البيانات في آن واحد</p>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="network" className="mt-4">
+          <RelationshipNetwork />
         </TabsContent>
 
         <TabsContent value="browse" className="mt-4">
