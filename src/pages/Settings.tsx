@@ -79,7 +79,8 @@ export default function Settings() {
   const { canManageSettings, canRestoreBackup, canManageNetwork, isAdmin } = usePermissions();
   const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
-  const [activeSettingsTab, setActiveSettingsTab] = useState(tabFromUrl || "university");
+  const defaultTab = isAdmin ? (tabFromUrl || "university") : (tabFromUrl || "dateformat");
+  const [activeSettingsTab, setActiveSettingsTab] = useState(defaultTab);
 
   useEffect(() => {
     if (tabFromUrl) setActiveSettingsTab(tabFromUrl);
