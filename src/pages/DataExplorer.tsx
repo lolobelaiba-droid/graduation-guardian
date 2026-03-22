@@ -145,7 +145,7 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-center text-muted-foreground py-8">{text}</p>;
 }
 
-function DetailHeader({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint?: () => void }) {
+function DetailHeader({ result, onBack, onPrint, onEdit }: { result: SearchResult; onBack: () => void; onPrint?: () => void; onEdit?: () => void }) {
   const config = TYPE_CONFIG[result.type];
   const Icon = config?.icon || Info;
   return (
@@ -159,11 +159,18 @@ function DetailHeader({ result, onBack, onPrint }: { result: SearchResult; onBac
           {result.subType && <Badge variant="outline" className="text-xs">{result.subType}</Badge>}
         </div>
       </div>
-      {onPrint && (
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={onPrint}>
-          <Printer className="h-4 w-4" />بطاقة
-        </Button>
-      )}
+      <div className="flex gap-1">
+        {onEdit && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={onEdit}>
+            <Pencil className="h-4 w-4" />تصحيح
+          </Button>
+        )}
+        {onPrint && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={onPrint}>
+            <Printer className="h-4 w-4" />بطاقة
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
