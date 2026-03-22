@@ -184,6 +184,7 @@ export function useCreatePhdScienceCertificate() {
         description: `تم إضافة طالب دكتوراه علوم: ${data.full_name_ar}`,
         entity_id: certificate.id,
         entity_type: "phd_science_certificate",
+        created_by: getCurrentUserName(),
       });
 
       return certificate;
