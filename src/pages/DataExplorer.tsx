@@ -632,6 +632,10 @@ export default function DataExplorer() {
           )}
         </TabsContent>
 
+        <TabsContent value="network" className="mt-4">
+          <RelationshipNetwork />
+        </TabsContent>
+
         <TabsContent value="browse" className="mt-4">
           <CollectionBrowser />
         </TabsContent>
