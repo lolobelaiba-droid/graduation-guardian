@@ -59,6 +59,7 @@ import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 export default function Students() {
+  const { canDelete } = usePermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCertType, setSelectedCertType] = useState<CertificateType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

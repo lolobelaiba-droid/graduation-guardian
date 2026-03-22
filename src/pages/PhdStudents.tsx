@@ -77,6 +77,7 @@ const generateAcademicYears = (): string[] => {
 const academicYears = generateAcademicYears();
 
 export default function PhdStudents() {
+  const { canDelete } = usePermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<PhdStudentType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

@@ -57,6 +57,7 @@ const typeColors: Record<CertificateType, string> = {
 };
 
 export default function Templates() {
+  const { canDelete } = usePermissions();
   const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);

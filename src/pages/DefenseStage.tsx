@@ -63,6 +63,7 @@ import { toast } from "sonner";
 const ITEMS_PER_PAGE = 15;
 
 export default function DefenseStage() {
+  const { canDelete } = usePermissions();
   const [activeTab, setActiveTab] = useState("phd_lmd");
   const [searchQuery, setSearchQuery] = useState("");
   const [showStartDialog, setShowStartDialog] = useState(false);
