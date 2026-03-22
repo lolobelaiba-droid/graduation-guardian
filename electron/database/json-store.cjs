@@ -1888,5 +1888,8 @@ module.exports = {
   updateUser: updateUser,
   deleteUser: deleteUser,
   hasUsers: hasUsers,
-  changePassword: changePassword
+  changePassword: changePassword,
+  recoverPasswordByQuestion: recoverPasswordByQuestion,
+  getSecurityQuestion: getSecurityQuestion,
+  checkEmergencyReset: checkEmergencyReset
 };
