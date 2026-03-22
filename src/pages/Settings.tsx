@@ -23,6 +23,7 @@ import {
   Lock,
   Unlock,
   Timer,
+  Users,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
