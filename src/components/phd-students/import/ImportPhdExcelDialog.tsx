@@ -370,12 +370,14 @@ export function ImportPhdExcelDialog({
         activity_type: 'student_added',
         description: activityDesc,
         entity_type: 'phd_student',
+        created_by: getCurrentUserName(),
       });
     } else {
       await supabase.from("activity_log").insert({
         activity_type: "student_added",
         description: activityDesc,
         entity_type: "phd_student",
+        created_by: getCurrentUserName(),
       });
     }
 
