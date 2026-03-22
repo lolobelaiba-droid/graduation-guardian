@@ -338,12 +338,14 @@ export function ImportExcelDialog({
         activity_type: "student_added",
         description: activityDescription,
         entity_type: "certificate",
+        created_by: getCurrentUserName(),
       });
     } else {
       await supabase.from("activity_log").insert({
         activity_type: "student_added",
         description: activityDescription,
         entity_type: "certificate",
+        created_by: getCurrentUserName(),
       });
     }
 

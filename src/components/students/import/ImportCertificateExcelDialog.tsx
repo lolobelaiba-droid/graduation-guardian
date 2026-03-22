@@ -361,12 +361,14 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
         activity_type: 'student_added',
         description: activityDesc,
         entity_type: certificateType,
+        created_by: getCurrentUserName(),
       });
     } else {
       await supabase.from("activity_log").insert({
         activity_type: "student_added",
         description: activityDesc,
         entity_type: certificateType,
+        created_by: getCurrentUserName(),
       });
     }
 
