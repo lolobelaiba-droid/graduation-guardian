@@ -65,6 +65,7 @@ export function useCreatePhdLmdCertificate() {
         description: `تم إضافة طالب دكتوراه ل م د: ${data.full_name_ar}`,
         entity_id: certificate.id,
         entity_type: "phd_lmd_certificate",
+        created_by: getCurrentUserName(),
       });
 
       return certificate;
