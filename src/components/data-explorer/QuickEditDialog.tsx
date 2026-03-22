@@ -308,7 +308,7 @@ export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSav
         </DialogHeader>
 
         {isLocked && lockedBy && (
-          <RecordLockBanner lockedBy={lockedBy} />
+          <RecordLockBanner isLocked={isLocked} lockedBy={lockedBy} />
         )}
 
         {/* Changes preview */}
