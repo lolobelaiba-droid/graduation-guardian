@@ -777,6 +777,9 @@ export default function DataExplorer() {
           <TabsTrigger value="browse" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Table2 className="h-4 w-4" />استعراض المجموعات
           </TabsTrigger>
+          <TabsTrigger value="reference" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Library className="h-4 w-4" />البيانات المرجعية
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="space-y-4 mt-4">
