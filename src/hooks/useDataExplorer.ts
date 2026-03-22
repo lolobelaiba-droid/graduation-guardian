@@ -2,6 +2,56 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 
+// =================== FUZZY MATCHING ===================
+function normalizeArabic(text: string): string {
+  return text
+    .replace(/[ًٌٍَُِّْ]/g, "")      // Remove tashkeel
+    .replace(/[إأآٱ]/g, "ا")          // Normalize alef variants
+    .replace(/ة/g, "ه")               // ta marbuta -> ha
+    .replace(/ى/g, "ي")               // alef maqsura -> ya
+    .replace(/ؤ/g, "و")               // waw hamza
+    .replace(/ئ/g, "ي")               // ya hamza
+    .replace(/[\s\u200B\u200C\u200D\uFEFF]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+export function fuzzyMatch(text: string, query: string, threshold = 0.3): boolean {
+  const normText = normalizeArabic(text);
+  const normQuery = normalizeArabic(query);
+  // Exact substring match first
+  if (normText.includes(normQuery)) return true;
+  // Word-level fuzzy match
+  const queryWords = normQuery.split(" ").filter(Boolean);
+  const textWords = normText.split(" ").filter(Boolean);
+  return queryWords.every(qw =>
+    textWords.some(tw => {
+      if (tw.includes(qw) || qw.includes(tw)) return true;
+      const maxLen = Math.max(qw.length, tw.length);
+      if (maxLen === 0) return false;
+      const dist = levenshteinDistance(qw, tw);
+      return dist / maxLen <= threshold;
+    })
+  );
+}
+
 export interface SearchResult {
   id: string;
   type: "phd_student" | "defense_student" | "certificate" | "professor";
