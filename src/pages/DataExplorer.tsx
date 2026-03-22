@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle, Star, StarOff, Clock, Trash2, Printer, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Bookmark, Filter, GitCompare, Copy, BarChart3, Pencil } from "lucide-react";
+import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle, Star, StarOff, Clock, Trash2, Printer, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Bookmark, Filter, GitCompare, Copy, BarChart3, Pencil, Library } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import ExcelJS from "exceljs";
 import { StudentJourney } from "@/components/data-explorer/StudentJourney";
 import { ProfessorProfile } from "@/components/data-explorer/ProfessorProfile";
 import { RelationshipNetwork } from "@/components/data-explorer/RelationshipNetwork";
+import { ReferenceDataManager } from "@/components/data-explorer/ReferenceDataManager";
 
 const TYPE_CONFIG: Record<string, any> = {
   professor: { icon: User, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950", badge: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
@@ -776,6 +777,9 @@ export default function DataExplorer() {
           <TabsTrigger value="browse" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Table2 className="h-4 w-4" />استعراض المجموعات
           </TabsTrigger>
+          <TabsTrigger value="reference" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Library className="h-4 w-4" />البيانات المرجعية
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="space-y-4 mt-4">
@@ -868,6 +872,10 @@ export default function DataExplorer() {
 
         <TabsContent value="browse" className="mt-4">
           <CollectionBrowser />
+        </TabsContent>
+
+        <TabsContent value="reference" className="mt-4">
+          <ReferenceDataManager />
         </TabsContent>
       </Tabs>
 
