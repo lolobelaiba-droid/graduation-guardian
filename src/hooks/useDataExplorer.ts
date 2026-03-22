@@ -13,6 +13,27 @@ export interface SearchResult {
   sourceTable?: string;
 }
 
+export interface CollectionConfig {
+  table: string;
+  label: string;
+  nameField: string;
+}
+
+export const COLLECTIONS: CollectionConfig[] = [
+  { table: "phd_lmd_students", label: "طلبة دكتوراه ل.م.د", nameField: "full_name_ar" },
+  { table: "phd_science_students", label: "طلبة دكتوراه علوم", nameField: "full_name_ar" },
+  { table: "defense_stage_lmd", label: "طور المناقشة ل.م.د", nameField: "full_name_ar" },
+  { table: "defense_stage_science", label: "طور المناقشة علوم", nameField: "full_name_ar" },
+  { table: "phd_lmd_certificates", label: "شهادات دكتوراه ل.م.د", nameField: "full_name_ar" },
+  { table: "phd_science_certificates", label: "شهادات دكتوراه علوم", nameField: "full_name_ar" },
+  { table: "master_certificates", label: "شهادات ماستر", nameField: "full_name_ar" },
+  { table: "professors", label: "الأساتذة", nameField: "full_name" },
+];
+
+export async function fetchCollection(table: string): Promise<any[]> {
+  return queryTable(table);
+}
+
 const SEARCH_TABLES = [
   {
     table: "phd_lmd_students",
