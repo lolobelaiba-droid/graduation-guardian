@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle, Star, StarOff, Clock, Trash2, Printer, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Bookmark } from "lucide-react";
+import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle, Star, StarOff, Clock, Trash2, Printer, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Bookmark, Filter, GitCompare, Copy, BarChart3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +8,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useDataExplorer, getProfessorRelations, getStudentRelations, SearchResult, COLLECTIONS, fetchCollection } from "@/hooks/useDataExplorer";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
 import { CustomExportDialog } from "@/components/data-explorer/CustomExportDialog";
 import { RecordPrintCard } from "@/components/data-explorer/RecordPrintCard";
+import { AdvancedFilters } from "@/components/data-explorer/AdvancedFilters";
+import { CollectionStats } from "@/components/data-explorer/CollectionStats";
+import { RecordComparison } from "@/components/data-explorer/RecordComparison";
+import { DuplicateDetector } from "@/components/data-explorer/DuplicateDetector";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { StudentJourney } from "@/components/data-explorer/StudentJourney";
@@ -482,6 +487,10 @@ function CollectionBrowser() {
         </>
       )}
 
+      {!loading && data.length > 0 && (
+        <CollectionStats data={filtered} isProfessors={isProfessors} />
+      )}
+
       {!loading && !selectedTable && (
         <div className="text-center py-16">
           <Database className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
@@ -571,15 +580,35 @@ export default function DataExplorer() {
   const [printCardOpen, setPrintCardOpen] = useState(false);
   const [printCardResult, setPrintCardResult] = useState<SearchResult | null>(null);
   const [customExportOpen, setCustomExportOpen] = useState(false);
+  const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareSelection, setCompareSelection] = useState<SearchResult[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const totalResults = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
+
+  // Use filtered results when filters are active
+  const displayResults = filteredResults.length > 0 || results.length === 0 ? filteredResults : results;
+  const displayGrouped = useMemo(() => ({
+    professors: displayResults.filter((r) => r.type === "professor"),
+    students: displayResults.filter((r) => r.type === "phd_student"),
+    defense: displayResults.filter((r) => r.type === "defense_student"),
+    certificates: displayResults.filter((r) => r.type === "certificate"),
+  }), [displayResults]);
+  const totalResults = displayResults.length;
 
   // Save to history when results arrive
   useEffect(() => {
-    if (query && !loading && totalResults >= 0) {
-      addToHistory(query, totalResults);
+    if (query && !loading && results.length >= 0) {
+      addToHistory(query, results.length);
     }
-  }, [query, loading, totalResults]);
+  }, [query, loading, results.length]);
+
+  // Sync filtered results when results change
+  useEffect(() => {
+    setFilteredResults(results);
+  }, [results]);
 
   const handleInputChange = (value: string) => {
     setSearchInput(value);
@@ -587,8 +616,17 @@ export default function DataExplorer() {
     debounceRef.current = setTimeout(() => search(value), 400);
   };
 
-  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); setViewMode("list"); };
+  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); setViewMode("list"); setCompareMode(false); setCompareSelection([]); };
   const handleBack = () => { setViewMode("list"); };
+
+  const toggleCompareSelect = (item: SearchResult) => {
+    setCompareSelection(prev => {
+      const exists = prev.find(r => r.id === item.id && r.sourceTable === item.sourceTable);
+      if (exists) return prev.filter(r => !(r.id === item.id && r.sourceTable === item.sourceTable));
+      if (prev.length >= 2) return [prev[1], item];
+      return [...prev, item];
+    });
+  };
 
   const handleHistorySelect = (q: string) => {
     setSearchInput(q);
@@ -656,18 +694,24 @@ export default function DataExplorer() {
           {items.map((item) => {
             const config = TYPE_CONFIG[item.type];
             const Icon = config.icon;
+            const isSelected = compareSelection.some(r => r.id === item.id && r.sourceTable === item.sourceTable);
             return (
-              <Card key={`${item.type}-${item.id}-${item.sourceTable}`} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedResult(item)}>
+              <Card key={`${item.type}-${item.id}-${item.sourceTable}`} className={`cursor-pointer hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-primary" : ""}`} onClick={() => compareMode ? toggleCompareSelect(item) : setSelectedResult(item)}>
                 <CardContent className="p-3 flex items-center gap-3">
+                  {compareMode && (
+                    <Checkbox checked={isSelected} className="shrink-0" />
+                  )}
                   <div className={`p-2 rounded-lg ${config.bg}`}><Icon className={`h-4 w-4 ${config.color}`} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold truncate">{item.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{item.details}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
-                      <Printer className="h-3.5 w-3.5" />
-                    </Button>
+                    {!compareMode && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Badge className={`${config.badge} text-xs`}>{item.typeLabel}</Badge>
                   </div>
                 </CardContent>
@@ -724,13 +768,26 @@ export default function DataExplorer() {
 
           {!loading && query && (
             <div className="space-y-4">
+              {/* Advanced Filters */}
+              <AdvancedFilters results={results} onFilteredResults={setFilteredResults} />
+
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <p className="text-sm text-muted-foreground">تم العثور على <span className="font-bold text-foreground">{totalResults}</span> نتيجة</p>
+                <p className="text-sm text-muted-foreground">تم العثور على <span className="font-bold text-foreground">{totalResults}</span> نتيجة {filteredResults.length !== results.length && <span className="text-xs">(من أصل {results.length})</span>}</p>
                 {totalResults > 0 && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant={compareMode ? "secondary" : "outline"} size="sm" className="gap-2" onClick={() => { setCompareMode(!compareMode); setCompareSelection([]); }}>
+                      <GitCompare className="h-4 w-4" />{compareMode ? "إلغاء المقارنة" : "مقارنة"}
+                    </Button>
+                    {compareMode && compareSelection.length === 2 && (
+                      <Button size="sm" className="gap-2" onClick={() => setCompareOpen(true)}>
+                        <GitCompare className="h-4 w-4" />قارن ({compareSelection.length})
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => setDuplicateOpen(true)}>
+                      <Copy className="h-4 w-4" />كشف التكرارات
+                    </Button>
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                      const allData = results.map(r => r.raw);
-                      exportToExcel(allData, `نتائج_البحث_${query}`);
+                      exportToExcel(displayResults.map(r => r.raw), `نتائج_البحث_${query}`);
                     }}>
                       <Download className="h-4 w-4" />تصدير Excel
                     </Button>
@@ -740,12 +797,13 @@ export default function DataExplorer() {
                   </div>
                 )}
               </div>
-              <ScrollArea className="h-[calc(100vh-350px)]">
+              {compareMode && <p className="text-xs text-muted-foreground">اختر سجلين للمقارنة بينهما جنباً إلى جنب</p>}
+              <ScrollArea className="h-[calc(100vh-420px)]">
                 <div className="space-y-6">
-                  {renderGroup("الأساتذة", grouped.professors, <User className="h-4 w-4" />)}
-                  {renderGroup("طلبة الدكتوراه", grouped.students, <GraduationCap className="h-4 w-4" />)}
-                  {renderGroup("طور المناقشة", grouped.defense, <Scale className="h-4 w-4" />)}
-                  {renderGroup("الشهادات", grouped.certificates, <Award className="h-4 w-4" />)}
+                  {renderGroup("الأساتذة", displayGrouped.professors, <User className="h-4 w-4" />)}
+                  {renderGroup("طلبة الدكتوراه", displayGrouped.students, <GraduationCap className="h-4 w-4" />)}
+                  {renderGroup("طور المناقشة", displayGrouped.defense, <Scale className="h-4 w-4" />)}
+                  {renderGroup("الشهادات", displayGrouped.certificates, <Award className="h-4 w-4" />)}
                 </div>
               </ScrollArea>
               {totalResults === 0 && (
@@ -780,7 +838,9 @@ export default function DataExplorer() {
 
       {/* Dialogs */}
       {printCardResult && <RecordPrintCard open={printCardOpen} onOpenChange={setPrintCardOpen} result={printCardResult} />}
-      <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={results.map(r => r.raw)} fileName={`نتائج_البحث_${query}`} />
+      <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={displayResults.map(r => r.raw)} fileName={`نتائج_البحث_${query}`} />
+      {compareSelection.length === 2 && <RecordComparison open={compareOpen} onOpenChange={setCompareOpen} recordA={compareSelection[0]} recordB={compareSelection[1]} />}
+      <DuplicateDetector open={duplicateOpen} onOpenChange={setDuplicateOpen} />
     </div>
   );
 }
