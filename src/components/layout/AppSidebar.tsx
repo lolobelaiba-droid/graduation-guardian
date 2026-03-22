@@ -18,6 +18,7 @@ import {
   Scale,
   Wifi,
   WifiOff,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
