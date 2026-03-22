@@ -123,6 +123,7 @@ export function useRestoreStudentToPhd() {
         description: `تم إرجاع الطالب ${student.full_name_ar} إلى قاعدة بيانات طلبة الدكتوراه`,
         entity_id: student.id,
         entity_type: certificateType === "phd_lmd" ? "phd_lmd_student" : "phd_science_student",
+        created_by: getCurrentUserName(),
       });
 
       return student;

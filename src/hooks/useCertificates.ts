@@ -455,6 +455,7 @@ export function useCreateTemplate() {
         description: `تم إنشاء قالب: ${data.template_name}`,
         entity_id: template.id,
         entity_type: "template",
+        created_by: getCurrentUserName(),
       });
 
       return template;

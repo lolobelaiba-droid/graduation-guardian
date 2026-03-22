@@ -206,6 +206,7 @@ export function useCreatePhdScienceStudent() {
         description: `تم إضافة طالب دكتوراه علوم: ${data.full_name_ar}`,
         entity_id: student.id,
         entity_type: "phd_science_student",
+        created_by: getCurrentUserName(),
       });
 
       return student;
