@@ -185,6 +185,7 @@ export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSav
             description: activityDesc,
             entity_id: recordId,
             entity_type: sourceTable,
+            created_by: getCurrentUserName(),
           });
         }
       } catch { /* activity log is non-critical */ }

@@ -255,6 +255,7 @@ export function ReferenceDataManager() {
             activity_type: "settings_updated",
             description: `تعديل بيانات مرجعية: "${editingValue.value}" → "${newValue.trim()}" (${totalUpdated} سجل)`,
             entity_type: "reference_data",
+            created_by: getCurrentUserName(),
           });
         }
       } catch { /* ignore logging errors */ }
