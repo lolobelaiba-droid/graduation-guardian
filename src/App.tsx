@@ -20,6 +20,7 @@ import NotFound from "@/pages/NotFound";
 import LoginScreen from "@/components/auth/LoginScreen";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
+import { AuthProvider, AppUser } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +41,6 @@ function AutoLogoutWrapper({ children, onLogout }: { children: React.ReactNode; 
       }
     }).catch(() => {});
 
-    // الاستماع لتغيير الإعداد
     const handler = () => {
       db.getSetting("auto_logout_minutes").then((result: any) => {
         if (result?.success && result.data?.value) {
@@ -62,9 +62,27 @@ function AutoLogoutWrapper({ children, onLogout }: { children: React.ReactNode; 
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!isElectronEnv);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(
+    !isElectronEnv ? {
+      id: "web-user",
+      username: "admin",
+      display_name: "مدير النظام",
+      role: "admin",
+      is_active: true,
+      must_change_password: false,
+      created_at: new Date().toISOString(),
+      last_login: new Date().toISOString(),
+    } : null
+  );
 
   const handleLogout = useCallback(() => {
     setIsAuthenticated(false);
+    setCurrentUser(null);
+  }, []);
+
+  const handleAuthenticated = useCallback((user: AppUser) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
   }, []);
 
   useEffect(() => {
@@ -87,7 +105,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <LoginScreen onAuthenticated={() => setIsAuthenticated(true)} />
+          <LoginScreen onAuthenticated={handleAuthenticated} />
         </TooltipProvider>
       </QueryClientProvider>
     );
@@ -98,30 +116,45 @@ const App = () => {
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AutoLogoutWrapper onLogout={handleLogout}>
-        <HashRouter>
-          <MainLayout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/phd-students" element={<PhdStudents />} />
-              <Route path="/defense-stage" element={<DefenseStage />} />
-              <Route path="/students" element={<Students />} />
-              <Route path="/templates" element={<Templates />} />
-              <Route path="/print" element={<PrintCertificates />} />
-              <Route path="/activity" element={<ActivityLog />} />
-               <Route path="/settings" element={<Settings />} />
-               <Route path="/data-explorer" element={<DataExplorer />} />
-              <Route path="/notes" element={<Notes />} />
-              
-              <Route path="/reports" element={<Reports />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </MainLayout>
-        </HashRouter>
-      </AutoLogoutWrapper>
+      <AuthProvider onLogout={handleLogout}>
+        <AuthProviderInit user={currentUser}>
+          <AutoLogoutWrapper onLogout={handleLogout}>
+            <HashRouter>
+              <MainLayout>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/phd-students" element={<PhdStudents />} />
+                  <Route path="/defense-stage" element={<DefenseStage />} />
+                  <Route path="/students" element={<Students />} />
+                  <Route path="/templates" element={<Templates />} />
+                  <Route path="/print" element={<PrintCertificates />} />
+                  <Route path="/activity" element={<ActivityLog />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/data-explorer" element={<DataExplorer />} />
+                  <Route path="/notes" element={<Notes />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </MainLayout>
+            </HashRouter>
+          </AutoLogoutWrapper>
+        </AuthProviderInit>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
   );
 };
+
+// Helper to initialize auth context with user data
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect as useEffectInit } from "react";
+
+function AuthProviderInit({ user, children }: { user: AppUser | null; children: React.ReactNode }) {
+  const { setCurrentUser } = useAuth();
+  useEffectInit(() => {
+    if (user) setCurrentUser(user);
+  }, [user, setCurrentUser]);
+  return <>{children}</>;
+}
 
 export default App;

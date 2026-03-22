@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
-import { GraduationCap, Lock, Eye, EyeOff, Settings, Loader2 } from "lucide-react";
+import { GraduationCap, Lock, Eye, EyeOff, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
+import { AppUser } from "@/contexts/AuthContext";
 
 interface LoginScreenProps {
-  onAuthenticated: () => void;
+  onAuthenticated: (user: AppUser) => void;
 }
 
 /**
- * تشفير كلمة المرور باستخدام SHA-256 مع salt
+ * تشفير كلمة المرور باستخدام SHA-256 مع salt (للإعداد الأول فقط)
  */
 async function hashPassword(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -29,49 +30,115 @@ function generateSalt(): string {
     .join("");
 }
 
+type ScreenState = "loading" | "login" | "setup_first_admin" | "legacy_login";
+
 export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [hasPassword, setHasPassword] = useState(false);
-  const [isSettingUp, setIsSettingUp] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [screenState, setScreenState] = useState<ScreenState>("loading");
+
+  // إعداد أول مدير
+  const [adminDisplayName, setAdminDisplayName] = useState("");
+  const [adminUsername, setAdminUsername] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminConfirmPassword, setAdminConfirmPassword] = useState("");
 
   useEffect(() => {
-    checkPasswordExists();
+    checkSystemState();
   }, []);
 
-  const checkPasswordExists = async () => {
+  const checkSystemState = async () => {
     try {
       if (!isElectron()) {
-        // في بيئة الويب، لا نستخدم شاشة الدخول
-        onAuthenticated();
+        onAuthenticated({
+          id: "web-user",
+          username: "admin",
+          display_name: "مدير النظام",
+          role: "admin",
+          is_active: true,
+          must_change_password: false,
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString(),
+        });
         return;
       }
       const db = getDbClient()!;
-      const result = await db.getSetting("app_password_hash");
-      if (result.success && result.data && (result.data as any).value) {
-        setHasPassword(true);
+
+      // التحقق من وجود نظام المستخدمين الجديد
+      const dbAny = db as any;
+      if ("hasUsers" in db) {
+        const result = await dbAny.hasUsers();
+        if (result.success && result.data) {
+          // يوجد مستخدمون - شاشة الدخول
+          setScreenState("login");
+        } else {
+          // التحقق من وجود كلمة مرور قديمة
+          const oldHash = await dbAny.getSetting("app_password_hash");
+          if (oldHash.success && oldHash.data && (oldHash.data as any).value) {
+            // نظام قديم بكلمة مرور واحدة
+            setScreenState("legacy_login");
+          } else {
+            // نظام جديد - إعداد أول مدير
+            setScreenState("setup_first_admin");
+          }
+        }
       } else {
-        // لا توجد كلمة مرور - الدخول مباشرة أو إعداد واحدة
-        setHasPassword(false);
+        // إصدار قديم من Electron بدون دعم المستخدمين
+        const oldHash = await dbAny.getSetting("app_password_hash");
+        if (oldHash.success && oldHash.data && (oldHash.data as any).value) {
+          setScreenState("legacy_login");
+        } else {
+          onAuthenticated({
+            id: "legacy-user",
+            username: "admin",
+            display_name: "المستخدم",
+            role: "admin",
+            is_active: true,
+            must_change_password: false,
+            created_at: new Date().toISOString(),
+            last_login: new Date().toISOString(),
+          });
+        }
       }
     } catch (e) {
-      console.error("Error checking password:", e);
+      console.error("Error checking system state:", e);
+      setScreenState("setup_first_admin");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogin = async () => {
+  const handleMultiUserLogin = async () => {
+    if (!username.trim() || !password.trim()) return;
+    setIsVerifying(true);
+    try {
+      const dbAny = getDbClient()! as any;
+      const result = await dbAny.authenticateUser(username.trim(), password);
+      if (result.success && result.user) {
+        toast.success(`مرحباً ${result.user.display_name}`);
+        onAuthenticated(result.user as AppUser);
+      } else {
+        toast.error(result.error || "فشل تسجيل الدخول");
+        setPassword("");
+      }
+    } catch (e) {
+      console.error("Login error:", e);
+      toast.error("حدث خطأ أثناء تسجيل الدخول");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleLegacyLogin = async () => {
     if (!password.trim()) return;
     setIsVerifying(true);
     try {
-      const db = getDbClient()!;
-      const saltResult = await db.getSetting("app_password_salt");
-      const hashResult = await db.getSetting("app_password_hash");
+      const dbAny = getDbClient()! as any;
+      const saltResult = await dbAny.getSetting("app_password_salt");
+      const hashResult = await dbAny.getSetting("app_password_hash");
 
       if (!saltResult.success || !hashResult.success) {
         toast.error("خطأ في قراءة الإعدادات");
@@ -84,57 +151,67 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
 
       if (inputHash === storedHash) {
         toast.success("تم تسجيل الدخول بنجاح");
-        onAuthenticated();
+        onAuthenticated({
+          id: "legacy-admin",
+          username: "admin",
+          display_name: "المدير",
+          role: "admin",
+          is_active: true,
+          must_change_password: false,
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString(),
+        });
       } else {
         toast.error("كلمة المرور غير صحيحة");
         setPassword("");
       }
     } catch (e) {
-      console.error("Login error:", e);
+      console.error("Legacy login error:", e);
       toast.error("حدث خطأ أثناء تسجيل الدخول");
     } finally {
       setIsVerifying(false);
     }
   };
 
-  const handleSetupPassword = async () => {
-    if (!newPassword.trim()) {
-      toast.error("يرجى إدخال كلمة مرور");
+  const handleSetupFirstAdmin = async () => {
+    if (!adminUsername.trim()) {
+      toast.error("يرجى إدخال اسم المستخدم");
       return;
     }
-    if (newPassword.length < 4) {
+    if (adminPassword.length < 4) {
       toast.error("كلمة المرور يجب أن تكون 4 أحرف على الأقل");
       return;
     }
-    if (newPassword !== confirmPassword) {
+    if (adminPassword !== adminConfirmPassword) {
       toast.error("كلمتا المرور غير متطابقتين");
       return;
     }
 
     setIsVerifying(true);
     try {
-      const db = getDbClient()!;
-      const salt = generateSalt();
-      const hash = await hashPassword(newPassword, salt);
+      const dbAny = getDbClient()! as any;
+      const result = await dbAny.addUser({
+        username: adminUsername.trim(),
+        display_name: adminDisplayName.trim() || adminUsername.trim(),
+        password: adminPassword,
+        role: "admin",
+      });
 
-      await db.setSetting("app_password_salt", salt);
-      await db.setSetting("app_password_hash", hash);
-
-      toast.success("تم تعيين كلمة المرور بنجاح");
-      onAuthenticated();
+      if (result.success) {
+        toast.success("تم إنشاء حساب المدير بنجاح");
+        onAuthenticated(result.user as AppUser);
+      } else {
+        toast.error(result.error || "فشل في إنشاء الحساب");
+      }
     } catch (e) {
-      console.error("Setup password error:", e);
-      toast.error("حدث خطأ أثناء حفظ كلمة المرور");
+      console.error("Setup error:", e);
+      toast.error("حدث خطأ أثناء الإعداد");
     } finally {
       setIsVerifying(false);
     }
   };
 
-  const handleSkipSetup = () => {
-    onAuthenticated();
-  };
-
-  if (isLoading) {
+  if (isLoading || screenState === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center" dir="rtl">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -153,28 +230,84 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">نظام إدارة طلبة الدكتوراه</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {hasPassword ? "أدخل كلمة المرور للمتابعة" : "مرحباً بك"}
+              {screenState === "login" && "أدخل بيانات الدخول للمتابعة"}
+              {screenState === "legacy_login" && "أدخل كلمة المرور للمتابعة"}
+              {screenState === "setup_first_admin" && "إعداد حساب المدير الأول"}
             </p>
           </div>
         </div>
 
-        {/* Login Form or Setup */}
         <div className="bg-card rounded-2xl shadow-card p-8 space-y-6">
-          {hasPassword ? (
-            /* شاشة تسجيل الدخول */
+          {screenState === "login" && (
+            <>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    اسم المستخدم
+                  </Label>
+                  <Input
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && document.getElementById("password")?.focus()}
+                    placeholder="أدخل اسم المستخدم"
+                    autoFocus
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    كلمة المرور
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleMultiUserLogin()}
+                      placeholder="أدخل كلمة المرور"
+                      className="pl-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                className="w-full gap-2"
+                onClick={handleMultiUserLogin}
+                disabled={isVerifying || !username.trim() || !password.trim()}
+              >
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                تسجيل الدخول
+              </Button>
+            </>
+          )}
+
+          {screenState === "legacy_login" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="password" className="flex items-center gap-2">
+                <Label htmlFor="legacy-password" className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
                   كلمة المرور
                 </Label>
                 <div className="relative">
                   <Input
-                    id="password"
+                    id="legacy-password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                    onKeyDown={(e) => e.key === "Enter" && handleLegacyLogin()}
                     placeholder="أدخل كلمة المرور"
                     autoFocus
                     className="pl-10"
@@ -188,77 +321,71 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
                   </button>
                 </div>
               </div>
-
               <Button
                 className="w-full gap-2"
-                onClick={handleLogin}
+                onClick={handleLegacyLogin}
                 disabled={isVerifying || !password.trim()}
               >
-                {isVerifying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Lock className="h-4 w-4" />
-                )}
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                 تسجيل الدخول
               </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                💡 للانتقال لنظام المستخدمين المتعدد، تواصل مع المدير
+              </p>
             </>
-          ) : isSettingUp ? (
-            /* إعداد كلمة مرور جديدة */
+          )}
+
+          {screenState === "setup_first_admin" && (
             <>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+                  <Label>الاسم الكامل</Label>
                   <Input
-                    id="new-password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="أدخل كلمة المرور"
+                    value={adminDisplayName}
+                    onChange={(e) => setAdminDisplayName(e.target.value)}
+                    placeholder="مثال: أحمد محمد"
                     autoFocus
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
+                  <Label>اسم المستخدم</Label>
                   <Input
-                    id="confirm-password"
+                    value={adminUsername}
+                    onChange={(e) => setAdminUsername(e.target.value)}
+                    placeholder="مثال: admin"
+                    dir="ltr"
+                    className="text-left"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>كلمة المرور</Label>
+                  <Input
                     type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSetupPassword()}
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="4 أحرف على الأقل"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>تأكيد كلمة المرور</Label>
+                  <Input
+                    type="password"
+                    value={adminConfirmPassword}
+                    onChange={(e) => setAdminConfirmPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSetupFirstAdmin()}
                     placeholder="أعد إدخال كلمة المرور"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button
-                  className="flex-1 gap-2"
-                  onClick={handleSetupPassword}
-                  disabled={isVerifying}
-                >
-                  {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                  تعيين كلمة المرور
-                </Button>
-                <Button variant="outline" onClick={() => setIsSettingUp(false)}>
-                  رجوع
-                </Button>
-              </div>
-            </>
-          ) : (
-            /* خيارات أولية */
-            <>
-              <p className="text-sm text-muted-foreground text-center">
-                هل تريد تعيين كلمة مرور لحماية التطبيق؟
-              </p>
-              <div className="space-y-3">
-                <Button className="w-full gap-2" onClick={() => setIsSettingUp(true)}>
-                  <Settings className="h-4 w-4" />
-                  تعيين كلمة مرور
-                </Button>
-                <Button variant="outline" className="w-full" onClick={handleSkipSetup}>
-                  تخطي - الدخول بدون كلمة مرور
-                </Button>
-              </div>
+              <Button
+                className="w-full gap-2"
+                onClick={handleSetupFirstAdmin}
+                disabled={isVerifying}
+              >
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <User className="h-4 w-4" />}
+                إنشاء حساب المدير
+              </Button>
             </>
           )}
         </div>

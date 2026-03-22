@@ -1492,6 +1492,237 @@ function disconnectNetwork() {
 }
 
 // ============================================
+// نظام إدارة المستخدمين (Multi-User System)
+// ============================================
+
+var crypto = require('crypto');
+
+function getUsersFilePath() {
+  return path.join(getDataDir(), 'users.json');
+}
+
+function readUsers() {
+  var filePath = getUsersFilePath();
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+  try {
+    var content = fs.readFileSync(filePath, 'utf8');
+    if (!content || content.trim() === '') return [];
+    return JSON.parse(content);
+  } catch (e) {
+    console.error('[Users] Error reading users:', e.message);
+    return [];
+  }
+}
+
+function writeUsers(users) {
+  ensureDataDir();
+  var filePath = getUsersFilePath();
+  var locked = false;
+  try {
+    if (isNetworkMode()) {
+      locked = acquireLockSync(filePath);
+    }
+    var tmpPath = filePath + '.tmp.' + process.pid;
+    fs.writeFileSync(tmpPath, JSON.stringify(users, null, 2), 'utf8');
+    fs.renameSync(tmpPath, filePath);
+    return true;
+  } catch (e) {
+    console.error('[Users] Error writing users:', e.message);
+    try { fs.unlinkSync(filePath + '.tmp.' + process.pid); } catch (ue) {}
+    return false;
+  } finally {
+    if (locked) releaseLockSync(filePath);
+  }
+}
+
+function hashPasswordNode(password, salt) {
+  return crypto.createHash('sha256').update(salt + password).digest('hex');
+}
+
+function generateSaltNode() {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+/**
+ * الحصول على جميع المستخدمين (بدون كلمات المرور)
+ */
+function getAllUsers() {
+  var users = readUsers();
+  return users.map(function(u) {
+    var copy = Object.assign({}, u);
+    delete copy.password_hash;
+    delete copy.salt;
+    return copy;
+  });
+}
+
+/**
+ * التحقق من بيانات تسجيل الدخول
+ */
+function authenticateUser(username, password) {
+  var users = readUsers();
+  var user = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].username === username && users[i].is_active !== false) {
+      user = users[i];
+      break;
+    }
+  }
+  if (!user) {
+    return { success: false, error: 'اسم المستخدم غير موجود' };
+  }
+  if (user.failed_attempts >= 5) {
+    var lockTime = user.locked_until ? new Date(user.locked_until).getTime() : 0;
+    if (Date.now() < lockTime) {
+      return { success: false, error: 'الحساب مقفل مؤقتاً. حاول بعد 5 دقائق.' };
+    }
+    // إعادة تعيين المحاولات بعد انتهاء القفل
+    user.failed_attempts = 0;
+    user.locked_until = null;
+  }
+  var hash = hashPasswordNode(password, user.salt);
+  if (hash !== user.password_hash) {
+    // تسجيل المحاولة الفاشلة
+    user.failed_attempts = (user.failed_attempts || 0) + 1;
+    if (user.failed_attempts >= 5) {
+      user.locked_until = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    }
+    writeUsers(users);
+    var remaining = 5 - user.failed_attempts;
+    return { success: false, error: 'كلمة المرور غير صحيحة' + (remaining > 0 ? ' (متبقي ' + remaining + ' محاولات)' : '') };
+  }
+  // نجاح - إعادة تعيين المحاولات وتحديث آخر دخول
+  user.failed_attempts = 0;
+  user.locked_until = null;
+  user.last_login = getCurrentDateTime();
+  writeUsers(users);
+  var safeUser = Object.assign({}, user);
+  delete safeUser.password_hash;
+  delete safeUser.salt;
+  return { success: true, user: safeUser };
+}
+
+/**
+ * إضافة مستخدم جديد
+ */
+function addUser(userData) {
+  var users = readUsers();
+  // التحقق من عدم تكرار اسم المستخدم
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].username === userData.username) {
+      return { success: false, error: 'اسم المستخدم موجود مسبقاً' };
+    }
+  }
+  var salt = generateSaltNode();
+  var newUser = {
+    id: generateUUID(),
+    username: userData.username,
+    display_name: userData.display_name || userData.username,
+    password_hash: hashPasswordNode(userData.password, salt),
+    salt: salt,
+    role: userData.role || 'employee',
+    is_active: true,
+    must_change_password: userData.must_change_password || false,
+    failed_attempts: 0,
+    locked_until: null,
+    created_at: getCurrentDateTime(),
+    last_login: null
+  };
+  users.push(newUser);
+  writeUsers(users);
+  var safeUser = Object.assign({}, newUser);
+  delete safeUser.password_hash;
+  delete safeUser.salt;
+  return { success: true, user: safeUser };
+}
+
+/**
+ * تحديث مستخدم
+ */
+function updateUser(userId, updateData) {
+  var users = readUsers();
+  var idx = -1;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].id === userId) { idx = i; break; }
+  }
+  if (idx === -1) return { success: false, error: 'المستخدم غير موجود' };
+  
+  if (updateData.username && updateData.username !== users[idx].username) {
+    for (var j = 0; j < users.length; j++) {
+      if (j !== idx && users[j].username === updateData.username) {
+        return { success: false, error: 'اسم المستخدم موجود مسبقاً' };
+      }
+    }
+    users[idx].username = updateData.username;
+  }
+  if (updateData.display_name) users[idx].display_name = updateData.display_name;
+  if (updateData.role) users[idx].role = updateData.role;
+  if (typeof updateData.is_active === 'boolean') users[idx].is_active = updateData.is_active;
+  if (updateData.password) {
+    var salt = generateSaltNode();
+    users[idx].salt = salt;
+    users[idx].password_hash = hashPasswordNode(updateData.password, salt);
+    users[idx].must_change_password = false;
+  }
+  writeUsers(users);
+  var safeUser = Object.assign({}, users[idx]);
+  delete safeUser.password_hash;
+  delete safeUser.salt;
+  return { success: true, user: safeUser };
+}
+
+/**
+ * حذف مستخدم
+ */
+function deleteUser(userId) {
+  var users = readUsers();
+  // لا يمكن حذف آخر مدير
+  var admins = users.filter(function(u) { return u.role === 'admin' && u.id !== userId; });
+  var target = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].id === userId) { target = users[i]; break; }
+  }
+  if (target && target.role === 'admin' && admins.length === 0) {
+    return { success: false, error: 'لا يمكن حذف آخر مدير في النظام' };
+  }
+  users = users.filter(function(u) { return u.id !== userId; });
+  writeUsers(users);
+  return { success: true };
+}
+
+/**
+ * التحقق من وجود مستخدمين (لشاشة الإعداد الأولى)
+ */
+function hasUsers() {
+  var users = readUsers();
+  return users.length > 0;
+}
+
+/**
+ * تغيير كلمة المرور
+ */
+function changePassword(userId, oldPassword, newPassword) {
+  var users = readUsers();
+  var user = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].id === userId) { user = users[i]; break; }
+  }
+  if (!user) return { success: false, error: 'المستخدم غير موجود' };
+  var oldHash = hashPasswordNode(oldPassword, user.salt);
+  if (oldHash !== user.password_hash) {
+    return { success: false, error: 'كلمة المرور الحالية غير صحيحة' };
+  }
+  var newSalt = generateSaltNode();
+  user.salt = newSalt;
+  user.password_hash = hashPasswordNode(newPassword, newSalt);
+  user.must_change_password = false;
+  writeUsers(users);
+  return { success: true };
+}
+
+// ============================================
 // تصدير الوحدة
 // ============================================
 
@@ -1561,5 +1792,14 @@ module.exports = {
   getDeviceAliases: getDeviceAliases,
   centralizedBackup: centralizedBackup,
   getNetworkConfig: getNetworkConfig,
-  disconnectNetwork: disconnectNetwork
+  disconnectNetwork: disconnectNetwork,
+  
+  // إدارة المستخدمين
+  getAllUsers: getAllUsers,
+  authenticateUser: authenticateUser,
+  addUser: addUser,
+  updateUser: updateUser,
+  deleteUser: deleteUser,
+  hasUsers: hasUsers,
+  changePassword: changePassword
 };

@@ -130,6 +130,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:getNetworkConfig'),
     disconnectNetwork: () =>
       ipcRenderer.invoke('db:disconnectNetwork'),
+    
+    // إدارة المستخدمين
+    hasUsers: () =>
+      ipcRenderer.invoke('db:hasUsers'),
+    authenticateUser: (username, password) =>
+      ipcRenderer.invoke('db:authenticateUser', username, password),
+    getAllUsers: () =>
+      ipcRenderer.invoke('db:getAllUsers'),
+    addUser: (userData) =>
+      ipcRenderer.invoke('db:addUser', userData),
+    updateUser: (userId, updateData) =>
+      ipcRenderer.invoke('db:updateUser', userId, updateData),
+    deleteUser: (userId) =>
+      ipcRenderer.invoke('db:deleteUser', userId),
+    changePassword: (userId, oldPassword, newPassword) =>
+      ipcRenderer.invoke('db:changePassword', userId, oldPassword, newPassword),
   },
 
   // مراقبة الشبكة

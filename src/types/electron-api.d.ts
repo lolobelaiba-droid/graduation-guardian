@@ -48,6 +48,15 @@ interface DbOperations {
   centralizedBackup: () => Promise<{ success: boolean; data?: { success: boolean; path?: string; folderName?: string; filesCount?: number; error?: string }; error?: string }>;
   getNetworkConfig: () => Promise<{ success: boolean; data?: { found: boolean; config: { sharedPath: string } | null; path: string | null }; error?: string }>;
   disconnectNetwork: () => Promise<{ success: boolean; error?: string }>;
+
+  // إدارة المستخدمين
+  hasUsers: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
+  authenticateUser: (username: string, password: string) => Promise<{ success: boolean; user?: unknown; error?: string }>;
+  getAllUsers: () => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
+  addUser: (userData: { username: string; display_name?: string; password: string; role?: string }) => Promise<{ success: boolean; user?: unknown; error?: string }>;
+  updateUser: (userId: string, updateData: Record<string, unknown>) => Promise<{ success: boolean; user?: unknown; error?: string }>;
+  deleteUser: (userId: string) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (userId: string, oldPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface ElectronAPI {

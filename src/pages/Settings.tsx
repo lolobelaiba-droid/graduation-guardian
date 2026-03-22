@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+// @ts-ignore
+import UserManagement from "@/components/settings/UserManagement";
 import { useSearchParams } from "react-router-dom";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
@@ -21,6 +23,7 @@ import {
   Lock,
   Unlock,
   Timer,
+  Users,
 } from "lucide-react";
 import DateFormatSettings from "@/components/settings/DateFormatSettings";
 import TemplatePrintSettings from "@/components/settings/TemplatePrintSettings";
@@ -1092,6 +1095,12 @@ export default function Settings() {
               إدارة الشبكة
             </TabsTrigger>
           )}
+          {isElectron() && (
+            <TabsTrigger value="users" className="gap-2 py-2">
+              <Users className="h-4 w-4" />
+              إدارة المستخدمين
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Date Format Tab */}
@@ -1490,6 +1499,13 @@ export default function Settings() {
         {isElectron() && (
           <TabsContent value="network">
             <NetworkManagement />
+          </TabsContent>
+        )}
+
+        {/* User Management Tab */}
+        {isElectron() && (
+          <TabsContent value="users">
+            <UserManagement />
           </TabsContent>
         )}
 
