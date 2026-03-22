@@ -183,6 +183,7 @@ export function useCreateDefenseStageScience() {
           description: `تم نقل الطالب ${data.full_name_ar} إلى طور المناقشة (علوم)`,
           entity_id: (result.data as { id: string }).id,
           entity_type: 'defense_stage_science',
+          created_by: getCurrentUserName(),
         });
         
         return result.data;
