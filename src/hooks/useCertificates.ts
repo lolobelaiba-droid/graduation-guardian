@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { CertificateService } from "@/lib/database/certificate-service";
 import { TemplateService, TemplateFieldService } from "@/lib/database/template-service";
 import { toast } from "sonner";
