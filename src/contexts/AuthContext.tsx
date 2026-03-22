@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { setCurrentUserName } from "@/lib/current-user-store";
 
 export interface AppUser {
   id: string;
