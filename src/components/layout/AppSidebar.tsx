@@ -31,6 +31,7 @@ const menuItems = [
   { title: "إدارة الطلبة المناقشين", icon: Users, path: "/students" },
   { title: "طباعة الشهادات", icon: Printer, path: "/print" },
   { title: "إدارة القوالب", icon: FileText, path: "/templates" },
+  { title: "مستعرض البيانات", icon: Search, path: "/data-explorer" },
   { title: "تقرير الأداء", icon: BarChart3, path: "/reports" },
   { title: "سجل الأنشطة", icon: Activity, path: "/activity" },
   { title: "سجل الملاحظات", icon: StickyNote, path: "/notes" },

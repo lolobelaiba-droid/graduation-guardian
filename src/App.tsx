@@ -109,7 +109,8 @@ const App = () => {
               <Route path="/templates" element={<Templates />} />
               <Route path="/print" element={<PrintCertificates />} />
               <Route path="/activity" element={<ActivityLog />} />
-              <Route path="/settings" element={<Settings />} />
+               <Route path="/settings" element={<Settings />} />
+               <Route path="/data-explorer" element={<DataExplorer />} />
               <Route path="/notes" element={<Notes />} />
               
               <Route path="/reports" element={<Reports />} />
