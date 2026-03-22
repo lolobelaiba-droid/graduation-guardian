@@ -49,6 +49,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { data: unreadCount = 0 } = useUnreadNotesCount();
   const { data: networkInfo } = useNetworkInfo();
+  const { currentUser, isAdmin, logout } = useAuth();
 
   return (
     <>
