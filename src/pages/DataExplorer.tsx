@@ -764,13 +764,26 @@ export default function DataExplorer() {
 
           {!loading && query && (
             <div className="space-y-4">
+              {/* Advanced Filters */}
+              <AdvancedFilters results={results} onFilteredResults={setFilteredResults} />
+
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <p className="text-sm text-muted-foreground">تم العثور على <span className="font-bold text-foreground">{totalResults}</span> نتيجة</p>
+                <p className="text-sm text-muted-foreground">تم العثور على <span className="font-bold text-foreground">{totalResults}</span> نتيجة {filteredResults.length !== results.length && <span className="text-xs">(من أصل {results.length})</span>}</p>
                 {totalResults > 0 && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant={compareMode ? "secondary" : "outline"} size="sm" className="gap-2" onClick={() => { setCompareMode(!compareMode); setCompareSelection([]); }}>
+                      <GitCompare className="h-4 w-4" />{compareMode ? "إلغاء المقارنة" : "مقارنة"}
+                    </Button>
+                    {compareMode && compareSelection.length === 2 && (
+                      <Button size="sm" className="gap-2" onClick={() => setCompareOpen(true)}>
+                        <GitCompare className="h-4 w-4" />قارن ({compareSelection.length})
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => setDuplicateOpen(true)}>
+                      <Copy className="h-4 w-4" />كشف التكرارات
+                    </Button>
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                      const allData = results.map(r => r.raw);
-                      exportToExcel(allData, `نتائج_البحث_${query}`);
+                      exportToExcel(displayResults.map(r => r.raw), `نتائج_البحث_${query}`);
                     }}>
                       <Download className="h-4 w-4" />تصدير Excel
                     </Button>
@@ -780,12 +793,13 @@ export default function DataExplorer() {
                   </div>
                 )}
               </div>
-              <ScrollArea className="h-[calc(100vh-350px)]">
+              {compareMode && <p className="text-xs text-muted-foreground">اختر سجلين للمقارنة بينهما جنباً إلى جنب</p>}
+              <ScrollArea className="h-[calc(100vh-420px)]">
                 <div className="space-y-6">
-                  {renderGroup("الأساتذة", grouped.professors, <User className="h-4 w-4" />)}
-                  {renderGroup("طلبة الدكتوراه", grouped.students, <GraduationCap className="h-4 w-4" />)}
-                  {renderGroup("طور المناقشة", grouped.defense, <Scale className="h-4 w-4" />)}
-                  {renderGroup("الشهادات", grouped.certificates, <Award className="h-4 w-4" />)}
+                  {renderGroup("الأساتذة", displayGrouped.professors, <User className="h-4 w-4" />)}
+                  {renderGroup("طلبة الدكتوراه", displayGrouped.students, <GraduationCap className="h-4 w-4" />)}
+                  {renderGroup("طور المناقشة", displayGrouped.defense, <Scale className="h-4 w-4" />)}
+                  {renderGroup("الشهادات", displayGrouped.certificates, <Award className="h-4 w-4" />)}
                 </div>
               </ScrollArea>
               {totalResults === 0 && (
