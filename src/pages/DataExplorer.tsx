@@ -23,6 +23,7 @@ import ExcelJS from "exceljs";
 import { StudentJourney } from "@/components/data-explorer/StudentJourney";
 import { ProfessorProfile } from "@/components/data-explorer/ProfessorProfile";
 import { RelationshipNetwork } from "@/components/data-explorer/RelationshipNetwork";
+import { ReferenceDataManager } from "@/components/data-explorer/ReferenceDataManager";
 
 const TYPE_CONFIG: Record<string, any> = {
   professor: { icon: User, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950", badge: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
