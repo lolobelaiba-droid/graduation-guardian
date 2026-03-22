@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import * as XLSX from "xlsx";
 import {
   Search,
@@ -58,6 +59,7 @@ import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 export default function Students() {
+  const { canDelete } = usePermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCertType, setSelectedCertType] = useState<CertificateType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -548,6 +550,7 @@ export default function Students() {
                                   <Edit className="h-4 w-4" />
                                   تعديل
                                 </DropdownMenuItem>
+                                {canDelete && (
                                 <DropdownMenuItem
                                   className="gap-2 text-destructive"
                                   onSelect={(e) => {
@@ -558,6 +561,7 @@ export default function Students() {
                                   <Trash2 className="h-4 w-4" />
                                   حذف
                                 </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

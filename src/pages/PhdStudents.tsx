@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import * as XLSX from "xlsx";
 import {
   Search,
@@ -76,6 +77,7 @@ const generateAcademicYears = (): string[] => {
 const academicYears = generateAcademicYears();
 
 export default function PhdStudents() {
+  const { canDelete } = usePermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<PhdStudentType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -397,6 +399,7 @@ export default function PhdStudents() {
                                     <Edit className="h-4 w-4" />
                                     تعديل
                                   </DropdownMenuItem>
+                                  {canDelete && (
                                   <DropdownMenuItem
                                     className="gap-2 text-destructive"
                                     onClick={() => handleDeleteClick(student.id, selectedType)}
@@ -404,6 +407,7 @@ export default function PhdStudents() {
                                     <Trash2 className="h-4 w-4" />
                                     حذف
                                   </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>

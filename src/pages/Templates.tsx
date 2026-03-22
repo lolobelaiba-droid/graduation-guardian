@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigate } from "react-router-dom";
 import { toWesternNumerals } from "@/lib/numerals";
 import {
@@ -56,6 +57,7 @@ const typeColors: Record<CertificateType, string> = {
 };
 
 export default function Templates() {
+  const { canDelete } = usePermissions();
   const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
@@ -183,13 +185,15 @@ export default function Templates() {
                         </>
                       )}
                     </DropdownMenuItem>
+                    {canDelete && (
                     <DropdownMenuItem
                       className="gap-2 text-destructive"
                       onClick={() => handleDeleteClick(template.id)}
                     >
                       <Trash2 className="h-4 w-4" />
-                      حذف
+                      حذف القالب
                     </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

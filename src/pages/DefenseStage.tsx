@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Search,
   Scale,
@@ -62,6 +63,7 @@ import { toast } from "sonner";
 const ITEMS_PER_PAGE = 15;
 
 export default function DefenseStage() {
+  const { canDelete } = usePermissions();
   const [activeTab, setActiveTab] = useState("phd_lmd");
   const [searchQuery, setSearchQuery] = useState("");
   const [showStartDialog, setShowStartDialog] = useState(false);
@@ -413,6 +415,7 @@ export default function DefenseStage() {
                                 <CheckCircle className="h-4 w-4 ml-2" />
                                 انتهت إجراءات المناقشة
                               </DropdownMenuItem>
+                              {canDelete && (
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => setDeleteTarget({
@@ -424,6 +427,7 @@ export default function DefenseStage() {
                                 <Trash2 className="h-4 w-4 ml-2" />
                                 حذف
                               </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>

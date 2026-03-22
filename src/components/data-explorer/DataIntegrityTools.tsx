@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // =================== TYPES & CONSTANTS ===================
 
@@ -821,6 +822,8 @@ function DataHealthReport() {
 // =================== MAIN COMPONENT ===================
 
 export function DataIntegrityTools() {
+  const { canBulkCleanup } = usePermissions();
+  
   return (
     <div className="space-y-4">
       <Tabs defaultValue="consistency" dir="rtl">
@@ -828,9 +831,11 @@ export function DataIntegrityTools() {
           <TabsTrigger value="consistency" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <ShieldCheck className="h-4 w-4" />مدقق التناسق
           </TabsTrigger>
-          <TabsTrigger value="cleanup" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Sparkles className="h-4 w-4" />تنظيف جماعي
-          </TabsTrigger>
+          {canBulkCleanup && (
+            <TabsTrigger value="cleanup" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Sparkles className="h-4 w-4" />تنظيف جماعي
+            </TabsTrigger>
+          )}
           <TabsTrigger value="health" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <BarChart3 className="h-4 w-4" />صحة البيانات
           </TabsTrigger>
@@ -839,9 +844,11 @@ export function DataIntegrityTools() {
         <TabsContent value="consistency" className="mt-4">
           <ConsistencyChecker />
         </TabsContent>
-        <TabsContent value="cleanup" className="mt-4">
-          <BulkDataCleanup />
-        </TabsContent>
+        {canBulkCleanup && (
+          <TabsContent value="cleanup" className="mt-4">
+            <BulkDataCleanup />
+          </TabsContent>
+        )}
         <TabsContent value="health" className="mt-4">
           <DataHealthReport />
         </TabsContent>

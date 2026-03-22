@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 // @ts-ignore
 import UserManagement from "@/components/settings/UserManagement";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useSearchParams } from "react-router-dom";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import {
@@ -75,9 +76,11 @@ interface BackupSummary {
 
 
 export default function Settings() {
+  const { canManageSettings, canRestoreBackup, canManageNetwork, isAdmin } = usePermissions();
   const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
-  const [activeSettingsTab, setActiveSettingsTab] = useState(tabFromUrl || "university");
+  const defaultTab = isAdmin ? (tabFromUrl || "university") : (tabFromUrl || "dateformat");
+  const [activeSettingsTab, setActiveSettingsTab] = useState(defaultTab);
 
   useEffect(() => {
     if (tabFromUrl) setActiveSettingsTab(tabFromUrl);
@@ -1065,31 +1068,39 @@ export default function Settings() {
       {/* Settings Tabs */}
       <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="space-y-6">
         <TabsList className="bg-card shadow-card p-1 h-auto flex-wrap">
-          <TabsTrigger value="university" className="gap-2 py-2">
-            <Building2 className="h-4 w-4" />
-            معلومات الجامعة
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="university" className="gap-2 py-2">
+              <Building2 className="h-4 w-4" />
+              معلومات الجامعة
+            </TabsTrigger>
+          )}
           <TabsTrigger value="dateformat" className="gap-2 py-2">
             <Calendar className="h-4 w-4" />
             تنسيق التواريخ
           </TabsTrigger>
-          <TabsTrigger value="backup" className="gap-2 py-2">
-            <Database className="h-4 w-4" />
-            النسخ الاحتياطية
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="backup" className="gap-2 py-2">
+              <Database className="h-4 w-4" />
+              النسخ الاحتياطية
+            </TabsTrigger>
+          )}
           <TabsTrigger value="print" className="gap-2 py-2">
             <Printer className="h-4 w-4" />
             إعدادات الطباعة
           </TabsTrigger>
-          <TabsTrigger value="defensedocs" className="gap-2 py-2">
-            <FileText className="h-4 w-4" />
-            قوالب وثائق المناقشة
-          </TabsTrigger>
-          <TabsTrigger value="customfields" className="gap-2 py-2">
-            <Settings2 className="h-4 w-4" />
-            إدارة حقول قاعدة البيانات
-          </TabsTrigger>
-          {isElectron() && (
+          {isAdmin && (
+            <TabsTrigger value="defensedocs" className="gap-2 py-2">
+              <FileText className="h-4 w-4" />
+              قوالب وثائق المناقشة
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="customfields" className="gap-2 py-2">
+              <Settings2 className="h-4 w-4" />
+              إدارة حقول قاعدة البيانات
+            </TabsTrigger>
+          )}
+          {isElectron() && isAdmin && (
             <TabsTrigger value="network" className="gap-2 py-2">
               <Network className="h-4 w-4" />
               إدارة الشبكة
