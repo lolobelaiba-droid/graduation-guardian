@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2 } from "lucide-react";
+import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDataExplorer, getProfessorRelations, getStudentRelations, SearchResult, COLLECTIONS, fetchCollection } from "@/hooks/useDataExplorer";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
+import { StudentJourney } from "@/components/data-explorer/StudentJourney";
+import { ProfessorProfile } from "@/components/data-explorer/ProfessorProfile";
+import { RelationshipNetwork } from "@/components/data-explorer/RelationshipNetwork";
 
 const TYPE_CONFIG: Record<string, any> = {
   professor: { icon: User, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950", badge: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },

@@ -82,7 +82,10 @@ export function StudentJourney({ result, onBack }: { result: SearchResult; onBac
   ];
 
   const activeStages = stages.filter(s => s.records.length > 0);
-  const currentStageIndex = stages.findLastIndex(s => s.records.length > 0);
+  let currentStageIndex = 0;
+  for (let i = stages.length - 1; i >= 0; i--) {
+    if (stages[i].records.length > 0) { currentStageIndex = i; break; }
+  }
 
   return (
     <div className="space-y-4" dir="rtl">
