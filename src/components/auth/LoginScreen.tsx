@@ -115,8 +115,8 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
     if (!username.trim() || !password.trim()) return;
     setIsVerifying(true);
     try {
-      const db = getDbClient()!;
-      const result = await (db as any).authenticateUser(username.trim(), password);
+      const dbAny = db as any;
+      const result = await dbAny.authenticateUser(username.trim(), password);
       if (result.success && result.user) {
         toast.success(`مرحباً ${result.user.display_name}`);
         onAuthenticated(result.user as AppUser);
