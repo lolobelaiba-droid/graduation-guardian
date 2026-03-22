@@ -1095,6 +1095,12 @@ export default function Settings() {
               إدارة الشبكة
             </TabsTrigger>
           )}
+          {isElectron() && (
+            <TabsTrigger value="users" className="gap-2 py-2">
+              <Users className="h-4 w-4" />
+              إدارة المستخدمين
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Date Format Tab */}
