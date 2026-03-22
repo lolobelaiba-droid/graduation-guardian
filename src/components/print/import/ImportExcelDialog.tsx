@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import {
   type CertificateType,
   certificateFields,
@@ -337,12 +338,14 @@ export function ImportExcelDialog({
         activity_type: "student_added",
         description: activityDescription,
         entity_type: "certificate",
+        created_by: getCurrentUserName(),
       });
     } else {
       await supabase.from("activity_log").insert({
         activity_type: "student_added",
         description: activityDescription,
         entity_type: "certificate",
+        created_by: getCurrentUserName(),
       });
     }
 

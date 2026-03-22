@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { CertificateService } from "@/lib/database/certificate-service";
 import { TemplateService, TemplateFieldService } from "@/lib/database/template-service";
 import { toast } from "sonner";
@@ -64,6 +65,7 @@ export function useCreatePhdLmdCertificate() {
         description: `تم إضافة طالب دكتوراه ل م د: ${data.full_name_ar}`,
         entity_id: certificate.id,
         entity_type: "phd_lmd_certificate",
+        created_by: getCurrentUserName(),
       });
 
       return certificate;
@@ -182,6 +184,7 @@ export function useCreatePhdScienceCertificate() {
         description: `تم إضافة طالب دكتوراه علوم: ${data.full_name_ar}`,
         entity_id: certificate.id,
         entity_type: "phd_science_certificate",
+        created_by: getCurrentUserName(),
       });
 
       return certificate;
@@ -300,6 +303,7 @@ export function useCreateMasterCertificate() {
         description: `تم إضافة طالب ماجستير: ${data.full_name_ar}`,
         entity_id: certificate.id,
         entity_type: "master_certificate",
+        created_by: getCurrentUserName(),
       });
 
       return certificate;
@@ -451,6 +455,7 @@ export function useCreateTemplate() {
         description: `تم إنشاء قالب: ${data.template_name}`,
         entity_id: template.id,
         entity_type: "template",
+        created_by: getCurrentUserName(),
       });
 
       return template;

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { toast } from "sonner";
 
 // Tables to scan for reference data
@@ -247,6 +248,7 @@ export function ReferenceDataManager() {
               activity_type: "settings_updated",
               description: `تعديل بيانات مرجعية: "${editingValue.value}" → "${newValue.trim()}" (${totalUpdated} سجل)`,
               entity_type: "reference_data",
+              created_by: getCurrentUserName(),
             });
           }
         } else {
@@ -254,6 +256,7 @@ export function ReferenceDataManager() {
             activity_type: "settings_updated",
             description: `تعديل بيانات مرجعية: "${editingValue.value}" → "${newValue.trim()}" (${totalUpdated} سجل)`,
             entity_type: "reference_data",
+            created_by: getCurrentUserName(),
           });
         }
       } catch { /* ignore logging errors */ }

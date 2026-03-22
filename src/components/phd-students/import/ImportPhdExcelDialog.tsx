@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { toWesternNumerals } from "@/lib/numerals";
 import type { PhdStudentType } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
@@ -369,12 +370,14 @@ export function ImportPhdExcelDialog({
         activity_type: 'student_added',
         description: activityDesc,
         entity_type: 'phd_student',
+        created_by: getCurrentUserName(),
       });
     } else {
       await supabase.from("activity_log").insert({
         activity_type: "student_added",
         description: activityDesc,
         entity_type: "phd_student",
+        created_by: getCurrentUserName(),
       });
     }
 

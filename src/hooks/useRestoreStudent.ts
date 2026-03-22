@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { toast } from "sonner";
 import type { CertificateType, Certificate } from "@/types/certificates";
 
@@ -77,6 +78,7 @@ export function useRestoreStudentToPhd() {
           description: `تم إرجاع الطالب ${student.full_name_ar} إلى قاعدة بيانات طلبة الدكتوراه`,
           entity_id: student.id,
           entity_type: certificateType === "phd_lmd" ? "phd_lmd_student" : "phd_science_student",
+          created_by: getCurrentUserName(),
         });
 
         return student;
@@ -121,6 +123,7 @@ export function useRestoreStudentToPhd() {
         description: `تم إرجاع الطالب ${student.full_name_ar} إلى قاعدة بيانات طلبة الدكتوراه`,
         entity_id: student.id,
         entity_type: certificateType === "phd_lmd" ? "phd_lmd_student" : "phd_science_student",
+        created_by: getCurrentUserName(),
       });
 
       return student;

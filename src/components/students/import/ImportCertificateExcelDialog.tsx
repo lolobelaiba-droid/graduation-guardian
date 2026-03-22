@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { toWesternNumerals } from "@/lib/numerals";
 import type { CertificateType } from "@/types/certificates";
 import { certificateTypeLabels } from "@/types/certificates";
@@ -360,12 +361,14 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
         activity_type: 'student_added',
         description: activityDesc,
         entity_type: certificateType,
+        created_by: getCurrentUserName(),
       });
     } else {
       await supabase.from("activity_log").insert({
         activity_type: "student_added",
         description: activityDesc,
         entity_type: certificateType,
+        created_by: getCurrentUserName(),
       });
     }
 

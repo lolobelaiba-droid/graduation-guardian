@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { toast } from "sonner";
 import type { PhdLmdStudent, PhdScienceStudent, PhdStudentType } from "@/types/phd-students";
 
@@ -48,6 +49,7 @@ export function useCreatePhdLmdStudent() {
           description: `تم إضافة طالب دكتوراه ل م د: ${data.full_name_ar}`,
           entity_id: (result.data as { id: string }).id,
           entity_type: 'phd_lmd_student',
+          created_by: getCurrentUserName(),
         });
         
         return result.data;
@@ -66,6 +68,7 @@ export function useCreatePhdLmdStudent() {
         description: `تم إضافة طالب دكتوراه ل م د: ${data.full_name_ar}`,
         entity_id: student.id,
         entity_type: "phd_lmd_student",
+        created_by: getCurrentUserName(),
       });
 
       return student;
@@ -184,6 +187,7 @@ export function useCreatePhdScienceStudent() {
           description: `تم إضافة طالب دكتوراه علوم: ${data.full_name_ar}`,
           entity_id: (result.data as { id: string }).id,
           entity_type: 'phd_science_student',
+          created_by: getCurrentUserName(),
         });
         
         return result.data;
@@ -202,6 +206,7 @@ export function useCreatePhdScienceStudent() {
         description: `تم إضافة طالب دكتوراه علوم: ${data.full_name_ar}`,
         entity_id: student.id,
         entity_type: "phd_science_student",
+        created_by: getCurrentUserName(),
       });
 
       return student;

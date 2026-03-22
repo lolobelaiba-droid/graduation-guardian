@@ -150,11 +150,13 @@ export class TemplateService {
       .single();
     
     if (data) {
+      const { getCurrentUserName } = await import("@/lib/current-user-store");
       await supabase.from("activity_log").insert({
         activity_type: "template_added",
         description: `تم إنشاء قالب: ${template.template_name}`,
         entity_id: data.id,
         entity_type: "template",
+        created_by: getCurrentUserName(),
       });
     }
     

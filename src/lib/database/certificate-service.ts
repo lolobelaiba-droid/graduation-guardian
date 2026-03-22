@@ -151,11 +151,13 @@ export class CertificateService {
     }
     
     if (data) {
+      const { getCurrentUserName } = await import("@/lib/current-user-store");
       await supabase.from("activity_log").insert({
         activity_type: "student_added",
         description: `تم إضافة طالب: ${fullNameAr}`,
         entity_id: data.id,
         entity_type: tableName,
+        created_by: getCurrentUserName(),
       });
     }
     

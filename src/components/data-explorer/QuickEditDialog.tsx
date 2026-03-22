@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Save, AlertTriangle, Eye, EyeOff, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
+import { getCurrentUserName } from "@/lib/current-user-store";
 import { useRecordLock } from "@/hooks/useRecordLock";
 import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 import { toast } from "sonner";
@@ -175,6 +176,7 @@ export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSav
               description: activityDesc,
               entity_id: recordId,
               entity_type: sourceTable,
+              created_by: getCurrentUserName(),
             });
           }
         } else {
@@ -183,6 +185,7 @@ export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSav
             description: activityDesc,
             entity_id: recordId,
             entity_type: sourceTable,
+            created_by: getCurrentUserName(),
           });
         }
       } catch { /* activity log is non-critical */ }

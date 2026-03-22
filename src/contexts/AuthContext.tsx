@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { setCurrentUserName } from "@/lib/current-user-store";
 
 export interface AppUser {
   id: string;
@@ -28,8 +29,14 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
+  // Sync global store whenever currentUser changes
+  useEffect(() => {
+    setCurrentUserName(currentUser?.display_name || "النظام");
+  }, [currentUser]);
+
   const logout = useCallback(() => {
     setCurrentUser(null);
+    setCurrentUserName("النظام");
     onLogout?.();
   }, [onLogout]);
 
