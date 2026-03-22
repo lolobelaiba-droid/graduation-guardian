@@ -867,6 +867,7 @@ export default function DataExplorer() {
       <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={displayResults.map(r => r.raw)} fileName={`نتائج_البحث_${query}`} />
       {compareSelection.length === 2 && <RecordComparison open={compareOpen} onOpenChange={setCompareOpen} recordA={compareSelection[0]} recordB={compareSelection[1]} />}
       <DuplicateDetector open={duplicateOpen} onOpenChange={setDuplicateOpen} />
+      <QuickEditDialog open={quickEditOpen} onOpenChange={setQuickEditOpen} record={quickEditRecord?.raw || null} sourceTable={quickEditRecord?.sourceTable || ""} onSaved={handleQuickEditSaved} />
     </div>
   );
 }
