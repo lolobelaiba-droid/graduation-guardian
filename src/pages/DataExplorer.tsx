@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Search, User, GraduationCap, Award, Scale, ChevronLeft, Loader2, X, Users, BookOpen, Gavel, FileText, Info, Link2, Download, Database, Table2, Route, Network, UserCircle, Star, StarOff, Clock, Trash2, Printer, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown, Bookmark } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDataExplorer, getProfessorRelations, getStudentRelations, SearchResult, COLLECTIONS, fetchCollection } from "@/hooks/useDataExplorer";
+import { useSearchHistory } from "@/hooks/useSearchHistory";
+import { CustomExportDialog } from "@/components/data-explorer/CustomExportDialog";
+import { RecordPrintCard } from "@/components/data-explorer/RecordPrintCard";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { StudentJourney } from "@/components/data-explorer/StudentJourney";
@@ -55,48 +59,28 @@ const HIDDEN_FIELDS = ["id", "created_at", "updated_at", "_source", "_role"];
 
 // =================== EXPORT HELPER ===================
 async function exportToExcel(data: any[], fileName: string) {
-  if (!data || data.length === 0) {
-    toast.error("لا توجد بيانات للتصدير");
-    return;
-  }
+  if (!data || data.length === 0) { toast.error("لا توجد بيانات للتصدير"); return; }
   try {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("البيانات");
-
-    // Get all keys from data
     const allKeys = Array.from(new Set(data.flatMap(r => Object.keys(r)))).filter(k => !HIDDEN_FIELDS.includes(k));
-
-    // Headers
-    ws.columns = allKeys.map(k => ({
-      header: FIELD_LABELS[k] || k,
-      key: k,
-      width: 22,
-    }));
-
-    // Style header
+    ws.columns = allKeys.map(k => ({ header: FIELD_LABELS[k] || k, key: k, width: 22 }));
     const headerRow = ws.getRow(1);
     headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
     headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
     headerRow.alignment = { horizontal: "center", vertical: "middle" };
     headerRow.height = 28;
-
-    // Data rows
     data.forEach(record => {
       const row: any = {};
       allKeys.forEach(k => { row[k] = record[k] ?? ""; });
       ws.addRow(row);
     });
-
-    // RTL
     ws.views = [{ rightToLeft: true, state: "normal" }];
-
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `${fileName}.xlsx`;
-    a.click();
+    a.href = url; a.download = `${fileName}.xlsx`; a.click();
     URL.revokeObjectURL(url);
     toast.success("تم التصدير بنجاح");
   } catch (err) {
@@ -155,26 +139,31 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-center text-muted-foreground py-8">{text}</p>;
 }
 
-function DetailHeader({ result, onBack }: { result: SearchResult; onBack: () => void }) {
+function DetailHeader({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint?: () => void }) {
   const config = TYPE_CONFIG[result.type];
   const Icon = config?.icon || Info;
   return (
     <div className="flex items-center gap-3 mb-4">
       <Button variant="ghost" size="icon" onClick={onBack}><ChevronLeft className="h-5 w-5" /></Button>
       <div className={`p-2.5 rounded-lg ${config?.bg}`}><Icon className={`h-5 w-5 ${config?.color}`} /></div>
-      <div>
+      <div className="flex-1">
         <h2 className="text-xl font-bold">{result.name}</h2>
         <div className="flex items-center gap-2 mt-0.5">
           <Badge className={config?.badge}>{result.typeLabel}</Badge>
           {result.subType && <Badge variant="outline" className="text-xs">{result.subType}</Badge>}
         </div>
       </div>
+      {onPrint && (
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={onPrint}>
+          <Printer className="h-4 w-4" />بطاقة
+        </Button>
+      )}
     </div>
   );
 }
 
 // =================== PROFESSOR DETAILS ===================
-function ProfessorDetailsPanel({ result, onBack }: { result: SearchResult; onBack: () => void }) {
+function ProfessorDetailsPanel({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint: () => void }) {
   const [relations, setRelations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -185,7 +174,7 @@ function ProfessorDetailsPanel({ result, onBack }: { result: SearchResult; onBac
 
   return (
     <div className="space-y-4">
-      <DetailHeader result={result} onBack={onBack} />
+      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} />
       <Tabs defaultValue="info" dir="rtl">
         <TabsList className="w-full">
           <TabsTrigger value="info" className="flex-1 gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Info className="h-4 w-4" />البيانات</TabsTrigger>
@@ -233,7 +222,7 @@ function ProfessorDetailsPanel({ result, onBack }: { result: SearchResult; onBac
 }
 
 // =================== ENTITY DETAILS ===================
-function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: () => void }) {
+function EntityDetailsPanel({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint: () => void }) {
   const [relations, setRelations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -250,7 +239,7 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
 
   return (
     <div className="space-y-4">
-      <DetailHeader result={result} onBack={onBack} />
+      <DetailHeader result={result} onBack={onBack} onPrint={onPrint} />
       <Tabs defaultValue="info" dir="rtl">
         <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="info" className="flex-1 gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Info className="h-4 w-4" />البيانات</TabsTrigger>
@@ -313,17 +302,23 @@ function EntityDetailsPanel({ result, onBack }: { result: SearchResult; onBack: 
 }
 
 // =================== RAW COLLECTION BROWSER ===================
+type SortDir = "asc" | "desc" | null;
+interface SortConfig { field: string; dir: "asc" | "desc"; }
+
 function CollectionBrowser() {
   const [selectedTable, setSelectedTable] = useState("");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterText, setFilterText] = useState("");
+  const [sorts, setSorts] = useState<SortConfig[]>([]);
+  const [customExportOpen, setCustomExportOpen] = useState(false);
 
   const loadCollection = useCallback(async (table: string) => {
     if (!table) return;
     setSelectedTable(table);
     setLoading(true);
     setFilterText("");
+    setSorts([]);
     try {
       const result = await fetchCollection(table);
       setData(result);
@@ -338,13 +333,65 @@ function CollectionBrowser() {
 
   const collectionLabel = COLLECTIONS.find(c => c.table === selectedTable)?.label || "";
   const nameField = COLLECTIONS.find(c => c.table === selectedTable)?.nameField || "full_name_ar";
+  const isProfessors = selectedTable === "professors";
 
-  const filtered = filterText
-    ? data.filter(r => {
+  const columns = useMemo(() => {
+    if (isProfessors) return [
+      { key: nameField, label: "الاسم" },
+      { key: "rank_label", label: "الرتبة" },
+      { key: "university", label: "الجامعة" },
+      { key: "faculty_ar", label: "الكلية" },
+    ];
+    return [
+      { key: nameField, label: "الاسم" },
+      { key: "specialty_ar", label: "التخصص" },
+      { key: "supervisor_ar", label: "المشرف" },
+      { key: "faculty_ar", label: "الكلية" },
+    ];
+  }, [isProfessors, nameField]);
+
+  const toggleSort = (field: string) => {
+    setSorts(prev => {
+      const existing = prev.find(s => s.field === field);
+      if (!existing) return [...prev, { field, dir: "asc" }];
+      if (existing.dir === "asc") return prev.map(s => s.field === field ? { ...s, dir: "desc" as const } : s);
+      return prev.filter(s => s.field !== field);
+    });
+  };
+
+  const getSortIcon = (field: string) => {
+    const s = sorts.find(s => s.field === field);
+    if (!s) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    const idx = sorts.indexOf(s);
+    return (
+      <span className="flex items-center gap-0.5">
+        {s.dir === "asc" ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />}
+        {sorts.length > 1 && <span className="text-[10px] text-primary font-bold">{idx + 1}</span>}
+      </span>
+    );
+  };
+
+  const filtered = useMemo(() => {
+    let result = data;
+    if (filterText) {
+      result = result.filter(r => {
         const name = r[nameField] || r.full_name_ar || r.full_name || "";
         return String(name).toLowerCase().includes(filterText.toLowerCase());
-      })
-    : data;
+      });
+    }
+    if (sorts.length > 0) {
+      result = [...result].sort((a, b) => {
+        for (const s of sorts) {
+          const va = String(a[s.field] || "").toLowerCase();
+          const vb = String(b[s.field] || "").toLowerCase();
+          const cmp = va.localeCompare(vb, "ar");
+          if (cmp !== 0) return s.dir === "asc" ? cmp : -cmp;
+        }
+        return 0;
+      });
+    }
+    return result;
+  }, [data, filterText, sorts, nameField]);
 
   return (
     <div className="space-y-4">
@@ -364,21 +411,13 @@ function CollectionBrowser() {
           <>
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="تصفية حسب الاسم..."
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-                className="pr-9"
-                dir="rtl"
-              />
+              <Input placeholder="تصفية حسب الاسم..." value={filterText} onChange={(e) => setFilterText(e.target.value)} className="pr-9" dir="rtl" />
             </div>
-            <Button
-              variant="outline"
-              className="gap-2 shrink-0"
-              onClick={() => exportToExcel(filtered, collectionLabel || "بيانات")}
-            >
-              <Download className="h-4 w-4" />
-              تصدير Excel ({filtered.length})
+            <Button variant="outline" className="gap-2 shrink-0" onClick={() => exportToExcel(filtered, collectionLabel || "بيانات")}>
+              <Download className="h-4 w-4" />تصدير Excel ({filtered.length})
+            </Button>
+            <Button variant="outline" className="gap-2 shrink-0" onClick={() => setCustomExportOpen(true)}>
+              <SlidersHorizontal className="h-4 w-4" />تصدير مخصص
             </Button>
           </>
         )}
@@ -391,9 +430,7 @@ function CollectionBrowser() {
         </div>
       )}
 
-      {!loading && selectedTable && data.length === 0 && (
-        <EmptyState text="لا توجد بيانات في هذا الجدول" />
-      )}
+      {!loading && selectedTable && data.length === 0 && <EmptyState text="لا توجد بيانات في هذا الجدول" />}
 
       {!loading && data.length > 0 && (
         <>
@@ -404,6 +441,11 @@ function CollectionBrowser() {
                 <span> — عرض <span className="font-bold text-foreground">{filtered.length}</span></span>
               )}
             </p>
+            {sorts.length > 0 && (
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => setSorts([])}>
+                <X className="h-3 w-3" />إزالة الترتيب
+              </Button>
+            )}
           </div>
 
           <ScrollArea className="h-[calc(100vh-350px)]">
@@ -412,39 +454,25 @@ function CollectionBrowser() {
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="p-2 text-right font-semibold">#</th>
-                    <th className="p-2 text-right font-semibold">الاسم</th>
-                    {selectedTable !== "professors" && (
-                      <>
-                        <th className="p-2 text-right font-semibold">التخصص</th>
-                        <th className="p-2 text-right font-semibold">المشرف</th>
-                      </>
-                    )}
-                    {selectedTable === "professors" && (
-                      <>
-                        <th className="p-2 text-right font-semibold">الرتبة</th>
-                        <th className="p-2 text-right font-semibold">الجامعة</th>
-                      </>
-                    )}
-                    <th className="p-2 text-right font-semibold">الكلية</th>
+                    {columns.map(col => (
+                      <th key={col.key} className="p-2 text-right font-semibold cursor-pointer select-none hover:bg-muted/80 transition-colors" onClick={() => toggleSort(col.key)}>
+                        <span className="flex items-center gap-1">
+                          {col.label}
+                          {getSortIcon(col.key)}
+                        </span>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((row, idx) => (
                     <tr key={row.id || idx} className="border-b hover:bg-muted/30 transition-colors">
                       <td className="p-2 text-muted-foreground">{idx + 1}</td>
-                      <td className="p-2 font-medium">{row[nameField] || row.full_name_ar || row.full_name || "—"}</td>
-                      {selectedTable !== "professors" ? (
-                        <>
-                          <td className="p-2">{row.specialty_ar || "—"}</td>
-                          <td className="p-2">{row.supervisor_ar || "—"}</td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="p-2">{row.rank_label || "—"}</td>
-                          <td className="p-2">{row.university || "—"}</td>
-                        </>
-                      )}
-                      <td className="p-2">{row.faculty_ar || "—"}</td>
+                      {columns.map(col => (
+                        <td key={col.key} className={`p-2 ${col.key === nameField ? "font-medium" : ""}`}>
+                          {row[col.key] || "—"}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -460,6 +488,74 @@ function CollectionBrowser() {
           <p className="text-lg text-muted-foreground">اختر قاعدة بيانات لاستعراض محتوياتها</p>
         </div>
       )}
+
+      <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={filtered} fileName={collectionLabel || "بيانات_مخصصة"} />
+    </div>
+  );
+}
+
+// =================== SEARCH HISTORY & BOOKMARKS PANEL ===================
+function SearchHistoryPanel({ onSelect }: { onSelect: (query: string) => void }) {
+  const { history, bookmarks, clearHistory, removeFromHistory, removeBookmark } = useSearchHistory();
+
+  if (history.length === 0 && bookmarks.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Clock className="h-10 w-10 text-muted-foreground/20 mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">لا يوجد سجل بحث بعد</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {bookmarks.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Bookmark className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-semibold">المفضلات</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {bookmarks.map(b => (
+              <Badge key={b.id} variant="secondary" className="cursor-pointer gap-1.5 py-1.5 px-3 hover:bg-accent transition-colors" onClick={() => onSelect(b.query)}>
+                <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                {b.label}
+                <button className="mr-1 hover:text-destructive" onClick={(e) => { e.stopPropagation(); removeBookmark(b.id); }}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">سجل البحث</span>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs gap-1 text-muted-foreground" onClick={clearHistory}>
+              <Trash2 className="h-3 w-3" />مسح الكل
+            </Button>
+          </div>
+          <div className="space-y-1">
+            {history.map((h, i) => (
+              <div key={i} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer group transition-colors" onClick={() => onSelect(h.query)}>
+                <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm flex-1">{h.query}</span>
+                {h.resultCount !== undefined && (
+                  <span className="text-xs text-muted-foreground">{h.resultCount} نتيجة</span>
+                )}
+                <button className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); removeFromHistory(h.query); }}>
+                  <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -467,12 +563,23 @@ function CollectionBrowser() {
 // =================== MAIN PAGE ===================
 export default function DataExplorer() {
   const { grouped, loading, query, search, results } = useDataExplorer();
+  const { addToHistory, addBookmark, isBookmarked } = useSearchHistory();
   const [searchInput, setSearchInput] = useState("");
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "journey" | "profile">("list");
   const [activeTab, setActiveTab] = useState("search");
+  const [printCardOpen, setPrintCardOpen] = useState(false);
+  const [printCardResult, setPrintCardResult] = useState<SearchResult | null>(null);
+  const [customExportOpen, setCustomExportOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const totalResults = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
+
+  // Save to history when results arrive
+  useEffect(() => {
+    if (query && !loading && totalResults >= 0) {
+      addToHistory(query, totalResults);
+    }
+  }, [query, loading, totalResults]);
 
   const handleInputChange = (value: string) => {
     setSearchInput(value);
@@ -481,8 +588,17 @@ export default function DataExplorer() {
   };
 
   const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); setViewMode("list"); };
-
   const handleBack = () => { setViewMode("list"); };
+
+  const handleHistorySelect = (q: string) => {
+    setSearchInput(q);
+    search(q);
+  };
+
+  const openPrintCard = (result: SearchResult) => {
+    setPrintCardResult(result);
+    setPrintCardOpen(true);
+  };
 
   // Journey view
   if (selectedResult && viewMode === "journey") {
@@ -507,7 +623,7 @@ export default function DataExplorer() {
       <div className="p-6 max-w-4xl mx-auto" dir="rtl">
         {selectedResult.type === "professor" ? (
           <div className="space-y-4">
-            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} />
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="gap-2" onClick={() => setViewMode("profile")}>
                 <UserCircle className="h-4 w-4" />ملف الأستاذ الشامل
@@ -516,7 +632,7 @@ export default function DataExplorer() {
           </div>
         ) : (
           <div className="space-y-4">
-            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} />
+            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} />
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="gap-2" onClick={() => setViewMode("journey")}>
                 <Route className="h-4 w-4" />تتبع المسار الأكاديمي
@@ -524,6 +640,7 @@ export default function DataExplorer() {
             </div>
           </div>
         )}
+        {printCardResult && <RecordPrintCard open={printCardOpen} onOpenChange={setPrintCardOpen} result={printCardResult} />}
       </div>
     );
   }
@@ -547,7 +664,12 @@ export default function DataExplorer() {
                     <p className="font-semibold truncate">{item.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{item.details}</p>
                   </div>
-                  <Badge className={`${config.badge} text-xs shrink-0`}>{item.typeLabel}</Badge>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
+                      <Printer className="h-3.5 w-3.5" />
+                    </Button>
+                    <Badge className={`${config.badge} text-xs`}>{item.typeLabel}</Badge>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -580,10 +702,17 @@ export default function DataExplorer() {
         <TabsContent value="search" className="space-y-4 mt-4">
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="ابحث بالاسم، رقم التسجيل، اسم المشرف..." value={searchInput} onChange={(e) => handleInputChange(e.target.value)} className="pr-10 pl-10 h-12 text-base" dir="rtl" />
-            {searchInput && (
-              <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleClear}><X className="h-4 w-4" /></Button>
-            )}
+            <Input placeholder="ابحث بالاسم، رقم التسجيل، اسم المشرف..." value={searchInput} onChange={(e) => handleInputChange(e.target.value)} className="pr-10 pl-20 h-12 text-base" dir="rtl" />
+            <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {searchInput && query && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (isBookmarked(query)) return; addBookmark(query); toast.success("تمت الإضافة للمفضلات"); }} title={isBookmarked(query) ? "في المفضلات" : "إضافة للمفضلات"}>
+                  {isBookmarked(query) ? <Star className="h-4 w-4 text-amber-500 fill-amber-500" /> : <StarOff className="h-4 w-4" />}
+                </Button>
+              )}
+              {searchInput && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClear}><X className="h-4 w-4" /></Button>
+              )}
+            </div>
           </div>
 
           {loading && (
@@ -595,15 +724,20 @@ export default function DataExplorer() {
 
           {!loading && query && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm text-muted-foreground">تم العثور على <span className="font-bold text-foreground">{totalResults}</span> نتيجة</p>
                 {totalResults > 0 && (
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                    const allData = results.map(r => r.raw);
-                    exportToExcel(allData, `نتائج_البحث_${query}`);
-                  }}>
-                    <Download className="h-4 w-4" />تصدير النتائج
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                      const allData = results.map(r => r.raw);
+                      exportToExcel(allData, `نتائج_البحث_${query}`);
+                    }}>
+                      <Download className="h-4 w-4" />تصدير Excel
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => setCustomExportOpen(true)}>
+                      <SlidersHorizontal className="h-4 w-4" />تصدير مخصص
+                    </Button>
+                  </div>
                 )}
               </div>
               <ScrollArea className="h-[calc(100vh-350px)]">
@@ -624,10 +758,13 @@ export default function DataExplorer() {
           )}
 
           {!loading && !query && (
-            <div className="text-center py-16">
-              <Search className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
-              <p className="text-lg text-muted-foreground">ابدأ بكتابة اسم أو رقم للبحث</p>
-              <p className="text-sm text-muted-foreground/60 mt-1">يمكنك البحث في جميع قواعد البيانات في آن واحد</p>
+            <div className="space-y-6">
+              <div className="text-center py-8">
+                <Search className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
+                <p className="text-lg text-muted-foreground">ابدأ بكتابة اسم أو رقم للبحث</p>
+                <p className="text-sm text-muted-foreground/60 mt-1">يمكنك البحث في جميع قواعد البيانات في آن واحد</p>
+              </div>
+              <SearchHistoryPanel onSelect={handleHistorySelect} />
             </div>
           )}
         </TabsContent>
@@ -640,6 +777,10 @@ export default function DataExplorer() {
           <CollectionBrowser />
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      {printCardResult && <RecordPrintCard open={printCardOpen} onOpenChange={setPrintCardOpen} result={printCardResult} />}
+      <CustomExportDialog open={customExportOpen} onOpenChange={setCustomExportOpen} data={results.map(r => r.raw)} fileName={`نتائج_البحث_${query}`} />
     </div>
   );
 }
