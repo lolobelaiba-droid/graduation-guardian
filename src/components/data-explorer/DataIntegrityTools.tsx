@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // =================== TYPES & CONSTANTS ===================
 
