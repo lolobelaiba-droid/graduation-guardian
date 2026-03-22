@@ -1,8 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { BarChart3, Users, GraduationCap, Building2, UserCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
@@ -34,21 +32,18 @@ export function CollectionStats({ data, isProfessors }: Props) {
   const genderStats = useMemo(() => {
     if (isProfessors || !data.length) return [];
     return countBy(data, "gender").map(g => ({
-      ...g,
-      name: g.name === "male" ? "ذكر" : g.name === "female" ? "أنثى" : g.name,
+      ...g, name: g.name === "male" ? "ذكر" : g.name === "female" ? "أنثى" : g.name,
     }));
   }, [data, isProfessors]);
 
   const primaryStats = useMemo(() => {
     if (!data.length) return [];
-    if (isProfessors) return countBy(data, "university").slice(0, 8);
-    return countBy(data, "faculty_ar").slice(0, 8);
+    return isProfessors ? countBy(data, "university").slice(0, 8) : countBy(data, "faculty_ar").slice(0, 8);
   }, [data, isProfessors]);
 
   const secondaryStats = useMemo(() => {
     if (!data.length) return [];
-    if (isProfessors) return countBy(data, "rank_label").slice(0, 8);
-    return countBy(data, "specialty_ar").slice(0, 10);
+    return isProfessors ? countBy(data, "rank_label").slice(0, 8) : countBy(data, "specialty_ar").slice(0, 10);
   }, [data, isProfessors]);
 
   const supervisorStats = useMemo(() => {
@@ -58,29 +53,6 @@ export function CollectionStats({ data, isProfessors }: Props) {
 
   if (!data.length) return null;
 
-  const genderStats = useMemo(() => {
-    if (isProfessors) return [];
-    return countBy(data, "gender").map(g => ({
-      ...g,
-      name: g.name === "male" ? "ذكر" : g.name === "female" ? "أنثى" : g.name,
-    }));
-  }, [data, isProfessors]);
-
-  const primaryStats = useMemo(() => {
-    if (isProfessors) return countBy(data, "university").slice(0, 8);
-    return countBy(data, "faculty_ar").slice(0, 8);
-  }, [data, isProfessors]);
-
-  const secondaryStats = useMemo(() => {
-    if (isProfessors) return countBy(data, "rank_label").slice(0, 8);
-    return countBy(data, "specialty_ar").slice(0, 10);
-  }, [data, isProfessors]);
-
-  const supervisorStats = useMemo(() => {
-    if (isProfessors) return [];
-    return countBy(data, "supervisor_ar").slice(0, 10);
-  }, [data, isProfessors]);
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
@@ -88,7 +60,6 @@ export function CollectionStats({ data, isProfessors }: Props) {
         <span className="font-semibold">إحصائيات المجموعة</span>
         <Badge variant="secondary">{data.length} سجل</Badge>
       </div>
-
       <Tabs defaultValue="primary" dir="rtl">
         <TabsList className="h-auto flex-wrap gap-1 p-1">
           <TabsTrigger value="primary" className="text-xs gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -108,7 +79,6 @@ export function CollectionStats({ data, isProfessors }: Props) {
             </>
           )}
         </TabsList>
-
         <TabsContent value="primary">
           {primaryStats.length > 0 ? (
             <div className="h-[250px]">
@@ -123,7 +93,6 @@ export function CollectionStats({ data, isProfessors }: Props) {
             </div>
           ) : <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات</p>}
         </TabsContent>
-
         <TabsContent value="secondary">
           {secondaryStats.length > 0 ? (
             <div className="h-[250px]">
@@ -138,7 +107,6 @@ export function CollectionStats({ data, isProfessors }: Props) {
             </div>
           ) : <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات</p>}
         </TabsContent>
-
         {!isProfessors && (
           <>
             <TabsContent value="supervisor">
@@ -155,7 +123,6 @@ export function CollectionStats({ data, isProfessors }: Props) {
                 </div>
               ) : <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات</p>}
             </TabsContent>
-
             <TabsContent value="gender">
               {genderStats.length > 0 ? (
                 <div className="h-[220px]">
