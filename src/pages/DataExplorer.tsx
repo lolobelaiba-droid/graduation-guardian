@@ -612,8 +612,17 @@ export default function DataExplorer() {
     debounceRef.current = setTimeout(() => search(value), 400);
   };
 
-  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); setViewMode("list"); };
+  const handleClear = () => { setSearchInput(""); search(""); setSelectedResult(null); setViewMode("list"); setCompareMode(false); setCompareSelection([]); };
   const handleBack = () => { setViewMode("list"); };
+
+  const toggleCompareSelect = (item: SearchResult) => {
+    setCompareSelection(prev => {
+      const exists = prev.find(r => r.id === item.id && r.sourceTable === item.sourceTable);
+      if (exists) return prev.filter(r => !(r.id === item.id && r.sourceTable === item.sourceTable));
+      if (prev.length >= 2) return [prev[1], item];
+      return [...prev, item];
+    });
+  };
 
   const handleHistorySelect = (q: string) => {
     setSearchInput(q);
