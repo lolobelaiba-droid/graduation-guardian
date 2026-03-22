@@ -465,7 +465,7 @@ function CollectionBrowser() {
 
           <ScrollArea className="h-[calc(100vh-350px)]">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
+               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="p-2 text-right font-semibold">#</th>
@@ -477,6 +477,7 @@ function CollectionBrowser() {
                         </span>
                       </th>
                     ))}
+                    <th className="p-2 text-center font-semibold w-16">تصحيح</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -488,6 +489,11 @@ function CollectionBrowser() {
                           {row[col.key] || "—"}
                         </td>
                       ))}
+                      <td className="p-2 text-center">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditRecord(row); setEditOpen(true); }} title="تصحيح سريع">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
