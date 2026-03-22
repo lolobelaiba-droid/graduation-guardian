@@ -1502,6 +1502,13 @@ export default function Settings() {
           </TabsContent>
         )}
 
+        {/* User Management Tab */}
+        {isElectron() && (
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+        )}
+
       </Tabs>
     </div>
   );
