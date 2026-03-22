@@ -690,18 +690,24 @@ export default function DataExplorer() {
           {items.map((item) => {
             const config = TYPE_CONFIG[item.type];
             const Icon = config.icon;
+            const isSelected = compareSelection.some(r => r.id === item.id && r.sourceTable === item.sourceTable);
             return (
-              <Card key={`${item.type}-${item.id}-${item.sourceTable}`} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedResult(item)}>
+              <Card key={`${item.type}-${item.id}-${item.sourceTable}`} className={`cursor-pointer hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-primary" : ""}`} onClick={() => compareMode ? toggleCompareSelect(item) : setSelectedResult(item)}>
                 <CardContent className="p-3 flex items-center gap-3">
+                  {compareMode && (
+                    <Checkbox checked={isSelected} className="shrink-0" />
+                  )}
                   <div className={`p-2 rounded-lg ${config.bg}`}><Icon className={`h-4 w-4 ${config.color}`} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold truncate">{item.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{item.details}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
-                      <Printer className="h-3.5 w-3.5" />
-                    </Button>
+                    {!compareMode && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openPrintCard(item); }} title="طباعة بطاقة">
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Badge className={`${config.badge} text-xs`}>{item.typeLabel}</Badge>
                   </div>
                 </CardContent>
