@@ -587,7 +587,19 @@ export default function DataExplorer() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [quickEditOpen, setQuickEditOpen] = useState(false);
+  const [quickEditRecord, setQuickEditRecord] = useState<{ raw: Record<string, unknown>; sourceTable: string } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const openQuickEdit = (raw: Record<string, unknown>, sourceTable: string) => {
+    setQuickEditRecord({ raw, sourceTable });
+    setQuickEditOpen(true);
+  };
+
+  const handleQuickEditSaved = () => {
+    // Re-run search to refresh results
+    if (query) search(query);
+  };
 
   // Use filtered results when filters are active
   const displayResults = filteredResults.length > 0 || results.length === 0 ? filteredResults : results;
