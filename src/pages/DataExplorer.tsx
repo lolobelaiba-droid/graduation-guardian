@@ -681,7 +681,7 @@ export default function DataExplorer() {
       <div className="p-6 max-w-4xl mx-auto" dir="rtl">
         {selectedResult.type === "professor" ? (
           <div className="space-y-4">
-            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} />
+            <ProfessorDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} onEdit={() => openQuickEdit(selectedResult.raw, selectedResult.sourceTable || "professors")} />
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="gap-2" onClick={() => setViewMode("profile")}>
                 <UserCircle className="h-4 w-4" />ملف الأستاذ الشامل
@@ -690,7 +690,7 @@ export default function DataExplorer() {
           </div>
         ) : (
           <div className="space-y-4">
-            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} />
+            <EntityDetailsPanel result={selectedResult} onBack={() => setSelectedResult(null)} onPrint={() => openPrintCard(selectedResult)} onEdit={() => openQuickEdit(selectedResult.raw, selectedResult.sourceTable || "")} />
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="gap-2" onClick={() => setViewMode("journey")}>
                 <Route className="h-4 w-4" />تتبع المسار الأكاديمي
@@ -699,6 +699,7 @@ export default function DataExplorer() {
           </div>
         )}
         {printCardResult && <RecordPrintCard open={printCardOpen} onOpenChange={setPrintCardOpen} result={printCardResult} />}
+        <QuickEditDialog open={quickEditOpen} onOpenChange={setQuickEditOpen} record={quickEditRecord?.raw || null} sourceTable={quickEditRecord?.sourceTable || ""} onSaved={handleQuickEditSaved} />
       </div>
     );
   }
