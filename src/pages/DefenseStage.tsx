@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Search,
   Scale,
