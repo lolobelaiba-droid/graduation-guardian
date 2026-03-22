@@ -176,7 +176,7 @@ function DetailHeader({ result, onBack, onPrint, onEdit }: { result: SearchResul
 }
 
 // =================== PROFESSOR DETAILS ===================
-function ProfessorDetailsPanel({ result, onBack, onPrint }: { result: SearchResult; onBack: () => void; onPrint: () => void }) {
+function ProfessorDetailsPanel({ result, onBack, onPrint, onEdit }: { result: SearchResult; onBack: () => void; onPrint: () => void; onEdit?: () => void }) {
   const [relations, setRelations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
