@@ -325,6 +325,8 @@ function CollectionBrowser() {
   const [filterText, setFilterText] = useState("");
   const [sorts, setSorts] = useState<SortConfig[]>([]);
   const [customExportOpen, setCustomExportOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<Record<string, unknown> | null>(null);
 
   const loadCollection = useCallback(async (table: string) => {
     if (!table) return;
