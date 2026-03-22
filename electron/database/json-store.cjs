@@ -1630,11 +1630,20 @@ function addUser(userData) {
     created_at: getCurrentDateTime(),
     last_login: null
   };
+  // حفظ سؤال وجواب الأمان (للمدير الأول فقط)
+  if (userData.security_question && userData.security_answer) {
+    var answerSalt = generateSaltNode();
+    newUser.security_question = userData.security_question;
+    newUser.security_answer_hash = hashPasswordNode(userData.security_answer.trim().toLowerCase(), answerSalt);
+    newUser.security_answer_salt = answerSalt;
+  }
   users.push(newUser);
   writeUsers(users);
   var safeUser = Object.assign({}, newUser);
   delete safeUser.password_hash;
   delete safeUser.salt;
+  delete safeUser.security_answer_hash;
+  delete safeUser.security_answer_salt;
   return { success: true, user: safeUser };
 }
 
