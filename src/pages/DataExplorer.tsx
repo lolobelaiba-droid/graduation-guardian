@@ -576,8 +576,23 @@ export default function DataExplorer() {
   const [printCardOpen, setPrintCardOpen] = useState(false);
   const [printCardResult, setPrintCardResult] = useState<SearchResult | null>(null);
   const [customExportOpen, setCustomExportOpen] = useState(false);
+  const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareSelection, setCompareSelection] = useState<SearchResult[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const totalResults = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0);
+
+  // Use filtered results when filters are active
+  const displayResults = filteredResults.length > 0 || results.length === 0 ? filteredResults : results;
+  const displayGrouped = useMemo(() => ({
+    professors: displayResults.filter((r) => r.type === "professor"),
+    students: displayResults.filter((r) => r.type === "phd_student"),
+    defense: displayResults.filter((r) => r.type === "defense_student"),
+    certificates: displayResults.filter((r) => r.type === "certificate"),
+  }), [displayResults]);
+  const totalResults = displayResults.length;
 
   // Save to history when results arrive
   useEffect(() => {
