@@ -587,6 +587,7 @@ function insert(tableName, record) {
   // إضافة معلومات الجهاز في سجل الأنشطة
   if (tableName === 'activity_log') {
     var identity = getDeviceIdentity();
+    newRecord.device_id = identity.device_id;
     newRecord.device_hostname = identity.hostname;
     newRecord.device_ip = identity.ip;
   }
