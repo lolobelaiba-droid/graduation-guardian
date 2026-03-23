@@ -22,6 +22,7 @@ interface UserFormData {
   display_name: string;
   password: string;
   role: "admin" | "employee";
+  avatar_url?: string | null;
 }
 
 /** تنسيق التاريخ بصيغة DD/MM/YYYY */
