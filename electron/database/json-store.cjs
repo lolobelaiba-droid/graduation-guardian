@@ -15,8 +15,48 @@ var networkConfig = null;
 var deviceIdentity = null;
 
 // ============================================
-// إعداد هوية الجهاز (IP + Hostname)
+// إعداد هوية الجهاز (UUID + IP + Hostname)
 // ============================================
+
+/**
+ * الحصول على أو توليد معرّف فريد ثابت للجهاز (Device UUID)
+ * يُحفظ في مجلد userData المحلي ولا يتأثر بتغيّر IP أو Hostname
+ */
+function getOrCreateDeviceUUID() {
+  var deviceIdPath = path.join(app.getPath('userData'), 'device-id.json');
+  try {
+    if (fs.existsSync(deviceIdPath)) {
+      var content = fs.readFileSync(deviceIdPath, 'utf8');
+      var parsed = JSON.parse(content);
+      if (parsed && parsed.uuid) {
+        return parsed.uuid;
+      }
+    }
+  } catch (e) {
+    console.error('[DeviceUUID] Error reading device-id.json:', e.message);
+  }
+
+  // توليد UUID جديد عند أول تشغيل
+  var crypto = require('crypto');
+  var newUUID = crypto.randomUUID ? crypto.randomUUID() : 
+    ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+      return (c ^ crypto.randomBytes(1)[0] & 15 >> c / 4).toString(16);
+    });
+
+  try {
+    var deviceData = {
+      uuid: newUUID,
+      createdAt: new Date().toISOString(),
+      initialHostname: os.hostname()
+    };
+    fs.writeFileSync(deviceIdPath, JSON.stringify(deviceData, null, 2), 'utf8');
+    console.log('[DeviceUUID] Generated new Device UUID:', newUUID);
+  } catch (e) {
+    console.error('[DeviceUUID] Error saving device-id.json:', e.message);
+  }
+
+  return newUUID;
+}
 
 function getDeviceIdentity() {
   if (deviceIdentity) return deviceIdentity;
@@ -36,9 +76,10 @@ function getDeviceIdentity() {
       }
       if (ip !== '127.0.0.1') break;
     }
-    deviceIdentity = { hostname: hostname, ip: ip };
+    var deviceUUID = getOrCreateDeviceUUID();
+    deviceIdentity = { device_id: deviceUUID, hostname: hostname, ip: ip };
   } catch (e) {
-    deviceIdentity = { hostname: 'unknown', ip: '127.0.0.1' };
+    deviceIdentity = { device_id: 'unknown', hostname: 'unknown', ip: '127.0.0.1' };
   }
   return deviceIdentity;
 }
@@ -493,6 +534,7 @@ function getNetworkInfo() {
   return {
     isNetwork: !!isNetworkMode(),
     sharedPath: networkConfig ? networkConfig.sharedPath : null,
+    device_id: identity.device_id,
     hostname: identity.hostname,
     ip: identity.ip
   };
@@ -546,6 +588,7 @@ function insert(tableName, record) {
   // إضافة معلومات الجهاز في سجل الأنشطة
   if (tableName === 'activity_log') {
     var identity = getDeviceIdentity();
+    newRecord.device_id = identity.device_id;
     newRecord.device_hostname = identity.hostname;
     newRecord.device_ip = identity.ip;
   }
@@ -581,6 +624,7 @@ function update(tableName, id, updates) {
   // إضافة معلومات الجهاز المعدِّل في سجل الأنشطة
   if (tableName === 'activity_log') {
     var identity = getDeviceIdentity();
+    data[index].device_id = identity.device_id;
     data[index].device_hostname = identity.hostname;
     data[index].device_ip = identity.ip;
   }
@@ -606,6 +650,7 @@ function acquireRecordLock(tableName, recordId) {
   var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
   var identity = getDeviceIdentity();
   var lockData = {
+    device_id: identity.device_id,
     hostname: identity.hostname,
     ip: identity.ip,
     timestamp: Date.now()
@@ -616,8 +661,11 @@ function acquireRecordLock(tableName, recordId) {
     try {
       var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
       if (Date.now() - existing.timestamp < RECORD_LOCK_STALE_MS) {
-        // القفل نشط ومن جهاز آخر
-        if (existing.hostname !== identity.hostname || existing.ip !== identity.ip) {
+        // القفل نشط ومن جهاز آخر (التحقق بالـ device_id أولاً)
+        var isSameDevice = existing.device_id ? 
+          (existing.device_id === identity.device_id) : 
+          (existing.hostname === identity.hostname && existing.ip === identity.ip);
+        if (!isSameDevice) {
           return {
             acquired: false,
             lockedBy: existing.hostname,
@@ -650,7 +698,10 @@ function releaseRecordLock(tableName, recordId) {
       var identity = getDeviceIdentity();
       var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
       // حذف فقط إذا كان القفل لنا
-      if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+      var isSameDevice = existing.device_id ? 
+        (existing.device_id === identity.device_id) : 
+        (existing.hostname === identity.hostname && existing.ip === identity.ip);
+      if (isSameDevice) {
         fs.unlinkSync(lockFile);
       }
     }
@@ -676,7 +727,10 @@ function checkRecordLock(tableName, recordId) {
       return { locked: false };
     }
     
-    if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+    var isSameDevice = existing.device_id ? 
+      (existing.device_id === identity.device_id) : 
+      (existing.hostname === identity.hostname && existing.ip === identity.ip);
+    if (isSameDevice) {
       return { locked: false }; // القفل لنا
     }
     
@@ -1335,11 +1389,17 @@ function updateDeviceRegistry() {
     registry = [];
   }
 
-  // تحديث أو إضافة الجهاز الحالي
+  // تحديث أو إضافة الجهاز الحالي (باستخدام device_id كمعرّف أساسي)
   var now = new Date().toISOString();
   var found = false;
   for (var i = 0; i < registry.length; i++) {
-    if (registry[i].ip === identity.ip && registry[i].hostname === identity.hostname) {
+    // البحث بالـ device_id أولاً (الأكثر موثوقية)، ثم بالـ hostname+ip للتوافق مع السجلات القديمة
+    if (registry[i].device_id === identity.device_id || 
+        (!registry[i].device_id && registry[i].ip === identity.ip && registry[i].hostname === identity.hostname)) {
+      // تحديث كل المعلومات (الـ IP والـ Hostname قد يتغيران)
+      registry[i].device_id = identity.device_id;
+      registry[i].hostname = identity.hostname;
+      registry[i].ip = identity.ip;
       registry[i].lastActive = now;
       found = true;
       break;
@@ -1347,6 +1407,7 @@ function updateDeviceRegistry() {
   }
   if (!found) {
     registry.push({
+      device_id: identity.device_id,
       hostname: identity.hostname,
       ip: identity.ip,
       firstSeen: now,
