@@ -443,6 +443,52 @@ export default function UserManagement() {
                 عرض الصلاحيات لهذا الدور
               </button>
             </div>
+
+            {/* صورة المستخدم */}
+            <div className="space-y-2">
+              <Label>صورة المستخدم (اختياري)</Label>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-14 w-14">
+                  {avatarPreview ? (
+                    <AvatarImage src={avatarPreview} alt="صورة المستخدم" />
+                  ) : (
+                    <AvatarFallback className="bg-muted text-muted-foreground text-lg">
+                      {formData.display_name?.charAt(0) || "؟"}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    <label className="cursor-pointer">
+                      <ImagePlus className="h-4 w-4 ml-1" />
+                      اختيار صورة
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
+                    </label>
+                  </Button>
+                  {avatarPreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => {
+                        setAvatarPreview(null);
+                        setFormData(prev => ({ ...prev, avatar_url: null }));
+                      }}
+                    >
+                      <XCircle className="h-4 w-4 ml-1" />
+                      إزالة
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">JPG, PNG أو WEBP — أقصى 500 كيلوبايت</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowAddDialog(false); setEditingUser(null); resetForm(); }}>
