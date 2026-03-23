@@ -141,6 +141,7 @@ const App = () => {
             </HashRouter>
           </AutoLogoutWrapper>
         </AuthProviderInit>
+        </NetworkReadOnlyProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
