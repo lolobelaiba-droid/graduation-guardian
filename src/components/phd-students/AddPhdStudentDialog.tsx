@@ -273,7 +273,10 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
     return Object.keys(errors).length === 0;
   };
 
+  const { guardWrite } = useNetworkReadOnly();
+
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
+    if (!guardWrite("إضافة طالب")) return;
     // Validate bilingual dropdown fields
     if (!validateBilingualFields()) {
       return;

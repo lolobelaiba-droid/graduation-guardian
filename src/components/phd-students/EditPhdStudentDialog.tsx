@@ -364,7 +364,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
     return Object.keys(errors).length === 0;
   };
 
+  const { guardWrite } = useNetworkReadOnly();
+
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
+    if (!guardWrite("تعديل طالب")) return;
     if (!student) return;
     
     // Validate bilingual dropdown fields

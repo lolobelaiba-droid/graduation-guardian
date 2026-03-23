@@ -344,7 +344,10 @@ export default function EditStudentDialog({
 
   const isLoading = updatePhdLmd.isPending || updatePhdScience.isPending || updateMaster.isPending;
 
+  const { guardWrite } = useNetworkReadOnly();
+
   const onSubmit = (data: FormValues) => {
+    if (!guardWrite("تعديل شهادة")) return;
     if (!student) return;
 
     // حفظ أسماء الأساتذة في قاعدة البيانات
