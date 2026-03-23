@@ -534,6 +534,7 @@ function getNetworkInfo() {
   return {
     isNetwork: !!isNetworkMode(),
     sharedPath: networkConfig ? networkConfig.sharedPath : null,
+    device_id: identity.device_id,
     hostname: identity.hostname,
     ip: identity.ip
   };
