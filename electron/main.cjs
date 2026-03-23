@@ -325,6 +325,37 @@ function registerPrinterHandlers() {
       return { success: false, error: String(e?.message || e) };
     }
   });
+  // حفظ الصفحة كملف PDF
+  ipcMain.handle('printers:print-to-pdf', async (_event, payload) => {
+    try {
+      const { options } = payload || {};
+      const win = BrowserWindow.getFocusedWindow() || mainWindow;
+      if (!win) return { success: false, error: 'No window available' };
+
+      const result = await dialog.showSaveDialog(win, {
+        title: 'حفظ كملف PDF',
+        defaultPath: path.join(app.getPath('documents'), options?.defaultFileName || 'document.pdf'),
+        filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+      });
+
+      if (result.canceled || !result.filePath) {
+        return { success: false, error: 'cancelled' };
+      }
+
+      const pdfData = await win.webContents.printToPDF({
+        printBackground: true,
+        margins: { marginType: 'none' },
+        pageSize: options?.pageSize || undefined,
+        landscape: options?.landscape || false,
+      });
+
+      fs.writeFileSync(result.filePath, pdfData);
+      return { success: true, filePath: result.filePath };
+    } catch (e) {
+      console.error('Failed to print to PDF:', e);
+      return { success: false, error: String(e?.message || e) };
+    }
+  });
 
   console.log('Printer IPC handlers registered');
 }

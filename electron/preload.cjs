@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('printers:print-pdf', { pdf: pdfArrayBuffer, options }),
   printNative: (options) =>
     ipcRenderer.invoke('printers:print-native', { options }),
+  printToPdf: (options) =>
+    ipcRenderer.invoke('printers:print-to-pdf', { options }),
   openPrintersSettings: () => ipcRenderer.invoke('printers:open-settings'),
 
   // ============================================
