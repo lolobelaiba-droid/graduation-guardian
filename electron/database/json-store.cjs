@@ -2022,5 +2022,7 @@ module.exports = {
   changePassword: changePassword,
   recoverPasswordByQuestion: recoverPasswordByQuestion,
   getSecurityQuestion: getSecurityQuestion,
-  checkEmergencyReset: checkEmergencyReset
+  checkEmergencyReset: checkEmergencyReset,
+  getFailedLoginAlerts: getFailedLoginAlerts,
+  dismissFailedLoginAlert: dismissFailedLoginAlert
 };
