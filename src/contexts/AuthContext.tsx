@@ -10,6 +10,7 @@ export interface AppUser {
   must_change_password: boolean;
   created_at: string;
   last_login: string | null;
+  avatar_url?: string | null;
 }
 
 interface AuthContextType {

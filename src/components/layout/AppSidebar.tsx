@@ -24,6 +24,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -146,13 +147,19 @@ export function AppSidebar() {
           {/* User Info */}
           {currentUser && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent/50">
-              <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-                {currentUser.role === "admin" ? (
-                  <Shield className="h-4 w-4 text-sidebar-primary-foreground" />
+              <Avatar className="w-8 h-8 flex-shrink-0">
+                {currentUser.avatar_url ? (
+                  <AvatarImage src={currentUser.avatar_url} alt={currentUser.display_name} />
                 ) : (
-                  <UserCog className="h-4 w-4 text-sidebar-primary-foreground" />
+                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs">
+                    {currentUser.role === "admin" ? (
+                      <Shield className="h-4 w-4" />
+                    ) : (
+                      <UserCog className="h-4 w-4" />
+                    )}
+                  </AvatarFallback>
                 )}
-              </div>
+              </Avatar>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.display_name}</p>

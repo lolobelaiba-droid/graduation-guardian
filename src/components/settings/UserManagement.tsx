@@ -13,13 +13,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff, Info, Check, X } from "lucide-react";
+import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff, Info, Check, X, ImagePlus, XCircle } from "lucide-react";
+import UsageGuideDialog, { userManagementGuide } from "./UsageGuideDialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface UserFormData {
   username: string;
   display_name: string;
   password: string;
   role: "admin" | "employee";
+  avatar_url?: string | null;
 }
 
 /** تنسيق التاريخ بصيغة DD/MM/YYYY */
@@ -90,7 +93,9 @@ export default function UserManagement() {
     display_name: "",
     password: "",
     role: "employee",
+    avatar_url: null,
   });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // تغيير كلمة المرور الشخصية
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -187,8 +192,9 @@ export default function UserManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ username: "", display_name: "", password: "", role: "employee" });
+    setFormData({ username: "", display_name: "", password: "", role: "employee", avatar_url: null });
     setShowPassword(false);
+    setAvatarPreview(null);
   };
 
   const openEditDialog = (user: AppUser) => {
@@ -198,7 +204,25 @@ export default function UserManagement() {
       display_name: user.display_name,
       password: "",
       role: user.role,
+      avatar_url: user.avatar_url || null,
     });
+    setAvatarPreview(user.avatar_url || null);
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      toast.error("حجم الصورة يجب أن يكون أقل من 500 كيلوبايت");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setAvatarPreview(dataUrl);
+      setFormData(prev => ({ ...prev, avatar_url: dataUrl }));
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!isElectron()) {
@@ -219,7 +243,8 @@ export default function UserManagement() {
             <Users className="h-5 w-5" />
             إدارة المستخدمين
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <UsageGuideDialog title="دليل استخدام إدارة المستخدمين" sections={userManagementGuide} />
             <Button variant="outline" size="sm" onClick={() => setShowPermissions("employee")}>
               <Info className="h-4 w-4 ml-1" />
               صلاحيات الموظف
@@ -418,6 +443,52 @@ export default function UserManagement() {
                 عرض الصلاحيات لهذا الدور
               </button>
             </div>
+
+            {/* صورة المستخدم */}
+            <div className="space-y-2">
+              <Label>صورة المستخدم (اختياري)</Label>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-14 w-14">
+                  {avatarPreview ? (
+                    <AvatarImage src={avatarPreview} alt="صورة المستخدم" />
+                  ) : (
+                    <AvatarFallback className="bg-muted text-muted-foreground text-lg">
+                      {formData.display_name?.charAt(0) || "؟"}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    <label className="cursor-pointer">
+                      <ImagePlus className="h-4 w-4 ml-1" />
+                      اختيار صورة
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
+                    </label>
+                  </Button>
+                  {avatarPreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => {
+                        setAvatarPreview(null);
+                        setFormData(prev => ({ ...prev, avatar_url: null }));
+                      }}
+                    >
+                      <XCircle className="h-4 w-4 ml-1" />
+                      إزالة
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">JPG, PNG أو WEBP — أقصى 500 كيلوبايت</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowAddDialog(false); setEditingUser(null); resetForm(); }}>
@@ -430,6 +501,7 @@ export default function UserManagement() {
                     username: formData.username,
                     display_name: formData.display_name,
                     role: formData.role,
+                    avatar_url: formData.avatar_url,
                   };
                   if (formData.password) updateData.password = formData.password;
                   updateUserMutation.mutate({ id: editingUser.id, data: updateData });
