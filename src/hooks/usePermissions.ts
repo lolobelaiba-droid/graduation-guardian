@@ -3,33 +3,35 @@ import { toast } from "sonner";
 import { useCallback } from "react";
 
 /**
- * نظام الصلاحيات المركزي
+ * نظام الصلاحيات المركزي مع دعم الصلاحيات المخصصة لكل موظف
  * 
- * المدير (admin): صلاحيات كاملة
+ * المدير (admin): صلاحيات كاملة دائماً
  * الموظف (employee): 
- *   ✅ عرض البيانات
- *   ✅ إضافة طلاب/سجلات
- *   ✅ تعديل الطلاب
- *   ✅ تصدير واستيراد
- *   ✅ طباعة الشهادات
- *   ❌ حذف السجلات
- *   ❌ إدارة المستخدمين
- *   ❌ تعديل الإعدادات العامة (الجامعة، الشبكة، كلمة المرور)
- *   ❌ تنظيف البيانات الجماعي
- *   ❌ إدارة القوالب (حذف)
- *   ❌ استعادة النسخ الاحتياطية
+ *   ✅ الصلاحيات الثابتة: عرض، إضافة، تعديل، تصدير، استيراد، طباعة
+ *   🔧 صلاحيات قابلة للتخصيص: حذف، إدارة مستخدمين، إعدادات، قوالب، تنظيف، نسخ احتياطي، شبكة
  */
 export function usePermissions() {
   const { currentUser, isAdmin } = useAuth();
 
-  const canDelete = isAdmin;
-  const canManageUsers = isAdmin;
-  const canManageSettings = isAdmin;
-  const canManageTemplates = isAdmin; // حذف القوالب فقط
-  const canBulkCleanup = isAdmin;
-  const canRestoreBackup = isAdmin;
-  const canManageNetwork = isAdmin;
-  const canChangeAppPassword = isAdmin;
+  // الحصول على الصلاحيات المخصصة للموظف
+  const customPerms = (currentUser as any)?.custom_permissions as Record<string, boolean> | undefined;
+
+  const hasCustomPerm = useCallback((key: string): boolean => {
+    if (isAdmin) return true;
+    if (customPerms && typeof customPerms === "object" && key in customPerms) {
+      return customPerms[key] === true;
+    }
+    return false; // الافتراضي للموظف
+  }, [isAdmin, customPerms]);
+
+  const canDelete = hasCustomPerm("delete");
+  const canManageUsers = hasCustomPerm("manage_users");
+  const canManageSettings = hasCustomPerm("manage_settings");
+  const canManageTemplates = hasCustomPerm("manage_templates");
+  const canBulkCleanup = hasCustomPerm("bulk_cleanup");
+  const canRestoreBackup = hasCustomPerm("restore_backup");
+  const canManageNetwork = hasCustomPerm("manage_network");
+  const canChangeAppPassword = hasCustomPerm("change_app_password");
 
   // الصلاحيات المتاحة للجميع
   const canView = true;
@@ -51,7 +53,7 @@ export function usePermissions() {
       case "change_app_password": return canChangeAppPassword;
       default: return true;
     }
-  }, [isAdmin]);
+  }, [canDelete, canManageUsers, canManageSettings, canManageTemplates, canBulkCleanup, canRestoreBackup, canManageNetwork, canChangeAppPassword]);
 
   const requirePermission = useCallback((action: string): boolean => {
     const allowed = checkPermission(action);

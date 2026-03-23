@@ -169,7 +169,20 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         toast.success(`مرحباً ${result.user.display_name}`);
         onAuthenticated(result.user as AppUser);
       } else {
-        toast.error(result.error || "فشل تسجيل الدخول");
+        // تسجيل محاولة الدخول الفاشلة
+        if (typeof dbAny.recordFailedLogin === "function") {
+          try {
+            await dbAny.recordFailedLogin(username.trim());
+          } catch (e2) {
+            console.warn("Failed to record failed login:", e2);
+          }
+        }
+        const isLocked = result.error?.includes("مقفل") || result.error?.includes("locked");
+        if (isLocked) {
+          toast.error("تم قفل الحساب بسبب كثرة المحاولات الخاطئة. تواصل مع المدير.");
+        } else {
+          toast.error(result.error || "فشل تسجيل الدخول");
+        }
         setPassword("");
       }
     } catch (e) {
