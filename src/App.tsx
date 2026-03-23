@@ -21,6 +21,7 @@ import LoginScreen from "@/components/auth/LoginScreen";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
 import { AuthProvider, AppUser } from "@/contexts/AuthContext";
+import { NetworkReadOnlyProvider } from "@/contexts/NetworkReadOnlyContext";
 
 const queryClient = new QueryClient();
 
