@@ -2,6 +2,9 @@ const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+
+// تعطيل تسريع العتاد لحل مشاكل الشاشة البيضاء/السوداء على بعض الأجهزة
+app.disableHardwareAcceleration();
 const { pathToFileURL } = require('url');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
