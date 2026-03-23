@@ -649,6 +649,7 @@ function acquireRecordLock(tableName, recordId) {
   var lockFile = path.join(lockDir, tableName + '_' + recordId + '.lock');
   var identity = getDeviceIdentity();
   var lockData = {
+    device_id: identity.device_id,
     hostname: identity.hostname,
     ip: identity.ip,
     timestamp: Date.now()
@@ -659,8 +660,11 @@ function acquireRecordLock(tableName, recordId) {
     try {
       var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
       if (Date.now() - existing.timestamp < RECORD_LOCK_STALE_MS) {
-        // القفل نشط ومن جهاز آخر
-        if (existing.hostname !== identity.hostname || existing.ip !== identity.ip) {
+        // القفل نشط ومن جهاز آخر (التحقق بالـ device_id أولاً)
+        var isSameDevice = existing.device_id ? 
+          (existing.device_id === identity.device_id) : 
+          (existing.hostname === identity.hostname && existing.ip === identity.ip);
+        if (!isSameDevice) {
           return {
             acquired: false,
             lockedBy: existing.hostname,
