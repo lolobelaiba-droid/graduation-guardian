@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getFontByName, getAllFonts, type FontConfig } from '@/lib/arabicFonts';
 import { logger } from '@/lib/logger';
-import { cacheFontAsset } from '@/lib/database/asset-cache';
+import { isElectron } from '@/lib/database/db-client';
 
 // Track loaded fonts globally to avoid duplicate loading
 const loadedFonts = new Set<string>();
