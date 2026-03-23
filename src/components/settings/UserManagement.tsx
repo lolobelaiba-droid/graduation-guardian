@@ -501,6 +501,7 @@ export default function UserManagement() {
                     username: formData.username,
                     display_name: formData.display_name,
                     role: formData.role,
+                    avatar_url: formData.avatar_url,
                   };
                   if (formData.password) updateData.password = formData.password;
                   updateUserMutation.mutate({ id: editingUser.id, data: updateData });
