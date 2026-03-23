@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -343,7 +344,10 @@ export default function EditStudentDialog({
 
   const isLoading = updatePhdLmd.isPending || updatePhdScience.isPending || updateMaster.isPending;
 
+  const { guardWrite } = useNetworkReadOnly();
+
   const onSubmit = (data: FormValues) => {
+    if (!guardWrite("تعديل شهادة")) return;
     if (!student) return;
 
     // حفظ أسماء الأساتذة في قاعدة البيانات

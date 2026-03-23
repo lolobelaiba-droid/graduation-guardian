@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { toast } from "sonner";
 import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
@@ -272,7 +273,10 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
     return Object.keys(errors).length === 0;
   };
 
+  const { guardWrite } = useNetworkReadOnly();
+
   const onSubmit = async (data: z.infer<typeof phdLmdSchema>) => {
+    if (!guardWrite("إضافة طالب")) return;
     // Validate bilingual dropdown fields
     if (!validateBilingualFields()) {
       return;
