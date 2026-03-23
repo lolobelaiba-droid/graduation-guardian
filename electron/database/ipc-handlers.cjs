@@ -618,6 +618,22 @@ function registerDatabaseHandlers() {
     }
   });
 
+  ipcMain.handle('db:getFailedLoginAlerts', async () => {
+    try {
+      return db.getFailedLoginAlerts();
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:dismissFailedLoginAlert', async (_, alertId) => {
+    try {
+      return db.dismissFailedLoginAlert(alertId);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   console.log('Database IPC handlers registered');
 
   // إرجاع دوال المراقبة للاستخدام من main.cjs
