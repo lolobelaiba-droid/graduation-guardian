@@ -81,6 +81,23 @@ const ROLE_PERMISSIONS = {
   },
 };
 
+/** أفاتارات افتراضية */
+function makeAvatarSvg(color: string, iconPath: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="64" fill="${color}"/><g transform="translate(32,32)" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</g></svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
+const DEFAULT_AVATARS = [
+  { id: "user", label: "مستخدم", icon: User, color: "#6366f1", svg: makeAvatarSvg("#6366f1", '<path d="M32 36c-6.6 0-12-5.4-12-12s5.4-12 12-12 12 5.4 12 12-5.4 12-12 12z"/><path d="M8 58c0-13.3 10.7-24 24-24s24 10.7 24 24"/>') },
+  { id: "grad", label: "أكاديمي", icon: GraduationCap, color: "#8b5cf6", svg: makeAvatarSvg("#8b5cf6", '<path d="M2 24l30-12 30 12-30 12z"/><path d="M8 28v16c0 0 10 8 24 8s24-8 24-8V28"/><path d="M56 26v20"/>') },
+  { id: "brief", label: "إداري", icon: Briefcase, color: "#0891b2", svg: makeAvatarSvg("#0891b2", '<rect x="4" y="16" width="56" height="40" rx="4"/><path d="M20 16V8a4 4 0 014-4h16a4 4 0 014 4v8"/>') },
+  { id: "book", label: "باحث", icon: BookOpen, color: "#059669", svg: makeAvatarSvg("#059669", '<path d="M4 4v52c0 0 8-4 28-4s28 4 28 4V4c0 0-8 4-28 4S4 4 4 4z"/><path d="M32 8v48"/>') },
+  { id: "monitor", label: "تقني", icon: Monitor, color: "#d97706", svg: makeAvatarSvg("#d97706", '<rect x="4" y="4" width="56" height="40" rx="4"/><path d="M20 44h24"/><path d="M24 44v12"/><path d="M40 44v12"/><path d="M16 56h32"/>') },
+  { id: "heart", label: "مساعد", icon: HeartHandshake, color: "#e11d48", svg: makeAvatarSvg("#e11d48", '<path d="M32 52S4 36 4 18a14 14 0 0128 0 14 14 0 0128 0c0 18-28 34-28 34z"/>') },
+  { id: "star", label: "متميز", icon: Star, color: "#ca8a04", svg: makeAvatarSvg("#ca8a04", '<polygon points="32,2 40,22 62,22 44,36 50,56 32,44 14,56 20,36 2,22 24,22"/>') },
+  { id: "smile", label: "ودود", icon: Smile, color: "#16a34a", svg: makeAvatarSvg("#16a34a", '<circle cx="32" cy="32" r="28"/><path d="M20 20h0.1"/><path d="M44 20h0.1"/><path d="M18 38c4 6 10 8 14 8s10-2 14-8"/>') },
+];
+
 export default function UserManagement() {
   const { currentUser, isAdmin } = useAuth();
   const queryClient = useQueryClient();
