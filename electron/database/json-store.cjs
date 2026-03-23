@@ -1711,6 +1711,8 @@ function addUser(userData) {
     must_change_password: userData.must_change_password || false,
     failed_attempts: 0,
     locked_until: null,
+    avatar_url: userData.avatar_url || null,
+    custom_permissions: userData.custom_permissions || null,
     created_at: getCurrentDateTime(),
     last_login: getCurrentDateTime()
   };
