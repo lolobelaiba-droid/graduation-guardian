@@ -1524,10 +1524,33 @@ function writeUsers(users) {
     if (isNetworkMode()) {
       locked = acquireLockSync(filePath);
     }
+    // كتابة مباشرة أولاً (أكثر أماناً على مجلدات الشبكة)
+    var jsonContent = JSON.stringify(users, null, 2);
+    // نسخة احتياطية
+    if (fs.existsSync(filePath)) {
+      try { fs.copyFileSync(filePath, filePath + '.bak'); } catch (bakErr) {}
+    }
+    // محاولة الكتابة الذرية أولاً
     var tmpPath = filePath + '.tmp.' + process.pid;
-    fs.writeFileSync(tmpPath, JSON.stringify(users, null, 2), 'utf8');
-    fs.renameSync(tmpPath, filePath);
-    return true;
+    try {
+      fs.writeFileSync(tmpPath, jsonContent, 'utf8');
+      fs.renameSync(tmpPath, filePath);
+    } catch (renameErr) {
+      // في حالة فشل rename (مثل مجلدات الشبكة على Windows)، كتابة مباشرة
+      console.warn('[Users] Atomic write failed, falling back to direct write:', renameErr.message);
+      try { fs.unlinkSync(tmpPath); } catch (ue) {}
+      fs.writeFileSync(filePath, jsonContent, 'utf8');
+    }
+    // التحقق من نجاح الكتابة
+    if (fs.existsSync(filePath)) {
+      var verify = fs.readFileSync(filePath, 'utf8');
+      if (verify && verify.length > 2) {
+        console.log('[Users] Successfully saved ' + users.length + ' users to:', filePath);
+        return true;
+      }
+    }
+    console.error('[Users] Verification failed after write');
+    return false;
   } catch (e) {
     console.error('[Users] Error writing users:', e.message);
     try { fs.unlinkSync(filePath + '.tmp.' + process.pid); } catch (ue) {}
