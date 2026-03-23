@@ -122,8 +122,25 @@ function createWindow() {
   }
 
   // Show window when ready to prevent flickering
+  // إظهار النافذة عند الجهوزية أو بعد مهلة زمنية
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+  });
+
+  // مهلة أمان: إظهار النافذة بعد 5 ثوانٍ حتى لو لم يكتمل التحميل
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      console.warn('[Main] Window not visible after 5s, forcing show');
+      mainWindow.show();
+    }
+  }, 5000);
+
+  // معالجة أخطاء تحميل الصفحة
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('[Main] Page failed to load:', errorCode, errorDescription);
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
   });
 
   // Handle window close with confirmation
