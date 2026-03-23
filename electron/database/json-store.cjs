@@ -1753,6 +1753,8 @@ function updateUser(userId, updateData) {
   if (updateData.display_name) users[idx].display_name = updateData.display_name;
   if (updateData.role) users[idx].role = updateData.role;
   if (typeof updateData.is_active === 'boolean') users[idx].is_active = updateData.is_active;
+  if ('avatar_url' in updateData) users[idx].avatar_url = updateData.avatar_url || null;
+  if ('custom_permissions' in updateData) users[idx].custom_permissions = updateData.custom_permissions || null;
   if (updateData.password) {
     var salt = generateSaltNode();
     users[idx].salt = salt;
