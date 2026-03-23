@@ -1651,7 +1651,7 @@ function addUser(userData) {
     failed_attempts: 0,
     locked_until: null,
     created_at: getCurrentDateTime(),
-    last_login: null
+    last_login: getCurrentDateTime()
   };
   // حفظ سؤال وجواب الأمان (للمدير الأول فقط)
   if (userData.security_question && userData.security_answer) {
