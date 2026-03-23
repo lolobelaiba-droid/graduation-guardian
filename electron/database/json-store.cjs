@@ -1838,6 +1838,7 @@ function checkEmergencyReset() {
 // ============================================
 
 module.exports = {
+  isNetworkMode: isNetworkMode,
   initializeDatabase: initializeDatabase,
   closeDatabase: closeDatabase,
   getDatabasePath: getDatabasePath,

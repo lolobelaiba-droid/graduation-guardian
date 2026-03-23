@@ -80,7 +80,35 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       }
       const db = getDbClient()! as any;
 
-      // التحقق من ملف إعادة التعيين الطارئ
+      // === الخطوة 1: التحقق من وضع الشبكة ===
+      // إذا لم يتم إعداد مجلد مشترك بعد → دخول مباشر كمدير بدون تسجيل دخول
+      let networkActive = false;
+      if (typeof db.isNetworkMode === "function") {
+        try {
+          const netResult = await db.isNetworkMode();
+          networkActive = netResult?.success && netResult?.data === true;
+        } catch (e) {
+          console.warn("isNetworkMode check failed:", e);
+        }
+      }
+
+      if (!networkActive) {
+        // لا يوجد مجلد مشترك → دخول مباشر كمدير محلي
+        console.log("[Login] No network configured, granting local admin access");
+        onAuthenticated({
+          id: "local-admin",
+          username: "admin",
+          display_name: "المدير المحلي",
+          role: "admin",
+          is_active: true,
+          must_change_password: false,
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // === الخطوة 2: الشبكة مفعّلة → التحقق من ملف الطوارئ ===
       if (typeof db.checkEmergencyReset === "function") {
         try {
           const resetResult = await db.checkEmergencyReset();
@@ -95,6 +123,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         }
       }
 
+      // === الخطوة 3: التحقق من وجود مستخدمين في المجلد المشترك ===
       if (typeof db.hasUsers === "function") {
         try {
           const result = await db.hasUsers();
@@ -102,42 +131,29 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
           if (result?.success && result?.data === true) {
             setScreenState("login");
           } else {
-            // التحقق من وجود نظام كلمة مرور قديم
-            try {
-              const oldHash = await db.getSetting("app_password_hash");
-              if (oldHash?.success && oldHash?.data && (oldHash.data as any).value) {
-                setScreenState("legacy_login");
-              } else {
-                setScreenState("setup_first_admin");
-              }
-            } catch {
-              setScreenState("setup_first_admin");
-            }
+            // لا يوجد مستخدمون في المجلد المشترك → إعداد أول مدير
+            setScreenState("setup_first_admin");
           }
         } catch (e) {
           console.error("hasUsers call failed:", e);
           setScreenState("setup_first_admin");
         }
       } else {
-        // الدالة غير متوفرة - نظام قديم
-        try {
-          const oldHash = await db.getSetting("app_password_hash");
-          if (oldHash?.success && oldHash?.data && (oldHash.data as any).value) {
-            setScreenState("legacy_login");
-          } else {
-            onAuthenticated({
-              id: "legacy-user", username: "admin", display_name: "المستخدم",
-              role: "admin", is_active: true, must_change_password: false,
-              created_at: new Date().toISOString(), last_login: new Date().toISOString(),
-            });
-          }
-        } catch {
-          setScreenState("setup_first_admin");
-        }
+        setScreenState("setup_first_admin");
       }
     } catch (e) {
       console.error("Error checking system state:", e);
-      setScreenState("setup_first_admin");
+      // في حال خطأ عام → دخول محلي
+      onAuthenticated({
+        id: "fallback-admin",
+        username: "admin",
+        display_name: "المدير",
+        role: "admin",
+        is_active: true,
+        must_change_password: false,
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString(),
+      });
     } finally {
       setIsLoading(false);
     }

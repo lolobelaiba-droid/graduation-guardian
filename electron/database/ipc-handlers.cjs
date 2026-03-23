@@ -530,6 +530,14 @@ function registerDatabaseHandlers() {
   // إدارة المستخدمين (Multi-User System)
   // ============================================
 
+  ipcMain.handle('db:isNetworkMode', async () => {
+    try {
+      return { success: true, data: !!db.isNetworkMode() };
+    } catch (error) {
+      return { success: false, data: false };
+    }
+  });
+
   ipcMain.handle('db:hasUsers', async () => {
     try {
       return { success: true, data: db.hasUsers() };
