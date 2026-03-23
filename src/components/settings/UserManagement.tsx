@@ -448,8 +448,8 @@ export default function UserManagement() {
             {/* صورة المستخدم */}
             <div className="space-y-2">
               <Label>صورة المستخدم (اختياري)</Label>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-14 w-14">
+              <div className="flex items-center gap-3 mb-2">
+                <Avatar className="h-14 w-14 border-2 border-primary/20">
                   {avatarPreview ? (
                     <AvatarImage src={avatarPreview} alt="صورة المستخدم" />
                   ) : (
@@ -458,11 +458,57 @@ export default function UserManagement() {
                     </AvatarFallback>
                   )}
                 </Avatar>
-                <div className="flex gap-2">
+                {avatarPreview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      setAvatarPreview(null);
+                      setFormData(prev => ({ ...prev, avatar_url: null }));
+                    }}
+                  >
+                    <XCircle className="h-4 w-4 ml-1" />
+                    إزالة
+                  </Button>
+                )}
+              </div>
+              <Tabs defaultValue="default" className="w-full">
+                <TabsList className="w-full grid grid-cols-2">
+                  <TabsTrigger value="default">أفاتار افتراضي</TabsTrigger>
+                  <TabsTrigger value="upload">رفع صورة</TabsTrigger>
+                </TabsList>
+                <TabsContent value="default" className="mt-3">
+                  <div className="grid grid-cols-4 gap-2">
+                    {DEFAULT_AVATARS.map((av) => (
+                      <button
+                        key={av.id}
+                        type="button"
+                        onClick={() => {
+                          setAvatarPreview(av.svg);
+                          setFormData(prev => ({ ...prev, avatar_url: av.svg }));
+                        }}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all hover:bg-accent ${
+                          avatarPreview === av.svg ? "border-primary bg-primary/10" : "border-transparent"
+                        }`}
+                      >
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                          style={{ backgroundColor: av.color }}
+                        >
+                          <av.icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{av.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="upload" className="mt-3">
                   <Button type="button" variant="outline" size="sm" asChild>
                     <label className="cursor-pointer">
                       <ImagePlus className="h-4 w-4 ml-1" />
-                      اختيار صورة
+                      اختيار صورة من الجهاز
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
@@ -471,24 +517,9 @@ export default function UserManagement() {
                       />
                     </label>
                   </Button>
-                  {avatarPreview && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => {
-                        setAvatarPreview(null);
-                        setFormData(prev => ({ ...prev, avatar_url: null }));
-                      }}
-                    >
-                      <XCircle className="h-4 w-4 ml-1" />
-                      إزالة
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">JPG, PNG أو WEBP — أقصى 500 كيلوبايت</p>
+                  <p className="text-xs text-muted-foreground mt-2">JPG, PNG أو WEBP — أقصى 500 كيلوبايت</p>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
           <DialogFooter>
