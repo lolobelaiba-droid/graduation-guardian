@@ -1729,6 +1729,7 @@ function deleteUser(userId) {
  */
 function hasUsers() {
   var users = readUsers();
+  console.log('[Users] hasUsers check - found ' + users.length + ' users, path:', getUsersFilePath());
   return users.length > 0;
 }
 
