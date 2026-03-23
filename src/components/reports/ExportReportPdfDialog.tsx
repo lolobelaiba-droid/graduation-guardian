@@ -125,6 +125,15 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
   // ─── Load logo as base64 for PDF ─────
   const loadLogoBase64 = async (url: string): Promise<string | null> => {
     try {
+      // إذا كان بالفعل data URL
+      if (url.startsWith('data:')) return url;
+
+      // في Electron: رفض الروابط الخارجية
+      const isDesktop = typeof window !== 'undefined' && window.electronAPI?.isElectron === true;
+      if (isDesktop && (url.startsWith('http://') || url.startsWith('https://'))) {
+        return null;
+      }
+
       const resp = await fetch(url);
       const blob = await resp.blob();
       return new Promise((resolve) => {

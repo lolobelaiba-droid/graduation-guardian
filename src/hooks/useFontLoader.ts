@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getFontByName, getAllFonts, type FontConfig } from '@/lib/arabicFonts';
 import { logger } from '@/lib/logger';
-import { cacheFontAsset } from '@/lib/database/asset-cache';
+import { isElectron } from '@/lib/database/db-client';
 
 // Track loaded fonts globally to avoid duplicate loading
 const loadedFonts = new Set<string>();
@@ -72,11 +72,13 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
   try {
     let urlToFetch = font.url;
     
-    // للخطوط المخصصة من الإنترنت: استخدم التخزين المحلي في Electron
-    if (isRemoteUrl(font.url)) {
-      urlToFetch = await cacheFontAsset(font.url);
-    } else if (isFileUrl(font.url)) {
-      // file:// URLs from Electron - use directly
+    // في Electron: رفض الروابط الخارجية نهائياً — فقط ملفات محلية
+    if (isElectron() && isRemoteUrl(font.url)) {
+      logger.error(`[FontLoader] Blocked remote URL in desktop mode: ${font.url}`);
+      return false;
+    }
+    
+    if (isFileUrl(font.url)) {
       urlToFetch = font.url;
     } else {
       urlToFetch = resolveElectronFontUrl(font.url);

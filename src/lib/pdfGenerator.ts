@@ -86,9 +86,20 @@ function isDateField(fieldKey: string): boolean {
 
 /**
  * Load an image as base64 for PDF embedding
+ * في Electron: يرفض الروابط الخارجية — فقط data: و file:// ومسارات محلية
  */
 async function loadImageAsBase64(url: string): Promise<string | null> {
   try {
+    // إذا كان بالفعل data URL
+    if (url.startsWith('data:')) return url;
+
+    // في Electron: رفض الروابط الخارجية
+    const isDesktop = typeof window !== 'undefined' && window.electronAPI?.isElectron === true;
+    if (isDesktop && (url.startsWith('http://') || url.startsWith('https://'))) {
+      console.warn('[PDF] Blocked remote image in desktop mode:', url);
+      return null;
+    }
+
     const response = await fetch(url);
     const blob = await response.blob();
     return new Promise((resolve) => {

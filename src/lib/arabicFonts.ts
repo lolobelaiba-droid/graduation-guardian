@@ -125,6 +125,13 @@ export async function loadFontFile(url: string): Promise<ArrayBuffer | null> {
     // resolve to filesystem root. We need to try multiple resolution strategies.
     let resolvedUrl = url;
     const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+    const isDesktop = typeof window !== 'undefined' && window.electronAPI?.isElectron === true;
+
+    // في Electron: رفض الروابط الخارجية نهائياً
+    if (isDesktop && (url.startsWith('http://') || url.startsWith('https://'))) {
+      console.warn('[ArabicFonts] Blocked remote font URL in desktop mode:', url);
+      return null;
+    }
     
     if (isFileProtocol && url.startsWith('/')) {
       // Strategy 1: relative to current HTML file (dev / unpacked)
@@ -134,15 +141,12 @@ export async function loadFontFile(url: string): Promise<ArrayBuffer | null> {
     let response = await fetch(resolvedUrl).catch(() => null);
 
     // Strategy 2: For packaged Electron, fonts are in extraResources
-    // electron-builder copies public/fonts → resources/fonts
     if ((!response || !response.ok) && isFileProtocol && url.startsWith('/fonts/')) {
       const fileName = url.replace('/fonts/', '');
-      // In packaged app, __dirname-based paths won't work in renderer,
-      // but we can try the resources path relative to the app location
       const altPaths = [
-        `../fonts/${fileName}`,           // relative from dist/
-        `../../fonts/${fileName}`,        // deeper nesting
-        `./assets/fonts/${fileName}`,     // if bundled in assets
+        `../fonts/${fileName}`,
+        `../../fonts/${fileName}`,
+        `./assets/fonts/${fileName}`,
       ];
       for (const alt of altPaths) {
         response = await fetch(alt).catch(() => null);
