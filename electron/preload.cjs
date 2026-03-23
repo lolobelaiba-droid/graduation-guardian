@@ -156,6 +156,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:getSecurityQuestion', username),
     checkEmergencyReset: () =>
       ipcRenderer.invoke('db:checkEmergencyReset'),
+    getFailedLoginAlerts: () =>
+      ipcRenderer.invoke('db:getFailedLoginAlerts'),
+    dismissFailedLoginAlert: (alertId) =>
+      ipcRenderer.invoke('db:dismissFailedLoginAlert', alertId),
   },
 
   // مراقبة الشبكة
