@@ -367,7 +367,10 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
 
   const isLoading = updateLmd.isPending || updateScience.isPending;
 
+  const { guardWrite } = useNetworkReadOnly();
+
   const onSubmit = async (data: z.infer<typeof editSchema>) => {
+    if (!guardWrite("تعديل مرحلة المناقشة")) return;
     if (!student) return;
 
     if (data.supervisor_ar) ensureProfessor(data.supervisor_ar);
