@@ -326,7 +326,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+          <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg animate-[spin_4s_linear_infinite]">
             <GraduationCap className="h-10 w-10 text-primary-foreground" />
           </div>
           <div className="text-center">
