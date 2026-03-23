@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff, Info, Check, X } from "lucide-react";
 
 interface UserFormData {
   username: string;
@@ -21,6 +22,61 @@ interface UserFormData {
   role: "admin" | "employee";
 }
 
+/** تنسيق التاريخ بصيغة DD/MM/YYYY */
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "لم يسجل دخول";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "لم يسجل دخول";
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  } catch {
+    return "لم يسجل دخول";
+  }
+}
+
+/** صلاحيات كل دور */
+const ROLE_PERMISSIONS = {
+  admin: {
+    label: "مدير - صلاحيات كاملة",
+    permissions: [
+      { name: "عرض البيانات", allowed: true },
+      { name: "إضافة سجلات", allowed: true },
+      { name: "تعديل السجلات", allowed: true },
+      { name: "حذف السجلات", allowed: true },
+      { name: "تصدير واستيراد", allowed: true },
+      { name: "طباعة الشهادات", allowed: true },
+      { name: "إدارة المستخدمين", allowed: true },
+      { name: "تعديل الإعدادات العامة", allowed: true },
+      { name: "إدارة القوالب (حذف)", allowed: true },
+      { name: "تنظيف البيانات الجماعي", allowed: true },
+      { name: "استعادة النسخ الاحتياطية", allowed: true },
+      { name: "إدارة الشبكة", allowed: true },
+    ],
+  },
+  employee: {
+    label: "موظف - صلاحيات محدودة",
+    permissions: [
+      { name: "عرض البيانات", allowed: true },
+      { name: "إضافة سجلات", allowed: true },
+      { name: "تعديل السجلات", allowed: true },
+      { name: "حذف السجلات", allowed: false },
+      { name: "تصدير واستيراد", allowed: true },
+      { name: "طباعة الشهادات", allowed: true },
+      { name: "إدارة المستخدمين", allowed: false },
+      { name: "تعديل الإعدادات العامة", allowed: false },
+      { name: "إدارة القوالب (حذف)", allowed: false },
+      { name: "تنظيف البيانات الجماعي", allowed: false },
+      { name: "استعادة النسخ الاحتياطية", allowed: false },
+      { name: "إدارة الشبكة", allowed: false },
+    ],
+  },
+};
+
 export default function UserManagement() {
   const { currentUser, isAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -28,6 +84,7 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<AppUser | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showPermissions, setShowPermissions] = useState<"admin" | "employee" | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
     display_name: "",
@@ -69,7 +126,7 @@ export default function UserManagement() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<UserFormData> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<UserFormData> & { is_active?: boolean } }) => {
       const db = getDbClient()!;
       const result = await (db as any).updateUser(id, data);
       if (!result.success) throw new Error(result.error);
@@ -118,6 +175,17 @@ export default function UserManagement() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleUserActive = (user: AppUser) => {
+    if (user.id === currentUser?.id) {
+      toast.error("لا يمكنك تعطيل حسابك الخاص");
+      return;
+    }
+    updateUserMutation.mutate({
+      id: user.id,
+      data: { is_active: !user.is_active },
+    });
+  };
+
   const resetForm = () => {
     setFormData({ username: "", display_name: "", password: "", role: "employee" });
     setShowPassword(false);
@@ -152,6 +220,10 @@ export default function UserManagement() {
             إدارة المستخدمين
           </CardTitle>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowPermissions("employee")}>
+              <Info className="h-4 w-4 ml-1" />
+              صلاحيات الموظف
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowChangePassword(true)}>
               <Lock className="h-4 w-4 ml-1" />
               تغيير كلمة المرور
@@ -190,18 +262,34 @@ export default function UserManagement() {
                     </TableCell>
                     <TableCell dir="ltr" className="text-left">{user.username}</TableCell>
                     <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"} className="gap-1">
+                      <Badge
+                        variant={user.role === "admin" ? "default" : "secondary"}
+                        className="gap-1 cursor-pointer"
+                        onClick={() => setShowPermissions(user.role)}
+                      >
                         {user.role === "admin" ? <Shield className="h-3 w-3" /> : <UserCog className="h-3 w-3" />}
                         {user.role === "admin" ? "مدير" : "موظف"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.is_active ? "default" : "destructive"} className="text-xs">
-                        {user.is_active ? "نشط" : "معطل"}
-                      </Badge>
+                      {isAdmin && user.id !== currentUser?.id ? (
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={user.is_active !== false}
+                            onCheckedChange={() => toggleUserActive(user)}
+                          />
+                          <span className={`text-xs ${user.is_active !== false ? "text-green-600" : "text-destructive"}`}>
+                            {user.is_active !== false ? "نشط" : "معطل"}
+                          </span>
+                        </div>
+                      ) : (
+                        <Badge variant={user.is_active !== false ? "default" : "destructive"} className="text-xs">
+                          {user.is_active !== false ? "نشط" : "معطل"}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {user.last_login ? new Date(user.last_login).toLocaleDateString("ar-DZ") : "لم يسجل دخول"}
+                      {formatDate(user.last_login)}
                     </TableCell>
                     {isAdmin && (
                       <TableCell>
@@ -224,6 +312,43 @@ export default function UserManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* عرض الصلاحيات */}
+      <Dialog open={!!showPermissions} onOpenChange={(open) => !open && setShowPermissions(null)}>
+        <DialogContent dir="rtl" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              {showPermissions && ROLE_PERMISSIONS[showPermissions].label}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {showPermissions && ROLE_PERMISSIONS[showPermissions].permissions.map((perm, i) => (
+              <div key={i} className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50">
+                <span className="text-sm">{perm.name}</span>
+                {perm.allowed ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <X className="h-4 w-4 text-destructive" />
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            {showPermissions === "employee" && (
+              <Button variant="outline" size="sm" onClick={() => setShowPermissions("admin")}>
+                عرض صلاحيات المدير
+              </Button>
+            )}
+            {showPermissions === "admin" && (
+              <Button variant="outline" size="sm" onClick={() => setShowPermissions("employee")}>
+                عرض صلاحيات الموظف
+              </Button>
+            )}
+            <Button onClick={() => setShowPermissions(null)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* إضافة/تعديل مستخدم */}
       <Dialog open={showAddDialog || !!editingUser} onOpenChange={(open) => {
@@ -285,6 +410,13 @@ export default function UserManagement() {
                   <SelectItem value="employee">موظف - صلاحيات محدودة</SelectItem>
                 </SelectContent>
               </Select>
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline"
+                onClick={() => setShowPermissions(formData.role)}
+              >
+                عرض الصلاحيات لهذا الدور
+              </button>
             </div>
           </div>
           <DialogFooter>
