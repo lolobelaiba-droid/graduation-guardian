@@ -11,6 +11,7 @@ export interface AppUser {
   created_at: string;
   last_login: string | null;
   avatar_url?: string | null;
+  custom_permissions?: Record<string, boolean> | null;
 }
 
 interface AuthContextType {
