@@ -93,7 +93,9 @@ export default function UserManagement() {
     display_name: "",
     password: "",
     role: "employee",
+    avatar_url: null,
   });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // تغيير كلمة المرور الشخصية
   const [showChangePassword, setShowChangePassword] = useState(false);
