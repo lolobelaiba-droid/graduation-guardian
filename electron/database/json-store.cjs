@@ -726,7 +726,10 @@ function checkRecordLock(tableName, recordId) {
       return { locked: false };
     }
     
-    if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+    var isSameDevice = existing.device_id ? 
+      (existing.device_id === identity.device_id) : 
+      (existing.hostname === identity.hostname && existing.ip === identity.ip);
+    if (isSameDevice) {
       return { locked: false }; // القفل لنا
     }
     
