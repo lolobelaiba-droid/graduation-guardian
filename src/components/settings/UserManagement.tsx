@@ -13,10 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff, Info, Check, X, ImagePlus, XCircle, User, GraduationCap, Briefcase, BookOpen, Monitor, HeartHandshake, Star, Smile } from "lucide-react";
+import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff, Info, Check, X, ImagePlus, XCircle, User, GraduationCap, Briefcase, BookOpen, Monitor, HeartHandshake, Star, Smile, History, AlertTriangle, Settings2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import UsageGuideDialog, { userManagementGuide } from "./UsageGuideDialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useActivityLog, activityTypeLabels } from "@/hooks/useActivityLog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserFormData {
   username: string;
@@ -24,6 +27,7 @@ interface UserFormData {
   password: string;
   role: "admin" | "employee";
   avatar_url?: string | null;
+  custom_permissions?: Record<string, boolean> | null;
 }
 
 /** تنسيق التاريخ بصيغة DD/MM/YYYY */
@@ -43,40 +47,41 @@ function formatDate(dateStr: string | null | undefined): string {
   }
 }
 
+/** الصلاحيات القابلة للتخصيص */
+const CUSTOMIZABLE_PERMISSIONS = [
+  { key: "delete", label: "حذف السجلات", defaultEmployee: false },
+  { key: "manage_users", label: "إدارة المستخدمين", defaultEmployee: false },
+  { key: "manage_settings", label: "تعديل الإعدادات العامة", defaultEmployee: false },
+  { key: "manage_templates", label: "إدارة القوالب (حذف)", defaultEmployee: false },
+  { key: "bulk_cleanup", label: "تنظيف البيانات الجماعي", defaultEmployee: false },
+  { key: "restore_backup", label: "استعادة النسخ الاحتياطية", defaultEmployee: false },
+  { key: "manage_network", label: "إدارة الشبكة", defaultEmployee: false },
+  { key: "change_app_password", label: "تغيير كلمة مرور التطبيق", defaultEmployee: false },
+];
+
+/** الصلاحيات الثابتة (متاحة للجميع) */
+const FIXED_PERMISSIONS = [
+  { name: "عرض البيانات", allowed: true },
+  { name: "إضافة سجلات", allowed: true },
+  { name: "تعديل السجلات", allowed: true },
+  { name: "تصدير واستيراد", allowed: true },
+  { name: "طباعة الشهادات", allowed: true },
+];
+
 /** صلاحيات كل دور */
 const ROLE_PERMISSIONS = {
   admin: {
     label: "مدير - صلاحيات كاملة",
     permissions: [
-      { name: "عرض البيانات", allowed: true },
-      { name: "إضافة سجلات", allowed: true },
-      { name: "تعديل السجلات", allowed: true },
-      { name: "حذف السجلات", allowed: true },
-      { name: "تصدير واستيراد", allowed: true },
-      { name: "طباعة الشهادات", allowed: true },
-      { name: "إدارة المستخدمين", allowed: true },
-      { name: "تعديل الإعدادات العامة", allowed: true },
-      { name: "إدارة القوالب (حذف)", allowed: true },
-      { name: "تنظيف البيانات الجماعي", allowed: true },
-      { name: "استعادة النسخ الاحتياطية", allowed: true },
-      { name: "إدارة الشبكة", allowed: true },
+      ...FIXED_PERMISSIONS,
+      ...CUSTOMIZABLE_PERMISSIONS.map(p => ({ name: p.label, allowed: true })),
     ],
   },
   employee: {
     label: "موظف - صلاحيات محدودة",
     permissions: [
-      { name: "عرض البيانات", allowed: true },
-      { name: "إضافة سجلات", allowed: true },
-      { name: "تعديل السجلات", allowed: true },
-      { name: "حذف السجلات", allowed: false },
-      { name: "تصدير واستيراد", allowed: true },
-      { name: "طباعة الشهادات", allowed: true },
-      { name: "إدارة المستخدمين", allowed: false },
-      { name: "تعديل الإعدادات العامة", allowed: false },
-      { name: "إدارة القوالب (حذف)", allowed: false },
-      { name: "تنظيف البيانات الجماعي", allowed: false },
-      { name: "استعادة النسخ الاحتياطية", allowed: false },
-      { name: "إدارة الشبكة", allowed: false },
+      ...FIXED_PERMISSIONS,
+      ...CUSTOMIZABLE_PERMISSIONS.map(p => ({ name: p.label, allowed: p.defaultEmployee })),
     ],
   },
 };
@@ -98,6 +103,29 @@ const DEFAULT_AVATARS = [
   { id: "smile", label: "ودود", icon: Smile, color: "#16a34a", svg: makeAvatarSvg("#16a34a", '<circle cx="32" cy="32" r="28"/><path d="M20 20h0.1"/><path d="M44 20h0.1"/><path d="M18 38c4 6 10 8 14 8s10-2 14-8"/>') },
 ];
 
+/** الحصول على الصلاحيات الفعلية لمستخدم */
+function getEffectivePermissions(user: AppUser): Record<string, boolean> {
+  if (user.role === "admin") {
+    // المدير لديه كل الصلاحيات دائماً
+    const perms: Record<string, boolean> = {};
+    CUSTOMIZABLE_PERMISSIONS.forEach(p => { perms[p.key] = true; });
+    return perms;
+  }
+  // الموظف: استخدم الصلاحيات المخصصة إن وجدت، وإلا الافتراضية
+  const custom = (user as any).custom_permissions;
+  if (custom && typeof custom === "object") {
+    const perms: Record<string, boolean> = {};
+    CUSTOMIZABLE_PERMISSIONS.forEach(p => {
+      perms[p.key] = custom[p.key] === true;
+    });
+    return perms;
+  }
+  // الافتراضي
+  const perms: Record<string, boolean> = {};
+  CUSTOMIZABLE_PERMISSIONS.forEach(p => { perms[p.key] = p.defaultEmployee; });
+  return perms;
+}
+
 export default function UserManagement() {
   const { currentUser, isAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -112,8 +140,16 @@ export default function UserManagement() {
     password: "",
     role: "employee",
     avatar_url: null,
+    custom_permissions: null,
   });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // سجل نشاط المستخدم
+  const [activityUser, setActivityUser] = useState<AppUser | null>(null);
+  const { data: allActivities = [] } = useActivityLog();
+
+  // الصلاحيات المخصصة في النموذج
+  const [customPerms, setCustomPerms] = useState<Record<string, boolean>>({});
 
   // تغيير كلمة المرور الشخصية
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -132,10 +168,39 @@ export default function UserManagement() {
     },
   });
 
+  // إشعارات محاولات الدخول الفاشلة
+  const { data: failedLoginAlerts = [] } = useQuery({
+    queryKey: ["failed-login-alerts"],
+    queryFn: async () => {
+      if (!isElectron()) return [];
+      const db = getDbClient()! as any;
+      if (typeof db.getFailedLoginAlerts !== "function") return [];
+      const result = await db.getFailedLoginAlerts();
+      return result.success ? (result.data || []) : [];
+    },
+    enabled: isAdmin,
+    refetchInterval: 30000, // كل 30 ثانية
+  });
+
+  const dismissAlertMutation = useMutation({
+    mutationFn: async (alertId: string) => {
+      const db = getDbClient()! as any;
+      if (typeof db.dismissFailedLoginAlert !== "function") return;
+      await db.dismissFailedLoginAlert(alertId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["failed-login-alerts"] });
+    },
+  });
+
   const addUserMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
       const db = getDbClient()!;
-      const result = await (db as any).addUser(data);
+      const payload: any = { ...data };
+      if (data.role === "employee" && data.custom_permissions) {
+        payload.custom_permissions = data.custom_permissions;
+      }
+      const result = await (db as any).addUser(payload);
       if (!result.success) throw new Error(result.error);
       return result;
     },
@@ -210,19 +275,23 @@ export default function UserManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ username: "", display_name: "", password: "", role: "employee", avatar_url: null });
+    setFormData({ username: "", display_name: "", password: "", role: "employee", avatar_url: null, custom_permissions: null });
     setShowPassword(false);
     setAvatarPreview(null);
+    setCustomPerms({});
   };
 
   const openEditDialog = (user: AppUser) => {
     setEditingUser(user);
+    const perms = getEffectivePermissions(user);
+    setCustomPerms(perms);
     setFormData({
       username: user.username,
       display_name: user.display_name,
       password: "",
       role: user.role,
       avatar_url: user.avatar_url || null,
+      custom_permissions: user.role === "employee" ? perms : null,
     });
     setAvatarPreview(user.avatar_url || null);
   };
@@ -243,6 +312,11 @@ export default function UserManagement() {
     reader.readAsDataURL(file);
   };
 
+  // تصفية أنشطة مستخدم معين
+  const userActivities = activityUser
+    ? allActivities.filter(a => a.created_by === activityUser.display_name).slice(0, 50)
+    : [];
+
   if (!isElectron()) {
     return (
       <Card>
@@ -255,6 +329,36 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
+      {/* تنبيهات محاولات الدخول الفاشلة */}
+      {isAdmin && failedLoginAlerts.length > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2 text-destructive font-semibold">
+              <AlertTriangle className="h-5 w-5" />
+              تنبيهات أمنية — محاولات دخول فاشلة
+            </div>
+            {(failedLoginAlerts as any[]).map((alert: any, i: number) => (
+              <div key={alert.id || i} className="flex items-center justify-between bg-background rounded-lg p-3 border border-destructive/20">
+                <div className="text-sm">
+                  <span className="font-medium">{alert.username}</span>
+                  <span className="text-muted-foreground mx-2">—</span>
+                  <span className="text-destructive">{alert.attempts} محاولة فاشلة</span>
+                  {alert.locked && <Badge variant="destructive" className="mr-2 text-xs">مقفل</Badge>}
+                  <span className="text-muted-foreground text-xs mr-2">{formatDate(alert.last_attempt)}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => dismissAlertMutation.mutate(alert.id || alert.username)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -337,6 +441,9 @@ export default function UserManagement() {
                     {isAdmin && (
                       <TableCell>
                         <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="سجل النشاط" onClick={() => setActivityUser(user)}>
+                            <History className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(user)}>
                             <Edit2 className="h-4 w-4" />
                           </Button>
@@ -355,6 +462,42 @@ export default function UserManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* سجل نشاط المستخدم */}
+      <Dialog open={!!activityUser} onOpenChange={(open) => !open && setActivityUser(null)}>
+        <DialogContent dir="rtl" className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              سجل نشاط: {activityUser?.display_name}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-2">
+            {userActivities.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">لا توجد أنشطة مسجلة لهذا المستخدم</p>
+            ) : (
+              <div className="space-y-2">
+                {userActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {activityTypeLabels[activity.activity_type] || activity.activity_type}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{formatDate(activity.created_at)}</span>
+                      </div>
+                      <p className="text-sm truncate">{activity.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          <DialogFooter>
+            <Button onClick={() => setActivityUser(null)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* عرض الصلاحيات */}
       <Dialog open={!!showPermissions} onOpenChange={(open) => !open && setShowPermissions(null)}>
@@ -377,6 +520,11 @@ export default function UserManagement() {
               </div>
             ))}
           </div>
+          {showPermissions === "employee" && (
+            <p className="text-xs text-muted-foreground text-center">
+              💡 يمكن تخصيص صلاحيات كل موظف عند التعديل
+            </p>
+          )}
           <DialogFooter>
             {showPermissions === "employee" && (
               <Button variant="outline" size="sm" onClick={() => setShowPermissions("admin")}>
@@ -397,7 +545,7 @@ export default function UserManagement() {
       <Dialog open={showAddDialog || !!editingUser} onOpenChange={(open) => {
         if (!open) { setShowAddDialog(false); setEditingUser(null); resetForm(); }
       }}>
-        <DialogContent dir="rtl">
+        <DialogContent dir="rtl" className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingUser ? "تعديل المستخدم" : "إضافة مستخدم جديد"}</DialogTitle>
           </DialogHeader>
@@ -443,7 +591,10 @@ export default function UserManagement() {
               <Label>الدور</Label>
               <Select
                 value={formData.role}
-                onValueChange={(v) => setFormData({ ...formData, role: v as "admin" | "employee" })}
+                onValueChange={(v) => {
+                  const role = v as "admin" | "employee";
+                  setFormData({ ...formData, role, custom_permissions: role === "employee" ? customPerms : null });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -453,14 +604,35 @@ export default function UserManagement() {
                   <SelectItem value="employee">موظف - صلاحيات محدودة</SelectItem>
                 </SelectContent>
               </Select>
-              <button
-                type="button"
-                className="text-xs text-primary hover:underline"
-                onClick={() => setShowPermissions(formData.role)}
-              >
-                عرض الصلاحيات لهذا الدور
-              </button>
             </div>
+
+            {/* صلاحيات مخصصة للموظف */}
+            {formData.role === "employee" && (
+              <div className="space-y-2 border rounded-lg p-3">
+                <Label className="flex items-center gap-2">
+                  <Settings2 className="h-4 w-4" />
+                  صلاحيات مخصصة
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  فعّل أو عطّل صلاحيات محددة لهذا الموظف
+                </p>
+                <div className="space-y-2">
+                  {CUSTOMIZABLE_PERMISSIONS.map((perm) => (
+                    <div key={perm.key} className="flex items-center justify-between py-1.5 px-2 rounded bg-muted/30">
+                      <span className="text-sm">{perm.label}</span>
+                      <Checkbox
+                        checked={customPerms[perm.key] === true}
+                        onCheckedChange={(checked) => {
+                          const updated = { ...customPerms, [perm.key]: checked === true };
+                          setCustomPerms(updated);
+                          setFormData(prev => ({ ...prev, custom_permissions: updated }));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* صورة المستخدم */}
             <div className="space-y-2">
@@ -552,6 +724,11 @@ export default function UserManagement() {
                     role: formData.role,
                     avatar_url: formData.avatar_url,
                   };
+                  if (formData.role === "employee") {
+                    updateData.custom_permissions = customPerms;
+                  } else {
+                    updateData.custom_permissions = null;
+                  }
                   if (formData.password) updateData.password = formData.password;
                   updateUserMutation.mutate({ id: editingUser.id, data: updateData });
                 } else {
@@ -559,7 +736,11 @@ export default function UserManagement() {
                     toast.error("يرجى ملء جميع الحقول (كلمة المرور 4 أحرف على الأقل)");
                     return;
                   }
-                  addUserMutation.mutate(formData);
+                  const payload = { ...formData };
+                  if (formData.role === "employee") {
+                    payload.custom_permissions = customPerms;
+                  }
+                  addUserMutation.mutate(payload);
                 }
               }}
               disabled={addUserMutation.isPending || updateUserMutation.isPending}
