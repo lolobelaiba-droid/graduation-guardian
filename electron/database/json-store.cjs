@@ -15,8 +15,48 @@ var networkConfig = null;
 var deviceIdentity = null;
 
 // ============================================
-// إعداد هوية الجهاز (IP + Hostname)
+// إعداد هوية الجهاز (UUID + IP + Hostname)
 // ============================================
+
+/**
+ * الحصول على أو توليد معرّف فريد ثابت للجهاز (Device UUID)
+ * يُحفظ في مجلد userData المحلي ولا يتأثر بتغيّر IP أو Hostname
+ */
+function getOrCreateDeviceUUID() {
+  var deviceIdPath = path.join(app.getPath('userData'), 'device-id.json');
+  try {
+    if (fs.existsSync(deviceIdPath)) {
+      var content = fs.readFileSync(deviceIdPath, 'utf8');
+      var parsed = JSON.parse(content);
+      if (parsed && parsed.uuid) {
+        return parsed.uuid;
+      }
+    }
+  } catch (e) {
+    console.error('[DeviceUUID] Error reading device-id.json:', e.message);
+  }
+
+  // توليد UUID جديد عند أول تشغيل
+  var crypto = require('crypto');
+  var newUUID = crypto.randomUUID ? crypto.randomUUID() : 
+    ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+      return (c ^ crypto.randomBytes(1)[0] & 15 >> c / 4).toString(16);
+    });
+
+  try {
+    var deviceData = {
+      uuid: newUUID,
+      createdAt: new Date().toISOString(),
+      initialHostname: os.hostname()
+    };
+    fs.writeFileSync(deviceIdPath, JSON.stringify(deviceData, null, 2), 'utf8');
+    console.log('[DeviceUUID] Generated new Device UUID:', newUUID);
+  } catch (e) {
+    console.error('[DeviceUUID] Error saving device-id.json:', e.message);
+  }
+
+  return newUUID;
+}
 
 function getDeviceIdentity() {
   if (deviceIdentity) return deviceIdentity;
@@ -36,9 +76,10 @@ function getDeviceIdentity() {
       }
       if (ip !== '127.0.0.1') break;
     }
-    deviceIdentity = { hostname: hostname, ip: ip };
+    var deviceUUID = getOrCreateDeviceUUID();
+    deviceIdentity = { device_id: deviceUUID, hostname: hostname, ip: ip };
   } catch (e) {
-    deviceIdentity = { hostname: 'unknown', ip: '127.0.0.1' };
+    deviceIdentity = { device_id: 'unknown', hostname: 'unknown', ip: '127.0.0.1' };
   }
   return deviceIdentity;
 }
