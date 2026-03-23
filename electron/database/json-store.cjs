@@ -697,7 +697,10 @@ function releaseRecordLock(tableName, recordId) {
       var identity = getDeviceIdentity();
       var existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
       // حذف فقط إذا كان القفل لنا
-      if (existing.hostname === identity.hostname && existing.ip === identity.ip) {
+      var isSameDevice = existing.device_id ? 
+        (existing.device_id === identity.device_id) : 
+        (existing.hostname === identity.hostname && existing.ip === identity.ip);
+      if (isSameDevice) {
         fs.unlinkSync(lockFile);
       }
     }
