@@ -83,7 +83,7 @@ export function AppSidebar() {
         {/* Logo Section */}
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0 animate-[spin_4s_linear_infinite]">
               <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
             </div>
             {!isCollapsed && (
