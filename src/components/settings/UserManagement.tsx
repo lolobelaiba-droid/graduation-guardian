@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff, Info, Check, X, ImagePlus, XCircle } from "lucide-react";
+import { Users, Plus, Edit2, Trash2, Shield, UserCog, Lock, Eye, EyeOff, Info, Check, X, ImagePlus, XCircle, User, GraduationCap, Briefcase, BookOpen, Monitor, HeartHandshake, Star, Smile } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import UsageGuideDialog, { userManagementGuide } from "./UsageGuideDialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
@@ -79,6 +80,23 @@ const ROLE_PERMISSIONS = {
     ],
   },
 };
+
+/** أفاتارات افتراضية */
+function makeAvatarSvg(color: string, iconPath: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="64" fill="${color}"/><g transform="translate(32,32)" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</g></svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
+const DEFAULT_AVATARS = [
+  { id: "user", label: "مستخدم", icon: User, color: "#6366f1", svg: makeAvatarSvg("#6366f1", '<path d="M32 36c-6.6 0-12-5.4-12-12s5.4-12 12-12 12 5.4 12 12-5.4 12-12 12z"/><path d="M8 58c0-13.3 10.7-24 24-24s24 10.7 24 24"/>') },
+  { id: "grad", label: "أكاديمي", icon: GraduationCap, color: "#8b5cf6", svg: makeAvatarSvg("#8b5cf6", '<path d="M2 24l30-12 30 12-30 12z"/><path d="M8 28v16c0 0 10 8 24 8s24-8 24-8V28"/><path d="M56 26v20"/>') },
+  { id: "brief", label: "إداري", icon: Briefcase, color: "#0891b2", svg: makeAvatarSvg("#0891b2", '<rect x="4" y="16" width="56" height="40" rx="4"/><path d="M20 16V8a4 4 0 014-4h16a4 4 0 014 4v8"/>') },
+  { id: "book", label: "باحث", icon: BookOpen, color: "#059669", svg: makeAvatarSvg("#059669", '<path d="M4 4v52c0 0 8-4 28-4s28 4 28 4V4c0 0-8 4-28 4S4 4 4 4z"/><path d="M32 8v48"/>') },
+  { id: "monitor", label: "تقني", icon: Monitor, color: "#d97706", svg: makeAvatarSvg("#d97706", '<rect x="4" y="4" width="56" height="40" rx="4"/><path d="M20 44h24"/><path d="M24 44v12"/><path d="M40 44v12"/><path d="M16 56h32"/>') },
+  { id: "heart", label: "مساعد", icon: HeartHandshake, color: "#e11d48", svg: makeAvatarSvg("#e11d48", '<path d="M32 52S4 36 4 18a14 14 0 0128 0 14 14 0 0128 0c0 18-28 34-28 34z"/>') },
+  { id: "star", label: "متميز", icon: Star, color: "#ca8a04", svg: makeAvatarSvg("#ca8a04", '<polygon points="32,2 40,22 62,22 44,36 50,56 32,44 14,56 20,36 2,22 24,22"/>') },
+  { id: "smile", label: "ودود", icon: Smile, color: "#16a34a", svg: makeAvatarSvg("#16a34a", '<circle cx="32" cy="32" r="28"/><path d="M20 20h0.1"/><path d="M44 20h0.1"/><path d="M18 38c4 6 10 8 14 8s10-2 14-8"/>') },
+];
 
 export default function UserManagement() {
   const { currentUser, isAdmin } = useAuth();
@@ -447,8 +465,8 @@ export default function UserManagement() {
             {/* صورة المستخدم */}
             <div className="space-y-2">
               <Label>صورة المستخدم (اختياري)</Label>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-14 w-14">
+              <div className="flex items-center gap-3 mb-2">
+                <Avatar className="h-14 w-14 border-2 border-primary/20">
                   {avatarPreview ? (
                     <AvatarImage src={avatarPreview} alt="صورة المستخدم" />
                   ) : (
@@ -457,11 +475,57 @@ export default function UserManagement() {
                     </AvatarFallback>
                   )}
                 </Avatar>
-                <div className="flex gap-2">
+                {avatarPreview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      setAvatarPreview(null);
+                      setFormData(prev => ({ ...prev, avatar_url: null }));
+                    }}
+                  >
+                    <XCircle className="h-4 w-4 ml-1" />
+                    إزالة
+                  </Button>
+                )}
+              </div>
+              <Tabs defaultValue="default" className="w-full">
+                <TabsList className="w-full grid grid-cols-2">
+                  <TabsTrigger value="default">أفاتار افتراضي</TabsTrigger>
+                  <TabsTrigger value="upload">رفع صورة</TabsTrigger>
+                </TabsList>
+                <TabsContent value="default" className="mt-3">
+                  <div className="grid grid-cols-4 gap-2">
+                    {DEFAULT_AVATARS.map((av) => (
+                      <button
+                        key={av.id}
+                        type="button"
+                        onClick={() => {
+                          setAvatarPreview(av.svg);
+                          setFormData(prev => ({ ...prev, avatar_url: av.svg }));
+                        }}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all hover:bg-accent ${
+                          avatarPreview === av.svg ? "border-primary bg-primary/10" : "border-transparent"
+                        }`}
+                      >
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                          style={{ backgroundColor: av.color }}
+                        >
+                          <av.icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{av.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="upload" className="mt-3">
                   <Button type="button" variant="outline" size="sm" asChild>
                     <label className="cursor-pointer">
                       <ImagePlus className="h-4 w-4 ml-1" />
-                      اختيار صورة
+                      اختيار صورة من الجهاز
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
@@ -470,24 +534,9 @@ export default function UserManagement() {
                       />
                     </label>
                   </Button>
-                  {avatarPreview && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => {
-                        setAvatarPreview(null);
-                        setFormData(prev => ({ ...prev, avatar_url: null }));
-                      }}
-                    >
-                      <XCircle className="h-4 w-4 ml-1" />
-                      إزالة
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">JPG, PNG أو WEBP — أقصى 500 كيلوبايت</p>
+                  <p className="text-xs text-muted-foreground mt-2">JPG, PNG أو WEBP — أقصى 500 كيلوبايت</p>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
           <DialogFooter>
