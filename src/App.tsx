@@ -118,6 +118,7 @@ const App = () => {
       <Toaster />
       <Sonner />
       <AuthProvider onLogout={handleLogout}>
+        <NetworkReadOnlyProvider>
         <AuthProviderInit user={currentUser}>
           <AutoLogoutWrapper onLogout={handleLogout}>
             <HashRouter>
