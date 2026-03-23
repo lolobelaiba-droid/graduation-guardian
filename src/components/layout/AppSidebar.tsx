@@ -24,6 +24,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useUnreadNotesCount } from "@/hooks/useNotes";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
