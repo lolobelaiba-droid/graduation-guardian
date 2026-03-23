@@ -252,10 +252,13 @@ export default function NetworkManagement() {
     <div className="space-y-6">
       {/* 1. Network Setup Wizard */}
       <div className="bg-card rounded-2xl shadow-card p-6">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Wifi className="h-5 w-5 text-primary" />
-          إعداد الاتصال بالشبكة
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Wifi className="h-5 w-5 text-primary" />
+            إعداد الاتصال بالشبكة
+          </h3>
+          <UsageGuideDialog title="دليل استخدام إدارة الشبكة" sections={networkGuide} />
+        </div>
         <p className="text-sm text-muted-foreground mb-4">
           أدخل مسار المجلد المشترك على الشبكة المحلية للعمل الجماعي
         </p>

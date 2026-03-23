@@ -221,7 +221,8 @@ export default function UserManagement() {
             <Users className="h-5 w-5" />
             إدارة المستخدمين
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <UsageGuideDialog title="دليل استخدام إدارة المستخدمين" sections={userManagementGuide} />
             <Button variant="outline" size="sm" onClick={() => setShowPermissions("employee")}>
               <Info className="h-4 w-4 ml-1" />
               صلاحيات الموظف
