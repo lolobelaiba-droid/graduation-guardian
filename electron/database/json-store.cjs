@@ -623,6 +623,7 @@ function update(tableName, id, updates) {
   // إضافة معلومات الجهاز المعدِّل في سجل الأنشطة
   if (tableName === 'activity_log') {
     var identity = getDeviceIdentity();
+    data[index].device_id = identity.device_id;
     data[index].device_hostname = identity.hostname;
     data[index].device_ip = identity.ip;
   }
