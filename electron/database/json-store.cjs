@@ -1711,6 +1711,8 @@ function addUser(userData) {
     must_change_password: userData.must_change_password || false,
     failed_attempts: 0,
     locked_until: null,
+    avatar_url: userData.avatar_url || null,
+    custom_permissions: userData.custom_permissions || null,
     created_at: getCurrentDateTime(),
     last_login: getCurrentDateTime()
   };
@@ -1896,6 +1898,47 @@ function checkEmergencyReset() {
   return { success: false };
 }
 
+/**
+ * الحصول على تنبيهات محاولات الدخول الفاشلة (الحسابات المقفولة أو ذات المحاولات الكثيرة)
+ */
+function getFailedLoginAlerts() {
+  var users = readUsers();
+  var alerts = [];
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    if ((u.failed_attempts || 0) >= 3) {
+      var isLocked = (u.failed_attempts >= 5) && u.locked_until && (new Date(u.locked_until).getTime() > Date.now());
+      alerts.push({
+        id: u.id,
+        username: u.display_name || u.username,
+        attempts: u.failed_attempts,
+        locked: !!isLocked,
+        last_attempt: u.locked_until || u.last_login || u.created_at
+      });
+    }
+  }
+  return { success: true, data: alerts };
+}
+
+/**
+ * تجاهل تنبيه دخول فاشل (إعادة تعيين المحاولات)
+ */
+function dismissFailedLoginAlert(userIdOrUsername) {
+  var users = readUsers();
+  var found = false;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].id === userIdOrUsername || users[i].username === userIdOrUsername) {
+      users[i].failed_attempts = 0;
+      users[i].locked_until = null;
+      found = true;
+      break;
+    }
+  }
+  if (!found) return { success: false, error: 'المستخدم غير موجود' };
+  writeUsers(users);
+  return { success: true };
+}
+
 // ============================================
 // تصدير الوحدة
 // ============================================
@@ -1979,5 +2022,7 @@ module.exports = {
   changePassword: changePassword,
   recoverPasswordByQuestion: recoverPasswordByQuestion,
   getSecurityQuestion: getSecurityQuestion,
-  checkEmergencyReset: checkEmergencyReset
+  checkEmergencyReset: checkEmergencyReset,
+  getFailedLoginAlerts: getFailedLoginAlerts,
+  dismissFailedLoginAlert: dismissFailedLoginAlert
 };
