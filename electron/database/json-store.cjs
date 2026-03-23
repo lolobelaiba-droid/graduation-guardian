@@ -1376,11 +1376,17 @@ function updateDeviceRegistry() {
     registry = [];
   }
 
-  // تحديث أو إضافة الجهاز الحالي
+  // تحديث أو إضافة الجهاز الحالي (باستخدام device_id كمعرّف أساسي)
   var now = new Date().toISOString();
   var found = false;
   for (var i = 0; i < registry.length; i++) {
-    if (registry[i].ip === identity.ip && registry[i].hostname === identity.hostname) {
+    // البحث بالـ device_id أولاً (الأكثر موثوقية)، ثم بالـ hostname+ip للتوافق مع السجلات القديمة
+    if (registry[i].device_id === identity.device_id || 
+        (!registry[i].device_id && registry[i].ip === identity.ip && registry[i].hostname === identity.hostname)) {
+      // تحديث كل المعلومات (الـ IP والـ Hostname قد يتغيران)
+      registry[i].device_id = identity.device_id;
+      registry[i].hostname = identity.hostname;
+      registry[i].ip = identity.ip;
       registry[i].lastActive = now;
       found = true;
       break;
@@ -1388,6 +1394,7 @@ function updateDeviceRegistry() {
   }
   if (!found) {
     registry.push({
+      device_id: identity.device_id,
       hostname: identity.hostname,
       ip: identity.ip,
       firstSeen: now,
