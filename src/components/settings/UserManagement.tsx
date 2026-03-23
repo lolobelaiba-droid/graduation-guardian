@@ -192,8 +192,9 @@ export default function UserManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ username: "", display_name: "", password: "", role: "employee" });
+    setFormData({ username: "", display_name: "", password: "", role: "employee", avatar_url: null });
     setShowPassword(false);
+    setAvatarPreview(null);
   };
 
   const openEditDialog = (user: AppUser) => {
@@ -203,7 +204,25 @@ export default function UserManagement() {
       display_name: user.display_name,
       password: "",
       role: user.role,
+      avatar_url: user.avatar_url || null,
     });
+    setAvatarPreview(user.avatar_url || null);
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      toast.error("حجم الصورة يجب أن يكون أقل من 500 كيلوبايت");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setAvatarPreview(dataUrl);
+      setFormData(prev => ({ ...prev, avatar_url: dataUrl }));
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!isElectron()) {
