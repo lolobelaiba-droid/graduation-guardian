@@ -81,38 +81,58 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       const db = getDbClient()! as any;
 
       // التحقق من ملف إعادة التعيين الطارئ
-      if ("checkEmergencyReset" in db) {
-        const resetResult = await db.checkEmergencyReset();
-        if (resetResult.success) {
-          setEmergencyMessage(`تم إعادة تعيين كلمة مرور المستخدم "${resetResult.username}" إلى: admin123\nيرجى تغييرها فوراً بعد الدخول.`);
-          setScreenState("emergency_reset_done");
-          setIsLoading(false);
-          return;
+      if (typeof db.checkEmergencyReset === "function") {
+        try {
+          const resetResult = await db.checkEmergencyReset();
+          if (resetResult?.success) {
+            setEmergencyMessage(`تم إعادة تعيين كلمة مرور المستخدم "${resetResult.username}" إلى: admin123\nيرجى تغييرها فوراً بعد الدخول.`);
+            setScreenState("emergency_reset_done");
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn("checkEmergencyReset failed:", e);
         }
       }
 
-      if ("hasUsers" in db) {
-        const result = await db.hasUsers();
-        if (result.success && result.data) {
-          setScreenState("login");
-        } else {
-          const oldHash = await db.getSetting("app_password_hash");
-          if (oldHash.success && oldHash.data && (oldHash.data as any).value) {
-            setScreenState("legacy_login");
+      if (typeof db.hasUsers === "function") {
+        try {
+          const result = await db.hasUsers();
+          console.log("hasUsers result:", JSON.stringify(result));
+          if (result?.success && result?.data === true) {
+            setScreenState("login");
           } else {
-            setScreenState("setup_first_admin");
+            // التحقق من وجود نظام كلمة مرور قديم
+            try {
+              const oldHash = await db.getSetting("app_password_hash");
+              if (oldHash?.success && oldHash?.data && (oldHash.data as any).value) {
+                setScreenState("legacy_login");
+              } else {
+                setScreenState("setup_first_admin");
+              }
+            } catch {
+              setScreenState("setup_first_admin");
+            }
           }
+        } catch (e) {
+          console.error("hasUsers call failed:", e);
+          setScreenState("setup_first_admin");
         }
       } else {
-        const oldHash = await db.getSetting("app_password_hash");
-        if (oldHash.success && oldHash.data && (oldHash.data as any).value) {
-          setScreenState("legacy_login");
-        } else {
-          onAuthenticated({
-            id: "legacy-user", username: "admin", display_name: "المستخدم",
-            role: "admin", is_active: true, must_change_password: false,
-            created_at: new Date().toISOString(), last_login: new Date().toISOString(),
-          });
+        // الدالة غير متوفرة - نظام قديم
+        try {
+          const oldHash = await db.getSetting("app_password_hash");
+          if (oldHash?.success && oldHash?.data && (oldHash.data as any).value) {
+            setScreenState("legacy_login");
+          } else {
+            onAuthenticated({
+              id: "legacy-user", username: "admin", display_name: "المستخدم",
+              role: "admin", is_active: true, must_change_password: false,
+              created_at: new Date().toISOString(), last_login: new Date().toISOString(),
+            });
+          }
+        } catch {
+          setScreenState("setup_first_admin");
         }
       }
     } catch (e) {
