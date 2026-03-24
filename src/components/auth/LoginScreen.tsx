@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
 import { AppUser } from "@/contexts/AuthContext";
+import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
