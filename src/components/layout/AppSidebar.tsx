@@ -81,22 +81,22 @@ export function AppSidebar() {
         )}
       >
         {/* Logo Section */}
-        <div className="p-6 border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
+        <div className="px-4 py-3 border-b border-sidebar-border">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
             {!isCollapsed && (
               <div className="animate-fade-in">
-                <h1 className="text-lg font-bold">نظام إدارة</h1>
-                <p className="text-xs text-sidebar-foreground/60">طلبة الدكتوراه</p>
+                <h1 className="text-sm font-bold leading-tight">نظام إدارة</h1>
+                <p className="text-[10px] text-sidebar-foreground/60">طلبة الدكتوراه</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             const isNotesItem = item.path === "/notes";
@@ -108,7 +108,7 @@ export function AppSidebar() {
                 to={item.path}
                 onClick={() => setIsMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group relative text-sm",
                   isActive
                     ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg"
                     : "hover:bg-sidebar-accent text-sidebar-foreground/80 hover:text-sidebar-foreground"
