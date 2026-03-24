@@ -79,7 +79,7 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
     }
     
     // في Electron: إعادة بناء مسار الخط ليكون صحيحاً للجهاز الحالي (مزامنة الشبكة)
-    if (isElectron() && isFileUrl(font.url) && window.electronAPI?.db?.resolveFontPath) {
+    if (isElectron() && isFileUrl(font.url) && (window.electronAPI?.db as any)?.resolveFontPath) {
       try {
         const resolved = await (window.electronAPI.db as any).resolveFontPath(font.url);
         if (resolved?.success && resolved.data) {
