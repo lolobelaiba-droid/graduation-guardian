@@ -1230,6 +1230,41 @@ function saveLocalFile(fileBuffer, fileName, subFolder) {
   return { localPath: localPath, localUrl: localUrl, fileName: fileName };
 }
 
+/**
+ * إعادة بناء مسار ملف خط ليكون صحيحاً للجهاز الحالي
+ * يحل مشكلة أن font_url مسجل كمسار مطلق للجهاز الرئيسي
+ */
+function resolveFontPath(fontUrl) {
+  if (!fontUrl || typeof fontUrl !== 'string') return fontUrl;
+  
+  // إذا كان المسار يحتوي على cache/fonts/ نستخرج اسم الملف ونبني مسار محلي جديد
+  var fontsDir = path.join(getDataDir(), 'cache', 'fonts');
+  
+  // استخراج اسم الملف من أي شكل من المسارات
+  var fileName = null;
+  
+  // file:///C:/Users/.../cache/fonts/MyFont.ttf → MyFont.ttf
+  var match = fontUrl.match(/[/\\]cache[/\\]fonts[/\\]([^/\\?]+)$/);
+  if (match) {
+    fileName = match[1];
+  } else {
+    // محاولة استخراج اسم الملف من نهاية المسار
+    fileName = fontUrl.split('/').pop() || fontUrl.split('\\').pop();
+  }
+  
+  if (!fileName) return fontUrl;
+  
+  var localPath = path.join(fontsDir, fileName);
+  
+  // التحقق من وجود الملف
+  if (fs.existsSync(localPath)) {
+    return require('url').pathToFileURL(localPath).toString();
+  }
+  
+  // الملف غير موجود - إرجاع المسار الأصلي
+  return fontUrl;
+}
+
 // ============================================
 // نظام التخزين المحلي للملفات (Cache)
 // ============================================
