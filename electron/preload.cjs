@@ -138,6 +138,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // إدارة المستخدمين
     isNetworkMode: () =>
       ipcRenderer.invoke('db:isNetworkMode'),
+    wasNetworkConfigured: () =>
+      ipcRenderer.invoke('db:wasNetworkConfigured'),
+    authenticateUserOffline: (username, password) =>
+      ipcRenderer.invoke('db:authenticateUserOffline', username, password),
     hasUsers: () =>
       ipcRenderer.invoke('db:hasUsers'),
     authenticateUser: (username, password) =>
