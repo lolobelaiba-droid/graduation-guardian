@@ -1811,6 +1811,8 @@ function authenticateUser(username, password) {
   user.locked_until = null;
   user.last_login = getCurrentDateTime();
   writeUsers(users);
+  // حفظ نسخة محلية من المستخدمين عند تسجيل دخول ناجح
+  cacheUsersLocally();
   var safeUser = Object.assign({}, user);
   delete safeUser.password_hash;
   delete safeUser.salt;
