@@ -128,7 +128,7 @@ export function GenerateDocumentDialog({
       } else if (isDefenseMinutes) {
         setMinutesNumber("");
         setDefenseTime("");
-        setMention("مشرف جدا");
+        setMention("");
       } else {
         setDecisionNumber(student.auth_decision_number || "");
         setDecisionDate(student.auth_decision_date || "");
