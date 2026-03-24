@@ -40,6 +40,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [screenState, setScreenState] = useState<ScreenState>("loading");
+  const { data: uniSettings } = useUniversitySettings();
 
   // إعداد أول مدير
   const [adminDisplayName, setAdminDisplayName] = useState("");
