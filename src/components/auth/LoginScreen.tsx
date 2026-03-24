@@ -81,8 +81,9 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       const db = getDbClient()! as any;
 
       // === الخطوة 1: التحقق من وضع الشبكة ===
-      // إذا لم يتم إعداد مجلد مشترك بعد → دخول مباشر كمدير بدون تسجيل دخول
       let networkActive = false;
+      let wasConfigured = false;
+
       if (typeof db.isNetworkMode === "function") {
         try {
           const netResult = await db.isNetworkMode();
@@ -92,8 +93,25 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         }
       }
 
+      // التحقق مما إذا كان الجهاز قد تم إعداده مسبقاً للشبكة
+      if (!networkActive && typeof db.wasNetworkConfigured === "function") {
+        try {
+          const configResult = await db.wasNetworkConfigured();
+          wasConfigured = configResult?.success && configResult?.data === true;
+        } catch (e) {
+          console.warn("wasNetworkConfigured check failed:", e);
+        }
+      }
+
       if (!networkActive) {
-        // لا يوجد مجلد مشترك → دخول مباشر كمدير محلي
+        if (wasConfigured) {
+          // الجهاز كان مُعدّاً للشبكة لكن الاتصال مفقود → تسجيل دخول أوفلاين
+          console.log("[Login] Network was configured but unreachable, requiring offline login");
+          setScreenState("login_offline");
+          setIsLoading(false);
+          return;
+        }
+        // لا يوجد مجلد مشترك ولم يُعدّ من قبل → دخول مباشر كمدير محلي
         console.log("[Login] No network configured, granting local admin access");
         onAuthenticated({
           id: "local-admin",
