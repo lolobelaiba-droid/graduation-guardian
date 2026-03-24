@@ -1,4 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+
+// Strip HTML tags and decode HTML entities from rich text
+function stripHtml(html: string): string {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+}
 import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
