@@ -453,7 +453,7 @@ export type Database = {
           professional_email: string | null
           province: string | null
           registration_count: number | null
-          registration_number: string
+          registration_number: string | null
           registration_type: string | null
           research_lab_ar: string | null
           scientific_council_date: string
@@ -509,7 +509,7 @@ export type Database = {
           professional_email?: string | null
           province?: string | null
           registration_count?: number | null
-          registration_number?: string
+          registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
           scientific_council_date: string
@@ -565,7 +565,7 @@ export type Database = {
           professional_email?: string | null
           province?: string | null
           registration_count?: number | null
-          registration_number?: string
+          registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
           scientific_council_date?: string
@@ -624,7 +624,7 @@ export type Database = {
           professional_email: string | null
           province: string | null
           registration_count: number | null
-          registration_number: string
+          registration_number: string | null
           registration_type: string | null
           research_lab_ar: string | null
           scientific_council_date: string
@@ -680,7 +680,7 @@ export type Database = {
           professional_email?: string | null
           province?: string | null
           registration_count?: number | null
-          registration_number?: string
+          registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
           scientific_council_date: string
@@ -736,7 +736,7 @@ export type Database = {
           professional_email?: string | null
           province?: string | null
           registration_count?: number | null
-          registration_number?: string
+          registration_number?: string | null
           registration_type?: string | null
           research_lab_ar?: string | null
           scientific_council_date?: string
