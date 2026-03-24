@@ -1,4 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+
+// Strip HTML tags and decode HTML entities from rich text
+function stripHtml(html: string): string {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+}
 import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -300,8 +307,8 @@ export function CreateCertificateFromPhdDialog({
       supervisor_university: pendingStudent.supervisor_university || '',
       co_supervisor_university: pendingStudent.co_supervisor_university || '',
       research_lab_ar: pendingStudent.research_lab_ar || '',
-      thesis_title_ar: pendingStudent.thesis_title_ar || '',
-      thesis_title_fr: pendingStudent.thesis_title_fr || '',
+      thesis_title_ar: stripHtml(pendingStudent.thesis_title_ar || ''),
+      thesis_title_fr: stripHtml(pendingStudent.thesis_title_fr || ''),
       field_ar: pendingStudent.field_ar || '',
       field_fr: pendingStudent.field_fr || '',
       mention: 'honorable' as MentionType,
