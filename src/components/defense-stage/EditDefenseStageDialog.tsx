@@ -872,7 +872,7 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
               <FormField control={form.control} name="decision_date" render={({ field }) => (
                 <FormItem>
                   <FormLabel>تاريخ مقرر تعيين اللجنة</FormLabel>
-                  <FormControl><Input {...field} value={field.value || ''} /></FormControl>
+                  <FormControl><DateInput value={field.value || ''} onChange={field.onChange} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
