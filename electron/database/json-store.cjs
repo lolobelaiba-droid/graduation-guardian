@@ -1736,6 +1736,8 @@ function writeUsers(users) {
       var verify = fs.readFileSync(filePath, 'utf8');
       if (verify && verify.length > 2) {
         console.log('[Users] Successfully saved ' + users.length + ' users to:', filePath);
+        // تحديث النسخة المحلية تلقائياً عند أي تغيير في المستخدمين
+        try { cacheUsersLocally(); } catch (ce) {}
         return true;
       }
     }
