@@ -1593,6 +1593,100 @@ function disconnectNetwork() {
 
 var crypto = require('crypto');
 
+/**
+ * التحقق مما إذا كان الجهاز قد تم إعداده مسبقاً للعمل عبر الشبكة
+ * (بغض النظر عن إمكانية الوصول الحالية للمجلد المشترك)
+ */
+function wasNetworkConfigured() {
+  var candidates = [
+    path.join(path.dirname(app.getPath('exe')), 'network-config.json'),
+    path.join(app.getPath('userData'), 'network-config.json')
+  ];
+  for (var i = 0; i < candidates.length; i++) {
+    if (fs.existsSync(candidates[i])) {
+      try {
+        var content = fs.readFileSync(candidates[i], 'utf8');
+        var cfg = JSON.parse(content);
+        if (cfg && cfg.sharedPath) {
+          return true;
+        }
+      } catch (e) {}
+    }
+  }
+  return false;
+}
+
+/**
+ * حفظ نسخة محلية من بيانات المصادقة (users.json) في مجلد userData
+ * يتم استدعاؤها تلقائياً عند تسجيل دخول ناجح أو تحديث المستخدمين
+ */
+function cacheUsersLocally() {
+  try {
+    if (!isNetworkMode()) return; // فقط في وضع الشبكة
+    var networkUsersPath = getUsersFilePath();
+    if (!fs.existsSync(networkUsersPath)) return;
+    var content = fs.readFileSync(networkUsersPath, 'utf8');
+    if (!content || content.trim() === '') return;
+    var localCachePath = path.join(app.getPath('userData'), 'cached_users.json');
+    fs.writeFileSync(localCachePath, content, 'utf8');
+    console.log('[Users] Cached users locally to:', localCachePath);
+  } catch (e) {
+    console.error('[Users] Failed to cache users locally:', e.message);
+  }
+}
+
+/**
+ * قراءة النسخة المحلية المخزنة مؤقتاً من المستخدمين
+ */
+function readCachedUsers() {
+  try {
+    var localCachePath = path.join(app.getPath('userData'), 'cached_users.json');
+    if (!fs.existsSync(localCachePath)) return [];
+    var content = fs.readFileSync(localCachePath, 'utf8');
+    if (!content || content.trim() === '') return [];
+    return JSON.parse(content);
+  } catch (e) {
+    console.error('[Users] Failed to read cached users:', e.message);
+    return [];
+  }
+}
+
+/**
+ * مصادقة المستخدم باستخدام النسخة المحلية (عند فقد الاتصال)
+ */
+function authenticateUserOffline(username, password) {
+  var users = readCachedUsers();
+  if (users.length === 0) {
+    return { success: false, error: 'لا توجد بيانات مستخدمين مخزنة محلياً' };
+  }
+  var user = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].username === username && users[i].is_active !== false) {
+      user = users[i];
+      break;
+    }
+  }
+  if (!user) {
+    return { success: false, error: 'اسم المستخدم غير موجود' };
+  }
+  if (user.failed_attempts >= 5) {
+    var lockTime = user.locked_until ? new Date(user.locked_until).getTime() : 0;
+    if (Date.now() < lockTime) {
+      return { success: false, error: 'الحساب مقفل مؤقتاً. حاول بعد 5 دقائق.' };
+    }
+  }
+  var hash = hashPasswordNode(password, user.salt);
+  if (hash !== user.password_hash) {
+    return { success: false, error: 'كلمة المرور غير صحيحة' };
+  }
+  var safeUser = Object.assign({}, user);
+  delete safeUser.password_hash;
+  delete safeUser.salt;
+  delete safeUser.security_answer_hash;
+  delete safeUser.security_answer_salt;
+  return { success: true, user: safeUser, offline: true };
+}
+
 function getUsersFilePath() {
   return path.join(getDataDir(), 'users.json');
 }
