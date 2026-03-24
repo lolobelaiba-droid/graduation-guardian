@@ -52,6 +52,7 @@ export function AppSidebar() {
   const { data: unreadCount = 0 } = useUnreadNotesCount();
   const { data: networkInfo } = useNetworkInfo();
   const { currentUser, isAdmin, logout } = useAuth();
+  const { data: uniSettings } = useUniversitySettings();
 
   return (
     <>
