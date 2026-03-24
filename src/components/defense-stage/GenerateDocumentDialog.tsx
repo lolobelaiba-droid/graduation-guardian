@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { stripHtml } from "@/lib/utils";
 import { createPortal } from "react-dom";
 import { formatCertificateDate } from "@/lib/numerals";
 import { normalizeDefenseTemplateHtml } from "@/lib/defenseTemplateHtml";
