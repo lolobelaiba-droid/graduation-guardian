@@ -367,6 +367,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
             <h1 className="text-2xl font-bold text-foreground">نظام إدارة طلبة الدكتوراه</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {screenState === "login" && "أدخل بيانات الدخول للمتابعة"}
+              {screenState === "login_offline" && "الشبكة غير متاحة — وضع القراءة فقط"}
               {screenState === "legacy_login" && "أدخل كلمة المرور للمتابعة"}
               {screenState === "setup_first_admin" && "إعداد حساب المدير الأول"}
               {screenState === "forgot_password" && "استعادة كلمة المرور"}
