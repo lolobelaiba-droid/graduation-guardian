@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { stripHtml } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { getCurrentUserName } from "@/lib/current-user-store";
@@ -36,8 +37,8 @@ export function useRestoreStudentToPhd() {
         professional_email: student.professional_email || null,
         phone_number: student.phone_number || null,
         supervisor_ar: ('supervisor_ar' in student ? (student as any).supervisor_ar : "") || "",
-        thesis_title_ar: ('thesis_title_ar' in student ? (student as any).thesis_title_ar : null) || null,
-        thesis_title_fr: ('thesis_title_fr' in student ? (student as any).thesis_title_fr : null) || null,
+        thesis_title_ar: stripHtml(('thesis_title_ar' in student ? (student as any).thesis_title_ar : null) || '') || null,
+        thesis_title_fr: stripHtml(('thesis_title_fr' in student ? (student as any).thesis_title_fr : null) || '') || null,
         research_lab_ar: student.research_lab_ar || null,
         co_supervisor_ar: ('co_supervisor_ar' in student ? (student as any).co_supervisor_ar : null) || null,
         supervisor_university: ('supervisor_university' in student ? (student as any).supervisor_university : null) || null,

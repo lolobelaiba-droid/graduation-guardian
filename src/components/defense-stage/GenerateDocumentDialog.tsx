@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { stripHtml } from "@/lib/utils";
 import { createPortal } from "react-dom";
 import { formatCertificateDate } from "@/lib/numerals";
 import { normalizeDefenseTemplateHtml } from "@/lib/defenseTemplateHtml";
@@ -491,8 +492,8 @@ export function GenerateDocumentDialog({
       field_ar: student.field_ar || "",
       branch_ar: student.branch_ar || "",
       specialty_ar: student.specialty_ar || "",
-      thesis_title_ar: student.thesis_title_ar || "",
-      thesis_title_fr: student.thesis_title_fr || "",
+      thesis_title_ar: stripHtml(student.thesis_title_ar || ""),
+      thesis_title_fr: stripHtml(student.thesis_title_fr || ""),
       supervisor_ar: student.supervisor_ar || "",
       supervisor_university: student.supervisor_university || "",
       co_supervisor_ar: student.co_supervisor_ar || "",
