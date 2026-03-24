@@ -888,7 +888,7 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
               <FormField control={form.control} name="auth_decision_date" render={({ field }) => (
                 <FormItem>
                   <FormLabel>تاريخ ترخيص المناقشة</FormLabel>
-                  <FormControl><Input {...field} value={field.value || ''} /></FormControl>
+                  <FormControl><DateInput value={field.value || ''} onChange={field.onChange} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
