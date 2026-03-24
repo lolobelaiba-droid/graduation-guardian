@@ -545,6 +545,22 @@ function registerDatabaseHandlers() {
     }
   });
 
+  ipcMain.handle('db:wasNetworkConfigured', async () => {
+    try {
+      return { success: true, data: db.wasNetworkConfigured() };
+    } catch (error) {
+      return { success: false, data: false };
+    }
+  });
+
+  ipcMain.handle('db:authenticateUserOffline', async (_, username, password) => {
+    try {
+      return db.authenticateUserOffline(username, password);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('db:hasUsers', async () => {
     try {
       return { success: true, data: db.hasUsers() };

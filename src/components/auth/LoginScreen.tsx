@@ -30,7 +30,7 @@ const SECURITY_QUESTIONS = [
   "ما هو رقم هاتفك القديم؟",
 ];
 
-type ScreenState = "loading" | "login" | "setup_first_admin" | "legacy_login" | "forgot_password" | "emergency_reset_done";
+type ScreenState = "loading" | "login" | "login_offline" | "setup_first_admin" | "legacy_login" | "forgot_password" | "emergency_reset_done";
 
 export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   const [username, setUsername] = useState("");
@@ -81,8 +81,9 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       const db = getDbClient()! as any;
 
       // === الخطوة 1: التحقق من وضع الشبكة ===
-      // إذا لم يتم إعداد مجلد مشترك بعد → دخول مباشر كمدير بدون تسجيل دخول
       let networkActive = false;
+      let wasConfigured = false;
+
       if (typeof db.isNetworkMode === "function") {
         try {
           const netResult = await db.isNetworkMode();
@@ -92,8 +93,25 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         }
       }
 
+      // التحقق مما إذا كان الجهاز قد تم إعداده مسبقاً للشبكة
+      if (!networkActive && typeof db.wasNetworkConfigured === "function") {
+        try {
+          const configResult = await db.wasNetworkConfigured();
+          wasConfigured = configResult?.success && configResult?.data === true;
+        } catch (e) {
+          console.warn("wasNetworkConfigured check failed:", e);
+        }
+      }
+
       if (!networkActive) {
-        // لا يوجد مجلد مشترك → دخول مباشر كمدير محلي
+        if (wasConfigured) {
+          // الجهاز كان مُعدّاً للشبكة لكن الاتصال مفقود → تسجيل دخول أوفلاين
+          console.log("[Login] Network was configured but unreachable, requiring offline login");
+          setScreenState("login_offline");
+          setIsLoading(false);
+          return;
+        }
+        // لا يوجد مجلد مشترك ولم يُعدّ من قبل → دخول مباشر كمدير محلي
         console.log("[Login] No network configured, granting local admin access");
         onAuthenticated({
           id: "local-admin",
@@ -143,7 +161,21 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       }
     } catch (e) {
       console.error("Error checking system state:", e);
-      // في حال خطأ عام → دخول محلي
+      // في حال خطأ عام → تحقق إذا كان الجهاز مُعدّاً للشبكة
+      if (isElectron()) {
+        try {
+          const db2 = getDbClient()! as any;
+          if (typeof db2.wasNetworkConfigured === "function") {
+            const cfgResult = await db2.wasNetworkConfigured();
+            if (cfgResult?.success && cfgResult?.data === true) {
+              setScreenState("login_offline");
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (e2) {}
+      }
+      // جهاز غير مُعدّ → دخول محلي
       onAuthenticated({
         id: "fallback-admin",
         username: "admin",
@@ -169,13 +201,8 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         toast.success(`مرحباً ${result.user.display_name}`);
         onAuthenticated(result.user as AppUser);
       } else {
-        // تسجيل محاولة الدخول الفاشلة
         if (typeof dbAny.recordFailedLogin === "function") {
-          try {
-            await dbAny.recordFailedLogin(username.trim());
-          } catch (e2) {
-            console.warn("Failed to record failed login:", e2);
-          }
+          try { await dbAny.recordFailedLogin(username.trim()); } catch (e2) {}
         }
         const isLocked = result.error?.includes("مقفل") || result.error?.includes("locked");
         if (isLocked) {
@@ -187,6 +214,27 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       }
     } catch (e) {
       console.error("Login error:", e);
+      toast.error("حدث خطأ أثناء تسجيل الدخول");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleOfflineLogin = async () => {
+    if (!username.trim() || !password.trim()) return;
+    setIsVerifying(true);
+    try {
+      const dbAny = getDbClient()! as any;
+      const result = await dbAny.authenticateUserOffline(username.trim(), password);
+      if (result.success && result.user) {
+        toast.success(`مرحباً ${result.user.display_name} (وضع القراءة فقط)`);
+        onAuthenticated(result.user as AppUser);
+      } else {
+        toast.error(result.error || "فشل تسجيل الدخول");
+        setPassword("");
+      }
+    } catch (e) {
+      console.error("Offline login error:", e);
       toast.error("حدث خطأ أثناء تسجيل الدخول");
     } finally {
       setIsVerifying(false);
@@ -333,6 +381,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
             <h1 className="text-2xl font-bold text-foreground">نظام إدارة طلبة الدكتوراه</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {screenState === "login" && "أدخل بيانات الدخول للمتابعة"}
+              {screenState === "login_offline" && "الشبكة غير متاحة — وضع القراءة فقط"}
               {screenState === "legacy_login" && "أدخل كلمة المرور للمتابعة"}
               {screenState === "setup_first_admin" && "إعداد حساب المدير الأول"}
               {screenState === "forgot_password" && "استعادة كلمة المرور"}
@@ -379,6 +428,48 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
                 className="w-full text-sm text-primary hover:underline text-center">
                 نسيت كلمة المرور؟
               </button>
+            </>
+          )}
+
+          {/* ===== شاشة تسجيل الدخول أوفلاين ===== */}
+          {screenState === "login_offline" && (
+            <>
+              <Alert variant="destructive" className="mb-2">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  الاتصال بالمجلد المشترك غير متاح. يمكنك الدخول في وضع القراءة فقط.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username-offline" className="flex items-center gap-2">
+                    <User className="h-4 w-4" /> اسم المستخدم
+                  </Label>
+                  <Input id="username-offline" value={username} onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && document.getElementById("password-offline")?.focus()}
+                    placeholder="أدخل اسم المستخدم" autoFocus dir="ltr" className="text-left" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password-offline" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" /> كلمة المرور
+                  </Label>
+                  <div className="relative">
+                    <Input id="password-offline" type={showPassword ? "text" : "password"} value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleOfflineLogin()}
+                      placeholder="أدخل كلمة المرور" className="pl-10" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <Button className="w-full gap-2" variant="outline" onClick={handleOfflineLogin}
+                disabled={isVerifying || !username.trim() || !password.trim()}>
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                دخول في وضع القراءة فقط
+              </Button>
             </>
           )}
 
