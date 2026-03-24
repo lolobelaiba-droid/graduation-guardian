@@ -34,6 +34,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
+      spellcheck: true,
       preload: path.join(__dirname, 'preload.cjs'),
     },
     // RTL-friendly title bar
