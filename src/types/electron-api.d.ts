@@ -37,6 +37,7 @@ interface DbOperations {
   cacheRemoteFile: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string; fileName: string; cached: boolean }; error?: string }>;
   getCachedFileUrl: (remoteUrl: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string }; error?: string }>;
   saveLocalFile: (fileBuffer: number[], fileName: string, subFolder?: string) => Promise<{ success: boolean; data?: { localPath: string; localUrl: string; fileName: string }; error?: string }>;
+  resolveFontPath: (fontUrl: string) => Promise<{ success: boolean; data?: string; error?: string }>;
   
   // إدارة الشبكة والأجهزة
   saveNetworkConfig: (sharedPath: string) => Promise<{ success: boolean; data?: unknown; error?: string }>;
