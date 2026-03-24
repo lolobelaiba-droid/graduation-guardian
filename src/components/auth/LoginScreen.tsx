@@ -187,13 +187,8 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         toast.success(`مرحباً ${result.user.display_name}`);
         onAuthenticated(result.user as AppUser);
       } else {
-        // تسجيل محاولة الدخول الفاشلة
         if (typeof dbAny.recordFailedLogin === "function") {
-          try {
-            await dbAny.recordFailedLogin(username.trim());
-          } catch (e2) {
-            console.warn("Failed to record failed login:", e2);
-          }
+          try { await dbAny.recordFailedLogin(username.trim()); } catch (e2) {}
         }
         const isLocked = result.error?.includes("مقفل") || result.error?.includes("locked");
         if (isLocked) {
@@ -205,6 +200,27 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       }
     } catch (e) {
       console.error("Login error:", e);
+      toast.error("حدث خطأ أثناء تسجيل الدخول");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleOfflineLogin = async () => {
+    if (!username.trim() || !password.trim()) return;
+    setIsVerifying(true);
+    try {
+      const dbAny = getDbClient()! as any;
+      const result = await dbAny.authenticateUserOffline(username.trim(), password);
+      if (result.success && result.user) {
+        toast.success(`مرحباً ${result.user.display_name} (وضع القراءة فقط)`);
+        onAuthenticated(result.user as AppUser);
+      } else {
+        toast.error(result.error || "فشل تسجيل الدخول");
+        setPassword("");
+      }
+    } catch (e) {
+      console.error("Offline login error:", e);
       toast.error("حدث خطأ أثناء تسجيل الدخول");
     } finally {
       setIsVerifying(false);
