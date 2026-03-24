@@ -51,8 +51,11 @@ interface DbOperations {
   disconnectNetwork: () => Promise<{ success: boolean; error?: string }>;
 
   // إدارة المستخدمين
+  isNetworkMode: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
+  wasNetworkConfigured: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
   hasUsers: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
   authenticateUser: (username: string, password: string) => Promise<{ success: boolean; user?: unknown; error?: string }>;
+  authenticateUserOffline: (username: string, password: string) => Promise<{ success: boolean; user?: unknown; offline?: boolean; error?: string }>;
   getAllUsers: () => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
   addUser: (userData: { username: string; display_name?: string; password: string; role?: string; security_question?: string; security_answer?: string }) => Promise<{ success: boolean; user?: unknown; error?: string }>;
   updateUser: (userId: string, updateData: Record<string, unknown>) => Promise<{ success: boolean; user?: unknown; error?: string }>;
@@ -61,6 +64,8 @@ interface DbOperations {
   recoverPasswordByQuestion: (username: string, securityAnswer: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   getSecurityQuestion: (username: string) => Promise<{ success: boolean; question?: string | null; error?: string }>;
   checkEmergencyReset: () => Promise<{ success: boolean; username?: string; message?: string }>;
+  getFailedLoginAlerts: () => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
+  dismissFailedLoginAlert: (alertId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface ElectronAPI {
