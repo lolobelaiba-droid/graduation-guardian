@@ -417,6 +417,48 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
             </>
           )}
 
+          {/* ===== شاشة تسجيل الدخول أوفلاين ===== */}
+          {screenState === "login_offline" && (
+            <>
+              <Alert variant="destructive" className="mb-2">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  الاتصال بالمجلد المشترك غير متاح. يمكنك الدخول في وضع القراءة فقط.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username-offline" className="flex items-center gap-2">
+                    <User className="h-4 w-4" /> اسم المستخدم
+                  </Label>
+                  <Input id="username-offline" value={username} onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && document.getElementById("password-offline")?.focus()}
+                    placeholder="أدخل اسم المستخدم" autoFocus dir="ltr" className="text-left" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password-offline" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" /> كلمة المرور
+                  </Label>
+                  <div className="relative">
+                    <Input id="password-offline" type={showPassword ? "text" : "password"} value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleOfflineLogin()}
+                      placeholder="أدخل كلمة المرور" className="pl-10" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <Button className="w-full gap-2" variant="outline" onClick={handleOfflineLogin}
+                disabled={isVerifying || !username.trim() || !password.trim()}>
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                دخول في وضع القراءة فقط
+              </Button>
+            </>
+          )}
+
           {/* ===== شاشة النظام القديم ===== */}
           {screenState === "legacy_login" && (
             <>
