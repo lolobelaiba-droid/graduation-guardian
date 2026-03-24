@@ -29,7 +29,6 @@ import { useUnreadNotesCount } from "@/hooks/useNotes";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 
 const menuItems = [
   { title: "لوحة التحكم", icon: LayoutDashboard, path: "/" },
@@ -52,7 +51,6 @@ export function AppSidebar() {
   const { data: unreadCount = 0 } = useUnreadNotesCount();
   const { data: networkInfo } = useNetworkInfo();
   const { currentUser, isAdmin, logout } = useAuth();
-  const { data: uniSettings } = useUniversitySettings();
 
   return (
     <>
@@ -85,12 +83,8 @@ export function AppSidebar() {
         {/* Logo Section */}
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0 animate-pendulum">
-              {uniSettings?.universityLogo ? (
-                <img src={uniSettings.universityLogo} alt="شعار الجامعة" className="w-8 h-8 object-contain rounded" />
-              ) : (
-                <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
-              )}
+            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
             </div>
             {!isCollapsed && (
               <div className="animate-fade-in">

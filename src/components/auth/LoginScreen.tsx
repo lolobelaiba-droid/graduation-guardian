@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { isElectron, getDbClient } from "@/lib/database/db-client";
 import { toast } from "sonner";
 import { AppUser } from "@/contexts/AuthContext";
-import { useUniversitySettings } from "@/hooks/useUniversitySettings";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -40,7 +39,6 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [screenState, setScreenState] = useState<ScreenState>("loading");
-  const { data: uniSettings } = useUniversitySettings();
 
   // إعداد أول مدير
   const [adminDisplayName, setAdminDisplayName] = useState("");
@@ -328,12 +326,8 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg animate-pendulum">
-            {uniSettings?.universityLogo ? (
-              <img src={uniSettings.universityLogo} alt="شعار الجامعة" className="w-14 h-14 object-contain rounded" />
-            ) : (
-              <GraduationCap className="h-10 w-10 text-primary-foreground" />
-            )}
+          <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+            <GraduationCap className="h-10 w-10 text-primary-foreground" />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">نظام إدارة طلبة الدكتوراه</h1>
