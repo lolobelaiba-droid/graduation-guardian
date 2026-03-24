@@ -101,7 +101,7 @@ export function GenerateDocumentDialog({
   const [deanLetterDate, setDeanLetterDate] = useState("");
   const [minutesNumber, setMinutesNumber] = useState("");
   const [defenseTime, setDefenseTime] = useState("");
-  const [mention, setMention] = useState("مشرف جدا");
+  const [mention, setMention] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -128,7 +128,7 @@ export function GenerateDocumentDialog({
       } else if (isDefenseMinutes) {
         setMinutesNumber("");
         setDefenseTime("");
-        setMention("مشرف جدا");
+        setMention("");
       } else {
         setDecisionNumber(student.auth_decision_number || "");
         setDecisionDate(student.auth_decision_date || "");
