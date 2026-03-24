@@ -30,7 +30,7 @@ const SECURITY_QUESTIONS = [
   "ما هو رقم هاتفك القديم؟",
 ];
 
-type ScreenState = "loading" | "login" | "setup_first_admin" | "legacy_login" | "forgot_password" | "emergency_reset_done";
+type ScreenState = "loading" | "login" | "login_offline" | "setup_first_admin" | "legacy_login" | "forgot_password" | "emergency_reset_done";
 
 export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   const [username, setUsername] = useState("");
