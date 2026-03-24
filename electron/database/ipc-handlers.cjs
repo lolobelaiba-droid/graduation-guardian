@@ -340,9 +340,16 @@ function registerDatabaseHandlers() {
     }
   });
 
-  // ============================================
-  // إدارة الشبكة والأجهزة
-  // ============================================
+  // إعادة بناء مسار خط ليكون صحيحاً للجهاز الحالي
+  ipcMain.handle('db:resolveFontPath', async (_, fontUrl) => {
+    try {
+      const resolved = db.resolveFontPath(fontUrl);
+      return { success: true, data: resolved };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
 
   ipcMain.handle('db:saveNetworkConfig', async (_, sharedPath) => {
     try {
