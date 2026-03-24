@@ -2147,10 +2147,13 @@ module.exports = {
   // إدارة المستخدمين
   getAllUsers: getAllUsers,
   authenticateUser: authenticateUser,
+  authenticateUserOffline: authenticateUserOffline,
   addUser: addUser,
   updateUser: updateUser,
   deleteUser: deleteUser,
   hasUsers: hasUsers,
+  wasNetworkConfigured: wasNetworkConfigured,
+  cacheUsersLocally: cacheUsersLocally,
   changePassword: changePassword,
   recoverPasswordByQuestion: recoverPasswordByQuestion,
   getSecurityQuestion: getSecurityQuestion,
