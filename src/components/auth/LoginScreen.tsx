@@ -161,7 +161,21 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       }
     } catch (e) {
       console.error("Error checking system state:", e);
-      // في حال خطأ عام → دخول محلي
+      // في حال خطأ عام → تحقق إذا كان الجهاز مُعدّاً للشبكة
+      if (isElectron()) {
+        try {
+          const db2 = getDbClient()! as any;
+          if (typeof db2.wasNetworkConfigured === "function") {
+            const cfgResult = await db2.wasNetworkConfigured();
+            if (cfgResult?.success && cfgResult?.data === true) {
+              setScreenState("login_offline");
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (e2) {}
+      }
+      // جهاز غير مُعدّ → دخول محلي
       onAuthenticated({
         id: "fallback-admin",
         username: "admin",
