@@ -1687,6 +1687,41 @@ function authenticateUserOffline(username, password) {
   return { success: true, user: safeUser, offline: true };
 }
 
+/**
+ * جلب بيانات المستخدم المحدّثة (الصلاحيات، الحالة...) من users.json أو النسخة المحلية
+ * يُستخدم لتحديث بيانات المستخدم الحالي دورياً دون إعادة تسجيل الدخول
+ */
+function refreshUserData(userId) {
+  var users = [];
+  try {
+    if (isNetworkMode()) {
+      users = readUsers();
+    }
+  } catch (e) {}
+  if (users.length === 0) {
+    users = readCachedUsers();
+  }
+  if (users.length === 0) {
+    return { success: false, error: 'لا توجد بيانات مستخدمين' };
+  }
+  var user = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].id === userId) {
+      user = users[i];
+      break;
+    }
+  }
+  if (!user) {
+    return { success: false, error: 'المستخدم غير موجود' };
+  }
+  var safeUser = Object.assign({}, user);
+  delete safeUser.password_hash;
+  delete safeUser.salt;
+  delete safeUser.security_answer_hash;
+  delete safeUser.security_answer_salt;
+  return { success: true, user: safeUser };
+}
+
 function getUsersFilePath() {
   return path.join(getDataDir(), 'users.json');
 }
@@ -2150,6 +2185,7 @@ module.exports = {
   getAllUsers: getAllUsers,
   authenticateUser: authenticateUser,
   authenticateUserOffline: authenticateUserOffline,
+  refreshUserData: refreshUserData,
   addUser: addUser,
   updateUser: updateUser,
   deleteUser: deleteUser,
