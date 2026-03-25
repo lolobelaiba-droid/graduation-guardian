@@ -218,7 +218,7 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
   const { data: phdScienceStudents = [], isLoading: loadingScience } = usePhdScienceStudents();
   const isLoadingStudents = loadingLmd || loadingScience;
 
-  const { professorNames, ensureProfessor } = useProfessors();
+  const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
 
   const { data: decreeTrainingOptions = [] } = useDropdownOptions('decree_training');
@@ -559,6 +559,10 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
                 coSupervisorUniversity={selectedStudent?.co_supervisor_university || ''}
                 nameSuggestions={professorNames}
                 universitySuggestions={universityNames}
+                findProfessor={findProfessor}
+                onProfessorDataChange={(name, rankLabel, rankAbbreviation, university) => {
+                  if (name) ensureProfessor(name, rankLabel || undefined, rankAbbreviation || undefined, university || undefined);
+                }}
               />
 
               <SectionHeader title="القرارات الوزارية" />
