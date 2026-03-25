@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ShieldCheck, AlertTriangle, CheckCircle, Loader2, RefreshCw,
   Sparkles, FileWarning, ChevronDown, ChevronUp, Wrench, BarChart3,
-  XCircle, Info
+  XCircle, Info, UserX, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
