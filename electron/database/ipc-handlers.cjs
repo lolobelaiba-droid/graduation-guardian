@@ -469,6 +469,8 @@ function registerDatabaseHandlers() {
 
         if (isReachable) {
           failureCount = 0;
+          // مزامنة بيانات المستخدمين محلياً عند كل فحص ناجح
+          try { db.cacheUsersLocally(); } catch (ce) {}
           if (previousNetworkState === false) {
             // الاتصال عاد
             previousNetworkState = true;
