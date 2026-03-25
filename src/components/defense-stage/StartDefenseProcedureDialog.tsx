@@ -559,6 +559,10 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
                 coSupervisorUniversity={selectedStudent?.co_supervisor_university || ''}
                 nameSuggestions={professorNames}
                 universitySuggestions={universityNames}
+                findProfessor={findProfessor}
+                onProfessorDataChange={(name, rankLabel, rankAbbreviation, university) => {
+                  if (name) ensureProfessor(name, rankLabel || undefined, rankAbbreviation || undefined, university || undefined);
+                }}
               />
 
               <SectionHeader title="القرارات الوزارية" />
