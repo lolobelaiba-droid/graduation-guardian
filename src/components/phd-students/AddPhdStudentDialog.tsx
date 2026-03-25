@@ -219,9 +219,9 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
         form.setValue("registration_count", result.registrationCount);
       }
       
-      // Auto-update inscription_status if late
-      if (result.isLate) {
-        const newInscriptionStatus = getDefaultInscriptionStatus(result.currentYear, inscriptionStatusAr);
+      // Auto-update inscription_status based on registration status
+      const newInscriptionStatus = getDefaultInscriptionStatus(result.currentYear, inscriptionStatusAr);
+      if (newInscriptionStatus !== inscriptionStatusAr) {
         setInscriptionStatusAr(newInscriptionStatus);
       }
     }
