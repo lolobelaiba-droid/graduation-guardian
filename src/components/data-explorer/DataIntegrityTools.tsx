@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ShieldCheck, AlertTriangle, CheckCircle, Loader2, RefreshCw,
   Sparkles, FileWarning, ChevronDown, ChevronUp, Wrench, BarChart3,
-  XCircle, Info
+  XCircle, Info, UserX, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -819,6 +819,318 @@ function DataHealthReport() {
   );
 }
 
+// =================== 4. ORPHANED PROFESSORS CLEANUP ===================
+
+interface OrphanedProfessor {
+  id: string;
+  full_name: string;
+  rank_label: string | null;
+  rank_abbreviation: string | null;
+  university: string | null;
+}
+
+function OrphanedProfessorsCleanup() {
+  const [orphans, setOrphans] = useState<OrphanedProfessor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [scanned, setScanned] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const scan = useCallback(async () => {
+    setLoading(true);
+    setScanned(false);
+    setSelected(new Set());
+
+    try {
+      // Load professors and all tables that reference professor names
+      const [professors, ...allTables] = await Promise.all([
+        queryTable("professors"),
+        queryTable("phd_lmd_students"),
+        queryTable("phd_science_students"),
+        queryTable("defense_stage_lmd"),
+        queryTable("defense_stage_science"),
+        queryTable("phd_lmd_certificates"),
+        queryTable("phd_science_certificates"),
+        queryTable("master_certificates"),
+      ]);
+
+      // Collect ALL referenced professor names from all tables
+      const referencedNames = new Set<string>();
+
+      for (const records of allTables) {
+        for (const row of records) {
+          // supervisor & co-supervisor fields
+          if (row.supervisor_ar?.trim()) referencedNames.add(row.supervisor_ar.trim());
+          if (row.co_supervisor_ar?.trim()) referencedNames.add(row.co_supervisor_ar.trim());
+
+          // jury president (strip abbreviation prefix to get clean name)
+          if (row.jury_president_ar?.trim()) {
+            const raw = row.jury_president_ar.trim();
+            referencedNames.add(raw);
+            // Also extract clean name without abbreviation
+            const cleanName = extractCleanName(raw, professors);
+            if (cleanName) referencedNames.add(cleanName);
+          }
+
+          // jury members (split by " - " separator)
+          if (row.jury_members_ar?.trim()) {
+            const members = row.jury_members_ar.split(/\s+-\s+/);
+            for (const m of members) {
+              const cleaned = m.replace(/\s*\(مدعو\)/g, '').trim();
+              if (cleaned) {
+                referencedNames.add(cleaned);
+                const cleanName = extractCleanName(cleaned, professors);
+                if (cleanName) referencedNames.add(cleanName);
+              }
+            }
+          }
+        }
+      }
+
+      // Find orphaned professors (not referenced anywhere)
+      const orphaned: OrphanedProfessor[] = [];
+      for (const prof of professors) {
+        const name = prof.full_name?.trim();
+        if (!name) continue;
+
+        // Check if the professor's clean name appears in any reference
+        const isReferenced = referencedNames.has(name);
+
+        // Also check if any reference contains this name as a substring (for abbreviated forms)
+        let foundInAbbreviated = false;
+        if (!isReferenced) {
+          for (const ref of referencedNames) {
+            if (ref.endsWith(name) || ref.includes(` ${name}`)) {
+              foundInAbbreviated = true;
+              break;
+            }
+          }
+        }
+
+        if (!isReferenced && !foundInAbbreviated) {
+          orphaned.push({
+            id: prof.id,
+            full_name: name,
+            rank_label: prof.rank_label || null,
+            rank_abbreviation: prof.rank_abbreviation || null,
+            university: prof.university || null,
+          });
+        }
+      }
+
+      setOrphans(orphaned);
+      setScanned(true);
+    } catch (err) {
+      console.error("Orphan scan error:", err);
+      toast.error("حدث خطأ أثناء البحث عن الأساتذة اليتامى");
+    }
+
+    setLoading(false);
+  }, []);
+
+  // Helper: try to extract the clean name from an abbreviated form like "أ.ت.ع محمد"
+  function extractCleanName(raw: string, professors: any[]): string | null {
+    for (const prof of professors) {
+      const name = prof.full_name?.trim();
+      if (!name) continue;
+      const abbr = prof.rank_abbreviation?.trim();
+      if (abbr && raw === `${abbr} ${name}`) return name;
+      if (raw.endsWith(name) && raw !== name) return name;
+    }
+    return null;
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === orphans.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(orphans.map(o => o.id)));
+    }
+  };
+
+  const deleteSelected = async () => {
+    setDeleting(true);
+    let deleted = 0;
+
+    try {
+      for (const id of selected) {
+        try {
+          if (isElectron()) {
+            const db = getDbClient();
+            if (db) await db.delete("professors", id);
+            deleted++;
+          } else {
+            const { error } = await (supabase as any).from("professors").delete().eq("id", id);
+            if (!error) deleted++;
+          }
+        } catch {
+          // Skip individual failures
+        }
+      }
+
+      toast.success(`تم حذف ${deleted} أستاذ يتيم بنجاح`);
+      setOrphans(prev => prev.filter(o => !selected.has(o.id)));
+      setSelected(new Set());
+    } catch (err) {
+      toast.error("حدث خطأ أثناء الحذف");
+    }
+
+    setDeleting(false);
+    setConfirmOpen(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <UserX className="h-5 w-5 text-primary" />أساتذة بدون ارتباطات
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            البحث عن أسماء أساتذة مسجلة لكن غير مرتبطة بأي طالب أو شهادة أو مناقشة
+          </p>
+        </div>
+        <Button onClick={scan} disabled={loading} className="gap-2">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          بحث
+        </Button>
+      </div>
+
+      {!scanned && !loading && (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <UserX className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+            <p className="text-muted-foreground">اضغط "بحث" للكشف عن الأساتذة غير المرتبطين بأي سجل</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {scanned && orphans.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
+            <p className="font-semibold text-emerald-600">جميع الأساتذة مرتبطون بسجلات! 🎉</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {orphans.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10">
+                {orphans.length} أستاذ بدون ارتباط
+              </Badge>
+              {selected.size > 0 && (
+                <Badge variant="secondary">{selected.size} محدد</Badge>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={toggleAll} className="gap-1 text-xs">
+                {selected.size === orphans.length ? "إلغاء الكل" : "تحديد الكل"}
+              </Button>
+              {selected.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={deleting}
+                  className="gap-1 text-xs"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  حذف المحدد ({selected.size})
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[400px]">
+                <div className="divide-y">
+                  {orphans.map((prof) => (
+                    <div
+                      key={prof.id}
+                      className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-muted/30 ${
+                        selected.has(prof.id) ? "bg-destructive/5" : ""
+                      }`}
+                      onClick={() => toggleSelect(prof.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected.has(prof.id)}
+                        onChange={() => toggleSelect(prof.id)}
+                        className="h-4 w-4 rounded border-border accent-primary"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{prof.full_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {prof.rank_label && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {prof.rank_abbreviation || prof.rank_label}
+                            </Badge>
+                          )}
+                          {prof.university && (
+                            <span className="text-xs text-muted-foreground truncate">{prof.university}</span>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30 shrink-0">
+                        لا ارتباطات
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          <div className="p-3 rounded-lg bg-muted/50 border border-dashed">
+            <p className="text-xs text-muted-foreground flex items-start gap-2">
+              <Info className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+              <span>
+                هؤلاء الأساتذة مسجلون في قاعدة البيانات لكن أسماؤهم لا تظهر في أي سجل طالب أو شهادة أو مناقشة.
+                قد يكون السبب تصحيح خطأ إملائي في الاسم مما أدى لبقاء الاسم القديم. تأكد قبل الحذف أنه لا حاجة لهذا السجل.
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف الأساتذة</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف <strong>{selected.size}</strong> أستاذ من قاعدة البيانات.
+              <br />
+              <span className="text-destructive font-medium">هذه العملية لا يمكن التراجع عنها.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteSelected} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+              حذف {selected.size} أستاذ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 // =================== MAIN COMPONENT ===================
 
 export function DataIntegrityTools() {
@@ -836,6 +1148,11 @@ export function DataIntegrityTools() {
               <Sparkles className="h-4 w-4" />تنظيف جماعي
             </TabsTrigger>
           )}
+          {canBulkCleanup && (
+            <TabsTrigger value="orphans" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <UserX className="h-4 w-4" />أساتذة يتامى
+            </TabsTrigger>
+          )}
           <TabsTrigger value="health" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <BarChart3 className="h-4 w-4" />صحة البيانات
           </TabsTrigger>
@@ -847,6 +1164,11 @@ export function DataIntegrityTools() {
         {canBulkCleanup && (
           <TabsContent value="cleanup" className="mt-4">
             <BulkDataCleanup />
+          </TabsContent>
+        )}
+        {canBulkCleanup && (
+          <TabsContent value="orphans" className="mt-4">
+            <OrphanedProfessorsCleanup />
           </TabsContent>
         )}
         <TabsContent value="health" className="mt-4">
