@@ -56,6 +56,7 @@ interface DbOperations {
   hasUsers: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
   authenticateUser: (username: string, password: string) => Promise<{ success: boolean; user?: unknown; error?: string }>;
   authenticateUserOffline: (username: string, password: string) => Promise<{ success: boolean; user?: unknown; offline?: boolean; error?: string }>;
+  refreshUserData: (userId: string) => Promise<{ success: boolean; user?: unknown; error?: string }>;
   getAllUsers: () => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
   addUser: (userData: { username: string; display_name?: string; password: string; role?: string; security_question?: string; security_answer?: string }) => Promise<{ success: boolean; user?: unknown; error?: string }>;
   updateUser: (userId: string, updateData: Record<string, unknown>) => Promise<{ success: boolean; user?: unknown; error?: string }>;
