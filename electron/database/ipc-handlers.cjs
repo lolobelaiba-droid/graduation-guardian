@@ -563,6 +563,14 @@ function registerDatabaseHandlers() {
     }
   });
 
+  ipcMain.handle('db:refreshUserData', async (_, userId) => {
+    try {
+      return db.refreshUserData(userId);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('db:hasUsers', async () => {
     try {
       return { success: true, data: db.hasUsers() };

@@ -142,6 +142,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:wasNetworkConfigured'),
     authenticateUserOffline: (username, password) =>
       ipcRenderer.invoke('db:authenticateUserOffline', username, password),
+    refreshUserData: (userId) =>
+      ipcRenderer.invoke('db:refreshUserData', userId),
     hasUsers: () =>
       ipcRenderer.invoke('db:hasUsers'),
     authenticateUser: (username, password) =>
