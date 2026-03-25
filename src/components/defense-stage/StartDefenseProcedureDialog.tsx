@@ -218,7 +218,7 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
   const { data: phdScienceStudents = [], isLoading: loadingScience } = usePhdScienceStudents();
   const isLoadingStudents = loadingLmd || loadingScience;
 
-  const { professorNames, ensureProfessor } = useProfessors();
+  const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
 
   const { data: decreeTrainingOptions = [] } = useDropdownOptions('decree_training');
