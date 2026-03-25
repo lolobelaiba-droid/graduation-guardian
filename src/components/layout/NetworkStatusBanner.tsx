@@ -48,12 +48,18 @@ export function NetworkStatusBanner() {
     };
   }, [toast, setDisconnected]);
 
-  if (!isElectronEnv || !showBanner || dismissed) return null;
+  // في وضع القراءة فقط: لا يمكن إخفاء البانر أبداً
+  if (!isElectronEnv || (!showBanner && !isReadOnly)) return null;
+  if (dismissed && !isReadOnly) return null;
 
   return (
-    <div className="bg-destructive/10 border-b border-destructive/30 px-4 py-2.5 flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-300">
+    <div className={`border-b px-4 py-2.5 flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-300 ${
+      isReadOnly 
+        ? "bg-destructive/15 border-destructive/40" 
+        : "bg-destructive/10 border-destructive/30"
+    }`}>
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="shrink-0 rounded-full bg-destructive/20 p-1.5">
+        <div className="shrink-0 rounded-full bg-destructive/20 p-1.5 animate-pulse">
           {isReadOnly ? (
             <ShieldAlert className="h-4 w-4 text-destructive" />
           ) : (
@@ -83,14 +89,17 @@ export function NetworkStatusBanner() {
           <Settings className="h-3.5 w-3.5" />
           تحديث الإعدادات
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-destructive/60 hover:text-destructive"
-          onClick={() => setDismissed(true)}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        {/* زر الإخفاء متاح فقط إذا لم يكن وضع القراءة فقط */}
+        {!isReadOnly && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-destructive/60 hover:text-destructive"
+            onClick={() => setDismissed(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
