@@ -241,12 +241,14 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
         form.setValue("registration_count", result.registrationCount);
       }
       
-      // Auto-update inscription_status based on registration status
-      const newInscriptionStatus = getDefaultInscriptionStatus(result.currentYear, inscriptionStatusAr);
-      if (newInscriptionStatus !== inscriptionStatusAr) {
-        setInscriptionStatusAr(newInscriptionStatus);
-        const inscOption = inscriptionOptions.find(opt => opt.value_ar === newInscriptionStatus);
-        setInscriptionStatusFr(inscOption?.value_fr || '');
+      // Auto-update inscription_status if late
+      if (result.isLate) {
+        const newInscriptionStatus = getDefaultInscriptionStatus(result.currentYear, inscriptionStatusAr);
+        if (newInscriptionStatus !== inscriptionStatusAr) {
+          setInscriptionStatusAr(newInscriptionStatus);
+          const inscOption = inscriptionOptions.find(opt => opt.value_ar === newInscriptionStatus);
+          setInscriptionStatusFr(inscOption?.value_fr || '');
+        }
       }
     }
   }, [watchedFirstRegistrationYear, currentAcademicYear, studentType, form, inscriptionStatusAr, inscriptionOptions, isManuallyEdited]);

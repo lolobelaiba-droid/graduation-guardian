@@ -94,8 +94,8 @@ export function calculateRegistrationDetails(
 
 /**
  * Get inscription status based on current year value
- * Auto-sets "منتظم" for normal students and "متأخر" for late ones
- * Preserves manual overrides like "مقصى" or "منقطع"
+ * If current_year is "متأخر", inscription_status should also be "متأخر"
+ * unless manually changed to "مقصى" or "منقطع"
  */
 export function getDefaultInscriptionStatus(
   currentYear: string,
@@ -107,16 +107,10 @@ export function getDefaultInscriptionStatus(
     if (existingInscriptionStatus === "مقصى" || existingInscriptionStatus === "منقطع") {
       return existingInscriptionStatus;
     }
+    // Otherwise set to "متأخر"
     return "متأخر";
   }
   
-  // If not late: set to "منتظم" unless manually set to "مقصى" or "منقطع"
-  if (currentYear) {
-    if (existingInscriptionStatus === "مقصى" || existingInscriptionStatus === "منقطع") {
-      return existingInscriptionStatus;
-    }
-    return "منتظم";
-  }
-  
+  // If not late, keep existing or return empty
   return existingInscriptionStatus || "";
 }
