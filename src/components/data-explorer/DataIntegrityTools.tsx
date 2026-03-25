@@ -1150,7 +1150,7 @@ export function DataIntegrityTools() {
           )}
           {canBulkCleanup && (
             <TabsTrigger value="orphans" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <UserX className="h-4 w-4" />أساتذة يتامى
+              <UserX className="h-4 w-4" />بيانات بدون ارتباطات
             </TabsTrigger>
           )}
           <TabsTrigger value="health" className="flex-1 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
