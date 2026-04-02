@@ -698,35 +698,45 @@ export default function Reports() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-primary/5 border-b-2 border-primary/20">
-                    <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
-                    <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
-                    <TableHead className="text-right text-xs font-bold text-foreground">المشرف</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">النوع</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المصادقة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">مدة المعالجة</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {adminActions.map((s, i) => (
-                    <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
-                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
-                      <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
-                      <TableCell className="text-xs py-2.5">{s.supervisor}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{s.type}</TableCell>
-                      <TableCell className="text-center py-2.5">
-                        <Badge variant={s.status === 'regular' ? 'default' : 'destructive'} className="text-[10px]">
-                          {s.status === 'regular' ? 'منتظم' : s.status === 'delayed' ? 'متأخر' : '-'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5 font-medium">
-                        {s.processingTime ? `${toWesternNumerals(s.processingTime.months)} شهر ${toWesternNumerals(s.processingTime.days)} يوم` : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                     <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                     <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                     <TableHead className="text-right text-xs font-bold text-foreground">الكلية</TableHead>
+                     <TableHead className="text-right text-xs font-bold text-foreground">المشرف</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">النوع</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المصادقة</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">مدة المعالجة</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {adminActions.map((s, i) => (
+                     <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
+                       <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                       <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
+                       <TableCell className="text-xs py-2.5">{s.faculty}</TableCell>
+                       <TableCell className="text-xs py-2.5">{s.supervisor}</TableCell>
+                       <TableCell className="text-center text-xs py-2.5">{s.type}</TableCell>
+                       <TableCell className="text-center py-2.5">
+                         <Badge variant={s.status === 'regular' ? 'default' : 'destructive'} className="text-[10px]">
+                           {s.status === 'regular' ? 'منتظم' : s.status === 'delayed' ? 'متأخر' : '-'}
+                         </Badge>
+                       </TableCell>
+                       <TableCell className="text-center text-xs py-2.5">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
+                       <TableCell className="text-center text-xs py-2.5">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
+                       <TableCell className="text-center text-xs py-2.5 font-medium">
+                         {s.processingTime ? (() => {
+                           const m = s.processingTime!.months;
+                           const d = s.processingTime!.days;
+                           if (m === 0) return `${toWesternNumerals(s.processingTime!.totalDays)} يوم`;
+                           if (m === 1) return d > 0 ? `شهر و ${toWesternNumerals(d)} يوم` : 'شهر';
+                           if (m === 2) return d > 0 ? `شهرين و ${toWesternNumerals(d)} يوم` : 'شهرين';
+                           const label = m >= 3 && m <= 10 ? 'أشهر' : 'شهر';
+                           return d > 0 ? `${toWesternNumerals(m)} ${label} و ${toWesternNumerals(d)} يوم` : `${toWesternNumerals(m)} ${label}`;
+                         })() : '-'}
+                       </TableCell>
+                     </TableRow>
+                   ))}
                   {/* Average processing time row */}
                   {(() => {
                     const totalDays = adminActions.reduce((sum, s) => sum + (s.processingTime?.totalDays || 0), 0);
