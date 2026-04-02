@@ -1189,16 +1189,18 @@ export const SupervisorTableInput: React.FC<SupervisorTableInputProps> = ({
                 <AutocompleteInput
                   value={supervisor.name}
                   onValueChange={(v) => {
-                    const patch: Partial<SupervisorPerson> = { name: v };
-                    if (findProfessor) {
-                      const prof = findProfessor(v);
-                      if (prof) {
-                        if (prof.rank_label) patch.rankLabel = prof.rank_label;
-                        if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
-                        if (prof.university) patch.university = prof.university;
-                      }
+                    handleSupervisorChange({ name: v });
+                  }}
+                  onSuggestionSelect={(v) => {
+                    if (!findProfessor) return;
+                    const prof = findProfessor(v);
+                    if (prof) {
+                      const patch: Partial<SupervisorPerson> = { name: prof.full_name };
+                      if (prof.rank_label) patch.rankLabel = prof.rank_label;
+                      if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
+                      if (prof.university) patch.university = prof.university;
+                      handleSupervisorChange(patch);
                     }
-                    handleSupervisorChange(patch);
                   }}
                   suggestions={nameSuggestions}
                   placeholder="اسم ولقب المشرف"
