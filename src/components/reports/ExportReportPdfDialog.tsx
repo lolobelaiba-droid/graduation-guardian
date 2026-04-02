@@ -56,6 +56,10 @@ export interface ReportExportData {
   avgDefScience: number;
   registeredStudents: any[];
   defendedStudents: any[];
+  defenseStageStudents: any[];
+  defenseStageCount: number;
+  defenseStageLmd: number;
+  defenseStageScience: number;
   adminActions: {
     name: string; type: string; supervisor: string; status: string;
     councilDate: string; defenseDate: string;
