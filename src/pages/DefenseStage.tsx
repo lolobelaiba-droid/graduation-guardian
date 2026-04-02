@@ -368,17 +368,17 @@ export default function DefenseStage() {
                 <Table>
                    <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">الاسم بالعربية</TableHead>
-                      <TableHead className="text-right">الاسم بالفرنسية</TableHead>
-                      <TableHead className="text-right">التخصص</TableHead>
-                      <TableHead className="text-right">الكلية</TableHead>
-                      <TableHead className="text-right">المشرف</TableHead>
-                      <TableHead className="text-right">سنة أول تسجيل</TableHead>
-                      <TableHead className="text-right">عدد التسجيلات</TableHead>
-                      <TableHead className="text-right">حالة التسجيل</TableHead>
-                      <TableHead className="text-right">تاريخ المجلس العلمي</TableHead>
-                      <TableHead className="text-right">المدة منذ المصادقة</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
+                      {isVisible("full_name_ar") && <TableHead className="text-right">الاسم بالعربية</TableHead>}
+                      {isVisible("full_name_fr") && <TableHead className="text-right">الاسم بالفرنسية</TableHead>}
+                      {isVisible("specialty_ar") && <TableHead className="text-right">التخصص</TableHead>}
+                      {isVisible("faculty_ar") && <TableHead className="text-right">الكلية</TableHead>}
+                      {isVisible("supervisor_ar") && <TableHead className="text-right">المشرف</TableHead>}
+                      {isVisible("first_registration_year") && <TableHead className="text-right">سنة أول تسجيل</TableHead>}
+                      {isVisible("registration_count") && <TableHead className="text-right">عدد التسجيلات</TableHead>}
+                      {isVisible("registration_status") && <TableHead className="text-right">حالة التسجيل</TableHead>}
+                      {isVisible("scientific_council_date") && <TableHead className="text-right">تاريخ المجلس العلمي</TableHead>}
+                      {isVisible("duration") && <TableHead className="text-right">المدة منذ المصادقة</TableHead>}
+                      {isVisible("stage_status") && <TableHead className="text-right">الحالة</TableHead>}
                       <TableHead className="text-right w-12">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
