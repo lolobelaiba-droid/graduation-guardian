@@ -218,11 +218,104 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     y += 2;
 
     // ───── HELPER: Draw table with multi-line support ─────
-    const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
+    type PdfTableSegment = { text: string; font?: "normal" | "bold" };
+    type PdfSegmentCell = { kind: "segments"; segments: PdfTableSegment[] };
+    type PdfWrappedTextCell = { kind: "text"; lines: string[] };
+    type PdfResolvedCell = PdfSegmentCell | PdfWrappedTextCell;
+    type PdfTableCell = string | PdfSegmentCell;
+
+    const drawSegmentedCenteredText = (segments: PdfTableSegment[], centerX: number, baselineY: number) => {
+      let totalW = 0;
+      segments.forEach((segment) => {
+        doc.setFont("Amiri", segment.font || "normal");
+        totalW += doc.getTextWidth(segment.text);
+      });
+
+      let startX = centerX + totalW / 2;
+      segments.forEach((segment) => {
+        doc.setFont("Amiri", segment.font || "normal");
+        const width = doc.getTextWidth(segment.text);
+        startX -= width;
+        doc.text(segment.text, startX, baselineY);
+      });
+
+      doc.setFont("Amiri", "normal");
+    };
+
+    const buildDurationCell = (totalDays: number): PdfTableCell => {
+      const months = Math.floor(totalDays / 30);
+      const days = totalDays % 30;
+
+      if (months === 0) {
+        return {
+          kind: "segments",
+          segments: [
+            { text: toWesternNumerals(totalDays) },
+            { text: ` ${processText("يوم")}` },
+          ],
+        };
+      }
+
+      if (months === 1) {
+        return days > 0
+          ? {
+              kind: "segments",
+              segments: [
+                { text: processText("شهر") },
+                { text: ` ${processText("و")} ` },
+                { text: toWesternNumerals(days) },
+                { text: ` ${processText("يوم")}` },
+              ],
+            }
+          : {
+              kind: "segments",
+              segments: [{ text: processText("شهر") }],
+            };
+      }
+
+      if (months === 2) {
+        return days > 0
+          ? {
+              kind: "segments",
+              segments: [
+                { text: processText("شهرين") },
+                { text: ` ${processText("و")} ` },
+                { text: toWesternNumerals(days) },
+                { text: ` ${processText("يوم")}` },
+              ],
+            }
+          : {
+              kind: "segments",
+              segments: [{ text: processText("شهرين") }],
+            };
+      }
+
+      const monthLabel = months >= 3 && months <= 10 ? processText("أشهر") : processText("شهر");
+      return days > 0
+        ? {
+            kind: "segments",
+            segments: [
+              { text: toWesternNumerals(months) },
+              { text: ` ${monthLabel} ` },
+              { text: processText("و") },
+              { text: ` ${toWesternNumerals(days)} ` },
+              { text: processText("يوم") },
+            ],
+          }
+        : {
+            kind: "segments",
+            segments: [
+              { text: toWesternNumerals(months) },
+              { text: ` ${monthLabel}` },
+            ],
+          };
+    };
+
+    const drawTable = (headers: string[], rows: PdfTableCell[][], colWidths?: number[]) => {
       const tableW = PW - M * 2;
       const cols = colWidths || headers.map(() => tableW / headers.length);
       const baseRowH = 6.5;
-      const lineH = 3.8; // height per extra line
+      const lineH = 3.8;
 
       const drawHeader = (startY: number) => {
         doc.setFont("Amiri", "bold");
@@ -244,47 +337,53 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       doc.setFontSize(8.5);
 
       rows.forEach((row, ri) => {
-        // Calculate row height based on longest cell content
         let maxLines = 1;
-        const cellLines: string[][] = row.map((cell, i) => {
-          // Skip processText for cells prefixed with \u200B (pre-processed marker)
-          const txt = cell.startsWith('\u200B') ? cell.slice(1) : processText(cell);
-          const colW = cols[i] - 2; // padding
+        const cellContents: PdfResolvedCell[] = row.map((cell, i) => {
+          if (typeof cell !== "string") return cell;
+
+          const txt = cell.startsWith("\u200B") ? cell.slice(1) : processText(cell);
+          const colW = cols[i] - 2;
           const lines = doc.splitTextToSize(txt, colW);
           if (lines.length > maxLines) maxLines = lines.length;
-          return lines;
+          return { kind: "text", lines };
         });
+
         const dynamicRowH = baseRowH + (maxLines > 1 ? (maxLines - 1) * lineH : 0);
 
         if (y + dynamicRowH > PH - 15) {
           doc.addPage(); y = 15;
           y = drawHeader(y);
           doc.setFontSize(8.5);
-          // Recalculate since font reset
         }
-        // Alternate row color
+
         if (ri % 2 === 0) {
           doc.setFillColor(245, 247, 250);
           doc.rect(M, y, tableW, dynamicRowH, "F");
         }
+
         let cx = PW - M;
-        cellLines.forEach((lines, i) => {
+        cellContents.forEach((cell, i) => {
           const cellCenterX = cx - cols[i] / 2;
-          if (lines.length === 1) {
-            doc.text(lines[0], cellCenterX, y + 3.8, { align: "center" });
+
+          if (cell.kind === "segments") {
+            drawSegmentedCenteredText(cell.segments, cellCenterX, y + 3.8);
+          } else if (cell.lines.length === 1) {
+            doc.text(cell.lines[0], cellCenterX, y + 3.8, { align: "center" });
           } else {
-            // Multi-line: start from top with small offset
             const startTextY = y + 3.2;
-            lines.forEach((line, li) => {
+            cell.lines.forEach((line, li) => {
               doc.text(line, cellCenterX, startTextY + li * lineH, { align: "center" });
             });
           }
+
           cx -= cols[i];
         });
+
         doc.setDrawColor(220, 220, 220);
         doc.line(M, y + dynamicRowH, PW - M, y + dynamicRowH);
         y += dynamicRowH;
       });
+
       y += 10;
     };
 
