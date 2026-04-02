@@ -469,6 +469,7 @@ export default function Reports() {
                   <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">سنة أول تسجيل</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">عدد التسجيلات</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">لغة الأطروحة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
                 </TableRow>
               </TableHeader>
@@ -485,6 +486,7 @@ export default function Reports() {
                       <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{(s as any).first_registration_year ? toWesternNumerals((s as any).first_registration_year) : '-'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{(s as any).registration_count ? toWesternNumerals((s as any).registration_count) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{thesisLangLabel((s as any).thesis_language)}</TableCell>
                       <TableCell className="text-center py-2.5">
                         <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
                           {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
