@@ -35,6 +35,8 @@ export default function Reports() {
   const { data: regScience = [], isLoading: l2 } = usePhdScienceStudents();
   const { data: defLmd = [], isLoading: l3 } = usePhdLmdCertificates();
   const { data: defScience = [], isLoading: l4 } = usePhdScienceCertificates();
+  const { data: dsLmd = [], isLoading: l5 } = useDefenseStageLmd();
+  const { data: dsScience = [], isLoading: l6 } = useDefenseStageScience();
   const { findProfessor } = useProfessors();
   const { data: academicTitles = [] } = useQuery({
     queryKey: ["academic_titles_report"],
