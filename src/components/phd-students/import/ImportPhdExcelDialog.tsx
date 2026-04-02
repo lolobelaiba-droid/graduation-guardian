@@ -49,6 +49,7 @@ export function ImportPhdExcelDialog({
   studentType,
 }: ImportPhdExcelDialogProps) {
   const [step, setStep] = useState<ImportStep>("upload");
+  const { guardWrite } = useNetworkReadOnly();
   const [uploadError, setUploadError] = useState<string>("");
   const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const [excelColumns, setExcelColumns] = useState<string[]>([]);
