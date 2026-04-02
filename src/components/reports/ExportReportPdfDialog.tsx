@@ -793,7 +793,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ═══════ PAGE 3+: Tables and Statistics ═══════
-    const hasTablesSection = selectedSections.some(s => ["registered", "defended", "jury", "admin", "english", "labs", "assistants"].includes(s));
+    const hasTablesSection = selectedSections.some(s => ["registered", "defenseStage", "defended", "jury", "admin", "english", "labs", "assistants"].includes(s));
     if (hasTablesSection) {
       doc.addPage();
       y = 15;
