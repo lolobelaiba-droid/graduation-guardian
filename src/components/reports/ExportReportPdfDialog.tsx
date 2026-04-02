@@ -1136,7 +1136,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
         s.councilDate ? toWesternNumerals(formatDateDDMMYYYY(s.councilDate)) : "-",
         s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
-        s.processingTime ? '\u200B' + shapeArabicText("يوم") + ' ' + String(s.processingTime.days).padStart(2, '0') + ' ' + shapeArabicText("و") + ' ' + shapeArabicText("شهر") + ' ' + String(s.processingTime.months).padStart(2, '0') : "-",
+        s.processingTime ? buildDurationCell(s.processingTime.totalDays) : "-",
       ]);
       drawTable(["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
 
