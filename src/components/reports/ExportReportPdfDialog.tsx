@@ -61,7 +61,7 @@ export interface ReportExportData {
   defenseStageLmd: number;
   defenseStageScience: number;
   adminActions: {
-    name: string; type: string; supervisor: string; status: string;
+    name: string; faculty: string; type: string; supervisor: string; status: string;
     councilDate: string; defenseDate: string;
     processingTime: { months: number; days: number; totalDays: number } | null;
   }[];
