@@ -379,6 +379,7 @@ export function GenerateDocumentDialog({
           margin: 0;
         }
         body * { visibility: hidden !important; }
+        [data-print-hide] { display: none !important; }
         body, html {
           margin: 0 !important; padding: 0 !important;
           overflow: visible !important; background: white !important;
