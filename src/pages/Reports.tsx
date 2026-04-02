@@ -523,6 +523,7 @@ export default function Reports() {
                   <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">لغة الأطروحة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المجلس العلمي</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">المدة منذ المصادقة</TableHead>
