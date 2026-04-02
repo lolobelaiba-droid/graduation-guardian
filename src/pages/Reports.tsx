@@ -285,6 +285,7 @@ export default function Reports() {
   const buildExportData = (faculty?: string): ReportExportData => {
     const reg = faculty ? allRegistered.filter(s => s.faculty_ar === faculty) : allRegistered;
     const def = faculty ? allDefended.filter(s => s.faculty_ar === faculty) : allDefended;
+    const ds = faculty ? allDefenseStage.filter(s => s.faculty_ar === faculty) : allDefenseStage;
     const calcAvg = (students: any[]) => {
       const valid = students.filter(s => s.registration_count).map(s => s.registration_count as number);
       return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
