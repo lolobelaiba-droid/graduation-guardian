@@ -638,8 +638,8 @@ export default function Reports() {
         formatDate={formatDate}
       />
 
-      {/* ثالثا: الإجراءات الإدارية */}
-      <SectionHeader title="ثالثا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
+      {/* رابعا: الإجراءات الإدارية */}
+      <SectionHeader title="رابعا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {adminActions.length > 0 ? (
