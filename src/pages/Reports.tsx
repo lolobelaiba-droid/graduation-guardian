@@ -494,8 +494,56 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* ثانيا: المناقشين */}
-      <SectionHeader title="ثانيا: إحصائيات عامة حول الطلبة المناقشين" icon={<GraduationCap className="h-5 w-5" />} />
+      {/* ثانيا: طور المناقشة */}
+      <SectionHeader title="ثانيا: إحصائيات الطلبة في طور المناقشة" icon={<Clock className="h-5 w-5" />} />
+      <Card className="shadow-sm">
+        <CardContent className="p-0">
+          <div className="max-h-[500px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                  <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المجلس العلمي</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDefenseStage.map((s, i) => {
+                  const stageStatus = (s as any).stage_status as DefenseStageStatus;
+                  const statusInfo = stageStatusLabels[stageStatus] || stageStatusLabels.pending;
+                  return (
+                    <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
+                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                      <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                      <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                      <TableCell className="text-center py-2.5">
+                        <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
+                          {statusInfo.ar}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{(s as any).scientific_council_date ? formatDate((s as any).scientific_council_date) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{(s as any).defense_date ? formatDate((s as any).defense_date) : '-'}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          {filteredDefenseStage.length === 0 && (
+            <div className="p-6 text-center text-muted-foreground text-sm">لا يوجد طلبة في طور المناقشة</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ثالثا: المناقشين */}
+      <SectionHeader title="ثالثا: إحصائيات عامة حول الطلبة المناقشين" icon={<GraduationCap className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           <div className="max-h-[500px] overflow-auto">
