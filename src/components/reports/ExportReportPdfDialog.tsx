@@ -1077,7 +1077,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     // ───── Lab Stats ─────
     if (selectedSections.includes("labs")) {
       checkPage(15);
-      sectionTitle("خامسا: عدد المناقشات حسب مخابر البحث");
+      sectionTitle("سادسا: عدد المناقشات حسب مخابر البحث");
       const tableW = PW - M * 2;
       const cols = [10, 120, 30].map(p => (p / 160) * tableW);
       const rows = data.labStats.map((s, i) => [
