@@ -179,6 +179,7 @@ export default function DefenseStage() {
   };
 
   const handleRestoreToPhd = async () => {
+    if (!guardWrite("استعادة الطالب")) return;
     if (!deleteTarget) return;
     try {
       await restoreToPhd.mutateAsync({
