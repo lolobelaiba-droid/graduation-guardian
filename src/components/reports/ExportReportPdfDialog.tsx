@@ -102,7 +102,7 @@ const sectionLabels: Record<SectionKey, string> = {
 interface Props {
   currentData: ReportExportData;
   faculties: string[];
-  buildExportData: (faculty?: string) => ReportExportData;
+  buildExportData: (faculty?: string, periodFrom?: string, periodTo?: string) => ReportExportData;
 }
 
 // ─── Component ───────────────────────────────────────────────────────
