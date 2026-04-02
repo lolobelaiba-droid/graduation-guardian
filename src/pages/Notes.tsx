@@ -57,6 +57,7 @@ export default function Notes() {
 
 
   const handleAddNote = () => {
+    if (!guardWrite("إضافة ملاحظة")) return;
     if (!newNote.content.trim()) return;
     addNote.mutate(newNote, {
       onSuccess: () => {
