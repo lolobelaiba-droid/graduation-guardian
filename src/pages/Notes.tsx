@@ -44,6 +44,7 @@ export default function Notes() {
   const deleteNote = useDeleteNote();
   const togglePin = useTogglePinNote();
   const toggleRead = useToggleReadNote();
+  const { guardWrite } = useNetworkReadOnly();
   const markAllAsRead = useMarkAllNotesAsRead();
 
   const [isAdding, setIsAdding] = useState(false);
