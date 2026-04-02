@@ -164,6 +164,7 @@ export default function DefenseStage() {
   );
 
   const handleDelete = async () => {
+    if (!guardWrite("حذف سجل المناقشة")) return;
     if (!deleteTarget) return;
     try {
       if (deleteTarget.type === "phd_lmd") {
