@@ -545,7 +545,7 @@ export default function Reports() {
                       const totalDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
                       const months = Math.floor(totalDays / 30);
                       const days = totalDays % 30;
-                      durationText = `${toWesternNumerals(months)} شهر ${toWesternNumerals(days)} يوم`;
+                      durationText = `شهر ${toWesternNumerals(months)} يوم ${toWesternNumerals(days)}`;
                       if (totalDays > 60) durationColor = 'text-destructive font-bold';
                       else if (totalDays >= 30) durationColor = 'text-orange-600 font-medium';
                     }
