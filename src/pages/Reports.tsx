@@ -66,6 +66,11 @@ export default function Reports() {
     ...defScience.map(s => ({ ...s, _type: "phd_science" as const })),
   ], [defLmd, defScience]);
 
+  const allDefenseStage = useMemo(() => [
+    ...dsLmd.map(s => ({ ...s, _type: "phd_lmd" as const })),
+    ...dsScience.map(s => ({ ...s, _type: "phd_science" as const })),
+  ], [dsLmd, dsScience]);
+
   const faculties = useMemo(() => {
     const set = new Set<string>();
     [...allRegistered, ...allDefended].forEach(s => { if (s.faculty_ar) set.add(s.faculty_ar); });
