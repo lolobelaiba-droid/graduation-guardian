@@ -707,7 +707,7 @@ export function GenerateDocumentDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <div style={{ position: "relative", width: "210mm", maxWidth: "100%", margin: "0 auto" }}>
+            <div data-print-hide style={{ position: "relative", width: "210mm", maxWidth: "100%", margin: "0 auto" }}>
               <div
                 ref={printRef}
                 className="defense-doc-editor border rounded-lg bg-white min-h-[500px]"
