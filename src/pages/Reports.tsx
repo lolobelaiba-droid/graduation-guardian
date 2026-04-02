@@ -505,22 +505,40 @@ export default function Reports() {
                 <TableRow className="bg-primary/5 border-b-2 border-primary/20">
                   <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الكلية</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المجلس العلمي</TableHead>
-                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">المدة منذ المصادقة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDefenseStage.map((s, i) => {
                   const stageStatus = (s as any).stage_status as DefenseStageStatus;
                   const statusInfo = stageStatusLabels[stageStatus] || stageStatusLabels.pending;
+                  const councilDate = (s as any).scientific_council_date;
+                  let durationText = '-';
+                  let durationColor = '';
+                  if (councilDate) {
+                    const council = new Date(councilDate);
+                    const now = new Date();
+                    if (!isNaN(council.getTime())) {
+                      const diffMs = now.getTime() - council.getTime();
+                      const totalDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+                      const months = Math.floor(totalDays / 30);
+                      const days = totalDays % 30;
+                      durationText = `${toWesternNumerals(months)} شهر ${toWesternNumerals(days)} يوم`;
+                      if (totalDays > 60) durationColor = 'text-destructive font-bold';
+                      else if (totalDays >= 30) durationColor = 'text-orange-600 font-medium';
+                    }
+                  }
                   return (
                     <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
                       <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
                       <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.faculty_ar || '-'}</TableCell>
                       <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
                       <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
@@ -529,8 +547,8 @@ export default function Reports() {
                           {statusInfo.ar}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{(s as any).scientific_council_date ? formatDate((s as any).scientific_council_date) : '-'}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{(s as any).defense_date ? formatDate((s as any).defense_date) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{councilDate ? formatDate(councilDate) : '-'}</TableCell>
+                      <TableCell className={`text-center text-xs py-2.5 ${durationColor}`}>{durationText}</TableCell>
                     </TableRow>
                   );
                 })}
