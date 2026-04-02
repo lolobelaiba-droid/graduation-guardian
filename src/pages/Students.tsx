@@ -195,6 +195,7 @@ export default function Students() {
   };
 
   const handleDeletePermanently = () => {
+    if (!guardWrite("حذف شهادة")) return;
     if (studentToDelete) {
       switch (deleteType) {
         case "phd_lmd":

@@ -193,6 +193,7 @@ export default function DefenseStage() {
   };
 
   const handleUpdateStatus = async (student: DefenseStageStudent, newStatus: DefenseStageStatus) => {
+    if (!guardWrite("تغيير حالة المناقشة")) return;
     const mutation = activeTab === "phd_lmd" ? updateLmd : updateScience;
     await mutation.mutateAsync({ id: student.id, stage_status: newStatus });
   };

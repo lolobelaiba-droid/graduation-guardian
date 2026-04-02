@@ -205,6 +205,7 @@ export default function PhdStudents() {
   };
 
   const handleDeleteConfirm = () => {
+    if (!guardWrite("حذف طالب")) return;
     if (studentToDelete) {
       switch (studentToDelete.type) {
         case "phd_lmd":
