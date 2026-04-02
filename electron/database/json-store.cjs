@@ -1509,40 +1509,110 @@ function centralizedBackup() {
   }
 
   var identity = getDeviceIdentity();
+  var now = new Date();
+  var folderName = 'backup_' + now.toISOString().replace(/[:.]/g, '-') + '_' + identity.hostname;
+
+  // مصدر البيانات
+  var sourceDir = getDataDir();
+  var files = fs.readdirSync(sourceDir).filter(function(f) {
+    return f.endsWith('.json') && !f.endsWith('.lock') && !f.endsWith('.tmp');
+  });
+
+  // === 1) الحفظ في المجلد المحلي ===
   var localBackupBase = path.join(app.getPath('userData'), 'centralized_backups');
   if (!fs.existsSync(localBackupBase)) {
     fs.mkdirSync(localBackupBase, { recursive: true });
   }
+  var localTargetDir = path.join(localBackupBase, folderName);
+  fs.mkdirSync(localTargetDir, { recursive: true });
 
-  var now = new Date();
-  var folderName = 'backup_' + now.toISOString().replace(/[:.]/g, '-') + '_' + identity.hostname;
-  var targetDir = path.join(localBackupBase, folderName);
-  fs.mkdirSync(targetDir, { recursive: true });
-
-  // نسخ جميع ملفات البيانات
-  var sourceDir = getDataDir();
-  var files = fs.readdirSync(sourceDir);
-  var copiedCount = 0;
+  var localCopied = 0;
   for (var i = 0; i < files.length; i++) {
-    var f = files[i];
-    if (f.endsWith('.json') && !f.endsWith('.lock') && !f.endsWith('.tmp')) {
-      var src = path.join(sourceDir, f);
-      var dest = path.join(targetDir, f);
-      try {
-        var stat = fs.statSync(src);
-        if (stat.isFile()) {
-          fs.copyFileSync(src, dest);
-          copiedCount++;
-        }
-      } catch (e) {}
+    var src = path.join(sourceDir, files[i]);
+    try {
+      var stat = fs.statSync(src);
+      if (stat.isFile()) {
+        fs.copyFileSync(src, path.join(localTargetDir, files[i]));
+        localCopied++;
+      }
+    } catch (e) {
+      console.warn('[CentralizedBackup] Local copy error for ' + files[i] + ':', e.message);
     }
   }
 
+  // === 2) الحفظ في المجلد المشترك على الشبكة ===
+  var networkCopied = 0;
+  var networkPath = null;
+  var networkError = null;
+  try {
+    var config = networkConfig || loadNetworkConfig();
+    if (config && config.sharedPath) {
+      var networkBackupBase = path.join(config.sharedPath, 'centralized_backups');
+      if (!fs.existsSync(networkBackupBase)) {
+        fs.mkdirSync(networkBackupBase, { recursive: true });
+      }
+      var networkTargetDir = path.join(networkBackupBase, folderName);
+      fs.mkdirSync(networkTargetDir, { recursive: true });
+      networkPath = networkTargetDir;
+
+      for (var j = 0; j < files.length; j++) {
+        var srcNet = path.join(sourceDir, files[j]);
+        try {
+          var statNet = fs.statSync(srcNet);
+          if (statNet.isFile()) {
+            fs.copyFileSync(srcNet, path.join(networkTargetDir, files[j]));
+            networkCopied++;
+          }
+        } catch (e2) {
+          console.warn('[CentralizedBackup] Network copy error for ' + files[j] + ':', e2.message);
+        }
+      }
+
+      // تنظيف النسخ القديمة في المجلد المشترك (الاحتفاظ بآخر 10)
+      try {
+        var networkFolders = fs.readdirSync(networkBackupBase)
+          .filter(function(f) { return f.startsWith('backup_'); })
+          .sort()
+          .reverse();
+        if (networkFolders.length > 10) {
+          networkFolders.slice(10).forEach(function(old) {
+            try {
+              var oldPath = path.join(networkBackupBase, old);
+              fs.rmSync(oldPath, { recursive: true, force: true });
+            } catch (e3) {}
+          });
+        }
+      } catch (e4) {}
+    }
+  } catch (netErr) {
+    networkError = netErr.message;
+    console.warn('[CentralizedBackup] Network backup failed:', netErr.message);
+  }
+
+  // تنظيف النسخ القديمة في المجلد المحلي (الاحتفاظ بآخر 10)
+  try {
+    var localFolders = fs.readdirSync(localBackupBase)
+      .filter(function(f) { return f.startsWith('backup_'); })
+      .sort()
+      .reverse();
+    if (localFolders.length > 10) {
+      localFolders.slice(10).forEach(function(old) {
+        try {
+          var oldPath = path.join(localBackupBase, old);
+          fs.rmSync(oldPath, { recursive: true, force: true });
+        } catch (e5) {}
+      });
+    }
+  } catch (e6) {}
+
   return {
     success: true,
-    path: targetDir,
+    path: localTargetDir,
+    networkPath: networkPath,
     folderName: folderName,
-    filesCount: copiedCount,
+    filesCount: localCopied,
+    networkFilesCount: networkCopied,
+    networkError: networkError,
     created_at: now.toISOString()
   };
 }
