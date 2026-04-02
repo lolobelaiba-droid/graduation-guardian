@@ -205,57 +205,6 @@ export function GenerateDocumentDialog({
 
   const printStyleRef = useRef<HTMLStyleElement | null>(null);
 
-  // Build standalone HTML for Electron hidden-window printing
-  const buildStandaloneHtml = useCallback(() => {
-    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
-    const mt = template?.margin_top ?? 20;
-    const mb = template?.margin_bottom ?? 20;
-    const mr = template?.margin_right ?? 15;
-    const ml = template?.margin_left ?? 15;
-    const fontSize = template?.font_size || 14;
-    const lineHeight = template?.line_height || 1.8;
-    const jts: JuryTableSettings = template?.jury_table_settings
-      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
-      : { ...DEFAULT_JURY_TABLE_SETTINGS };
-
-    const content = getRenderedContent();
-    const textBoxesHtml = (template?.text_boxes || []).map((tb: TextBoxData) =>
-      `<div style="position:absolute;left:${tb.x}mm;top:${tb.y}mm;width:${tb.width}mm;min-height:${tb.minHeight}mm;border:${tb.borderWidth}px solid ${tb.borderColor};padding:${tb.padding}px;background:${tb.bgColor};font-size:${tb.fontSize}px;font-family:${tb.fontFamily};text-align:${tb.textAlign};direction:rtl;line-height:1.6;box-sizing:border-box;word-break:break-word;">${tb.content}</div>`
-    ).join('');
-
-    return `<div style="
-      width: 210mm;
-      min-height: 297mm;
-      padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm;
-      font-family: '${fontFamily}', 'IBM Plex Sans Arabic', sans-serif;
-      font-size: ${fontSize}px;
-      line-height: ${lineHeight};
-      direction: rtl;
-      color: #000;
-      background: white;
-      box-sizing: border-box;
-      position: relative;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    ">
-      <style>
-        table { border-collapse: collapse; width: 100%; }
-        td, th {
-          border: 1px solid ${jts.border_color};
-          padding: ${jts.padding}px;
-          text-align: center;
-          font-size: ${jts.font_size}px;
-          line-height: ${jts.line_height};
-        }
-        th { background: ${jts.header_bg}; font-weight: bold; }
-        .variable-tag { background: transparent; color: inherit; padding: 0; }
-        p, div, span, blockquote { margin: 0; padding: 0; }
-      </style>
-      ${content}
-      ${textBoxesHtml}
-    </div>`;
-  }, [template, student, documentType, decisionNumber, decisionDate, juryDecisionNumber, juryDecisionDate, deanLetterNumber, deanLetterDate, minutesNumber, defenseTime, mention]);
-
   const handlePrint = useCallback(() => {
     if (!printRef.current) return;
 
@@ -590,6 +539,57 @@ export function GenerateDocumentDialog({
 
     return content;
   };
+
+  // Build standalone HTML for Electron hidden-window printing
+  const buildStandaloneHtml = useCallback(() => {
+    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+    const mt = template?.margin_top ?? 20;
+    const mb = template?.margin_bottom ?? 20;
+    const mr = template?.margin_right ?? 15;
+    const ml = template?.margin_left ?? 15;
+    const fontSize = template?.font_size || 14;
+    const lineHeight = template?.line_height || 1.8;
+    const jts: JuryTableSettings = template?.jury_table_settings
+      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+      : { ...DEFAULT_JURY_TABLE_SETTINGS };
+
+    const content = getRenderedContent();
+    const textBoxesHtml = (template?.text_boxes || []).map((tb: TextBoxData) =>
+      `<div style="position:absolute;left:${tb.x}mm;top:${tb.y}mm;width:${tb.width}mm;min-height:${tb.minHeight}mm;border:${tb.borderWidth}px solid ${tb.borderColor};padding:${tb.padding}px;background:${tb.bgColor};font-size:${tb.fontSize}px;font-family:${tb.fontFamily};text-align:${tb.textAlign};direction:rtl;line-height:1.6;box-sizing:border-box;word-break:break-word;">${tb.content}</div>`
+    ).join('');
+
+    return `<div style="
+      width: 210mm;
+      min-height: 297mm;
+      padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm;
+      font-family: '${fontFamily}', 'IBM Plex Sans Arabic', sans-serif;
+      font-size: ${fontSize}px;
+      line-height: ${lineHeight};
+      direction: rtl;
+      color: #000;
+      background: white;
+      box-sizing: border-box;
+      position: relative;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    ">
+      <style>
+        table { border-collapse: collapse; width: 100%; }
+        td, th {
+          border: 1px solid ${jts.border_color};
+          padding: ${jts.padding}px;
+          text-align: center;
+          font-size: ${jts.font_size}px;
+          line-height: ${jts.line_height};
+        }
+        th { background: ${jts.header_bg}; font-weight: bold; }
+        .variable-tag { background: transparent; color: inherit; padding: 0; }
+        p, div, span, blockquote { margin: 0; padding: 0; }
+      </style>
+      ${content}
+      ${textBoxesHtml}
+    </div>`;
+  }, [template, student, documentType, decisionNumber, decisionDate, juryDecisionNumber, juryDecisionDate, deanLetterNumber, deanLetterDate, minutesNumber, defenseTime, mention]);
 
   const docTitle = isDefenseMinutes
     ? "توليد محضر مداولات لجنة المناقشة"
