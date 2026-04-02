@@ -199,10 +199,12 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
 interface StartDefenseProcedureDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preSelectedStudent?: PhdStudent | null;
+  preSelectedType?: DefenseStageType;
 }
 
-export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefenseProcedureDialogProps) {
-  const [selectedType, setSelectedType] = useState<DefenseStageType>("phd_lmd");
+export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStudent, preSelectedType }: StartDefenseProcedureDialogProps) {
+  const [selectedType, setSelectedType] = useState<DefenseStageType>(preSelectedType || "phd_lmd");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<PhdStudent | null>(null);
   const [pendingStudent, setPendingStudent] = useState<PhdStudent | null>(null);
@@ -234,8 +236,23 @@ export function StartDefenseProcedureDialog({ open, onOpenChange }: StartDefense
       setShowForm(false);
       setSearchQuery("");
       setShowConfirmDialog(false);
+    } else if (preSelectedStudent) {
+      setSelectedType(preSelectedType || "phd_lmd");
+      setSelectedStudent(preSelectedStudent);
+      form.reset({
+        jury_president_ar: '',
+        jury_president_fr: '',
+        jury_members_ar: '',
+        jury_members_fr: '',
+        scientific_council_date: '',
+        province: 'أم البواقي',
+        signature_title: getDefaultSignatureTitle(preSelectedStudent.faculty_ar || ''),
+        decree_training: '',
+        decree_accreditation: '',
+      });
+      setShowForm(true);
     }
-  }, [open]);
+  }, [open, preSelectedStudent, preSelectedType]);
 
   const availableStudents = selectedType === 'phd_lmd' ? phdLmdStudents : phdScienceStudents;
   const filteredStudents = availableStudents.filter((student) => {
