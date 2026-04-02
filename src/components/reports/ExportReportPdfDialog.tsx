@@ -1089,7 +1089,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     // ───── Assistant Professors ─────
     if (selectedSections.includes("assistants")) {
       checkPage(15);
-      sectionTitle("سادسا: الأساتذة المساعدين المناقشين");
+      sectionTitle("سابعا: الأساتذة المساعدين المناقشين");
       const tableW = PW - M * 2;
       const cols = [7, 32, 25, 25, 25, 32, 22].map(p => (p / 168) * tableW);
       const rows = data.assistantProfessors.map((s, i) => [
