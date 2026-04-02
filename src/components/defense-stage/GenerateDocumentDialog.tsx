@@ -205,340 +205,6 @@ export function GenerateDocumentDialog({
 
   const printStyleRef = useRef<HTMLStyleElement | null>(null);
 
-  const handlePrint = useCallback(() => {
-    if (!printRef.current) return;
-
-    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
-    const jts: JuryTableSettings = template?.jury_table_settings
-      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
-      : { ...DEFAULT_JURY_TABLE_SETTINGS };
-
-    // Remove previous print styles if any
-    if (printStyleRef.current) {
-      printStyleRef.current.remove();
-      printStyleRef.current = null;
-    }
-
-    // Inject dynamic @media print CSS
-    const style = document.createElement('style');
-    style.id = 'defense-doc-print-styles';
-    const mt = template?.margin_top ?? 20;
-    const mb = template?.margin_bottom ?? 20;
-    const mr = template?.margin_right ?? 15;
-    const ml = template?.margin_left ?? 15;
-
-    style.textContent = `
-      @media print {
-        @page {
-          size: A4 portrait;
-          margin: 0;
-        }
-
-        /* Remove all non-print roots from document flow */
-        body > *:not(#defense-doc-print-wrapper) {
-          display: none !important;
-        }
-
-        /* Hide everything by default */
-        body * {
-          visibility: hidden !important;
-        }
-        [data-print-hide] {
-          display: none !important;
-        }
-
-        /* Show the defense document wrapper and all descendants */
-        #defense-doc-print-wrapper,
-        #defense-doc-print-wrapper * {
-          visibility: visible !important;
-        }
-
-        body, html {
-          margin: 0 !important;
-          padding: 0 !important;
-          overflow: visible !important;
-          background: white !important;
-        }
-
-        #defense-doc-print-wrapper {
-          display: block !important;
-          position: relative !important;
-          left: auto !important;
-          top: auto !important;
-          width: 210mm !important;
-          min-height: auto !important;
-          z-index: auto !important;
-          background: white !important;
-          margin: 0 !important;
-          padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
-          font-family: '${fontFamily}', sans-serif !important;
-          font-size: ${template?.font_size || 14}px !important;
-          line-height: ${template?.line_height || 1.8} !important;
-          direction: rtl !important;
-          color: #000 !important;
-          box-sizing: border-box !important;
-          break-after: auto !important;
-          page-break-after: auto !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        #defense-doc-print-wrapper p,
-        #defense-doc-print-wrapper div,
-        #defense-doc-print-wrapper span,
-        #defense-doc-print-wrapper blockquote {
-          margin: 0;
-          padding: 0;
-        }
-
-        #defense-doc-print-wrapper table {
-          border-collapse: collapse !important;
-          width: 100% !important;
-        }
-
-        #defense-doc-print-wrapper td,
-        #defense-doc-print-wrapper th {
-          border: 1px solid ${jts.border_color} !important;
-          padding: ${jts.padding}px !important;
-          text-align: center !important;
-          font-size: ${jts.font_size}px !important;
-          line-height: ${jts.line_height} !important;
-        }
-
-        #defense-doc-print-wrapper th {
-          background: ${jts.header_bg} !important;
-          font-weight: bold !important;
-        }
-
-        #defense-doc-print-wrapper .variable-tag {
-          background: transparent !important;
-          color: inherit !important;
-          padding: 0 !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    printStyleRef.current = style;
-
-    // Temporarily clear document title to suppress browser header/footer
-    const originalTitle = document.title;
-    document.title = ' ';
-
-    const cleanup = () => {
-      document.title = originalTitle;
-      if (printStyleRef.current) {
-        printStyleRef.current.remove();
-        printStyleRef.current = null;
-      }
-    };
-
-    const isElectronEnv = !!(window as unknown as { electronAPI?: { printNative?: unknown } }).electronAPI?.printNative;
-
-    if (isElectronEnv) {
-      // Make the wrapper visible on-screen so Electron print captures vector content
-      const wrapper = document.getElementById('defense-doc-print-wrapper');
-      const restoreWrapper = () => {
-        if (wrapper) {
-          wrapper.style.left = '-9999px';
-          wrapper.style.visibility = 'hidden';
-          wrapper.style.zIndex = '';
-        }
-      };
-      if (wrapper) {
-        wrapper.style.left = '0';
-        wrapper.style.top = '0';
-        wrapper.style.visibility = 'visible';
-        wrapper.style.position = 'fixed';
-        wrapper.style.zIndex = '999999';
-        wrapper.style.background = 'white';
-      }
-
-      requestAnimationFrame(() => {
-        const electronAPI = (window as unknown as { electronAPI: { printNative: (opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
-        electronAPI.printNative({
-          pageSize: { width: 210 * 1000, height: 297 * 1000 },
-          landscape: false,
-        }).then((result) => {
-          restoreWrapper();
-          cleanup();
-          if (!result.success) {
-            toast.error(result.error || "فشلت الطباعة");
-          }
-        }).catch(() => {
-          restoreWrapper();
-          cleanup();
-          toast.error("فشلت الطباعة");
-        });
-      });
-    } else {
-      const afterPrint = () => {
-        cleanup();
-        window.removeEventListener('afterprint', afterPrint);
-      };
-      window.addEventListener('afterprint', afterPrint);
-      window.print();
-    }
-  }, [template]);
-
-  const handleDownloadPdf = useCallback(() => {
-    if (!printRef.current) return;
-
-    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
-    const jts: JuryTableSettings = template?.jury_table_settings
-      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
-      : { ...DEFAULT_JURY_TABLE_SETTINGS };
-
-    // Remove previous print styles if any
-    if (printStyleRef.current) {
-      printStyleRef.current.remove();
-      printStyleRef.current = null;
-    }
-
-    const style = document.createElement('style');
-    style.id = 'defense-doc-print-styles';
-    const mt = template?.margin_top ?? 20;
-    const mb = template?.margin_bottom ?? 20;
-    const mr = template?.margin_right ?? 15;
-    const ml = template?.margin_left ?? 15;
-
-    style.textContent = `
-      @media print {
-        @page {
-          size: A4 portrait;
-          margin: 0;
-        }
-        body > *:not(#defense-doc-print-wrapper) {
-          display: none !important;
-        }
-        body * { visibility: hidden !important; }
-        [data-print-hide] { display: none !important; }
-        body, html {
-          margin: 0 !important; padding: 0 !important;
-          overflow: visible !important; background: white !important;
-        }
-        #defense-doc-print-wrapper,
-        #defense-doc-print-wrapper * { visibility: visible !important; }
-        #defense-doc-print-wrapper {
-          display: block !important;
-          position: relative !important;
-          left: auto !important; top: auto !important;
-          width: 210mm !important; min-height: auto !important;
-          z-index: auto !important; background: white !important;
-          margin: 0 !important;
-          padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
-          font-family: '${fontFamily}', sans-serif !important;
-          font-size: ${template?.font_size || 14}px !important;
-          line-height: ${template?.line_height || 1.8} !important;
-          direction: rtl !important; color: #000 !important;
-          box-sizing: border-box !important;
-          break-after: auto !important;
-          page-break-after: auto !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #defense-doc-print-wrapper p,
-        #defense-doc-print-wrapper div,
-        #defense-doc-print-wrapper span,
-        #defense-doc-print-wrapper blockquote { margin: 0; padding: 0; }
-        #defense-doc-print-wrapper table { border-collapse: collapse !important; width: 100% !important; }
-        #defense-doc-print-wrapper td,
-        #defense-doc-print-wrapper th {
-          border: 1px solid ${jts.border_color} !important;
-          padding: ${jts.padding}px !important;
-          text-align: center !important;
-          font-size: ${jts.font_size}px !important;
-          line-height: ${jts.line_height} !important;
-        }
-        #defense-doc-print-wrapper th { background: ${jts.header_bg} !important; font-weight: bold !important; }
-        #defense-doc-print-wrapper .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
-      }
-    `;
-    document.head.appendChild(style);
-    printStyleRef.current = style;
-
-    const originalTitle = document.title;
-    document.title = ' ';
-
-    const cleanup = () => {
-      document.title = originalTitle;
-      if (printStyleRef.current) {
-        printStyleRef.current.remove();
-        printStyleRef.current = null;
-      }
-    };
-
-    const studentName = student?.full_name_ar || "وثيقة";
-    const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
-    const fileName = `${docTitlePdf}_${studentName}.pdf`;
-
-    const isElectronEnv = !!(window as unknown as { electronAPI?: { printToPdf?: unknown } }).electronAPI?.printToPdf;
-
-    if (isElectronEnv) {
-      // Make the wrapper visible on-screen so printToPDF can capture it
-      const wrapper = document.getElementById('defense-doc-print-wrapper');
-      if (wrapper) {
-        wrapper.style.left = '0';
-        wrapper.style.top = '0';
-        wrapper.style.visibility = 'visible';
-        wrapper.style.position = 'fixed';
-        wrapper.style.zIndex = '999999';
-        wrapper.style.background = 'white';
-        wrapper.style.padding = `${template?.margin_top ?? 20}mm ${template?.margin_right ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_left ?? 15}mm`;
-        wrapper.style.boxSizing = 'border-box';
-        wrapper.style.direction = 'rtl';
-        wrapper.style.fontFamily = `'${fontFamily}', sans-serif`;
-        wrapper.style.fontSize = `${template?.font_size || 14}px`;
-        wrapper.style.lineHeight = String(template?.line_height || 1.8);
-        wrapper.style.color = '#000';
-      }
-
-      // Allow a frame for the layout to settle before capturing
-      requestAnimationFrame(() => {
-        const electronAPI = (window as unknown as { electronAPI: { printToPdf: (opts: unknown) => Promise<{ success: boolean; error?: string; filePath?: string }> } }).electronAPI;
-        electronAPI.printToPdf({
-          pageSize: { width: 210 * 1000, height: 297 * 1000 },
-          landscape: false,
-          defaultFileName: fileName,
-        }).then((result) => {
-          // Restore wrapper to hidden
-          if (wrapper) {
-            wrapper.style.left = '-9999px';
-            wrapper.style.visibility = 'hidden';
-            wrapper.style.zIndex = '';
-            wrapper.style.padding = '';
-            wrapper.style.boxSizing = '';
-            wrapper.style.direction = '';
-            wrapper.style.fontFamily = '';
-            wrapper.style.fontSize = '';
-            wrapper.style.lineHeight = '';
-            wrapper.style.color = '';
-          }
-          cleanup();
-          if (result.success) {
-            toast.success("تم حفظ الوثيقة بنجاح");
-          } else if (result.error !== 'cancelled') {
-            toast.error(result.error || "فشل في حفظ الوثيقة");
-          }
-        }).catch(() => {
-          if (wrapper) {
-            wrapper.style.left = '-9999px';
-            wrapper.style.visibility = 'hidden';
-          }
-          cleanup();
-          toast.error("فشل في حفظ الوثيقة");
-        });
-      });
-    } else {
-      // Web: use window.print() — user can choose "Save as PDF" from browser dialog
-      const afterPrint = () => {
-        cleanup();
-        window.removeEventListener('afterprint', afterPrint);
-      };
-      window.addEventListener('afterprint', afterPrint);
-      window.print();
-    }
-  }, [template, student, documentType]);
-
   const buildJuryTableHtml = (members: JuryMember[], withSignature = false): string => {
     const jts: JuryTableSettings = template?.jury_table_settings
       ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
@@ -679,6 +345,251 @@ export function GenerateDocumentDialog({
 
     return content;
   };
+
+  // Build standalone HTML for Electron hidden-window printing
+  const buildStandaloneHtml = useCallback(() => {
+    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+    const mt = template?.margin_top ?? 20;
+    const mb = template?.margin_bottom ?? 20;
+    const mr = template?.margin_right ?? 15;
+    const ml = template?.margin_left ?? 15;
+    const fontSize = template?.font_size || 14;
+    const lineHeight = template?.line_height || 1.8;
+    const jts: JuryTableSettings = template?.jury_table_settings
+      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+      : { ...DEFAULT_JURY_TABLE_SETTINGS };
+
+    const content = getRenderedContent();
+    const textBoxesHtml = (template?.text_boxes || []).map((tb: TextBoxData) =>
+      `<div style="position:absolute;left:${tb.x}mm;top:${tb.y}mm;width:${tb.width}mm;min-height:${tb.minHeight}mm;border:${tb.borderWidth}px solid ${tb.borderColor};padding:${tb.padding}px;background:${tb.bgColor};font-size:${tb.fontSize}px;font-family:${tb.fontFamily};text-align:${tb.textAlign};direction:rtl;line-height:1.6;box-sizing:border-box;word-break:break-word;">${tb.content}</div>`
+    ).join('');
+
+    return `<div style="
+      width: 210mm;
+      min-height: 297mm;
+      padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm;
+      font-family: '${fontFamily}', 'IBM Plex Sans Arabic', sans-serif;
+      font-size: ${fontSize}px;
+      line-height: ${lineHeight};
+      direction: rtl;
+      color: #000;
+      background: white;
+      box-sizing: border-box;
+      position: relative;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    ">
+      <style>
+        table { border-collapse: collapse; width: 100%; }
+        td, th {
+          border: 1px solid ${jts.border_color};
+          padding: ${jts.padding}px;
+          text-align: center;
+          font-size: ${jts.font_size}px;
+          line-height: ${jts.line_height};
+        }
+        th { background: ${jts.header_bg}; font-weight: bold; }
+        .variable-tag { background: transparent; color: inherit; padding: 0; }
+        p, div, span, blockquote { margin: 0; padding: 0; }
+      </style>
+      ${content}
+      ${textBoxesHtml}
+    </div>`;
+  }, [template, student, documentType, decisionNumber, decisionDate, juryDecisionNumber, juryDecisionDate, deanLetterNumber, deanLetterDate, minutesNumber, defenseTime, mention]);
+
+  const handlePrint = useCallback(() => {
+    if (!printRef.current) return;
+
+    const isElectronEnv = !!(window as unknown as { electronAPI?: { printDocHtml?: unknown } }).electronAPI?.printDocHtml;
+
+    if (isElectronEnv) {
+      const electronAPI = (window as unknown as { electronAPI: { printDocHtml: (html: string, action: string, fileName: string, opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
+      const htmlContent = buildStandaloneHtml();
+      electronAPI.printDocHtml(htmlContent, 'print', '', {}).then((result) => {
+        if (!result.success && result.error !== 'Print cancelled or failed') {
+          toast.error(result.error || "فشلت الطباعة");
+        }
+      }).catch(() => {
+        toast.error("فشلت الطباعة");
+      });
+    } else {
+      // Web: use existing @media print approach
+      const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+      const jts: JuryTableSettings = template?.jury_table_settings
+        ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+        : { ...DEFAULT_JURY_TABLE_SETTINGS };
+
+      if (printStyleRef.current) {
+        printStyleRef.current.remove();
+        printStyleRef.current = null;
+      }
+
+      const style = document.createElement('style');
+      style.id = 'defense-doc-print-styles';
+      const mt = template?.margin_top ?? 20;
+      const mb = template?.margin_bottom ?? 20;
+      const mr = template?.margin_right ?? 15;
+      const ml = template?.margin_left ?? 15;
+
+      style.textContent = `
+        @media print {
+          @page { size: A4 portrait; margin: 0; }
+          body > *:not(#defense-doc-print-wrapper) { display: none !important; }
+          body * { visibility: hidden !important; }
+          [data-print-hide] { display: none !important; }
+          #defense-doc-print-wrapper, #defense-doc-print-wrapper * { visibility: visible !important; }
+          body, html { margin: 0 !important; padding: 0 !important; overflow: visible !important; background: white !important; }
+          #defense-doc-print-wrapper {
+            display: block !important; position: relative !important;
+            left: auto !important; top: auto !important;
+            width: 210mm !important; min-height: auto !important;
+            z-index: auto !important; background: white !important;
+            margin: 0 !important;
+            padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
+            font-family: '${fontFamily}', sans-serif !important;
+            font-size: ${template?.font_size || 14}px !important;
+            line-height: ${template?.line_height || 1.8} !important;
+            direction: rtl !important; color: #000 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #defense-doc-print-wrapper p, #defense-doc-print-wrapper div,
+          #defense-doc-print-wrapper span, #defense-doc-print-wrapper blockquote { margin: 0; padding: 0; }
+          #defense-doc-print-wrapper table { border-collapse: collapse !important; width: 100% !important; }
+          #defense-doc-print-wrapper td, #defense-doc-print-wrapper th {
+            border: 1px solid ${jts.border_color} !important;
+            padding: ${jts.padding}px !important;
+            text-align: center !important;
+            font-size: ${jts.font_size}px !important;
+            line-height: ${jts.line_height} !important;
+          }
+          #defense-doc-print-wrapper th { background: ${jts.header_bg} !important; font-weight: bold !important; }
+          #defense-doc-print-wrapper .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
+        }
+      `;
+      document.head.appendChild(style);
+      printStyleRef.current = style;
+
+      const originalTitle = document.title;
+      document.title = ' ';
+
+      const cleanup = () => {
+        document.title = originalTitle;
+        if (printStyleRef.current) {
+          printStyleRef.current.remove();
+          printStyleRef.current = null;
+        }
+      };
+
+      const afterPrint = () => {
+        cleanup();
+        window.removeEventListener('afterprint', afterPrint);
+      };
+      window.addEventListener('afterprint', afterPrint);
+      window.print();
+    }
+  }, [template, buildStandaloneHtml]);
+
+  const handleDownloadPdf = useCallback(() => {
+    if (!printRef.current) return;
+
+    const studentName = student?.full_name_ar || "وثيقة";
+    const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
+    const fileName = `${docTitlePdf}_${studentName}.pdf`;
+
+    const isElectronEnv = !!(window as unknown as { electronAPI?: { printDocHtml?: unknown } }).electronAPI?.printDocHtml;
+
+    if (isElectronEnv) {
+      const electronAPI = (window as unknown as { electronAPI: { printDocHtml: (html: string, action: string, fileName: string, opts: unknown) => Promise<{ success: boolean; error?: string; filePath?: string }> } }).electronAPI;
+      const htmlContent = buildStandaloneHtml();
+      electronAPI.printDocHtml(htmlContent, 'pdf', fileName, {}).then((result) => {
+        if (result.success) {
+          toast.success("تم حفظ الوثيقة بنجاح");
+        } else if (result.error !== 'cancelled') {
+          toast.error(result.error || "فشل في حفظ الوثيقة");
+        }
+      }).catch(() => {
+        toast.error("فشل في حفظ الوثيقة");
+      });
+    } else {
+      // Web: use @media print approach
+      const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+      const jts: JuryTableSettings = template?.jury_table_settings
+        ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+        : { ...DEFAULT_JURY_TABLE_SETTINGS };
+
+      if (printStyleRef.current) {
+        printStyleRef.current.remove();
+        printStyleRef.current = null;
+      }
+
+      const style = document.createElement('style');
+      style.id = 'defense-doc-print-styles';
+      const mt = template?.margin_top ?? 20;
+      const mb = template?.margin_bottom ?? 20;
+      const mr = template?.margin_right ?? 15;
+      const ml = template?.margin_left ?? 15;
+
+      style.textContent = `
+        @media print {
+          @page { size: A4 portrait; margin: 0; }
+          body > *:not(#defense-doc-print-wrapper) { display: none !important; }
+          body * { visibility: hidden !important; }
+          [data-print-hide] { display: none !important; }
+          #defense-doc-print-wrapper, #defense-doc-print-wrapper * { visibility: visible !important; }
+          body, html { margin: 0 !important; padding: 0 !important; overflow: visible !important; background: white !important; }
+          #defense-doc-print-wrapper {
+            display: block !important; position: relative !important;
+            left: auto !important; top: auto !important;
+            width: 210mm !important; min-height: auto !important;
+            z-index: auto !important; background: white !important;
+            margin: 0 !important;
+            padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
+            font-family: '${fontFamily}', sans-serif !important;
+            font-size: ${template?.font_size || 14}px !important;
+            line-height: ${template?.line_height || 1.8} !important;
+            direction: rtl !important; color: #000 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #defense-doc-print-wrapper p, #defense-doc-print-wrapper div,
+          #defense-doc-print-wrapper span, #defense-doc-print-wrapper blockquote { margin: 0; padding: 0; }
+          #defense-doc-print-wrapper table { border-collapse: collapse !important; width: 100% !important; }
+          #defense-doc-print-wrapper td, #defense-doc-print-wrapper th {
+            border: 1px solid ${jts.border_color} !important;
+            padding: ${jts.padding}px !important;
+            text-align: center !important;
+            font-size: ${jts.font_size}px !important;
+            line-height: ${jts.line_height} !important;
+          }
+          #defense-doc-print-wrapper th { background: ${jts.header_bg} !important; font-weight: bold !important; }
+          #defense-doc-print-wrapper .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
+        }
+      `;
+      document.head.appendChild(style);
+      printStyleRef.current = style;
+
+      const originalTitle = document.title;
+      document.title = ' ';
+
+      const cleanup = () => {
+        document.title = originalTitle;
+        if (printStyleRef.current) {
+          printStyleRef.current.remove();
+          printStyleRef.current = null;
+        }
+      };
+
+      const afterPrint = () => {
+        cleanup();
+        window.removeEventListener('afterprint', afterPrint);
+      };
+      window.addEventListener('afterprint', afterPrint);
+      window.print();
+    }
+  }, [template, student, documentType, buildStandaloneHtml]);
 
   const docTitle = isDefenseMinutes
     ? "توليد محضر مداولات لجنة المناقشة"
