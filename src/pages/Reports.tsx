@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { usePhdLmdStudents, usePhdScienceStudents } from "@/hooks/usePhdStudents";
 import { usePhdLmdCertificates, usePhdScienceCertificates } from "@/hooks/useCertificates";
+import { useDefenseStageLmd, useDefenseStageScience } from "@/hooks/useDefenseStage";
+import { stageStatusLabels } from "@/types/defense-stage";
+import type { DefenseStageStatus } from "@/types/defense-stage";
 import { useProfessors } from "@/hooks/useProfessors";
 import { toWesternNumerals } from "@/lib/numerals";
 import { calculateKpi, calcProcessingTime, getRegistrationStatus } from "@/lib/kpi-calculator";
@@ -32,6 +35,8 @@ export default function Reports() {
   const { data: regScience = [], isLoading: l2 } = usePhdScienceStudents();
   const { data: defLmd = [], isLoading: l3 } = usePhdLmdCertificates();
   const { data: defScience = [], isLoading: l4 } = usePhdScienceCertificates();
+  const { data: dsLmd = [], isLoading: l5 } = useDefenseStageLmd();
+  const { data: dsScience = [], isLoading: l6 } = useDefenseStageScience();
   const { findProfessor } = useProfessors();
   const { data: academicTitles = [] } = useQuery({
     queryKey: ["academic_titles_report"],
@@ -49,7 +54,7 @@ export default function Reports() {
     },
   });
 
-  const isLoading = l1 || l2 || l3 || l4;
+  const isLoading = l1 || l2 || l3 || l4 || l5 || l6;
 
   const allRegistered = useMemo(() => [
     ...regLmd.map(s => ({ ...s, _type: "phd_lmd" as const })),
@@ -61,15 +66,24 @@ export default function Reports() {
     ...defScience.map(s => ({ ...s, _type: "phd_science" as const })),
   ], [defLmd, defScience]);
 
+  const allDefenseStage = useMemo(() => [
+    ...dsLmd.map(s => ({ ...s, _type: "phd_lmd" as const })),
+    ...dsScience.map(s => ({ ...s, _type: "phd_science" as const })),
+  ], [dsLmd, dsScience]);
+
   const faculties = useMemo(() => {
     const set = new Set<string>();
-    [...allRegistered, ...allDefended].forEach(s => { if (s.faculty_ar) set.add(s.faculty_ar); });
+    [...allRegistered, ...allDefended, ...allDefenseStage].forEach(s => { if (s.faculty_ar) set.add(s.faculty_ar); });
     return [...set].sort();
-  }, [allRegistered, allDefended]);
+  }, [allRegistered, allDefended, allDefenseStage]);
 
   const filteredRegistered = useMemo(() =>
     selectedFaculty === "all" ? allRegistered : allRegistered.filter(s => s.faculty_ar === selectedFaculty),
   [allRegistered, selectedFaculty]);
+
+  const filteredDefenseStage = useMemo(() =>
+    selectedFaculty === "all" ? allDefenseStage : allDefenseStage.filter(s => s.faculty_ar === selectedFaculty),
+  [allDefenseStage, selectedFaculty]);
 
   const filteredDefended = useMemo(() =>
     selectedFaculty === "all" ? allDefended : allDefended.filter(s => s.faculty_ar === selectedFaculty),
@@ -430,6 +444,7 @@ export default function Reports() {
               <DashboardCard title="عدد المسجلين في الدكتوراه" icon={<Users className="h-4 w-4" />} items={[{ label: "الإجمالي", value: filteredRegistered.length }, { label: "ل.م.د", value: regLmdCount }, { label: "علوم", value: regSciCount }]} />
               <DashboardCard title="متوسط سنوات التسجيل (المسجلين)" icon={<Clock className="h-4 w-4" />} items={[{ label: "المتوسط العام", value: avgRegYears.regAll.toFixed(1) }, { label: "ل.م.د", value: avgRegYears.regLmd.toFixed(1) }, { label: "علوم", value: avgRegYears.regScience.toFixed(1) }]} />
               <DashboardCard title="عدد المتأخرين (المسجلين)" icon={<AlertTriangle className="h-4 w-4" />} items={[{ label: "الإجمالي", value: regStatusData[1]?.value || 0 }, { label: "من أصل", value: filteredRegistered.length }, { label: "النسبة", value: filteredRegistered.length > 0 ? `${((regStatusData[1]?.value || 0) / filteredRegistered.length * 100).toFixed(1)}%` : '0%' }]} />
+              <DashboardCard title="طور المناقشة" icon={<Clock className="h-4 w-4" />} items={[{ label: "الإجمالي", value: filteredDefenseStage.length }, { label: "ل.م.د", value: filteredDefenseStage.filter(s => s._type === 'phd_lmd').length }, { label: "علوم", value: filteredDefenseStage.filter(s => s._type === 'phd_science').length }]} />
               <DashboardCard title="عدد المناقشين" icon={<GraduationCap className="h-4 w-4" />} items={[{ label: "الإجمالي", value: filteredDefended.length }, { label: "ل.م.د", value: defLmdCount }, { label: "علوم", value: defSciCount }]} />
               <DashboardCard title="متوسط مدة التسجيل (المناقشين)" icon={<TrendingUp className="h-4 w-4" />} items={[{ label: "المتوسط العام", value: avgRegYears.defAll.toFixed(1) }, { label: "ل.م.د", value: avgRegYears.defLmd.toFixed(1) }, { label: "علوم", value: avgRegYears.defScience.toFixed(1) }]} />
               <DashboardCard title="عدد المتأخرين (المناقشين)" icon={<AlertTriangle className="h-4 w-4" />} items={[{ label: "الإجمالي", value: defStatusData[1]?.value || 0 }, { label: "من أصل", value: filteredDefended.length }, { label: "النسبة", value: filteredDefended.length > 0 ? `${((defStatusData[1]?.value || 0) / filteredDefended.length * 100).toFixed(1)}%` : '0%' }]} />
@@ -480,8 +495,56 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* ثانيا: المناقشين */}
-      <SectionHeader title="ثانيا: إحصائيات عامة حول الطلبة المناقشين" icon={<GraduationCap className="h-5 w-5" />} />
+      {/* ثانيا: طور المناقشة */}
+      <SectionHeader title="ثانيا: إحصائيات الطلبة في طور المناقشة" icon={<Clock className="h-5 w-5" />} />
+      <Card className="shadow-sm">
+        <CardContent className="p-0">
+          <div className="max-h-[500px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-primary/5 border-b-2 border-primary/20">
+                  <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المجلس العلمي</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDefenseStage.map((s, i) => {
+                  const stageStatus = (s as any).stage_status as DefenseStageStatus;
+                  const statusInfo = stageStatusLabels[stageStatus] || stageStatusLabels.pending;
+                  return (
+                    <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
+                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                      <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                      <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                      <TableCell className="text-center py-2.5">
+                        <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
+                          {statusInfo.ar}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{(s as any).scientific_council_date ? formatDate((s as any).scientific_council_date) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{(s as any).defense_date ? formatDate((s as any).defense_date) : '-'}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          {filteredDefenseStage.length === 0 && (
+            <div className="p-6 text-center text-muted-foreground text-sm">لا يوجد طلبة في طور المناقشة</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ثالثا: المناقشين */}
+      <SectionHeader title="ثالثا: إحصائيات عامة حول الطلبة المناقشين" icon={<GraduationCap className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           <div className="max-h-[500px] overflow-auto">
@@ -576,8 +639,8 @@ export default function Reports() {
         formatDate={formatDate}
       />
 
-      {/* ثالثا: الإجراءات الإدارية */}
-      <SectionHeader title="ثالثا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
+      {/* رابعا: الإجراءات الإدارية */}
+      <SectionHeader title="رابعا: الإجراءات الإدارية" icon={<FileText className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {adminActions.length > 0 ? (
@@ -640,8 +703,8 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* رابعا: المناقشات بالإنجليزية */}
-      <SectionHeader title="رابعا: المناقشات باللغة الإنجليزية" icon={<Globe className="h-5 w-5" />} />
+      {/* خامسا: المناقشات بالإنجليزية */}
+      <SectionHeader title="خامسا: المناقشات باللغة الإنجليزية" icon={<Globe className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {englishTheses.length > 0 ? (
@@ -677,8 +740,8 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* خامسا: المخابر */}
-      <SectionHeader title="خامسا: عدد المناقشات حسب مخابر البحث" icon={<FlaskConical className="h-5 w-5" />} />
+      {/* سادسا: المخابر */}
+      <SectionHeader title="سادسا: عدد المناقشات حسب مخابر البحث" icon={<FlaskConical className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {labStats.length > 0 ? (
@@ -708,8 +771,8 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* سادسا: الأساتذة المساعدين */}
-      <SectionHeader title="سادسا: الأساتذة المساعدين المناقشين" icon={<Award className="h-5 w-5" />} />
+      {/* سابعا: الأساتذة المساعدين */}
+      <SectionHeader title="سابعا: الأساتذة المساعدين المناقشين" icon={<Award className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {assistantProfessors.length > 0 ? (
