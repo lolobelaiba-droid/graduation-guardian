@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useColumnVisibility, type ColumnDef } from "@/hooks/useColumnVisibility";
+import { ColumnVisibilityDialog } from "@/components/ui/column-visibility-dialog";
 import {
   Search,
   Scale,
