@@ -282,11 +282,21 @@ export default function Reports() {
   const defLmdCount = filteredDefended.filter(s => s._type === 'phd_lmd').length;
   const defSciCount = filteredDefended.filter(s => s._type === 'phd_science').length;
 
-  // Build export data for any faculty
-  const buildExportData = (faculty?: string): ReportExportData => {
+  // Build export data for any faculty, with optional period filtering
+  const buildExportData = (faculty?: string, periodFrom?: string, periodTo?: string): ReportExportData => {
     const reg = faculty ? allRegistered.filter(s => s.faculty_ar === faculty) : allRegistered;
-    const def = faculty ? allDefended.filter(s => s.faculty_ar === faculty) : allDefended;
+    let def = faculty ? allDefended.filter(s => s.faculty_ar === faculty) : allDefended;
     const ds = faculty ? allDefenseStage.filter(s => s.faculty_ar === faculty) : allDefenseStage;
+    // Apply period filter on defense_date for defended students
+    if (periodFrom || periodTo) {
+      def = def.filter(s => {
+        const dd = (s as any).defense_date;
+        if (!dd) return false;
+        if (periodFrom && dd < periodFrom) return false;
+        if (periodTo && dd > periodTo) return false;
+        return true;
+      });
+    }
     const calcAvg = (students: any[]) => {
       const valid = students.filter(s => s.registration_count).map(s => s.registration_count as number);
       return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
