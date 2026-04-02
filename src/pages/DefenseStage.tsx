@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useColumnVisibility, type ColumnDef } from "@/hooks/useColumnVisibility";
 import { ColumnVisibilityDialog } from "@/components/ui/column-visibility-dialog";

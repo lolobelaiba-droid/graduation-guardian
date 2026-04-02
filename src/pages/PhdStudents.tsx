@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import * as XLSX from "xlsx";
 import { useColumnVisibility, type ColumnDef } from "@/hooks/useColumnVisibility";

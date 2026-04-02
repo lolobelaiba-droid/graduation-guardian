@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import * as XLSX from "xlsx";
 import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2, Download } from "lucide-react";
 import {
