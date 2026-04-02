@@ -3,8 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-// تعطيل تسريع العتاد لحل مشاكل الشاشة البيضاء/السوداء على بعض الأجهزة
-app.disableHardwareAcceleration();
+// تسريع العتاد مفعّل لضمان جودة معاينة الطباعة (يتطلب Windows 10/11)
+// app.disableHardwareAcceleration();
 const { pathToFileURL } = require('url');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
