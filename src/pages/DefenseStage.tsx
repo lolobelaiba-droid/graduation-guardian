@@ -395,15 +395,23 @@ export default function DefenseStage() {
                           })()}
                         </TableCell>
                         <TableCell>
-                          {student.scientific_council_date
-                            ? (() => {
-                                const d = new Date(student.scientific_council_date);
-                                const day = String(d.getDate()).padStart(2, '0');
-                                const month = String(d.getMonth() + 1).padStart(2, '0');
-                                const year = d.getFullYear();
-                                return `${day}/${month}/${year}`;
-                              })()
-                            : "-"}
+                          {(() => {
+                            const duration = getDurationSinceCouncil(student.scientific_council_date, student.stage_status);
+                            const dateColor = duration ? duration.color : 'text-foreground';
+                            if (!student.scientific_council_date) return "-";
+                            const d = new Date(student.scientific_council_date);
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const year = d.getFullYear();
+                            return <span className={dateColor}>{`${day}/${month}/${year}`}</span>;
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const duration = getDurationSinceCouncil(student.scientific_council_date, student.stage_status);
+                            if (!duration) return "-";
+                            return <span className={`font-medium ${duration.color}`}>{duration.text}</span>;
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Badge
