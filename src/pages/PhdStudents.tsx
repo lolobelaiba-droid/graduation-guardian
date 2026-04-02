@@ -126,6 +126,8 @@ export default function PhdStudents() {
   // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
+  // Start defense procedure dialog state
+  const [startDefenseDialogOpen, setStartDefenseDialogOpen] = useState(false);
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
