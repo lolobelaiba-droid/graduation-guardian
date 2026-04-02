@@ -739,8 +739,8 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* خامسا: المخابر */}
-      <SectionHeader title="خامسا: عدد المناقشات حسب مخابر البحث" icon={<FlaskConical className="h-5 w-5" />} />
+      {/* سادسا: المخابر */}
+      <SectionHeader title="سادسا: عدد المناقشات حسب مخابر البحث" icon={<FlaskConical className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {labStats.length > 0 ? (
