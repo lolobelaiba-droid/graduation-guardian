@@ -10,11 +10,13 @@ import {
 interface AutocompleteInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   suggestions: string[];
   onValueChange?: (value: string) => void;
+  /** Called only when user explicitly selects a suggestion from the dropdown */
+  onSuggestionSelect?: (value: string) => void;
   emptyMessage?: string;
 }
 
 const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputProps>(
-  ({ className, suggestions, onValueChange, value, onChange, emptyMessage = "لا توجد اقتراحات", ...props }, ref) => {
+  ({ className, suggestions, onValueChange, onSuggestionSelect, value, onChange, emptyMessage = "لا توجد اقتراحات", ...props }, ref) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [inputValue, setInputValue] = React.useState(value?.toString() || "");
     const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
@@ -56,6 +58,8 @@ const AutocompleteInput = React.forwardRef<HTMLInputElement, AutocompleteInputPr
       } as React.ChangeEvent<HTMLInputElement>;
       onChange?.(syntheticEvent);
       onValueChange?.(suggestion);
+      // Fire dedicated select callback so consumers know this was an explicit selection
+      onSuggestionSelect?.(suggestion);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
