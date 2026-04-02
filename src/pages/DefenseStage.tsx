@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useColumnVisibility, type ColumnDef } from "@/hooks/useColumnVisibility";
+import { ColumnVisibilityDialog } from "@/components/ui/column-visibility-dialog";
 import {
   Search,
   Scale,
@@ -103,6 +105,23 @@ function getDurationSinceCouncil(councilDate: string | null, stageStatus: string
 
 export default function DefenseStage() {
   const { canDelete } = usePermissions();
+  const defenseColumns: ColumnDef[] = useMemo(() => [
+    { key: "full_name_ar", label: "الاسم بالعربية" },
+    { key: "full_name_fr", label: "الاسم بالفرنسية" },
+    { key: "specialty_ar", label: "التخصص" },
+    { key: "faculty_ar", label: "الكلية" },
+    { key: "supervisor_ar", label: "المشرف" },
+    { key: "first_registration_year", label: "سنة أول تسجيل" },
+    { key: "registration_count", label: "عدد التسجيلات" },
+    { key: "registration_status", label: "حالة التسجيل" },
+    { key: "scientific_council_date", label: "تاريخ المجلس العلمي" },
+    { key: "duration", label: "المدة منذ المصادقة" },
+    { key: "stage_status", label: "الحالة" },
+    { key: "actions", label: "إجراءات", alwaysVisible: true },
+  ], []);
+
+  const { visibleColumns, isVisible, toggleColumn, setAllVisible, resetToDefaults, visibleCount } = useColumnVisibility("defense-stage-columns", defenseColumns);
+
   const [activeTab, setActiveTab] = useState("phd_lmd");
   const [searchQuery, setSearchQuery] = useState("");
   const [showStartDialog, setShowStartDialog] = useState(false);
@@ -321,6 +340,14 @@ export default function DefenseStage() {
               className="pr-10"
             />
           </div>
+          <ColumnVisibilityDialog
+            columns={defenseColumns}
+            visibleColumns={visibleColumns}
+            onToggle={toggleColumn}
+            onSelectAll={setAllVisible}
+            onReset={resetToDefaults}
+            visibleCount={visibleCount}
+          />
         </div>
 
         <TabsContent value={activeTab} className="mt-4">
@@ -341,30 +368,30 @@ export default function DefenseStage() {
                 <Table>
                    <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">الاسم بالعربية</TableHead>
-                      <TableHead className="text-right">الاسم بالفرنسية</TableHead>
-                      <TableHead className="text-right">التخصص</TableHead>
-                      <TableHead className="text-right">الكلية</TableHead>
-                      <TableHead className="text-right">المشرف</TableHead>
-                      <TableHead className="text-right">سنة أول تسجيل</TableHead>
-                      <TableHead className="text-right">عدد التسجيلات</TableHead>
-                      <TableHead className="text-right">حالة التسجيل</TableHead>
-                      <TableHead className="text-right">تاريخ المجلس العلمي</TableHead>
-                      <TableHead className="text-right">المدة منذ المصادقة</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
+                      {isVisible("full_name_ar") && <TableHead className="text-right">الاسم بالعربية</TableHead>}
+                      {isVisible("full_name_fr") && <TableHead className="text-right">الاسم بالفرنسية</TableHead>}
+                      {isVisible("specialty_ar") && <TableHead className="text-right">التخصص</TableHead>}
+                      {isVisible("faculty_ar") && <TableHead className="text-right">الكلية</TableHead>}
+                      {isVisible("supervisor_ar") && <TableHead className="text-right">المشرف</TableHead>}
+                      {isVisible("first_registration_year") && <TableHead className="text-right">سنة أول تسجيل</TableHead>}
+                      {isVisible("registration_count") && <TableHead className="text-right">عدد التسجيلات</TableHead>}
+                      {isVisible("registration_status") && <TableHead className="text-right">حالة التسجيل</TableHead>}
+                      {isVisible("scientific_council_date") && <TableHead className="text-right">تاريخ المجلس العلمي</TableHead>}
+                      {isVisible("duration") && <TableHead className="text-right">المدة منذ المصادقة</TableHead>}
+                      {isVisible("stage_status") && <TableHead className="text-right">الحالة</TableHead>}
                       <TableHead className="text-right w-12">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedStudents.map((student) => (
                       <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.full_name_ar}</TableCell>
-                        <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>
-                        <TableCell>{student.specialty_ar}</TableCell>
-                        <TableCell>{student.faculty_ar}</TableCell>
-                        <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
-                        <TableCell>{student.first_registration_year || "-"}</TableCell>
-                        <TableCell>
+                        {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
+                        {isVisible("full_name_fr") && <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>}
+                        {isVisible("specialty_ar") && <TableCell>{student.specialty_ar}</TableCell>}
+                        {isVisible("faculty_ar") && <TableCell>{student.faculty_ar}</TableCell>}
+                        {isVisible("supervisor_ar") && <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>}
+                        {isVisible("first_registration_year") && <TableCell>{student.first_registration_year || "-"}</TableCell>}
+                        {isVisible("registration_count") && <TableCell>
                           {(() => {
                             if (!student.first_registration_year) return "-";
                             let refYear: number;
@@ -383,11 +410,10 @@ export default function DefenseStage() {
                             const details = calculateRegistrationDetails(refAcYear, student.first_registration_year, phdType as any);
                             return details.registrationCount ?? "-";
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("registration_status") && <TableCell>
                           {(() => {
                             if (!student.first_registration_year) return "-";
-                            // Use scientific_council_date to freeze registration count
                             let refYear: number;
                             if (student.scientific_council_date) {
                               const scDate = new Date(student.scientific_council_date);
@@ -409,8 +435,8 @@ export default function DefenseStage() {
                               </Badge>
                             );
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("scientific_council_date") && <TableCell>
                           {(() => {
                             const duration = getDurationSinceCouncil(student.scientific_council_date, student.stage_status);
                             const dateColor = duration ? duration.color : 'text-foreground';
@@ -421,22 +447,22 @@ export default function DefenseStage() {
                             const year = d.getFullYear();
                             return <span className={dateColor}>{`${day}/${month}/${year}`}</span>;
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("duration") && <TableCell>
                           {(() => {
                             const duration = getDurationSinceCouncil(student.scientific_council_date, student.stage_status);
                             if (!duration) return "-";
                             return <span className={`font-medium ${duration.color}`}>{duration.text}</span>;
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("stage_status") && <TableCell>
                           <Badge
                             variant="outline"
                             className={stageStatusLabels[student.stage_status]?.color}
                           >
                             {stageStatusLabels[student.stage_status]?.ar}
                           </Badge>
-                        </TableCell>
+                        </TableCell>}
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
