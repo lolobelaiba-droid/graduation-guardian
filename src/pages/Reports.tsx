@@ -256,6 +256,14 @@ export default function Reports() {
     });
   }, [kpi, avgRegYears, filteredDefended, englishTheses, assistantProfessors]);
 
+  const thesisLangLabel = (lang: string | null | undefined) => {
+    if (!lang) return '-';
+    if (lang === 'arabic') return 'عربية';
+    if (lang === 'french') return 'فرنسية';
+    if (lang === 'english') return 'إنجليزية';
+    return lang;
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -469,6 +477,7 @@ export default function Reports() {
                   <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">سنة أول تسجيل</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">عدد التسجيلات</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">لغة الأطروحة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
                 </TableRow>
               </TableHeader>
@@ -485,6 +494,7 @@ export default function Reports() {
                       <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{(s as any).first_registration_year ? toWesternNumerals((s as any).first_registration_year) : '-'}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{(s as any).registration_count ? toWesternNumerals((s as any).registration_count) : '-'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{thesisLangLabel((s as any).thesis_language)}</TableCell>
                       <TableCell className="text-center py-2.5">
                         <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
                           {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
@@ -513,6 +523,7 @@ export default function Reports() {
                   <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">لغة الأطروحة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المجلس العلمي</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">المدة منذ المصادقة</TableHead>
@@ -546,6 +557,7 @@ export default function Reports() {
                       <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
                       <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{thesisLangLabel((s as any).thesis_language)}</TableCell>
                       <TableCell className="text-center py-2.5">
                         <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
                           {statusInfo.ar}
@@ -575,9 +587,11 @@ export default function Reports() {
                 <TableRow className="bg-primary/5 border-b-2 border-primary/20">
                   <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-foreground">الكلية</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">الشعبة</TableHead>
                   <TableHead className="text-right text-xs font-bold text-foreground">التخصص</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">نوع الدكتوراه</TableHead>
+                  <TableHead className="text-center text-xs font-bold text-foreground">لغة الأطروحة</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">حالة التسجيل</TableHead>
                   <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
                 </TableRow>
@@ -589,9 +603,11 @@ export default function Reports() {
                     <TableRow key={s.id || i} className="hover:bg-muted/30 border-b border-border/50">
                       <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
                       <TableCell className="text-xs py-2.5 font-medium">{s.full_name_ar}</TableCell>
+                      <TableCell className="text-xs py-2.5">{s.faculty_ar || '-'}</TableCell>
                       <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
                       <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{thesisLangLabel((s as any).thesis_language)}</TableCell>
                       <TableCell className="text-center py-2.5">
                         <Badge variant={status === 'regular' ? 'default' : status === 'delayed' ? 'destructive' : 'secondary'} className="text-[10px]">
                           {status === 'regular' ? 'منتظم' : status === 'delayed' ? 'متأخر' : '-'}
