@@ -466,15 +466,15 @@ export default function Students() {
                   <Table>
                      <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="text-right font-semibold">الرقم</TableHead>
-                        <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>
-                        <TableHead className="text-right font-semibold">الاسم بالفرنسية</TableHead>
-                        <TableHead className="text-right font-semibold">التخصص</TableHead>
-                        <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>
-                        <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>
-                        <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>
-                        <TableHead className="text-right font-semibold">التقدير</TableHead>
-                        <TableHead className="text-right font-semibold">تاريخ المناقشة</TableHead>
+                        {isVisible("student_number") && <TableHead className="text-right font-semibold">الرقم</TableHead>}
+                        {isVisible("full_name_ar") && <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>}
+                        {isVisible("full_name_fr") && <TableHead className="text-right font-semibold">الاسم بالفرنسية</TableHead>}
+                        {isVisible("specialty_ar") && <TableHead className="text-right font-semibold">التخصص</TableHead>}
+                        {isVisible("first_registration_year") && <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>}
+                        {isVisible("registration_count") && <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>}
+                        {isVisible("registration_status") && <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>}
+                        {isVisible("mention") && <TableHead className="text-right font-semibold">التقدير</TableHead>}
+                        {isVisible("defense_date") && <TableHead className="text-right font-semibold">تاريخ المناقشة</TableHead>}
                         <TableHead className="text-right font-semibold">الإجراءات</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -485,12 +485,12 @@ export default function Students() {
                           className="hover:bg-muted/30 transition-colors animate-fade-in"
                           style={{ animationDelay: `${index * 50}ms` }}
                         >
-                          <TableCell className="font-mono text-sm">{student.student_number}</TableCell>
-                          <TableCell className="font-medium">{student.full_name_ar}</TableCell>
-                          <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>
-                          <TableCell>{student.specialty_ar}</TableCell>
-                          <TableCell>{(student as any).first_registration_year || "-"}</TableCell>
-                          <TableCell>
+                          {isVisible("student_number") && <TableCell className="font-mono text-sm">{student.student_number}</TableCell>}
+                          {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
+                          {isVisible("full_name_fr") && <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>}
+                          {isVisible("specialty_ar") && <TableCell>{student.specialty_ar}</TableCell>}
+                          {isVisible("first_registration_year") && <TableCell>{(student as any).first_registration_year || "-"}</TableCell>}
+                          {isVisible("registration_count") && <TableCell>
                             {(() => {
                               const fry = (student as any).first_registration_year;
                               if (!fry || selectedCertType === "master") return "-";
@@ -511,13 +511,12 @@ export default function Students() {
                               const details = calculateRegistrationDetails(refAcYear, fry, phdType as any);
                               return details.registrationCount ?? "-";
                             })()}
-                          </TableCell>
-                          <TableCell>
+                          </TableCell>}
+                          {isVisible("registration_status") && <TableCell>
                             {(() => {
                               const fry = (student as any).first_registration_year;
                               if (!fry) return "-";
                               if (selectedCertType === "master") return "-";
-                              // Use scientific_council_date to freeze registration count
                               const scDate = (student as any).scientific_council_date;
                               let refYear: number;
                               if (scDate) {
@@ -540,13 +539,13 @@ export default function Students() {
                                 </Badge>
                               );
                             })()}
-                          </TableCell>
-                          <TableCell>
+                          </TableCell>}
+                          {isVisible("mention") && <TableCell>
                             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                               {mentionLabels[student.mention as MentionType]?.ar || student.mention}
                             </Badge>
-                          </TableCell>
-                          <TableCell>{formatCertificateDate(student.defense_date)}</TableCell>
+                          </TableCell>}
+                          {isVisible("defense_date") && <TableCell>{formatCertificateDate(student.defense_date)}</TableCell>}
                           <TableCell>
                             <DropdownMenu modal={false}>
                               <DropdownMenuTrigger asChild>
