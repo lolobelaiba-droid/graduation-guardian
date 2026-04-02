@@ -86,6 +86,7 @@ interface QuickEditDialogProps {
 }
 
 export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSaved }: QuickEditDialogProps) {
+  const { guardWrite } = useNetworkReadOnly();
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [originalData, setOriginalData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
