@@ -111,6 +111,13 @@ export function getDefaultInscriptionStatus(
     return "متأخر";
   }
   
-  // If not late, keep existing or return empty
+  // If not late, set to "منتظم" (regular) unless manually set to specific statuses
+  if (currentYear) {
+    if (existingInscriptionStatus === "مقصى" || existingInscriptionStatus === "منقطع") {
+      return existingInscriptionStatus;
+    }
+    return "منتظم";
+  }
+  
   return existingInscriptionStatus || "";
 }

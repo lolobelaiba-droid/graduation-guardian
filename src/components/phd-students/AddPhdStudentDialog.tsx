@@ -219,10 +219,12 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
         form.setValue("registration_count", result.registrationCount);
       }
       
-      // Auto-update inscription_status if late
-      if (result.isLate) {
+      // Auto-update inscription_status based on registration calculation
+      if (result.currentYear) {
         const newInscriptionStatus = getDefaultInscriptionStatus(result.currentYear, inscriptionStatusAr);
-        setInscriptionStatusAr(newInscriptionStatus);
+        if (newInscriptionStatus !== inscriptionStatusAr) {
+          setInscriptionStatusAr(newInscriptionStatus);
+        }
       }
     }
   }, [watchedFirstRegistrationYear, currentAcademicYear, selectedType, form, inscriptionStatusAr, isManuallyEdited]);
