@@ -54,7 +54,7 @@ export default function Reports() {
     },
   });
 
-  const isLoading = l1 || l2 || l3 || l4;
+  const isLoading = l1 || l2 || l3 || l4 || l5 || l6;
 
   const allRegistered = useMemo(() => [
     ...regLmd.map(s => ({ ...s, _type: "phd_lmd" as const })),
