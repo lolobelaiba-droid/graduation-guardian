@@ -743,20 +743,18 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                     <AutocompleteInput
                       value={row.name}
                       onValueChange={(v) => {
-                        const patch: Partial<JuryMember> = { name: v };
-                        if (findProfessor) {
-                          const prof = findProfessor(v);
-                          console.log('[JuryTable] onValueChange:', { v, prof, hasFindProfessor: !!findProfessor });
-                          if (prof) {
-                            if (prof.rank_label) patch.rankLabel = prof.rank_label;
-                            if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
-                            if (prof.university) patch.university = prof.university;
-                          }
-                        } else {
-                          console.log('[JuryTable] onValueChange: NO findProfessor!', { v });
+                        updateRow(row.id, { name: v });
+                      }}
+                      onSuggestionSelect={(v) => {
+                        if (!findProfessor) return;
+                        const prof = findProfessor(v);
+                        if (prof) {
+                          const patch: Partial<JuryMember> = { name: prof.full_name };
+                          if (prof.rank_label) patch.rankLabel = prof.rank_label;
+                          if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
+                          if (prof.university) patch.university = prof.university;
+                          updateRow(row.id, patch);
                         }
-                        console.log('[JuryTable] patch:', patch);
-                        updateRow(row.id, patch);
                       }}
                       suggestions={nameSuggestions}
                       placeholder="الاسم واللقب"
