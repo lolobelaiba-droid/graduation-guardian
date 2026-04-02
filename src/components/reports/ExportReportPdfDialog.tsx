@@ -1063,7 +1063,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     // ───── English Theses ─────
     if (selectedSections.includes("english")) {
       checkPage(15);
-      sectionTitle("رابعا: المناقشات باللغة الإنجليزية");
+      sectionTitle("خامسا: المناقشات باللغة الإنجليزية");
       const tableW = PW - M * 2;
       const cols = [7, 30, 22, 22, 28, 48, 22].map(p => (p / 179) * tableW);
       const rows = data.englishTheses.map((s, i) => [
