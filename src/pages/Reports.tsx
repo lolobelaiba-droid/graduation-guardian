@@ -545,7 +545,17 @@ export default function Reports() {
                       const totalDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
                       const months = Math.floor(totalDays / 30);
                       const days = totalDays % 30;
-                      durationText = `شهر \u200F${toWesternNumerals(months)}\u200F يوم \u200F${toWesternNumerals(days)}\u200F`;
+                      if (months === 0) {
+                        durationText = `${toWesternNumerals(totalDays)} يوم`;
+                      } else if (months === 1) {
+                        durationText = days > 0 ? `شهر و ${toWesternNumerals(days)} يوم` : 'شهر';
+                      } else if (months === 2) {
+                        durationText = days > 0 ? `شهرين و ${toWesternNumerals(days)} يوم` : 'شهرين';
+                      } else if (months >= 3 && months <= 10) {
+                        durationText = days > 0 ? `${toWesternNumerals(months)} أشهر و ${toWesternNumerals(days)} يوم` : `${toWesternNumerals(months)} أشهر`;
+                      } else {
+                        durationText = days > 0 ? `${toWesternNumerals(months)} شهر و ${toWesternNumerals(days)} يوم` : `${toWesternNumerals(months)} شهر`;
+                      }
                       if (totalDays > 60) durationColor = 'text-destructive font-bold';
                       else if (totalDays >= 30) durationColor = 'text-orange-600 font-medium';
                     }
