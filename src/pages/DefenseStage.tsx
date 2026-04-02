@@ -59,6 +59,7 @@ import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "
 import { stageStatusLabels } from "@/types/defense-stage";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 import { toast } from "sonner";
+import { useRestoreDefenseToPhd } from "@/hooks/useRestoreDefenseToPhd";
 
 const ITEMS_PER_PAGE = 15;
 
