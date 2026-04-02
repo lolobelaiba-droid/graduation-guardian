@@ -32,6 +32,7 @@ interface ImportCertificateExcelDialogProps {
 
 export function ImportCertificateExcelDialog({ open, onOpenChange, certificateType }: ImportCertificateExcelDialogProps) {
   const [step, setStep] = useState<ImportStep>("upload");
+  const { guardWrite } = useNetworkReadOnly();
   const [uploadError, setUploadError] = useState("");
   const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const [excelColumns, setExcelColumns] = useState<string[]>([]);
