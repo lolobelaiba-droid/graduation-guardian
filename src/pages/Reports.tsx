@@ -73,6 +73,10 @@ export default function Reports() {
 
   const faculties = useMemo(() => {
     const set = new Set<string>();
+    [...allRegistered, ...allDefended, ...allDefenseStage].forEach(s => { if (s.faculty_ar) set.add(s.faculty_ar); });
+    return [...set].sort();
+  }, [allRegistered, allDefended, allDefenseStage]);
+    const set = new Set<string>();
     [...allRegistered, ...allDefended].forEach(s => { if (s.faculty_ar) set.add(s.faculty_ar); });
     return [...set].sort();
   }, [allRegistered, allDefended]);
