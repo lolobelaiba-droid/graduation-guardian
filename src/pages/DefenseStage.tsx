@@ -334,6 +334,7 @@ export default function DefenseStage() {
                       <TableHead className="text-right">عدد التسجيلات</TableHead>
                       <TableHead className="text-right">حالة التسجيل</TableHead>
                       <TableHead className="text-right">تاريخ المجلس العلمي</TableHead>
+                      <TableHead className="text-right">المدة منذ المصادقة</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right w-12">إجراءات</TableHead>
                     </TableRow>
