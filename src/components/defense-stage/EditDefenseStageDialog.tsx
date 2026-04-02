@@ -685,15 +685,6 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="thesis_title_fr" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Titre de la thèse</FormLabel>
-                <FormControl>
-                  <RichTextEditor value={field.value || ''} onChange={field.onChange} rows={2} dir="ltr" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
             <FormField control={form.control} name="thesis_language" render={({ field }) => (
               <FormItem>
                 <FormLabel>لغة الأطروحة</FormLabel>
