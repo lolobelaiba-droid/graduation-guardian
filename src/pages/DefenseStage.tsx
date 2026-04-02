@@ -481,8 +481,7 @@ export default function DefenseStage() {
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => setDeleteTarget({
-                                  id: student.id,
-                                  name: student.full_name_ar,
+                                  student,
                                   type: activeTab,
                                 })}
                               >
