@@ -1031,7 +1031,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
     if (selectedSections.includes("admin")) {
       checkPage(15);
-      sectionTitle("ثالثا: الإجراءات الإدارية");
+      sectionTitle("رابعا: الإجراءات الإدارية");
       const tableW = PW - M * 2;
       const cols = [7, 32, 28, 16, 16, 22, 22, 22].map(p => (p / 165) * tableW);
       const rows = data.adminActions.map((s, i) => [
