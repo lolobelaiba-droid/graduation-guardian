@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { NetworkStatusBanner } from "./NetworkStatusBanner";
+import { UpdateBanner } from "./UpdateBanner";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -9,6 +10,7 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
+      <UpdateBanner />
       <NetworkStatusBanner />
       <div className="flex flex-1">
         <AppSidebar />
