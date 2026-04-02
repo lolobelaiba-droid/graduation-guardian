@@ -1222,7 +1222,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       let fileName = "تقرير_الأداء";
 
       if (exportMode === "general") {
-        dataSets = [buildExportData(undefined)];
+        dataSets = [buildExportData(undefined, periodFrom || undefined, periodTo || undefined)];
         fileName = "تقرير_الأداء_العام";
       } else if (exportMode === "faculty") {
         if (!selectedExportFaculty) {
@@ -1230,10 +1230,10 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
           setIsExporting(false);
           return;
         }
-        dataSets = [buildExportData(selectedExportFaculty)];
+        dataSets = [buildExportData(selectedExportFaculty, periodFrom || undefined, periodTo || undefined)];
         fileName = `تقرير_الأداء_${selectedExportFaculty}`;
       } else if (exportMode === "full") {
-        dataSets = faculties.map(f => buildExportData(f));
+        dataSets = faculties.map(f => buildExportData(f, periodFrom || undefined, periodTo || undefined));
         fileName = "تقرير_الأداء_الكامل";
       }
 
