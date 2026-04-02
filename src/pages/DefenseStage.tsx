@@ -340,6 +340,14 @@ export default function DefenseStage() {
               className="pr-10"
             />
           </div>
+          <ColumnVisibilityDialog
+            columns={defenseColumns}
+            visibleColumns={visibleColumns}
+            onToggle={toggleColumn}
+            onSelectAll={setAllVisible}
+            onReset={resetToDefaults}
+            visibleCount={visibleCount}
+          />
         </div>
 
         <TabsContent value={activeTab} className="mt-4">
