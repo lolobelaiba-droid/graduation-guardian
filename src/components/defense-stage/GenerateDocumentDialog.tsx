@@ -385,6 +385,9 @@ export function GenerateDocumentDialog({
           size: A4 portrait;
           margin: 0;
         }
+        body > *:not(#defense-doc-print-wrapper) {
+          display: none !important;
+        }
         body * { visibility: hidden !important; }
         [data-print-hide] { display: none !important; }
         body, html {
@@ -395,10 +398,10 @@ export function GenerateDocumentDialog({
         #defense-doc-print-wrapper * { visibility: visible !important; }
         #defense-doc-print-wrapper {
           display: block !important;
-          position: fixed !important;
-          left: 0 !important; top: 0 !important;
-          width: 210mm !important; min-height: 297mm !important;
-          z-index: 999999 !important; background: white !important;
+          position: relative !important;
+          left: auto !important; top: auto !important;
+          width: 210mm !important; min-height: auto !important;
+          z-index: auto !important; background: white !important;
           margin: 0 !important;
           padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
           font-family: '${fontFamily}', sans-serif !important;
@@ -406,6 +409,8 @@ export function GenerateDocumentDialog({
           line-height: ${template?.line_height || 1.8} !important;
           direction: rtl !important; color: #000 !important;
           box-sizing: border-box !important;
+          break-after: auto !important;
+          page-break-after: auto !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
