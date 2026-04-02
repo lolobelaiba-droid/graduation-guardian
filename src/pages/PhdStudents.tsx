@@ -84,12 +84,24 @@ export default function PhdStudents() {
   const phdColumns: ColumnDef[] = useMemo(() => [
     { key: "registration_number", label: "رقم التسجيل" },
     { key: "full_name_ar", label: "الاسم بالعربية" },
-    { key: "faculty_ar", label: "الكلية", defaultVisible: true },
+    { key: "full_name_fr", label: "الاسم بالفرنسية", defaultVisible: false },
+    { key: "gender", label: "الجنس", defaultVisible: false },
+    { key: "date_of_birth", label: "تاريخ الميلاد", defaultVisible: false },
+    { key: "birthplace_ar", label: "مكان الميلاد", defaultVisible: false },
+    { key: "faculty_ar", label: "الكلية" },
+    { key: "field_ar", label: "الميدان", defaultVisible: false },
+    { key: "branch_ar", label: "الشعبة", defaultVisible: false },
     { key: "specialty_ar", label: "التخصص" },
     { key: "supervisor_ar", label: "المشرف" },
+    { key: "co_supervisor_ar", label: "المشرف المساعد", defaultVisible: false },
+    { key: "thesis_title_ar", label: "عنوان الأطروحة", defaultVisible: false },
+    { key: "research_lab_ar", label: "مخبر البحث", defaultVisible: false },
     { key: "first_registration_year", label: "سنة أول تسجيل" },
     { key: "registration_count", label: "عدد التسجيلات" },
     { key: "registration_status", label: "حالة التسجيل" },
+    { key: "employment_status", label: "الحالة الوظيفية", defaultVisible: false },
+    { key: "professional_email", label: "البريد الإلكتروني", defaultVisible: false },
+    { key: "phone_number", label: "رقم الهاتف", defaultVisible: false },
     { key: "status", label: "الحالة" },
     { key: "actions", label: "الإجراءات", alwaysVisible: true },
   ], []);
@@ -351,12 +363,24 @@ export default function PhdStudents() {
                       <TableRow className="bg-muted/50">
                         {isVisible("registration_number") && <TableHead className="text-right font-semibold">رقم التسجيل</TableHead>}
                         {isVisible("full_name_ar") && <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>}
+                        {isVisible("full_name_fr") && <TableHead className="text-right font-semibold">الاسم بالفرنسية</TableHead>}
+                        {isVisible("gender") && <TableHead className="text-right font-semibold">الجنس</TableHead>}
+                        {isVisible("date_of_birth") && <TableHead className="text-right font-semibold">تاريخ الميلاد</TableHead>}
+                        {isVisible("birthplace_ar") && <TableHead className="text-right font-semibold">مكان الميلاد</TableHead>}
                         {isVisible("faculty_ar") && <TableHead className="text-right font-semibold">الكلية</TableHead>}
+                        {isVisible("field_ar") && <TableHead className="text-right font-semibold">الميدان</TableHead>}
+                        {isVisible("branch_ar") && <TableHead className="text-right font-semibold">الشعبة</TableHead>}
                         {isVisible("specialty_ar") && <TableHead className="text-right font-semibold">التخصص</TableHead>}
                         {isVisible("supervisor_ar") && <TableHead className="text-right font-semibold">المشرف</TableHead>}
+                        {isVisible("co_supervisor_ar") && <TableHead className="text-right font-semibold">المشرف المساعد</TableHead>}
+                        {isVisible("thesis_title_ar") && <TableHead className="text-right font-semibold">عنوان الأطروحة</TableHead>}
+                        {isVisible("research_lab_ar") && <TableHead className="text-right font-semibold">مخبر البحث</TableHead>}
                         {isVisible("first_registration_year") && <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>}
                         {isVisible("registration_count") && <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>}
                         {isVisible("registration_status") && <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>}
+                        {isVisible("employment_status") && <TableHead className="text-right font-semibold">الحالة الوظيفية</TableHead>}
+                        {isVisible("professional_email") && <TableHead className="text-right font-semibold">البريد الإلكتروني</TableHead>}
+                        {isVisible("phone_number") && <TableHead className="text-right font-semibold">رقم الهاتف</TableHead>}
                         {isVisible("status") && <TableHead className="text-right font-semibold">الحالة</TableHead>}
                         <TableHead className="text-right font-semibold">الإجراءات</TableHead>
                       </TableRow>
@@ -377,9 +401,18 @@ export default function PhdStudents() {
                           >
                             {isVisible("registration_number") && <TableCell className="font-mono text-sm">{student.registration_number}</TableCell>}
                             {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
+                            {isVisible("full_name_fr") && <TableCell className="text-muted-foreground" dir="ltr">{student.full_name_fr || "-"}</TableCell>}
+                            {isVisible("gender") && <TableCell>{student.gender === "male" ? "ذكر" : student.gender === "female" ? "أنثى" : student.gender || "-"}</TableCell>}
+                            {isVisible("date_of_birth") && <TableCell>{student.date_of_birth ? (() => { const d = new Date(student.date_of_birth); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; })() : "-"}</TableCell>}
+                            {isVisible("birthplace_ar") && <TableCell>{student.birthplace_ar || "-"}</TableCell>}
                             {isVisible("faculty_ar") && <TableCell>{student.faculty_ar || "-"}</TableCell>}
+                            {isVisible("field_ar") && <TableCell>{(student as any).field_ar || "-"}</TableCell>}
+                            {isVisible("branch_ar") && <TableCell>{student.branch_ar || "-"}</TableCell>}
                             {isVisible("specialty_ar") && <TableCell>{student.specialty_ar}</TableCell>}
                             {isVisible("supervisor_ar") && <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>}
+                            {isVisible("co_supervisor_ar") && <TableCell className="text-muted-foreground">{student.co_supervisor_ar || "-"}</TableCell>}
+                            {isVisible("thesis_title_ar") && <TableCell className="max-w-[200px] truncate" title={student.thesis_title_ar || ""}>{student.thesis_title_ar || "-"}</TableCell>}
+                            {isVisible("research_lab_ar") && <TableCell>{student.research_lab_ar || "-"}</TableCell>}
                             {isVisible("first_registration_year") && <TableCell>{student.first_registration_year || "-"}</TableCell>}
                             {isVisible("registration_count") && <TableCell>
                               {(() => {
@@ -400,6 +433,9 @@ export default function PhdStudents() {
                                 );
                               })()}
                             </TableCell>}
+                            {isVisible("employment_status") && <TableCell>{student.employment_status || "-"}</TableCell>}
+                            {isVisible("professional_email") && <TableCell dir="ltr" className="text-muted-foreground">{student.professional_email || "-"}</TableCell>}
+                            {isVisible("phone_number") && <TableCell dir="ltr">{student.phone_number || "-"}</TableCell>}
                             {isVisible("status") && <TableCell>
                               <Badge 
                                 variant="outline" 
