@@ -148,6 +148,7 @@ export default function Reports() {
     return filteredDefended
       .map(s => ({
         name: s.full_name_ar,
+        faculty: (s as any).faculty_ar || '-',
         type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم',
         supervisor: (s as any).supervisor_ar || '',
         status: getRegistrationStatus((s as any).registration_count, s._type),
