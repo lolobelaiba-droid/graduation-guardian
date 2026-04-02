@@ -62,6 +62,43 @@ import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 15;
 
+function getDurationSinceCouncil(councilDate: string | null, stageStatus: string) {
+  if (!councilDate || stageStatus === 'defended') return null;
+  const council = new Date(councilDate);
+  if (isNaN(council.getTime())) return null;
+  const now = new Date();
+  const diffMs = now.getTime() - council.getTime();
+  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (totalDays < 0) return { text: '-', color: 'text-foreground', totalDays: 0 };
+
+  const months = Math.floor(totalDays / 30);
+  const days = totalDays % 30;
+
+  let text: string;
+  if (months === 0) {
+    text = `${totalDays} يوم`;
+  } else if (months === 1) {
+    text = days > 0 ? `شهر و ${days} يوم` : 'شهر';
+  } else if (months === 2) {
+    text = days > 0 ? `شهرين و ${days} يوم` : 'شهرين';
+  } else if (months >= 3 && months <= 10) {
+    text = days > 0 ? `${months} أشهر و ${days} يوم` : `${months} أشهر`;
+  } else {
+    text = days > 0 ? `${months} شهر و ${days} يوم` : `${months} شهر`;
+  }
+
+  let color: string;
+  if (totalDays <= 30) {
+    color = 'text-foreground';
+  } else if (totalDays <= 60) {
+    color = 'text-orange-500';
+  } else {
+    color = 'text-destructive';
+  }
+
+  return { text, color, totalDays };
+}
+
 export default function DefenseStage() {
   const { canDelete } = usePermissions();
   const [activeTab, setActiveTab] = useState("phd_lmd");
