@@ -360,6 +360,14 @@ export default function Students() {
                   className="pr-10"
                 />
               </div>
+              <ColumnVisibilityDialog
+                columns={studentsColumns}
+                visibleColumns={visibleColumns}
+                onToggle={toggleColumn}
+                onSelectAll={setAllVisible}
+                onReset={resetToDefaults}
+                visibleCount={visibleCount}
+              />
               <Button
                 variant={showFilters ? "default" : "outline"}
                 size="sm"
