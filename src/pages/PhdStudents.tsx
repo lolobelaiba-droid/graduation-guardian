@@ -58,6 +58,7 @@ import { AddPhdStudentDialog } from "@/components/phd-students/AddPhdStudentDial
 import { ViewPhdStudentDialog } from "@/components/phd-students/ViewPhdStudentDialog";
 import { EditPhdStudentDialog } from "@/components/phd-students/EditPhdStudentDialog";
 import { ImportPhdExcelDialog } from "@/components/phd-students/import";
+import { StartDefenseProcedureDialog } from "@/components/defense-stage/StartDefenseProcedureDialog";
 import { getPhdStudentFields } from "@/components/phd-students/import/types";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { toast } from "sonner";
