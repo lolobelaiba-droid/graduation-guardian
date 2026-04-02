@@ -548,20 +548,45 @@ export default function DefenseStage() {
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
-              هل أنت متأكد من حذف الطالب <strong>{deleteTarget?.name}</strong> من طور المناقشة؟
-              <br />
-              <span className="text-destructive">هذا الإجراء لا يمكن التراجع عنه.</span>
+            <AlertDialogTitle>حذف من طور المناقشة</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  ماذا تريد أن تفعل بالطالب <strong className="text-foreground">{deleteTarget?.student.full_name_ar}</strong>؟
+                </p>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2 h-auto py-3"
+                    onClick={handleRestoreToPhd}
+                    disabled={restoreToPhd.isPending}
+                  >
+                    <Undo2 className="h-4 w-4 text-primary shrink-0" />
+                    <div className="text-right">
+                      <div className="font-medium">إرجاع إلى قاعدة بيانات طلبة الدكتوراه</div>
+                      <div className="text-xs text-muted-foreground">سيتم نقل الطالب مع الحفاظ على بياناته</div>
+                    </div>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2 h-auto py-3 border-destructive/30 hover:bg-destructive/5"
+                    onClick={handleDelete}
+                    disabled={deleteLmd.isPending || deleteScience.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive shrink-0" />
+                    <div className="text-right">
+                      <div className="font-medium text-destructive">حذف نهائياً</div>
+                      <div className="text-xs text-muted-foreground">سيتم حذف الطالب بشكل دائم ولا يمكن التراجع</div>
+                    </div>
+                  </Button>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              حذف نهائياً
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
