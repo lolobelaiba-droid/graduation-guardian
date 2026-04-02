@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { usePhdLmdStudents, usePhdScienceStudents } from "@/hooks/usePhdStudents";
 import { usePhdLmdCertificates, usePhdScienceCertificates } from "@/hooks/useCertificates";
+import { useDefenseStageLmd, useDefenseStageScience } from "@/hooks/useDefenseStage";
+import { stageStatusLabels } from "@/types/defense-stage";
+import type { DefenseStageStatus } from "@/types/defense-stage";
 import { useProfessors } from "@/hooks/useProfessors";
 import { toWesternNumerals } from "@/lib/numerals";
 import { calculateKpi, calcProcessingTime, getRegistrationStatus } from "@/lib/kpi-calculator";
