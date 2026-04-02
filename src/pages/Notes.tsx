@@ -68,6 +68,7 @@ export default function Notes() {
   };
 
   const handleUpdateNote = (id: string) => {
+    if (!guardWrite("تعديل ملاحظة")) return;
     updateNote.mutate({ id, ...editData }, {
       onSuccess: () => {
         setEditingId(null);
