@@ -10,6 +10,8 @@ import {
 interface AutocompleteInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   suggestions: string[];
   onValueChange?: (value: string) => void;
+  /** Called only when user explicitly selects a suggestion from the dropdown */
+  onSuggestionSelect?: (value: string) => void;
   emptyMessage?: string;
 }
 
