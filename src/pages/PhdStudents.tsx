@@ -349,21 +349,22 @@ export default function PhdStudents() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="text-right font-semibold">رقم التسجيل</TableHead>
-                        <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>
-                        <TableHead className="text-right font-semibold">التخصص</TableHead>
-                        <TableHead className="text-right font-semibold">المشرف</TableHead>
-                        <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>
-                        <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>
-                        <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>
-                        <TableHead className="text-right font-semibold">الحالة</TableHead>
+                        {isVisible("registration_number") && <TableHead className="text-right font-semibold">رقم التسجيل</TableHead>}
+                        {isVisible("full_name_ar") && <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>}
+                        {isVisible("faculty_ar") && <TableHead className="text-right font-semibold">الكلية</TableHead>}
+                        {isVisible("specialty_ar") && <TableHead className="text-right font-semibold">التخصص</TableHead>}
+                        {isVisible("supervisor_ar") && <TableHead className="text-right font-semibold">المشرف</TableHead>}
+                        {isVisible("first_registration_year") && <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>}
+                        {isVisible("registration_count") && <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>}
+                        {isVisible("registration_status") && <TableHead className="text-right font-semibold">حالة التسجيل</TableHead>}
+                        {isVisible("status") && <TableHead className="text-right font-semibold">الحالة</TableHead>}
                         <TableHead className="text-right font-semibold">الإجراءات</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStudents.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                          <TableCell colSpan={visibleCount} className="h-32 text-center text-muted-foreground">
                             لا يوجد طلاب مسجلين
                           </TableCell>
                         </TableRow>
@@ -374,19 +375,20 @@ export default function PhdStudents() {
                             className="hover:bg-muted/30 transition-colors animate-fade-in"
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
-                            <TableCell className="font-mono text-sm">{student.registration_number}</TableCell>
-                            <TableCell className="font-medium">{student.full_name_ar}</TableCell>
-                            <TableCell>{student.specialty_ar}</TableCell>
-                            <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
-                            <TableCell>{student.first_registration_year || "-"}</TableCell>
-                            <TableCell>
+                            {isVisible("registration_number") && <TableCell className="font-mono text-sm">{student.registration_number}</TableCell>}
+                            {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
+                            {isVisible("faculty_ar") && <TableCell>{student.faculty_ar || "-"}</TableCell>}
+                            {isVisible("specialty_ar") && <TableCell>{student.specialty_ar}</TableCell>}
+                            {isVisible("supervisor_ar") && <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>}
+                            {isVisible("first_registration_year") && <TableCell>{student.first_registration_year || "-"}</TableCell>}
+                            {isVisible("registration_count") && <TableCell>
                               {(() => {
                                 if (!student.first_registration_year || !currentAcademicYear) return "-";
                                 const details = calculateRegistrationDetails(currentAcademicYear, student.first_registration_year, selectedType);
                                 return details.registrationCount ?? "-";
                               })()}
-                            </TableCell>
-                            <TableCell>
+                            </TableCell>}
+                            {isVisible("registration_status") && <TableCell>
                               {(() => {
                                 if (!student.first_registration_year || !currentAcademicYear) return "-";
                                 const details = calculateRegistrationDetails(currentAcademicYear, student.first_registration_year, selectedType);
@@ -397,15 +399,15 @@ export default function PhdStudents() {
                                   </Badge>
                                 );
                               })()}
-                            </TableCell>
-                            <TableCell>
+                            </TableCell>}
+                            {isVisible("status") && <TableCell>
                               <Badge 
                                 variant="outline" 
                                 className={studentStatusLabels[student.status]?.color || ""}
                               >
                                 {studentStatusLabels[student.status]?.ar || student.status}
                               </Badge>
-                            </TableCell>
+                            </TableCell>}
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <Button
