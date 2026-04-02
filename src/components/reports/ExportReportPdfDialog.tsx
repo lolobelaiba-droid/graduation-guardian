@@ -499,6 +499,14 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         },
         // Row 2
         {
+          title: "طور المناقشة",
+          items: [
+            { label: "الإجمالي", value: toWesternNumerals(data.defenseStageCount) },
+            { label: "ل.م.د", value: toWesternNumerals(data.defenseStageLmd) },
+            { label: "علوم", value: toWesternNumerals(data.defenseStageScience) },
+          ],
+        },
+        {
           title: "عدد المناقشين",
           items: [
             { label: "الإجمالي", value: toWesternNumerals(data.defendedCount) },
@@ -514,6 +522,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
             { label: "علوم", value: toWesternNumerals(data.avgDefScience.toFixed(1)) },
           ],
         },
+        // Row 3
         {
           title: "عدد المتأخرين (المناقشين)",
           items: [
