@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useColumnVisibility, type ColumnDef } from "@/hooks/useColumnVisibility";
 import { ColumnVisibilityDialog } from "@/components/ui/column-visibility-dialog";
@@ -105,6 +106,7 @@ function getDurationSinceCouncil(councilDate: string | null, stageStatus: string
 
 export default function DefenseStage() {
   const { canDelete } = usePermissions();
+  const { guardWrite } = useNetworkReadOnly();
   const defenseColumns: ColumnDef[] = useMemo(() => [
     { key: "full_name_ar", label: "الاسم بالعربية" },
     { key: "full_name_fr", label: "الاسم بالفرنسية" },
@@ -162,6 +164,7 @@ export default function DefenseStage() {
   );
 
   const handleDelete = async () => {
+    if (!guardWrite("حذف سجل المناقشة")) return;
     if (!deleteTarget) return;
     try {
       if (deleteTarget.type === "phd_lmd") {
@@ -176,6 +179,7 @@ export default function DefenseStage() {
   };
 
   const handleRestoreToPhd = async () => {
+    if (!guardWrite("استعادة الطالب")) return;
     if (!deleteTarget) return;
     try {
       await restoreToPhd.mutateAsync({
@@ -189,6 +193,7 @@ export default function DefenseStage() {
   };
 
   const handleUpdateStatus = async (student: DefenseStageStudent, newStatus: DefenseStageStatus) => {
+    if (!guardWrite("تغيير حالة المناقشة")) return;
     const mutation = activeTab === "phd_lmd" ? updateLmd : updateScience;
     await mutation.mutateAsync({ id: student.id, stage_status: newStatus });
   };

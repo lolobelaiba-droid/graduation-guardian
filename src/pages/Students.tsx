@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import * as XLSX from "xlsx";
 import { useColumnVisibility, type ColumnDef } from "@/hooks/useColumnVisibility";
@@ -62,6 +63,7 @@ import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 export default function Students() {
   const { canDelete } = usePermissions();
+  const { guardWrite } = useNetworkReadOnly();
   const studentsColumns: ColumnDef[] = useMemo(() => [
     { key: "student_number", label: "الرقم" },
     { key: "full_name_ar", label: "الاسم بالعربية" },
@@ -193,6 +195,7 @@ export default function Students() {
   };
 
   const handleDeletePermanently = () => {
+    if (!guardWrite("حذف شهادة")) return;
     if (studentToDelete) {
       switch (deleteType) {
         case "phd_lmd":

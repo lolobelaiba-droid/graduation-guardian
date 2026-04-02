@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { stripHtml } from "@/lib/utils";
 import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
@@ -165,6 +166,7 @@ export function CreateCertificateFromPhdDialog({
   const deleteStageLmd = useDeleteDefenseStageLmd();
   const deleteStageScience = useDeleteDefenseStageScience();
   
+  const { guardWrite } = useNetworkReadOnly();
   const { data: stageLmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
   const { data: stageScienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
   
@@ -351,6 +353,7 @@ export function CreateCertificateFromPhdDialog({
   const isLoading = createPhdLmd.isPending || createPhdScience.isPending;
 
   const onSubmit = async (data: z.infer<typeof certificateSchema>) => {
+    if (!guardWrite("إصدار شهادة")) return;
     try {
       // Save professor names
       if (data.supervisor_ar) ensureProfessor(data.supervisor_ar);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { 
   Plus, 
   Trash2, 
@@ -43,6 +44,7 @@ export default function Notes() {
   const deleteNote = useDeleteNote();
   const togglePin = useTogglePinNote();
   const toggleRead = useToggleReadNote();
+  const { guardWrite } = useNetworkReadOnly();
   const markAllAsRead = useMarkAllNotesAsRead();
 
   const [isAdding, setIsAdding] = useState(false);
@@ -55,6 +57,7 @@ export default function Notes() {
 
 
   const handleAddNote = () => {
+    if (!guardWrite("إضافة ملاحظة")) return;
     if (!newNote.content.trim()) return;
     addNote.mutate(newNote, {
       onSuccess: () => {
@@ -65,6 +68,7 @@ export default function Notes() {
   };
 
   const handleUpdateNote = (id: string) => {
+    if (!guardWrite("تعديل ملاحظة")) return;
     updateNote.mutate({ id, ...editData }, {
       onSuccess: () => {
         setEditingId(null);

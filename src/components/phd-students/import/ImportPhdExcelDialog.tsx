@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import * as XLSX from "xlsx";
 import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2, Download } from "lucide-react";
 import {
@@ -48,6 +49,7 @@ export function ImportPhdExcelDialog({
   studentType,
 }: ImportPhdExcelDialogProps) {
   const [step, setStep] = useState<ImportStep>("upload");
+  const { guardWrite } = useNetworkReadOnly();
   const [uploadError, setUploadError] = useState<string>("");
   const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const [excelColumns, setExcelColumns] = useState<string[]>([]);
@@ -278,6 +280,7 @@ export function ImportPhdExcelDialog({
   const transformedData = excelData.map(transformRow);
 
   const handleImport = async () => {
+    if (!guardWrite("استيراد بيانات الطلبة")) return;
     setStep("importing");
     const tableName = getPhdStudentTable(studentType);
     let successCount = 0;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +86,7 @@ interface QuickEditDialogProps {
 }
 
 export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSaved }: QuickEditDialogProps) {
+  const { guardWrite } = useNetworkReadOnly();
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [originalData, setOriginalData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
@@ -138,6 +140,7 @@ export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSav
 
   const handleSave = async () => {
     if (!recordId || !sourceTable || !hasChanges) return;
+    if (!guardWrite("تعديل السجل")) return;
 
     // Build update payload with only changed fields
     const updatePayload: Record<string, unknown> = {};

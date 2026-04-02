@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -216,6 +217,7 @@ export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStu
   const deletePhdLmd = useDeletePhdLmdStudent();
   const deletePhdScience = useDeletePhdScienceStudent();
 
+  const { guardWrite } = useNetworkReadOnly();
   const { data: phdLmdStudents = [], isLoading: loadingLmd } = usePhdLmdStudents();
   const { data: phdScienceStudents = [], isLoading: loadingScience } = usePhdScienceStudents();
   const isLoadingStudents = loadingLmd || loadingScience;
@@ -297,6 +299,7 @@ export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStu
   const isLoading = createStageLmd.isPending || createStageScience.isPending;
 
   const onSubmit = async (data: z.infer<typeof defenseStageSchema>) => {
+    if (!guardWrite("بدء إجراء المناقشة")) return;
     if (!selectedStudent) return;
     try {
       // Save professor names

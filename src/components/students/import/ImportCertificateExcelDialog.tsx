@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import * as XLSX from "xlsx";
 import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2, Download } from "lucide-react";
 import {
@@ -31,6 +32,7 @@ interface ImportCertificateExcelDialogProps {
 
 export function ImportCertificateExcelDialog({ open, onOpenChange, certificateType }: ImportCertificateExcelDialogProps) {
   const [step, setStep] = useState<ImportStep>("upload");
+  const { guardWrite } = useNetworkReadOnly();
   const [uploadError, setUploadError] = useState("");
   const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const [excelColumns, setExcelColumns] = useState<string[]>([]);
@@ -296,6 +298,7 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
   };
 
   const handleImport = async () => {
+    if (!guardWrite("استيراد الشهادات")) return;
     setStep("importing");
     const tableName = getCertificateTable(certificateType);
     let successCount = 0, failedCount = 0;
