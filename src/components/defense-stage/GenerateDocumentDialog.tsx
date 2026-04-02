@@ -348,47 +348,120 @@ export function GenerateDocumentDialog({
     }
   }, [template]);
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = useCallback(() => {
     if (!printRef.current) return;
-    
-    try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      const studentName = student?.full_name_ar || "وثيقة";
-      const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
-      const fileName = `${docTitlePdf}_${studentName}.pdf`;
 
-      // Wait for fonts to load
-      await document.fonts.ready;
+    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+    const jts: JuryTableSettings = template?.jury_table_settings
+      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+      : { ...DEFAULT_JURY_TABLE_SETTINGS };
 
-      const opt = {
-        margin: [
-          template?.margin_top ?? 20,
-          template?.margin_right ?? 15,
-          template?.margin_bottom ?? 20,
-          template?.margin_left ?? 15,
-        ] as [number, number, number, number],
-        filename: fileName,
-        image: { type: "jpeg" as const, quality: 1.0 },
-        html2canvas: {
-          scale: 4,
-          useCORS: true,
-          letterRendering: true,
-          logging: false,
-        },
-        jsPDF: {
-          unit: "mm" as const,
-          format: "a4" as const,
-          orientation: "portrait" as const,
-        },
-      };
-
-      await html2pdf().set(opt).from(printRef.current).save();
-      toast.success("تم تحميل الوثيقة بنجاح");
-    } catch (err) {
-      console.error("PDF download error:", err);
-      toast.error("فشل في تحميل الوثيقة");
+    // Remove previous print styles if any
+    if (printStyleRef.current) {
+      printStyleRef.current.remove();
+      printStyleRef.current = null;
     }
-  };
+
+    const style = document.createElement('style');
+    style.id = 'defense-doc-print-styles';
+    const mt = template?.margin_top ?? 20;
+    const mb = template?.margin_bottom ?? 20;
+    const mr = template?.margin_right ?? 15;
+    const ml = template?.margin_left ?? 15;
+
+    style.textContent = `
+      @media print {
+        @page {
+          size: A4 portrait;
+          margin: 0;
+        }
+        body * { visibility: hidden !important; }
+        body, html {
+          margin: 0 !important; padding: 0 !important;
+          overflow: visible !important; background: white !important;
+        }
+        #defense-doc-print-wrapper,
+        #defense-doc-print-wrapper * { visibility: visible !important; }
+        #defense-doc-print-wrapper {
+          display: block !important;
+          position: fixed !important;
+          left: 0 !important; top: 0 !important;
+          width: 210mm !important; min-height: 297mm !important;
+          z-index: 999999 !important; background: white !important;
+          margin: 0 !important;
+          padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
+          font-family: '${fontFamily}', sans-serif !important;
+          font-size: ${template?.font_size || 14}px !important;
+          line-height: ${template?.line_height || 1.8} !important;
+          direction: rtl !important; color: #000 !important;
+          box-sizing: border-box !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #defense-doc-print-wrapper p,
+        #defense-doc-print-wrapper div,
+        #defense-doc-print-wrapper span,
+        #defense-doc-print-wrapper blockquote { margin: 0; padding: 0; }
+        #defense-doc-print-wrapper table { border-collapse: collapse !important; width: 100% !important; }
+        #defense-doc-print-wrapper td,
+        #defense-doc-print-wrapper th {
+          border: 1px solid ${jts.border_color} !important;
+          padding: ${jts.padding}px !important;
+          text-align: center !important;
+          font-size: ${jts.font_size}px !important;
+          line-height: ${jts.line_height} !important;
+        }
+        #defense-doc-print-wrapper th { background: ${jts.header_bg} !important; font-weight: bold !important; }
+        #defense-doc-print-wrapper .variable-tag { background: transparent !important; color: inherit !important; padding: 0 !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    printStyleRef.current = style;
+
+    const originalTitle = document.title;
+    document.title = ' ';
+
+    const cleanup = () => {
+      document.title = originalTitle;
+      if (printStyleRef.current) {
+        printStyleRef.current.remove();
+        printStyleRef.current = null;
+      }
+    };
+
+    const studentName = student?.full_name_ar || "وثيقة";
+    const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
+    const fileName = `${docTitlePdf}_${studentName}.pdf`;
+
+    const isElectronEnv = !!(window as unknown as { electronAPI?: { printToPdf?: unknown } }).electronAPI?.printToPdf;
+
+    if (isElectronEnv) {
+      const electronAPI = (window as unknown as { electronAPI: { printToPdf: (opts: unknown) => Promise<{ success: boolean; error?: string; filePath?: string }> } }).electronAPI;
+      electronAPI.printToPdf({
+        pageSize: { width: 210 * 1000, height: 297 * 1000 },
+        landscape: false,
+        defaultFileName: fileName,
+      }).then((result) => {
+        cleanup();
+        if (result.success) {
+          toast.success("تم حفظ الوثيقة بنجاح");
+        } else if (result.error !== 'cancelled') {
+          toast.error(result.error || "فشل في حفظ الوثيقة");
+        }
+      }).catch(() => {
+        cleanup();
+        toast.error("فشل في حفظ الوثيقة");
+      });
+    } else {
+      // Web: use window.print() — user can choose "Save as PDF" from browser dialog
+      const afterPrint = () => {
+        cleanup();
+        window.removeEventListener('afterprint', afterPrint);
+      };
+      window.addEventListener('afterprint', afterPrint);
+      window.print();
+    }
+  }, [template, student, documentType]);
 
   const buildJuryTableHtml = (members: JuryMember[], withSignature = false): string => {
     const jts: JuryTableSettings = template?.jury_table_settings
