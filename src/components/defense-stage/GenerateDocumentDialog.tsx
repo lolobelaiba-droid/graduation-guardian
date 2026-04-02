@@ -335,18 +335,40 @@ export function GenerateDocumentDialog({
     const isElectronEnv = !!(window as unknown as { electronAPI?: { printNative?: unknown } }).electronAPI?.printNative;
 
     if (isElectronEnv) {
-      const electronAPI = (window as unknown as { electronAPI: { printNative: (opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
-      electronAPI.printNative({
-        pageSize: { width: 210 * 1000, height: 297 * 1000 },
-        landscape: false,
-      }).then((result) => {
-        cleanup();
-        if (!result.success) {
-          toast.error(result.error || "فشلت الطباعة");
+      // Make the wrapper visible on-screen so Electron print captures vector content
+      const wrapper = document.getElementById('defense-doc-print-wrapper');
+      const restoreWrapper = () => {
+        if (wrapper) {
+          wrapper.style.left = '-9999px';
+          wrapper.style.visibility = 'hidden';
+          wrapper.style.zIndex = '';
         }
-      }).catch(() => {
-        cleanup();
-        toast.error("فشلت الطباعة");
+      };
+      if (wrapper) {
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.visibility = 'visible';
+        wrapper.style.position = 'fixed';
+        wrapper.style.zIndex = '999999';
+        wrapper.style.background = 'white';
+      }
+
+      requestAnimationFrame(() => {
+        const electronAPI = (window as unknown as { electronAPI: { printNative: (opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
+        electronAPI.printNative({
+          pageSize: { width: 210 * 1000, height: 297 * 1000 },
+          landscape: false,
+        }).then((result) => {
+          restoreWrapper();
+          cleanup();
+          if (!result.success) {
+            toast.error(result.error || "فشلت الطباعة");
+          }
+        }).catch(() => {
+          restoreWrapper();
+          cleanup();
+          toast.error("فشلت الطباعة");
+        });
       });
     } else {
       const afterPrint = () => {
