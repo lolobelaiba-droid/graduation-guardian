@@ -63,6 +63,7 @@ import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 export default function Students() {
   const { canDelete } = usePermissions();
+  const { guardWrite } = useNetworkReadOnly();
   const studentsColumns: ColumnDef[] = useMemo(() => [
     { key: "student_number", label: "الرقم" },
     { key: "full_name_ar", label: "الاسم بالعربية" },

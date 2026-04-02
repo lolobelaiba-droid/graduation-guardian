@@ -106,6 +106,7 @@ function getDurationSinceCouncil(councilDate: string | null, stageStatus: string
 
 export default function DefenseStage() {
   const { canDelete } = usePermissions();
+  const { guardWrite } = useNetworkReadOnly();
   const defenseColumns: ColumnDef[] = useMemo(() => [
     { key: "full_name_ar", label: "الاسم بالعربية" },
     { key: "full_name_fr", label: "الاسم بالفرنسية" },

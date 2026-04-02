@@ -82,6 +82,7 @@ const academicYears = generateAcademicYears();
 
 export default function PhdStudents() {
   const { canDelete } = usePermissions();
+  const { guardWrite } = useNetworkReadOnly();
   const phdColumns: ColumnDef[] = useMemo(() => [
     { key: "registration_number", label: "رقم التسجيل" },
     { key: "full_name_ar", label: "الاسم بالعربية" },
