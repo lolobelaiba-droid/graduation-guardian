@@ -105,6 +105,23 @@ function getDurationSinceCouncil(councilDate: string | null, stageStatus: string
 
 export default function DefenseStage() {
   const { canDelete } = usePermissions();
+  const defenseColumns: ColumnDef[] = useMemo(() => [
+    { key: "full_name_ar", label: "الاسم بالعربية" },
+    { key: "full_name_fr", label: "الاسم بالفرنسية" },
+    { key: "specialty_ar", label: "التخصص" },
+    { key: "faculty_ar", label: "الكلية" },
+    { key: "supervisor_ar", label: "المشرف" },
+    { key: "first_registration_year", label: "سنة أول تسجيل" },
+    { key: "registration_count", label: "عدد التسجيلات" },
+    { key: "registration_status", label: "حالة التسجيل" },
+    { key: "scientific_council_date", label: "تاريخ المجلس العلمي" },
+    { key: "duration", label: "المدة منذ المصادقة" },
+    { key: "stage_status", label: "الحالة" },
+    { key: "actions", label: "إجراءات", alwaysVisible: true },
+  ], []);
+
+  const { visibleColumns, isVisible, toggleColumn, setAllVisible, resetToDefaults, visibleCount } = useColumnVisibility("defense-stage-columns", defenseColumns);
+
   const [activeTab, setActiveTab] = useState("phd_lmd");
   const [searchQuery, setSearchQuery] = useState("");
   const [showStartDialog, setShowStartDialog] = useState(false);

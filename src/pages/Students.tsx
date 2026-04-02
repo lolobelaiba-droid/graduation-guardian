@@ -62,6 +62,21 @@ import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 export default function Students() {
   const { canDelete } = usePermissions();
+  const studentsColumns: ColumnDef[] = useMemo(() => [
+    { key: "student_number", label: "الرقم" },
+    { key: "full_name_ar", label: "الاسم بالعربية" },
+    { key: "full_name_fr", label: "الاسم بالفرنسية" },
+    { key: "specialty_ar", label: "التخصص" },
+    { key: "first_registration_year", label: "سنة أول تسجيل" },
+    { key: "registration_count", label: "عدد التسجيلات" },
+    { key: "registration_status", label: "حالة التسجيل" },
+    { key: "mention", label: "التقدير" },
+    { key: "defense_date", label: "تاريخ المناقشة" },
+    { key: "actions", label: "الإجراءات", alwaysVisible: true },
+  ], []);
+
+  const { visibleColumns, isVisible, toggleColumn, setAllVisible, resetToDefaults, visibleCount } = useColumnVisibility("students-columns", studentsColumns);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCertType, setSelectedCertType] = useState<CertificateType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
