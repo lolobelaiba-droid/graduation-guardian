@@ -285,6 +285,7 @@ export default function Reports() {
   const buildExportData = (faculty?: string): ReportExportData => {
     const reg = faculty ? allRegistered.filter(s => s.faculty_ar === faculty) : allRegistered;
     const def = faculty ? allDefended.filter(s => s.faculty_ar === faculty) : allDefended;
+    const ds = faculty ? allDefenseStage.filter(s => s.faculty_ar === faculty) : allDefenseStage;
     const calcAvg = (students: any[]) => {
       const valid = students.filter(s => s.registration_count).map(s => s.registration_count as number);
       return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
@@ -356,7 +357,7 @@ export default function Reports() {
       diversityPercent: Math.round(divDiversity * 10) / 10,
       recurringPatterns: Object.values(divJuryMap).filter(p => p.students.length > 1).sort((a, b) => b.students.length - a.students.length).map(p => ({ juryNames: p.juryNames, students: p.students })),
     };
-    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP, insights: insightsData, juryDiversity: juryDiversityData };
+    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, defenseStageStudents: ds, defenseStageCount: ds.length, defenseStageLmd: ds.filter(s => s._type === 'phd_lmd').length, defenseStageScience: ds.filter(s => s._type === 'phd_science').length, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP, insights: insightsData, juryDiversity: juryDiversityData };
   };
 
   return (

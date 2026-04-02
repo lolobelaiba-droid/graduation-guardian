@@ -56,6 +56,10 @@ export interface ReportExportData {
   avgDefScience: number;
   registeredStudents: any[];
   defendedStudents: any[];
+  defenseStageStudents: any[];
+  defenseStageCount: number;
+  defenseStageLmd: number;
+  defenseStageScience: number;
   adminActions: {
     name: string; type: string; supervisor: string; status: string;
     councilDate: string; defenseDate: string;
@@ -78,20 +82,21 @@ export interface ReportExportData {
   juryDiversity?: JuryDiversityData;
 }
 
-type SectionKey = "kpi" | "insights" | "registered" | "defended" | "jury" | "juryDiversity" | "admin" | "english" | "labs" | "assistants";
+type SectionKey = "kpi" | "insights" | "registered" | "defenseStage" | "defended" | "jury" | "juryDiversity" | "admin" | "english" | "labs" | "assistants";
 type ExportMode = "general" | "faculty" | "full";
 
 const sectionLabels: Record<SectionKey, string> = {
   kpi: "مؤشر الأداء العام ولوحة المؤشرات",
   insights: "التشخيص وتحليل النتائج",
   registered: "أولا: الطلبة المسجلين",
-  defended: "ثانيا: الطلبة المناقشين",
+  defenseStage: "ثانيا: الطلبة في طور المناقشة",
+  defended: "ثالثا: الطلبة المناقشين",
   jury: "إحصائيات العضوية",
   juryDiversity: "تحليل تنوع لجان المناقشة",
-  admin: "ثالثا: الإجراءات الإدارية",
-  english: "رابعا: المناقشات باللغة الإنجليزية",
-  labs: "خامسا: عدد المناقشات حسب مخابر البحث",
-  assistants: "سادسا: الأساتذة المساعدين المناقشين",
+  admin: "رابعا: الإجراءات الإدارية",
+  english: "خامسا: المناقشات باللغة الإنجليزية",
+  labs: "سادسا: عدد المناقشات حسب مخابر البحث",
+  assistants: "سابعا: الأساتذة المساعدين المناقشين",
 };
 
 interface Props {
@@ -494,6 +499,14 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
         },
         // Row 2
         {
+          title: "طور المناقشة",
+          items: [
+            { label: "الإجمالي", value: toWesternNumerals(data.defenseStageCount) },
+            { label: "ل.م.د", value: toWesternNumerals(data.defenseStageLmd) },
+            { label: "علوم", value: toWesternNumerals(data.defenseStageScience) },
+          ],
+        },
+        {
           title: "عدد المناقشين",
           items: [
             { label: "الإجمالي", value: toWesternNumerals(data.defendedCount) },
@@ -509,6 +522,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
             { label: "علوم", value: toWesternNumerals(data.avgDefScience.toFixed(1)) },
           ],
         },
+        // Row 3
         {
           title: "عدد المتأخرين (المناقشين)",
           items: [
@@ -779,7 +793,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     }
 
     // ═══════ PAGE 3+: Tables and Statistics ═══════
-    const hasTablesSection = selectedSections.some(s => ["registered", "defended", "jury", "admin", "english", "labs", "assistants"].includes(s));
+    const hasTablesSection = selectedSections.some(s => ["registered", "defenseStage", "defended", "jury", "admin", "english", "labs", "assistants"].includes(s));
     if (hasTablesSection) {
       doc.addPage();
       y = 15;
@@ -790,29 +804,65 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       checkPage(15);
       sectionTitle("أولا: إحصائيات عامة حول الطلبة المسجلين حاليا");
       const tableW = PW - M * 2;
-      const cols = [7, 35, 28, 28, 22, 22, 20].map(p => (p / 162) * tableW);
+      const cols = [6, 28, 22, 20, 20, 16, 16, 12, 14, 16].map(p => (p / 170) * tableW);
       const rows = data.registeredStudents.map((s: any, i: number) => [
-        toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
+        toWesternNumerals(i + 1), s.full_name_ar || "", s.faculty_ar || "-", s.branch_ar || "",
         s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
         s.first_registration_year ? toWesternNumerals(s.first_registration_year) : "-",
+        s.registration_count ? toWesternNumerals(s.registration_count) : "-",
+        getThesisLangLabel(s.thesis_language),
         getStatusLabel(s.registration_count, s._type),
       ]);
-      drawTable(["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "سنة أول تسجيل", "حالة التسجيل"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الكلية", "الشعبة", "التخصص", "نوع الدكتوراه", "سنة أول تسجيل", "ع.التسجيلات", "لغة الأطروحة", "حالة التسجيل"], rows, cols);
+    }
+
+    // ───── Defense Stage Students ─────
+    if (selectedSections.includes("defenseStage")) {
+      checkPage(15);
+      sectionTitle("ثانيا: إحصائيات الطلبة في طور المناقشة");
+      const tableW = PW - M * 2;
+      const cols = [6, 28, 22, 20, 20, 16, 14, 16, 22, 22].map(p => (p / 186) * tableW);
+      const stageStatusMap: Record<string, string> = { pending: "في الانتظار", under_review: "قيد الخبرة", authorized: "مرخص", defended: "انتهت المناقشة" };
+      const rows = data.defenseStageStudents.map((s: any, i: number) => {
+        const councilDate = s.scientific_council_date;
+        let durationText = "-";
+        if (councilDate) {
+          const council = new Date(councilDate);
+          const now = new Date();
+          if (!isNaN(council.getTime())) {
+            const diffMs = now.getTime() - council.getTime();
+            const totalDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+            const months = Math.floor(totalDays / 30);
+            const days = totalDays % 30;
+            durationText = `${toWesternNumerals(months)} شهر ${toWesternNumerals(days)} يوم`;
+          }
+        }
+        return [
+          toWesternNumerals(i + 1), s.full_name_ar || "", s.faculty_ar || "-", s.branch_ar || "",
+          s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
+          getThesisLangLabel(s.thesis_language),
+          stageStatusMap[s.stage_status] || s.stage_status || "-",
+          councilDate ? toWesternNumerals(formatDateDDMMYYYY(councilDate)) : "-",
+          durationText,
+        ];
+      });
+      drawTable(["#", "الاسم واللقب", "الكلية", "الشعبة", "التخصص", "نوع الدكتوراه", "لغة الأطروحة", "الحالة", "تاريخ المجلس العلمي", "المدة منذ المصادقة"], rows, cols);
     }
 
     // ───── Defended Students ─────
     if (selectedSections.includes("defended")) {
       checkPage(15);
-      sectionTitle("ثانيا: إحصائيات عامة حول الطلبة المناقشين");
+      sectionTitle("ثالثا: إحصائيات عامة حول الطلبة المناقشين");
       const tableW = PW - M * 2;
-      const cols = [7, 35, 28, 28, 22, 20, 22].map(p => (p / 162) * tableW);
+      const cols = [6, 28, 22, 20, 20, 16, 14, 16, 22].map(p => (p / 164) * tableW);
       const rows = data.defendedStudents.map((s: any, i: number) => [
-        toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
+        toWesternNumerals(i + 1), s.full_name_ar || "", s.faculty_ar || "-", s.branch_ar || "",
         s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
+        getThesisLangLabel(s.thesis_language),
         getStatusLabel(s.registration_count, s._type),
         s.defense_date ? toWesternNumerals(formatDateDDMMYYYY(s.defense_date)) : "-",
       ]);
-      drawTable(["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "حالة التسجيل", "تاريخ المناقشة"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الكلية", "الشعبة", "التخصص", "نوع الدكتوراه", "لغة الأطروحة", "حالة التسجيل", "تاريخ المناقشة"], rows, cols);
     }
 
     // ───── Jury Stats ─────
@@ -981,7 +1031,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
 
     if (selectedSections.includes("admin")) {
       checkPage(15);
-      sectionTitle("ثالثا: الإجراءات الإدارية");
+      sectionTitle("رابعا: الإجراءات الإدارية");
       const tableW = PW - M * 2;
       const cols = [7, 32, 28, 16, 16, 22, 22, 22].map(p => (p / 165) * tableW);
       const rows = data.adminActions.map((s, i) => [
@@ -1013,7 +1063,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     // ───── English Theses ─────
     if (selectedSections.includes("english")) {
       checkPage(15);
-      sectionTitle("رابعا: المناقشات باللغة الإنجليزية");
+      sectionTitle("خامسا: المناقشات باللغة الإنجليزية");
       const tableW = PW - M * 2;
       const cols = [7, 30, 22, 22, 28, 48, 22].map(p => (p / 179) * tableW);
       const rows = data.englishTheses.map((s, i) => [
@@ -1027,7 +1077,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     // ───── Lab Stats ─────
     if (selectedSections.includes("labs")) {
       checkPage(15);
-      sectionTitle("خامسا: عدد المناقشات حسب مخابر البحث");
+      sectionTitle("سادسا: عدد المناقشات حسب مخابر البحث");
       const tableW = PW - M * 2;
       const cols = [10, 120, 30].map(p => (p / 160) * tableW);
       const rows = data.labStats.map((s, i) => [
@@ -1039,7 +1089,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
     // ───── Assistant Professors ─────
     if (selectedSections.includes("assistants")) {
       checkPage(15);
-      sectionTitle("سادسا: الأساتذة المساعدين المناقشين");
+      sectionTitle("سابعا: الأساتذة المساعدين المناقشين");
       const tableW = PW - M * 2;
       const cols = [7, 32, 25, 25, 25, 32, 22].map(p => (p / 168) * tableW);
       const rows = data.assistantProfessors.map((s, i) => [
@@ -1248,4 +1298,12 @@ function getStatusLabel(regCount: number | null | undefined, type: string): stri
   if (!regCount) return "-";
   const legal = type === "phd_science" ? 5 : 3;
   return regCount <= legal ? "منتظم" : "متأخر";
+}
+
+function getThesisLangLabel(lang: string | null | undefined): string {
+  if (!lang) return "-";
+  if (lang === "arabic") return "عربية";
+  if (lang === "french") return "فرنسية";
+  if (lang === "english") return "إنجليزية";
+  return lang;
 }
