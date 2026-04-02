@@ -140,6 +140,7 @@ export function QuickEditDialog({ open, onOpenChange, record, sourceTable, onSav
 
   const handleSave = async () => {
     if (!recordId || !sourceTable || !hasChanges) return;
+    if (!guardWrite("تعديل السجل")) return;
 
     // Build update payload with only changed fields
     const updatePayload: Record<string, unknown> = {};
