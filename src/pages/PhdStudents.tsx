@@ -313,11 +313,28 @@ export default function PhdStudents() {
           <TabsTrigger value="phd_science">{phdStudentTypeLabels.phd_science.ar}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={selectedType} className="mt-6">
-          {/* Filters */}
+          {/* Column visibility button */}
           <div className="bg-card rounded-2xl shadow-card p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="بحث بالاسم أو رقم التسجيل..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+              <ColumnVisibilityDialog
+                columns={phdColumns}
+                visibleColumns={visibleColumns}
+                onToggle={toggleColumn}
+                onSelectAll={setAllVisible}
+                onReset={resetToDefaults}
+                visibleCount={visibleCount}
+              />
+            </div>
+          </div>
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="بحث بالاسم أو رقم التسجيل..."
