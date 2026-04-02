@@ -526,25 +526,24 @@ ${html}
           result = { success: true, filePath: saveResult.filePath };
         }
       } else {
-        // Native print
-        const printSuccess = await new Promise((resolve) => {
-          printWin.webContents.print(
-            {
-              silent: false,
-              printBackground: true,
-              margins: { marginType: 'none' },
-              pageSize: 'A4',
-              landscape: false,
-            },
-            (ok, failureReason) => {
-              if (!ok) console.error('Defense doc print failed:', failureReason);
-              resolve(ok);
-            }
-          );
-        });
-        result = printSuccess
-          ? { success: true }
-          : { success: false, error: 'Print cancelled or failed' };
+        // Generate PDF to temp file then open with system viewer for printing
+        // This avoids Electron's webContents.print() rasterization with virtual printers
+        try {
+          const pdfData = await printWin.webContents.printToPDF({
+            printBackground: true,
+            margins: { marginType: 'none' },
+            pageSize: 'A4',
+            landscape: false,
+          });
+          const tmpPdfPath = path.join(os.tmpdir(), `defense_print_${Date.now()}.pdf`);
+          fs.writeFileSync(tmpPdfPath, pdfData);
+          const { shell } = require('electron');
+          await shell.openPath(tmpPdfPath);
+          result = { success: true };
+        } catch (printErr) {
+          console.error('Defense doc print-to-pdf failed:', printErr);
+          result = { success: false, error: String(printErr?.message || printErr) };
+        }
       }
 
       try { printWin.close(); } catch {}
