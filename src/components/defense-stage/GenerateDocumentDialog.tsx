@@ -234,7 +234,12 @@ export function GenerateDocumentDialog({
           margin: 0;
         }
 
-        /* Hide everything */
+        /* Remove all non-print roots from document flow */
+        body > *:not(#defense-doc-print-wrapper) {
+          display: none !important;
+        }
+
+        /* Hide everything by default */
         body * {
           visibility: hidden !important;
         }
@@ -257,12 +262,12 @@ export function GenerateDocumentDialog({
 
         #defense-doc-print-wrapper {
           display: block !important;
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
+          position: relative !important;
+          left: auto !important;
+          top: auto !important;
           width: 210mm !important;
-          min-height: 297mm !important;
-          z-index: 999999 !important;
+          min-height: auto !important;
+          z-index: auto !important;
           background: white !important;
           margin: 0 !important;
           padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm !important;
@@ -272,6 +277,8 @@ export function GenerateDocumentDialog({
           direction: rtl !important;
           color: #000 !important;
           box-sizing: border-box !important;
+          break-after: auto !important;
+          page-break-after: auto !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
