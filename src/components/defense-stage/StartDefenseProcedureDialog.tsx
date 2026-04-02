@@ -299,6 +299,7 @@ export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStu
   const isLoading = createStageLmd.isPending || createStageScience.isPending;
 
   const onSubmit = async (data: z.infer<typeof defenseStageSchema>) => {
+    if (!guardWrite("بدء إجراء المناقشة")) return;
     if (!selectedStudent) return;
     try {
       // Save professor names

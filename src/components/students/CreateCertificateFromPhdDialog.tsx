@@ -353,6 +353,7 @@ export function CreateCertificateFromPhdDialog({
   const isLoading = createPhdLmd.isPending || createPhdScience.isPending;
 
   const onSubmit = async (data: z.infer<typeof certificateSchema>) => {
+    if (!guardWrite("إصدار شهادة")) return;
     try {
       // Save professor names
       if (data.supervisor_ar) ensureProfessor(data.supervisor_ar);

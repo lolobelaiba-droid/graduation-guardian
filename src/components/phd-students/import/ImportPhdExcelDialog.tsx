@@ -280,6 +280,7 @@ export function ImportPhdExcelDialog({
   const transformedData = excelData.map(transformRow);
 
   const handleImport = async () => {
+    if (!guardWrite("استيراد بيانات الطلبة")) return;
     setStep("importing");
     const tableName = getPhdStudentTable(studentType);
     let successCount = 0;

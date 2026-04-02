@@ -298,6 +298,7 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
   };
 
   const handleImport = async () => {
+    if (!guardWrite("استيراد الشهادات")) return;
     setStep("importing");
     const tableName = getCertificateTable(certificateType);
     let successCount = 0, failedCount = 0;
