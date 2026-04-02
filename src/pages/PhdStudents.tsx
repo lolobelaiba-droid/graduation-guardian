@@ -81,7 +81,21 @@ const academicYears = generateAcademicYears();
 
 export default function PhdStudents() {
   const { canDelete } = usePermissions();
-  const [searchQuery, setSearchQuery] = useState("");
+  const phdColumns: ColumnDef[] = useMemo(() => [
+    { key: "registration_number", label: "رقم التسجيل" },
+    { key: "full_name_ar", label: "الاسم بالعربية" },
+    { key: "faculty_ar", label: "الكلية", defaultVisible: true },
+    { key: "specialty_ar", label: "التخصص" },
+    { key: "supervisor_ar", label: "المشرف" },
+    { key: "first_registration_year", label: "سنة أول تسجيل" },
+    { key: "registration_count", label: "عدد التسجيلات" },
+    { key: "registration_status", label: "حالة التسجيل" },
+    { key: "status", label: "الحالة" },
+    { key: "actions", label: "الإجراءات", alwaysVisible: true },
+  ], []);
+
+  const { visibleColumns, isVisible, toggleColumn, setAllVisible, resetToDefaults, visibleCount } = useColumnVisibility("phd-students-columns", phdColumns);
+
   const [selectedType, setSelectedType] = useState<PhdStudentType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<{ id: string; type: PhdStudentType } | null>(null);
