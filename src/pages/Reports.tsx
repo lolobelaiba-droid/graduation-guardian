@@ -702,8 +702,8 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* رابعا: المناقشات بالإنجليزية */}
-      <SectionHeader title="رابعا: المناقشات باللغة الإنجليزية" icon={<Globe className="h-5 w-5" />} />
+      {/* خامسا: المناقشات بالإنجليزية */}
+      <SectionHeader title="خامسا: المناقشات باللغة الإنجليزية" icon={<Globe className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {englishTheses.length > 0 ? (
