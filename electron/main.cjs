@@ -385,6 +385,181 @@ function registerPrinterHandlers() {
   console.log('Printer IPC handlers registered');
 }
 
+// =====================
+// Defense Document Print via Hidden Window
+// =====================
+function registerDefenseDocHandlers() {
+  ipcMain.handle('printers:print-doc-html', async (_event, payload) => {
+    try {
+      const { html, action, defaultFileName, options } = payload || {};
+      if (!html) return { success: false, error: 'Missing HTML content' };
+
+      // Write HTML to temp file next to the app's dist for font access
+      const appRoot = app.isPackaged
+        ? path.join(path.dirname(app.getPath('exe')), 'resources', 'app')
+        : path.join(__dirname, '..');
+      const fontsDir = path.join(appRoot, 'dist', 'fonts');
+      // Fallback: if dist/fonts doesn't exist, use public/fonts
+      const actualFontsDir = fs.existsSync(fontsDir)
+        ? fontsDir
+        : path.join(appRoot, 'public', 'fonts');
+
+      // Build font-face declarations with absolute file:// URLs
+      const fontFiles = fs.existsSync(actualFontsDir)
+        ? fs.readdirSync(actualFontsDir).filter(f => f.endsWith('.ttf'))
+        : [];
+
+      let fontFaces = '';
+      const fontMap = {
+        'IBMPlexSansArabic-Light.ttf': { family: 'IBM Plex Sans Arabic', weight: 300 },
+        'IBMPlexSansArabic-Regular.ttf': { family: 'IBM Plex Sans Arabic', weight: 400 },
+        'IBMPlexSansArabic-Medium.ttf': { family: 'IBM Plex Sans Arabic', weight: 500 },
+        'IBMPlexSansArabic-SemiBold.ttf': { family: 'IBM Plex Sans Arabic', weight: 600 },
+        'IBMPlexSansArabic-Bold.ttf': { family: 'IBM Plex Sans Arabic', weight: 700 },
+        'Amiri-Regular.ttf': { family: 'Amiri', weight: 400 },
+        'Amiri-Bold.ttf': { family: 'Amiri', weight: 700 },
+        'Cairo-Regular.ttf': { family: 'Cairo', weight: 400 },
+        'NotoSansArabic-Regular.ttf': { family: 'Noto Sans Arabic', weight: 400 },
+        'Tajawal-Regular.ttf': { family: 'Tajawal', weight: 400 },
+        'Tajawal-Bold.ttf': { family: 'Tajawal', weight: 700 },
+      };
+
+      fontFiles.forEach(f => {
+        const info = fontMap[f];
+        if (info) {
+          const fontUrl = pathToFileURL(path.join(actualFontsDir, f)).href;
+          fontFaces += `
+@font-face {
+  font-family: '${info.family}';
+  src: url('${fontUrl}') format('truetype');
+  font-weight: ${info.weight};
+  font-style: normal;
+}`;
+        }
+      });
+
+      // Also check for custom fonts stored in the data folder
+      const customFontsDir = path.join(db.getDatabasePath(), 'fonts');
+      if (fs.existsSync(customFontsDir)) {
+        const customFontFiles = fs.readdirSync(customFontsDir).filter(f => f.endsWith('.ttf') || f.endsWith('.otf') || f.endsWith('.woff') || f.endsWith('.woff2'));
+        customFontFiles.forEach(f => {
+          const fontUrl = pathToFileURL(path.join(customFontsDir, f)).href;
+          const baseName = path.parse(f).name;
+          fontFaces += `
+@font-face {
+  font-family: '${baseName}';
+  src: url('${fontUrl}');
+  font-weight: 400;
+  font-style: normal;
+}`;
+        });
+      }
+
+      const fullHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+${fontFaces}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+body {
+  margin: 0;
+  padding: 0;
+  background: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+</style>
+</head>
+<body>
+${html}
+</body>
+</html>`;
+
+      const tmpPath = path.join(os.tmpdir(), `defense_doc_${Date.now()}.html`);
+      fs.writeFileSync(tmpPath, fullHtml, 'utf8');
+
+      const printWin = new BrowserWindow({
+        show: false,
+        width: 794,
+        height: 1123,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          webSecurity: false, // Allow file:// font loading
+        },
+      });
+
+      await printWin.loadFile(tmpPath);
+
+      // Wait for fonts to load
+      try {
+        await printWin.webContents.executeJavaScript('document.fonts.ready.then(() => true)', true);
+      } catch (e) {
+        console.warn('Font ready check failed, proceeding:', e);
+      }
+      // Extra settle time for layout
+      await new Promise(r => setTimeout(r, 600));
+
+      let result;
+      if (action === 'pdf') {
+        const saveResult = await dialog.showSaveDialog(mainWindow || printWin, {
+          title: 'حفظ كملف PDF',
+          defaultPath: path.join(app.getPath('documents'), defaultFileName || 'document.pdf'),
+          filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+        });
+
+        if (saveResult.canceled || !saveResult.filePath) {
+          result = { success: false, error: 'cancelled' };
+        } else {
+          const pdfData = await printWin.webContents.printToPDF({
+            printBackground: true,
+            margins: { marginType: 'none' },
+            pageSize: 'A4',
+            landscape: false,
+          });
+          fs.writeFileSync(saveResult.filePath, pdfData);
+          result = { success: true, filePath: saveResult.filePath };
+        }
+      } else {
+        // Native print
+        const printSuccess = await new Promise((resolve) => {
+          printWin.webContents.print(
+            {
+              silent: false,
+              printBackground: true,
+              margins: { marginType: 'none' },
+              pageSize: 'A4',
+              landscape: false,
+            },
+            (ok, failureReason) => {
+              if (!ok) console.error('Defense doc print failed:', failureReason);
+              resolve(ok);
+            }
+          );
+        });
+        result = printSuccess
+          ? { success: true }
+          : { success: false, error: 'Print cancelled or failed' };
+      }
+
+      try { printWin.close(); } catch {}
+      try { fs.unlinkSync(tmpPath); } catch {}
+
+      return result;
+    } catch (e) {
+      console.error('Failed to print defense document:', e);
+      return { success: false, error: String(e?.message || e) };
+    }
+  });
+
+  console.log('Defense document IPC handlers registered');
+}
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   // Initialize database
@@ -394,6 +569,7 @@ app.whenReady().then(() => {
   const dbHandlers = registerDatabaseHandlers();
   registerFileHandlers();
   registerPrinterHandlers();
+  registerDefenseDocHandlers();
   
   createWindow();
 
