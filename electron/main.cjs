@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, MenuItem, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -126,9 +126,33 @@ function createWindow() {
   }
 
   // Show window when ready to prevent flickering
-  // إظهار النافذة عند الجهوزية أو بعد مهلة زمنية
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+  });
+
+  // إضافة قائمة سياقية (نقر يمين) لحقول الإدخال
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    const contextMenu = new Menu();
+
+    if (params.isEditable || params.selectionText) {
+      if (params.isEditable) {
+        contextMenu.append(new MenuItem({ label: 'تراجع', role: 'undo', enabled: params.editFlags.canUndo }));
+        contextMenu.append(new MenuItem({ label: 'إعادة', role: 'redo', enabled: params.editFlags.canRedo }));
+        contextMenu.append(new MenuItem({ type: 'separator' }));
+      }
+      if (params.selectionText) {
+        contextMenu.append(new MenuItem({ label: 'قص', role: 'cut', enabled: params.editFlags.canCut }));
+        contextMenu.append(new MenuItem({ label: 'نسخ', role: 'copy', enabled: params.editFlags.canCopy }));
+      }
+      if (params.isEditable) {
+        contextMenu.append(new MenuItem({ label: 'لصق', role: 'paste', enabled: params.editFlags.canPaste }));
+      }
+      if (params.selectionText) {
+        contextMenu.append(new MenuItem({ type: 'separator' }));
+        contextMenu.append(new MenuItem({ label: 'تحديد الكل', role: 'selectAll', enabled: params.editFlags.canSelectAll }));
+      }
+      contextMenu.popup();
+    }
   });
 
   // مهلة أمان: إظهار النافذة بعد 5 ثوانٍ حتى لو لم يكتمل التحميل
