@@ -238,6 +238,9 @@ export function GenerateDocumentDialog({
         body * {
           visibility: hidden !important;
         }
+        [data-print-hide] {
+          display: none !important;
+        }
 
         /* Show the defense document wrapper and all descendants */
         #defense-doc-print-wrapper,
@@ -376,6 +379,7 @@ export function GenerateDocumentDialog({
           margin: 0;
         }
         body * { visibility: hidden !important; }
+        [data-print-hide] { display: none !important; }
         body, html {
           margin: 0 !important; padding: 0 !important;
           overflow: visible !important; background: white !important;
@@ -707,7 +711,7 @@ export function GenerateDocumentDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <div style={{ position: "relative", width: "210mm", maxWidth: "100%", margin: "0 auto" }}>
+            <div data-print-hide style={{ position: "relative", width: "210mm", maxWidth: "100%", margin: "0 auto" }}>
               <div
                 ref={printRef}
                 className="defense-doc-editor border rounded-lg bg-white min-h-[500px]"
