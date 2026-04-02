@@ -385,13 +385,13 @@ export default function DefenseStage() {
                   <TableBody>
                     {paginatedStudents.map((student) => (
                       <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.full_name_ar}</TableCell>
-                        <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>
-                        <TableCell>{student.specialty_ar}</TableCell>
-                        <TableCell>{student.faculty_ar}</TableCell>
-                        <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>
-                        <TableCell>{student.first_registration_year || "-"}</TableCell>
-                        <TableCell>
+                        {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
+                        {isVisible("full_name_fr") && <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>}
+                        {isVisible("specialty_ar") && <TableCell>{student.specialty_ar}</TableCell>}
+                        {isVisible("faculty_ar") && <TableCell>{student.faculty_ar}</TableCell>}
+                        {isVisible("supervisor_ar") && <TableCell className="text-muted-foreground">{student.supervisor_ar}</TableCell>}
+                        {isVisible("first_registration_year") && <TableCell>{student.first_registration_year || "-"}</TableCell>}
+                        {isVisible("registration_count") && <TableCell>
                           {(() => {
                             if (!student.first_registration_year) return "-";
                             let refYear: number;
@@ -410,11 +410,10 @@ export default function DefenseStage() {
                             const details = calculateRegistrationDetails(refAcYear, student.first_registration_year, phdType as any);
                             return details.registrationCount ?? "-";
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("registration_status") && <TableCell>
                           {(() => {
                             if (!student.first_registration_year) return "-";
-                            // Use scientific_council_date to freeze registration count
                             let refYear: number;
                             if (student.scientific_council_date) {
                               const scDate = new Date(student.scientific_council_date);
@@ -436,8 +435,8 @@ export default function DefenseStage() {
                               </Badge>
                             );
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("scientific_council_date") && <TableCell>
                           {(() => {
                             const duration = getDurationSinceCouncil(student.scientific_council_date, student.stage_status);
                             const dateColor = duration ? duration.color : 'text-foreground';
@@ -448,22 +447,22 @@ export default function DefenseStage() {
                             const year = d.getFullYear();
                             return <span className={dateColor}>{`${day}/${month}/${year}`}</span>;
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("duration") && <TableCell>
                           {(() => {
                             const duration = getDurationSinceCouncil(student.scientific_council_date, student.stage_status);
                             if (!duration) return "-";
                             return <span className={`font-medium ${duration.color}`}>{duration.text}</span>;
                           })()}
-                        </TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isVisible("stage_status") && <TableCell>
                           <Badge
                             variant="outline"
                             className={stageStatusLabels[student.stage_status]?.color}
                           >
                             {stageStatusLabels[student.stage_status]?.ar}
                           </Badge>
-                        </TableCell>
+                        </TableCell>}
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
