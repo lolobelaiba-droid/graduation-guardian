@@ -256,6 +256,14 @@ export default function Reports() {
     });
   }, [kpi, avgRegYears, filteredDefended, englishTheses, assistantProfessors]);
 
+  const thesisLangLabel = (lang: string | null | undefined) => {
+    if (!lang) return '-';
+    if (lang === 'arabic') return 'عربية';
+    if (lang === 'french') return 'فرنسية';
+    if (lang === 'english') return 'إنجليزية';
+    return lang;
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
