@@ -1299,3 +1299,11 @@ function getStatusLabel(regCount: number | null | undefined, type: string): stri
   const legal = type === "phd_science" ? 5 : 3;
   return regCount <= legal ? "منتظم" : "متأخر";
 }
+
+function getThesisLangLabel(lang: string | null | undefined): string {
+  if (!lang) return "-";
+  if (lang === "arabic") return "عربية";
+  if (lang === "french") return "فرنسية";
+  if (lang === "english") return "إنجليزية";
+  return lang;
+}
