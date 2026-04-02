@@ -120,6 +120,7 @@ export default function DefenseStage() {
   const deleteScience = useDeleteDefenseStageScience();
   const updateLmd = useUpdateDefenseStageLmd();
   const updateScience = useUpdateDefenseStageScience();
+  const restoreToPhd = useRestoreDefenseToPhd();
 
   const isLoading = loadingLmd || loadingScience;
   const students = activeTab === "phd_lmd" ? lmdStudents : scienceStudents;
