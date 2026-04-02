@@ -238,19 +238,9 @@ export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStu
       setShowConfirmDialog(false);
     } else if (preSelectedStudent) {
       setSelectedType(preSelectedType || "phd_lmd");
-      setSelectedStudent(preSelectedStudent);
-      form.reset({
-        jury_president_ar: '',
-        jury_president_fr: '',
-        jury_members_ar: '',
-        jury_members_fr: '',
-        scientific_council_date: '',
-        province: 'أم البواقي',
-        signature_title: getDefaultSignatureTitle(preSelectedStudent.faculty_ar || ''),
-        decree_training: '',
-        decree_accreditation: '',
-      });
-      setShowForm(true);
+      // Show confirmation dialog first instead of skipping directly to form
+      setPendingStudent(preSelectedStudent);
+      setShowConfirmDialog(true);
     }
   }, [open, preSelectedStudent, preSelectedType]);
 
