@@ -394,7 +394,7 @@ export default function PhdStudents() {
                                     setStartDefenseDialogOpen(true);
                                   }}
                                 >
-                                  <img src={graduateIcon} alt="بدء إجراءات المناقشة" className="h-5 w-5" style={{ filter: 'invert(37%) sepia(74%) saturate(1527%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
+                                  <img src={graduateIcon} alt="بدء إجراءات المناقشة" className="h-5 w-5" />
                                 </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
