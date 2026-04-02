@@ -238,6 +238,9 @@ export function GenerateDocumentDialog({
         body * {
           visibility: hidden !important;
         }
+        [data-print-hide] {
+          display: none !important;
+        }
 
         /* Show the defense document wrapper and all descendants */
         #defense-doc-print-wrapper,
