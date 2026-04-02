@@ -82,20 +82,21 @@ export interface ReportExportData {
   juryDiversity?: JuryDiversityData;
 }
 
-type SectionKey = "kpi" | "insights" | "registered" | "defended" | "jury" | "juryDiversity" | "admin" | "english" | "labs" | "assistants";
+type SectionKey = "kpi" | "insights" | "registered" | "defenseStage" | "defended" | "jury" | "juryDiversity" | "admin" | "english" | "labs" | "assistants";
 type ExportMode = "general" | "faculty" | "full";
 
 const sectionLabels: Record<SectionKey, string> = {
   kpi: "مؤشر الأداء العام ولوحة المؤشرات",
   insights: "التشخيص وتحليل النتائج",
   registered: "أولا: الطلبة المسجلين",
-  defended: "ثانيا: الطلبة المناقشين",
+  defenseStage: "ثانيا: الطلبة في طور المناقشة",
+  defended: "ثالثا: الطلبة المناقشين",
   jury: "إحصائيات العضوية",
   juryDiversity: "تحليل تنوع لجان المناقشة",
-  admin: "ثالثا: الإجراءات الإدارية",
-  english: "رابعا: المناقشات باللغة الإنجليزية",
-  labs: "خامسا: عدد المناقشات حسب مخابر البحث",
-  assistants: "سادسا: الأساتذة المساعدين المناقشين",
+  admin: "رابعا: الإجراءات الإدارية",
+  english: "خامسا: المناقشات باللغة الإنجليزية",
+  labs: "سادسا: عدد المناقشات حسب مخابر البحث",
+  assistants: "سابعا: الأساتذة المساعدين المناقشين",
 };
 
 interface Props {
