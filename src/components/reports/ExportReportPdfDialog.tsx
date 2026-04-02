@@ -804,29 +804,65 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       checkPage(15);
       sectionTitle("أولا: إحصائيات عامة حول الطلبة المسجلين حاليا");
       const tableW = PW - M * 2;
-      const cols = [7, 35, 28, 28, 22, 22, 20].map(p => (p / 162) * tableW);
+      const cols = [6, 28, 22, 20, 20, 16, 16, 12, 14, 16].map(p => (p / 170) * tableW);
       const rows = data.registeredStudents.map((s: any, i: number) => [
-        toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
+        toWesternNumerals(i + 1), s.full_name_ar || "", s.faculty_ar || "-", s.branch_ar || "",
         s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
         s.first_registration_year ? toWesternNumerals(s.first_registration_year) : "-",
+        s.registration_count ? toWesternNumerals(s.registration_count) : "-",
+        getThesisLangLabel(s.thesis_language),
         getStatusLabel(s.registration_count, s._type),
       ]);
-      drawTable(["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "سنة أول تسجيل", "حالة التسجيل"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الكلية", "الشعبة", "التخصص", "نوع الدكتوراه", "سنة أول تسجيل", "ع.التسجيلات", "لغة الأطروحة", "حالة التسجيل"], rows, cols);
+    }
+
+    // ───── Defense Stage Students ─────
+    if (selectedSections.includes("defenseStage")) {
+      checkPage(15);
+      sectionTitle("ثانيا: إحصائيات الطلبة في طور المناقشة");
+      const tableW = PW - M * 2;
+      const cols = [6, 28, 22, 20, 20, 16, 14, 16, 22, 22].map(p => (p / 186) * tableW);
+      const stageStatusMap: Record<string, string> = { pending: "في الانتظار", under_review: "قيد الخبرة", authorized: "مرخص", defended: "انتهت المناقشة" };
+      const rows = data.defenseStageStudents.map((s: any, i: number) => {
+        const councilDate = s.scientific_council_date;
+        let durationText = "-";
+        if (councilDate) {
+          const council = new Date(councilDate);
+          const now = new Date();
+          if (!isNaN(council.getTime())) {
+            const diffMs = now.getTime() - council.getTime();
+            const totalDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+            const months = Math.floor(totalDays / 30);
+            const days = totalDays % 30;
+            durationText = `${toWesternNumerals(months)} شهر ${toWesternNumerals(days)} يوم`;
+          }
+        }
+        return [
+          toWesternNumerals(i + 1), s.full_name_ar || "", s.faculty_ar || "-", s.branch_ar || "",
+          s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
+          getThesisLangLabel(s.thesis_language),
+          stageStatusMap[s.stage_status] || s.stage_status || "-",
+          councilDate ? toWesternNumerals(formatDateDDMMYYYY(councilDate)) : "-",
+          durationText,
+        ];
+      });
+      drawTable(["#", "الاسم واللقب", "الكلية", "الشعبة", "التخصص", "نوع الدكتوراه", "لغة الأطروحة", "الحالة", "تاريخ المجلس العلمي", "المدة منذ المصادقة"], rows, cols);
     }
 
     // ───── Defended Students ─────
     if (selectedSections.includes("defended")) {
       checkPage(15);
-      sectionTitle("ثانيا: إحصائيات عامة حول الطلبة المناقشين");
+      sectionTitle("ثالثا: إحصائيات عامة حول الطلبة المناقشين");
       const tableW = PW - M * 2;
-      const cols = [7, 35, 28, 28, 22, 20, 22].map(p => (p / 162) * tableW);
+      const cols = [6, 28, 22, 20, 20, 16, 14, 16, 22].map(p => (p / 164) * tableW);
       const rows = data.defendedStudents.map((s: any, i: number) => [
-        toWesternNumerals(i + 1), s.full_name_ar || "", s.branch_ar || "",
+        toWesternNumerals(i + 1), s.full_name_ar || "", s.faculty_ar || "-", s.branch_ar || "",
         s.specialty_ar || "", s._type === "phd_lmd" ? "د.ل.م.د" : "د.علوم",
+        getThesisLangLabel(s.thesis_language),
         getStatusLabel(s.registration_count, s._type),
         s.defense_date ? toWesternNumerals(formatDateDDMMYYYY(s.defense_date)) : "-",
       ]);
-      drawTable(["#", "الاسم واللقب", "الشعبة", "التخصص", "نوع الدكتوراه", "حالة التسجيل", "تاريخ المناقشة"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الكلية", "الشعبة", "التخصص", "نوع الدكتوراه", "لغة الأطروحة", "حالة التسجيل", "تاريخ المناقشة"], rows, cols);
     }
 
     // ───── Jury Stats ─────
