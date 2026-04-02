@@ -746,12 +746,16 @@ export const JuryTableInput: React.FC<JuryTableInputProps> = ({
                         const patch: Partial<JuryMember> = { name: v };
                         if (findProfessor) {
                           const prof = findProfessor(v);
+                          console.log('[JuryTable] onValueChange:', { v, prof, hasFindProfessor: !!findProfessor });
                           if (prof) {
                             if (prof.rank_label) patch.rankLabel = prof.rank_label;
                             if (prof.rank_abbreviation) patch.rankAbbreviation = prof.rank_abbreviation;
                             if (prof.university) patch.university = prof.university;
                           }
+                        } else {
+                          console.log('[JuryTable] onValueChange: NO findProfessor!', { v });
                         }
+                        console.log('[JuryTable] patch:', patch);
                         updateRow(row.id, patch);
                       }}
                       suggestions={nameSuggestions}
