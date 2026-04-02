@@ -205,6 +205,198 @@ export function GenerateDocumentDialog({
 
   const printStyleRef = useRef<HTMLStyleElement | null>(null);
 
+  const buildJuryTableHtml = (members: JuryMember[], withSignature = false): string => {
+    const jts: JuryTableSettings = template?.jury_table_settings
+      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+      : { ...DEFAULT_JURY_TABLE_SETTINGS };
+
+    const thStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; background: ${jts.header_bg}; font-weight: bold; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
+    const tdStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
+    
+    const columns: { key: string; header: string; widthKey: keyof JuryTableSettings }[] = [];
+    if (jts.show_number) columns.push({ key: "number", header: "رقم", widthKey: "col_number_width" });
+    columns.push({ key: "name", header: "الاسم واللقب", widthKey: "col_name_width" });
+    if (jts.show_rank) columns.push({ key: "rank", header: "الرتبة", widthKey: "col_rank_width" });
+    if (jts.show_university) columns.push({ key: "university", header: "مؤسسة الانتماء", widthKey: "col_university_width" });
+    if (jts.show_role) columns.push({ key: "role", header: "الصفة", widthKey: "col_role_width" });
+    if (withSignature) columns.push({ key: "signature", header: "الإمضاء", widthKey: "col_number_width" });
+
+    // Calculate total width and normalize so columns fit 100%
+    const rawWidths = columns.map(col => col.key === "signature" ? (jts.col_signature_width || 20) : (jts[col.widthKey] as number));
+    const totalRaw = rawWidths.reduce((a, b) => a + b, 0);
+
+    let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
+<thead><tr>`;
+    columns.forEach((col, idx) => {
+      const w = Math.round((rawWidths[idx] / totalRaw) * 100);
+      html += `<th style="${thStyle} width: ${w}%;">${col.header}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+
+    members.forEach((m, i) => {
+      const displayName = m.name;
+      const roleLabel = JURY_ROLE_DOC_LABELS[m.role] || m.role;
+      html += `<tr>`;
+      columns.forEach((col) => {
+        let value = '&nbsp;';
+        if (col.key === "number") value = String(i + 1);
+        else if (col.key === "name") value = displayName || '&nbsp;';
+        else if (col.key === "rank") value = m.rankLabel || '&nbsp;';
+        else if (col.key === "university") value = m.university || '&nbsp;';
+        else if (col.key === "role") value = roleLabel;
+        else if (col.key === "signature") value = '&nbsp;';
+        html += `<td style="${tdStyle}">${value}</td>`;
+      });
+      html += `</tr>`;
+    });
+
+    html += '</tbody></table>';
+    return html;
+  };
+
+  const getRenderedContent = () => {
+    if (!template || !student) return "";
+
+    const facultyAr = student.faculty_ar || "";
+    const facultyHeadTitle = facultyAr.includes("معهد") ? "مدير" : "عميد";
+
+    // Parse jury members dynamically
+    const juryMembers = parseJury(
+      student.jury_president_ar || "",
+      student.jury_members_ar || "",
+      student.supervisor_ar || "",
+      student.supervisor_university || "",
+      student.co_supervisor_ar || "",
+      student.co_supervisor_university || "",
+      ranks
+    );
+
+    // Enrich jury members with professor data (rank + university) from professor registry
+    const enrichedJuryMembers = juryMembers.map((member) => {
+      if (!member.name?.trim()) return member;
+      const prof = findProfessor(member.name);
+      if (!prof) return member;
+      return {
+        ...member,
+        name: prof.full_name || member.name,
+        rankLabel: member.rankLabel || prof.rank_label || "",
+        rankAbbreviation: member.rankAbbreviation || prof.rank_abbreviation || "",
+        university: member.university || prof.university || "",
+      };
+    });
+
+    const variables: Record<string, string> = {
+      decision_number: isJuryDecision ? (decisionNumber.trim() || ".....................") : (juryDecisionNumber.trim() || "....................."),
+      decision_date: isJuryDecision
+        ? formatArabicDocumentDate(decisionDate, ".....................")
+        : formatArabicDocumentDate(juryDecisionDate, "....................."),
+      auth_decision_number: isJuryDecision ? "" : (decisionNumber.trim() || "....................."),
+      auth_decision_date: isJuryDecision ? "" : formatArabicDocumentDate(decisionDate, "....................."),
+      dean_letter_number: isJuryDecision ? "" : (deanLetterNumber.trim() || "....................."),
+      dean_letter_date: isJuryDecision ? "" : formatArabicDocumentDate(deanLetterDate, "....................."),
+      faculty_head_title: facultyHeadTitle,
+      full_name_ar: student.full_name_ar || "",
+      full_name_fr: student.full_name_fr || "",
+      gender: student.gender || "male",
+      date_of_birth: formatArabicDocumentDate(student.date_of_birth),
+      birthplace_ar: student.birthplace_ar || "",
+      province: student.province || "",
+      registration_number: student.registration_number || "",
+      university_ar: student.university_ar || "",
+      faculty_ar: facultyAr,
+      field_ar: student.field_ar || "",
+      branch_ar: student.branch_ar || "",
+      specialty_ar: student.specialty_ar || "",
+      thesis_title_ar: stripHtml(student.thesis_title_ar || ""),
+      thesis_title_fr: stripHtml(student.thesis_title_fr || ""),
+      supervisor_ar: student.supervisor_ar || "",
+      supervisor_university: student.supervisor_university || "",
+      co_supervisor_ar: student.co_supervisor_ar || "",
+      co_supervisor_university: student.co_supervisor_university || "",
+      jury_president_ar: student.jury_president_ar || "",
+      jury_members_ar: student.jury_members_ar || "",
+      jury_table: buildJuryTableHtml(enrichedJuryMembers),
+      jury_table_with_signature: buildJuryTableHtml(enrichedJuryMembers, true),
+      scientific_council_date: formatArabicDocumentDate(student.scientific_council_date),
+      defense_date: formatArabicDocumentDate(student.defense_date, "....................."),
+      signature_title: student.signature_title || "",
+      first_registration_year: student.first_registration_year || "",
+      research_lab_ar: student.research_lab_ar || "",
+      current_year: student.current_year || "",
+      decree_training: student.decree_training || "",
+      decree_accreditation: student.decree_accreditation || "",
+      minutes_number: minutesNumber.trim() || "......................",
+      minutes_year: new Date().getFullYear().toString(),
+      defense_time: defenseTime.trim() || "......................",
+      mention: mention || "......................",
+    };
+
+    let content = normalizeDefenseTemplateHtml(template.content, template.document_type);
+    // Replace variable-tag spans (robust: handles single/double quotes, extra classes, nested attributes)
+    content = content.replace(
+      /<span[^>]*class=["'][^"']*variable-tag[^"']*["'][^>]*>\{\{(\w+)\}\}<\/span>/g,
+      (_, key) => variables[key] ?? `{{${key}}}`
+    );
+    // Replace any remaining plain {{variable}} placeholders
+    content = content.replace(
+      /\{\{(\w+)\}\}/g,
+      (_, key) => variables[key] ?? `{{${key}}}`
+    );
+
+    return content;
+  };
+
+  // Build standalone HTML for Electron hidden-window printing
+  const buildStandaloneHtml = useCallback(() => {
+    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
+    const mt = template?.margin_top ?? 20;
+    const mb = template?.margin_bottom ?? 20;
+    const mr = template?.margin_right ?? 15;
+    const ml = template?.margin_left ?? 15;
+    const fontSize = template?.font_size || 14;
+    const lineHeight = template?.line_height || 1.8;
+    const jts: JuryTableSettings = template?.jury_table_settings
+      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
+      : { ...DEFAULT_JURY_TABLE_SETTINGS };
+
+    const content = getRenderedContent();
+    const textBoxesHtml = (template?.text_boxes || []).map((tb: TextBoxData) =>
+      `<div style="position:absolute;left:${tb.x}mm;top:${tb.y}mm;width:${tb.width}mm;min-height:${tb.minHeight}mm;border:${tb.borderWidth}px solid ${tb.borderColor};padding:${tb.padding}px;background:${tb.bgColor};font-size:${tb.fontSize}px;font-family:${tb.fontFamily};text-align:${tb.textAlign};direction:rtl;line-height:1.6;box-sizing:border-box;word-break:break-word;">${tb.content}</div>`
+    ).join('');
+
+    return `<div style="
+      width: 210mm;
+      min-height: 297mm;
+      padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm;
+      font-family: '${fontFamily}', 'IBM Plex Sans Arabic', sans-serif;
+      font-size: ${fontSize}px;
+      line-height: ${lineHeight};
+      direction: rtl;
+      color: #000;
+      background: white;
+      box-sizing: border-box;
+      position: relative;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    ">
+      <style>
+        table { border-collapse: collapse; width: 100%; }
+        td, th {
+          border: 1px solid ${jts.border_color};
+          padding: ${jts.padding}px;
+          text-align: center;
+          font-size: ${jts.font_size}px;
+          line-height: ${jts.line_height};
+        }
+        th { background: ${jts.header_bg}; font-weight: bold; }
+        .variable-tag { background: transparent; color: inherit; padding: 0; }
+        p, div, span, blockquote { margin: 0; padding: 0; }
+      </style>
+      ${content}
+      ${textBoxesHtml}
+    </div>`;
+  }, [template, student, documentType, decisionNumber, decisionDate, juryDecisionNumber, juryDecisionDate, deanLetterNumber, deanLetterDate, minutesNumber, defenseTime, mention]);
+
   const handlePrint = useCallback(() => {
     if (!printRef.current) return;
 
@@ -398,198 +590,6 @@ export function GenerateDocumentDialog({
       window.print();
     }
   }, [template, student, documentType, buildStandaloneHtml]);
-
-  const buildJuryTableHtml = (members: JuryMember[], withSignature = false): string => {
-    const jts: JuryTableSettings = template?.jury_table_settings
-      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
-      : { ...DEFAULT_JURY_TABLE_SETTINGS };
-
-    const thStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; background: ${jts.header_bg}; font-weight: bold; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
-    const tdStyle = `border: 1px solid ${jts.border_color}; padding: ${jts.padding}px; text-align: center; font-size: ${jts.font_size}px; line-height: ${jts.line_height};`;
-    
-    const columns: { key: string; header: string; widthKey: keyof JuryTableSettings }[] = [];
-    if (jts.show_number) columns.push({ key: "number", header: "رقم", widthKey: "col_number_width" });
-    columns.push({ key: "name", header: "الاسم واللقب", widthKey: "col_name_width" });
-    if (jts.show_rank) columns.push({ key: "rank", header: "الرتبة", widthKey: "col_rank_width" });
-    if (jts.show_university) columns.push({ key: "university", header: "مؤسسة الانتماء", widthKey: "col_university_width" });
-    if (jts.show_role) columns.push({ key: "role", header: "الصفة", widthKey: "col_role_width" });
-    if (withSignature) columns.push({ key: "signature", header: "الإمضاء", widthKey: "col_number_width" });
-
-    // Calculate total width and normalize so columns fit 100%
-    const rawWidths = columns.map(col => col.key === "signature" ? (jts.col_signature_width || 20) : (jts[col.widthKey] as number));
-    const totalRaw = rawWidths.reduce((a, b) => a + b, 0);
-
-    let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; direction: rtl;" border="1">
-<thead><tr>`;
-    columns.forEach((col, idx) => {
-      const w = Math.round((rawWidths[idx] / totalRaw) * 100);
-      html += `<th style="${thStyle} width: ${w}%;">${col.header}</th>`;
-    });
-    html += `</tr></thead><tbody>`;
-
-    members.forEach((m, i) => {
-      const displayName = m.name;
-      const roleLabel = JURY_ROLE_DOC_LABELS[m.role] || m.role;
-      html += `<tr>`;
-      columns.forEach((col) => {
-        let value = '&nbsp;';
-        if (col.key === "number") value = String(i + 1);
-        else if (col.key === "name") value = displayName || '&nbsp;';
-        else if (col.key === "rank") value = m.rankLabel || '&nbsp;';
-        else if (col.key === "university") value = m.university || '&nbsp;';
-        else if (col.key === "role") value = roleLabel;
-        else if (col.key === "signature") value = '&nbsp;';
-        html += `<td style="${tdStyle}">${value}</td>`;
-      });
-      html += `</tr>`;
-    });
-
-    html += '</tbody></table>';
-    return html;
-  };
-
-  const getRenderedContent = () => {
-    if (!template || !student) return "";
-
-    const facultyAr = student.faculty_ar || "";
-    const facultyHeadTitle = facultyAr.includes("معهد") ? "مدير" : "عميد";
-
-    // Parse jury members dynamically
-    const juryMembers = parseJury(
-      student.jury_president_ar || "",
-      student.jury_members_ar || "",
-      student.supervisor_ar || "",
-      student.supervisor_university || "",
-      student.co_supervisor_ar || "",
-      student.co_supervisor_university || "",
-      ranks
-    );
-
-    // Enrich jury members with professor data (rank + university) from professor registry
-    const enrichedJuryMembers = juryMembers.map((member) => {
-      if (!member.name?.trim()) return member;
-      const prof = findProfessor(member.name);
-      if (!prof) return member;
-      return {
-        ...member,
-        name: prof.full_name || member.name,
-        rankLabel: member.rankLabel || prof.rank_label || "",
-        rankAbbreviation: member.rankAbbreviation || prof.rank_abbreviation || "",
-        university: member.university || prof.university || "",
-      };
-    });
-
-    const variables: Record<string, string> = {
-      decision_number: isJuryDecision ? (decisionNumber.trim() || ".....................") : (juryDecisionNumber.trim() || "....................."),
-      decision_date: isJuryDecision
-        ? formatArabicDocumentDate(decisionDate, ".....................")
-        : formatArabicDocumentDate(juryDecisionDate, "....................."),
-      auth_decision_number: isJuryDecision ? "" : (decisionNumber.trim() || "....................."),
-      auth_decision_date: isJuryDecision ? "" : formatArabicDocumentDate(decisionDate, "....................."),
-      dean_letter_number: isJuryDecision ? "" : (deanLetterNumber.trim() || "....................."),
-      dean_letter_date: isJuryDecision ? "" : formatArabicDocumentDate(deanLetterDate, "....................."),
-      faculty_head_title: facultyHeadTitle,
-      full_name_ar: student.full_name_ar || "",
-      full_name_fr: student.full_name_fr || "",
-      gender: student.gender || "male",
-      date_of_birth: formatArabicDocumentDate(student.date_of_birth),
-      birthplace_ar: student.birthplace_ar || "",
-      province: student.province || "",
-      registration_number: student.registration_number || "",
-      university_ar: student.university_ar || "",
-      faculty_ar: facultyAr,
-      field_ar: student.field_ar || "",
-      branch_ar: student.branch_ar || "",
-      specialty_ar: student.specialty_ar || "",
-      thesis_title_ar: stripHtml(student.thesis_title_ar || ""),
-      thesis_title_fr: stripHtml(student.thesis_title_fr || ""),
-      supervisor_ar: student.supervisor_ar || "",
-      supervisor_university: student.supervisor_university || "",
-      co_supervisor_ar: student.co_supervisor_ar || "",
-      co_supervisor_university: student.co_supervisor_university || "",
-      jury_president_ar: student.jury_president_ar || "",
-      jury_members_ar: student.jury_members_ar || "",
-      jury_table: buildJuryTableHtml(enrichedJuryMembers),
-      jury_table_with_signature: buildJuryTableHtml(enrichedJuryMembers, true),
-      scientific_council_date: formatArabicDocumentDate(student.scientific_council_date),
-      defense_date: formatArabicDocumentDate(student.defense_date, "....................."),
-      signature_title: student.signature_title || "",
-      first_registration_year: student.first_registration_year || "",
-      research_lab_ar: student.research_lab_ar || "",
-      current_year: student.current_year || "",
-      decree_training: student.decree_training || "",
-      decree_accreditation: student.decree_accreditation || "",
-      minutes_number: minutesNumber.trim() || "......................",
-      minutes_year: new Date().getFullYear().toString(),
-      defense_time: defenseTime.trim() || "......................",
-      mention: mention || "......................",
-    };
-
-    let content = normalizeDefenseTemplateHtml(template.content, template.document_type);
-    // Replace variable-tag spans (robust: handles single/double quotes, extra classes, nested attributes)
-    content = content.replace(
-      /<span[^>]*class=["'][^"']*variable-tag[^"']*["'][^>]*>\{\{(\w+)\}\}<\/span>/g,
-      (_, key) => variables[key] ?? `{{${key}}}`
-    );
-    // Replace any remaining plain {{variable}} placeholders
-    content = content.replace(
-      /\{\{(\w+)\}\}/g,
-      (_, key) => variables[key] ?? `{{${key}}}`
-    );
-
-    return content;
-  };
-
-  // Build standalone HTML for Electron hidden-window printing
-  const buildStandaloneHtml = useCallback(() => {
-    const fontFamily = template?.font_family || "IBM Plex Sans Arabic";
-    const mt = template?.margin_top ?? 20;
-    const mb = template?.margin_bottom ?? 20;
-    const mr = template?.margin_right ?? 15;
-    const ml = template?.margin_left ?? 15;
-    const fontSize = template?.font_size || 14;
-    const lineHeight = template?.line_height || 1.8;
-    const jts: JuryTableSettings = template?.jury_table_settings
-      ? { ...DEFAULT_JURY_TABLE_SETTINGS, ...(template.jury_table_settings as any) }
-      : { ...DEFAULT_JURY_TABLE_SETTINGS };
-
-    const content = getRenderedContent();
-    const textBoxesHtml = (template?.text_boxes || []).map((tb: TextBoxData) =>
-      `<div style="position:absolute;left:${tb.x}mm;top:${tb.y}mm;width:${tb.width}mm;min-height:${tb.minHeight}mm;border:${tb.borderWidth}px solid ${tb.borderColor};padding:${tb.padding}px;background:${tb.bgColor};font-size:${tb.fontSize}px;font-family:${tb.fontFamily};text-align:${tb.textAlign};direction:rtl;line-height:1.6;box-sizing:border-box;word-break:break-word;">${tb.content}</div>`
-    ).join('');
-
-    return `<div style="
-      width: 210mm;
-      min-height: 297mm;
-      padding: ${mt}mm ${mr}mm ${mb}mm ${ml}mm;
-      font-family: '${fontFamily}', 'IBM Plex Sans Arabic', sans-serif;
-      font-size: ${fontSize}px;
-      line-height: ${lineHeight};
-      direction: rtl;
-      color: #000;
-      background: white;
-      box-sizing: border-box;
-      position: relative;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    ">
-      <style>
-        table { border-collapse: collapse; width: 100%; }
-        td, th {
-          border: 1px solid ${jts.border_color};
-          padding: ${jts.padding}px;
-          text-align: center;
-          font-size: ${jts.font_size}px;
-          line-height: ${jts.line_height};
-        }
-        th { background: ${jts.header_bg}; font-weight: bold; }
-        .variable-tag { background: transparent; color: inherit; padding: 0; }
-        p, div, span, blockquote { margin: 0; padding: 0; }
-      </style>
-      ${content}
-      ${textBoxesHtml}
-    </div>`;
-  }, [template, student, documentType, decisionNumber, decisionDate, juryDecisionNumber, juryDecisionDate, deanLetterNumber, deanLetterDate, minutesNumber, defenseTime, mention]);
 
   const docTitle = isDefenseMinutes
     ? "توليد محضر مداولات لجنة المناقشة"
