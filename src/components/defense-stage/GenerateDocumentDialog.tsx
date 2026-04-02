@@ -452,21 +452,59 @@ export function GenerateDocumentDialog({
     const isElectronEnv = !!(window as unknown as { electronAPI?: { printToPdf?: unknown } }).electronAPI?.printToPdf;
 
     if (isElectronEnv) {
-      const electronAPI = (window as unknown as { electronAPI: { printToPdf: (opts: unknown) => Promise<{ success: boolean; error?: string; filePath?: string }> } }).electronAPI;
-      electronAPI.printToPdf({
-        pageSize: { width: 210 * 1000, height: 297 * 1000 },
-        landscape: false,
-        defaultFileName: fileName,
-      }).then((result) => {
-        cleanup();
-        if (result.success) {
-          toast.success("تم حفظ الوثيقة بنجاح");
-        } else if (result.error !== 'cancelled') {
-          toast.error(result.error || "فشل في حفظ الوثيقة");
-        }
-      }).catch(() => {
-        cleanup();
-        toast.error("فشل في حفظ الوثيقة");
+      // Make the wrapper visible on-screen so printToPDF can capture it
+      const wrapper = document.getElementById('defense-doc-print-wrapper');
+      if (wrapper) {
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.visibility = 'visible';
+        wrapper.style.position = 'fixed';
+        wrapper.style.zIndex = '999999';
+        wrapper.style.background = 'white';
+        wrapper.style.padding = `${template?.margin_top ?? 20}mm ${template?.margin_right ?? 15}mm ${template?.margin_bottom ?? 20}mm ${template?.margin_left ?? 15}mm`;
+        wrapper.style.boxSizing = 'border-box';
+        wrapper.style.direction = 'rtl';
+        wrapper.style.fontFamily = `'${fontFamily}', sans-serif`;
+        wrapper.style.fontSize = `${template?.font_size || 14}px`;
+        wrapper.style.lineHeight = String(template?.line_height || 1.8);
+        wrapper.style.color = '#000';
+      }
+
+      // Allow a frame for the layout to settle before capturing
+      requestAnimationFrame(() => {
+        const electronAPI = (window as unknown as { electronAPI: { printToPdf: (opts: unknown) => Promise<{ success: boolean; error?: string; filePath?: string }> } }).electronAPI;
+        electronAPI.printToPdf({
+          pageSize: { width: 210 * 1000, height: 297 * 1000 },
+          landscape: false,
+          defaultFileName: fileName,
+        }).then((result) => {
+          // Restore wrapper to hidden
+          if (wrapper) {
+            wrapper.style.left = '-9999px';
+            wrapper.style.visibility = 'hidden';
+            wrapper.style.zIndex = '';
+            wrapper.style.padding = '';
+            wrapper.style.boxSizing = '';
+            wrapper.style.direction = '';
+            wrapper.style.fontFamily = '';
+            wrapper.style.fontSize = '';
+            wrapper.style.lineHeight = '';
+            wrapper.style.color = '';
+          }
+          cleanup();
+          if (result.success) {
+            toast.success("تم حفظ الوثيقة بنجاح");
+          } else if (result.error !== 'cancelled') {
+            toast.error(result.error || "فشل في حفظ الوثيقة");
+          }
+        }).catch(() => {
+          if (wrapper) {
+            wrapper.style.left = '-9999px';
+            wrapper.style.visibility = 'hidden';
+          }
+          cleanup();
+          toast.error("فشل في حفظ الوثيقة");
+        });
       });
     } else {
       // Web: use window.print() — user can choose "Save as PDF" from browser dialog
