@@ -148,6 +148,7 @@ export default function Reports() {
     return filteredDefended
       .map(s => ({
         name: s.full_name_ar,
+        faculty: (s as any).faculty_ar || '-',
         type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم',
         supervisor: (s as any).supervisor_ar || '',
         status: getRegistrationStatus((s as any).registration_count, s._type),
@@ -298,7 +299,7 @@ export default function Reports() {
       totalRegistered: reg.length + def.length, totalDefended: def.length,
       defendedStudents: def.map(s => ({ registration_count: (s as any).registration_count, first_registration_year: (s as any).first_registration_year, defense_date: (s as any).defense_date, scientific_council_date: (s as any).scientific_council_date, _type: s._type })),
     });
-    const adminActs = def.map(s => ({ name: s.full_name_ar, type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم', supervisor: (s as any).supervisor_ar || '', status: getRegistrationStatus((s as any).registration_count, s._type), councilDate: (s as any).scientific_council_date || '', defenseDate: (s as any).defense_date || '', processingTime: calcProcessingTime((s as any).scientific_council_date, (s as any).defense_date) })).filter(s => s.processingTime !== null).sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
+    const adminActs = def.map(s => ({ name: s.full_name_ar, faculty: (s as any).faculty_ar || '-', type: s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم', supervisor: (s as any).supervisor_ar || '', status: getRegistrationStatus((s as any).registration_count, s._type), councilDate: (s as any).scientific_council_date || '', defenseDate: (s as any).defense_date || '', processingTime: calcProcessingTime((s as any).scientific_council_date, (s as any).defense_date) })).filter(s => s.processingTime !== null).sort((a, b) => (b.processingTime?.totalDays || 0) - (a.processingTime?.totalDays || 0));
     const juryMap: Record<string, any> = {};
     const addJ = (fn: string, role: string, university?: string) => { if (!fn?.trim()) return; const cleaned = fn.replace(/\s*\(مدعو\)\s*$/, '').trim(); const { title, cleanName } = extractTitle(cleaned); const k = cleanName.toLowerCase(); const profRec = findProfessor(cleaned); const resolvedUni = profRec?.university || university || ''; const resolvedTitle = profRec?.rank_label || title || ''; if (!juryMap[k]) juryMap[k] = { name: cleanName, title: resolvedTitle, university: resolvedUni, supervisor: 0, president: 0, member: 0, coSupervisor: 0, invited: 0 }; if (!juryMap[k].title && resolvedTitle) juryMap[k].title = resolvedTitle; if (!juryMap[k].university && resolvedUni) juryMap[k].university = resolvedUni; juryMap[k][role]++; };
     def.forEach(s => { addJ((s as any).supervisor_ar, 'supervisor', (s as any).supervisor_university); addJ((s as any).co_supervisor_ar, 'coSupervisor', (s as any).co_supervisor_university); addJ((s as any).jury_president_ar, 'president'); const sL = ((s as any).supervisor_ar || '').trim().toLowerCase(); const cL = ((s as any).co_supervisor_ar || '').trim().toLowerCase(); ((s as any).jury_members_ar || '').split(JURY_SEPARATORS).forEach((m: string) => { const mt = m.trim(); if (!mt) return; const isInvited = mt.includes('(مدعو)'); const mtClean = mt.replace(/\s*\(مدعو\)\s*$/, '').trim(); const ml = mtClean.toLowerCase(); const { cleanName: mc } = extractTitle(mtClean); if (sL && (ml.endsWith(sL) || mc.toLowerCase() === sL)) return; if (cL && (ml.endsWith(cL) || mc.toLowerCase() === cL)) return; addJ(mt, isInvited ? 'invited' : 'member'); }); });
@@ -697,35 +698,45 @@ export default function Reports() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-primary/5 border-b-2 border-primary/20">
-                    <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
-                    <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
-                    <TableHead className="text-right text-xs font-bold text-foreground">المشرف</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">النوع</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المصادقة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
-                    <TableHead className="text-center text-xs font-bold text-foreground">مدة المعالجة</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {adminActions.map((s, i) => (
-                    <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
-                      <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
-                      <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
-                      <TableCell className="text-xs py-2.5">{s.supervisor}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{s.type}</TableCell>
-                      <TableCell className="text-center py-2.5">
-                        <Badge variant={s.status === 'regular' ? 'default' : 'destructive'} className="text-[10px]">
-                          {s.status === 'regular' ? 'منتظم' : s.status === 'delayed' ? 'متأخر' : '-'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
-                      <TableCell className="text-center text-xs py-2.5 font-medium">
-                        {s.processingTime ? `${toWesternNumerals(s.processingTime.months)} شهر ${toWesternNumerals(s.processingTime.days)} يوم` : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                     <TableHead className="text-right text-xs font-bold text-foreground">#</TableHead>
+                     <TableHead className="text-right text-xs font-bold text-foreground">الاسم واللقب</TableHead>
+                     <TableHead className="text-right text-xs font-bold text-foreground">الكلية</TableHead>
+                     <TableHead className="text-right text-xs font-bold text-foreground">المشرف</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">النوع</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">الحالة</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المصادقة</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">تاريخ المناقشة</TableHead>
+                     <TableHead className="text-center text-xs font-bold text-foreground">مدة المعالجة</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {adminActions.map((s, i) => (
+                     <TableRow key={i} className="hover:bg-muted/30 border-b border-border/50">
+                       <TableCell className="text-xs py-2.5">{toWesternNumerals(i + 1)}</TableCell>
+                       <TableCell className="text-xs py-2.5 font-medium">{s.name}</TableCell>
+                       <TableCell className="text-xs py-2.5">{s.faculty}</TableCell>
+                       <TableCell className="text-xs py-2.5">{s.supervisor}</TableCell>
+                       <TableCell className="text-center text-xs py-2.5">{s.type}</TableCell>
+                       <TableCell className="text-center py-2.5">
+                         <Badge variant={s.status === 'regular' ? 'default' : 'destructive'} className="text-[10px]">
+                           {s.status === 'regular' ? 'منتظم' : s.status === 'delayed' ? 'متأخر' : '-'}
+                         </Badge>
+                       </TableCell>
+                       <TableCell className="text-center text-xs py-2.5">{s.councilDate ? formatDate(s.councilDate) : '-'}</TableCell>
+                       <TableCell className="text-center text-xs py-2.5">{s.defenseDate ? formatDate(s.defenseDate) : '-'}</TableCell>
+                       <TableCell className="text-center text-xs py-2.5 font-medium">
+                         {s.processingTime ? (() => {
+                           const m = s.processingTime!.months;
+                           const d = s.processingTime!.days;
+                           if (m === 0) return `${toWesternNumerals(s.processingTime!.totalDays)} يوم`;
+                           if (m === 1) return d > 0 ? `شهر و ${toWesternNumerals(d)} يوم` : 'شهر';
+                           if (m === 2) return d > 0 ? `شهرين و ${toWesternNumerals(d)} يوم` : 'شهرين';
+                           const label = m >= 3 && m <= 10 ? 'أشهر' : 'شهر';
+                           return d > 0 ? `${toWesternNumerals(m)} ${label} و ${toWesternNumerals(d)} يوم` : `${toWesternNumerals(m)} ${label}`;
+                         })() : '-'}
+                       </TableCell>
+                     </TableRow>
+                   ))}
                   {/* Average processing time row */}
                   {(() => {
                     const totalDays = adminActions.reduce((sum, s) => sum + (s.processingTime?.totalDays || 0), 0);
@@ -734,7 +745,7 @@ export default function Reports() {
                     const avgDays = avgTotalDays % 30;
                     return (
                       <TableRow className="bg-primary/10 border-t-2 border-primary/30">
-                        <TableCell colSpan={7} className="text-right text-sm font-bold py-3 text-primary">
+                        <TableCell colSpan={8} className="text-right text-sm font-bold py-3 text-primary">
                           متوسط مدة المعالجة الإدارية
                         </TableCell>
                         <TableCell className="text-center text-sm font-bold py-3 text-primary">
