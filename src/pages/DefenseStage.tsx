@@ -15,6 +15,7 @@ import {
   Pencil,
   ClipboardList,
   Download,
+  Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ import type { DefenseStageStudent, DefenseStageStatus, DefenseStageType } from "
 import { stageStatusLabels } from "@/types/defense-stage";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 import { toast } from "sonner";
+import { useRestoreDefenseToPhd } from "@/hooks/useRestoreDefenseToPhd";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -104,7 +106,7 @@ export default function DefenseStage() {
   const [activeTab, setActiveTab] = useState("phd_lmd");
   const [searchQuery, setSearchQuery] = useState("");
   const [showStartDialog, setShowStartDialog] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; type: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ student: DefenseStageStudent; type: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [docGenTarget, setDocGenTarget] = useState<{
     student: DefenseStageStudent;
@@ -118,6 +120,7 @@ export default function DefenseStage() {
   const deleteScience = useDeleteDefenseStageScience();
   const updateLmd = useUpdateDefenseStageLmd();
   const updateScience = useUpdateDefenseStageScience();
+  const restoreToPhd = useRestoreDefenseToPhd();
 
   const isLoading = loadingLmd || loadingScience;
   const students = activeTab === "phd_lmd" ? lmdStudents : scienceStudents;
@@ -143,10 +146,23 @@ export default function DefenseStage() {
     if (!deleteTarget) return;
     try {
       if (deleteTarget.type === "phd_lmd") {
-        await deleteLmd.mutateAsync(deleteTarget.id);
+        await deleteLmd.mutateAsync(deleteTarget.student.id);
       } else {
-        await deleteScience.mutateAsync(deleteTarget.id);
+        await deleteScience.mutateAsync(deleteTarget.student.id);
       }
+    } catch (e) {
+      // handled by hook
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleRestoreToPhd = async () => {
+    if (!deleteTarget) return;
+    try {
+      await restoreToPhd.mutateAsync({
+        student: deleteTarget.student,
+        defenseType: deleteTarget.type as DefenseStageType,
+      });
     } catch (e) {
       // handled by hook
     }
@@ -465,8 +481,7 @@ export default function DefenseStage() {
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => setDeleteTarget({
-                                  id: student.id,
-                                  name: student.full_name_ar,
+                                  student,
                                   type: activeTab,
                                 })}
                               >
@@ -533,20 +548,45 @@ export default function DefenseStage() {
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
-              هل أنت متأكد من حذف الطالب <strong>{deleteTarget?.name}</strong> من طور المناقشة؟
-              <br />
-              <span className="text-destructive">هذا الإجراء لا يمكن التراجع عنه.</span>
+            <AlertDialogTitle>حذف من طور المناقشة</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  ماذا تريد أن تفعل بالطالب <strong className="text-foreground">{deleteTarget?.student.full_name_ar}</strong>؟
+                </p>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2 h-auto py-3"
+                    onClick={handleRestoreToPhd}
+                    disabled={restoreToPhd.isPending}
+                  >
+                    <Undo2 className="h-4 w-4 text-primary shrink-0" />
+                    <div className="text-right">
+                      <div className="font-medium">إرجاع إلى قاعدة بيانات طلبة الدكتوراه</div>
+                      <div className="text-xs text-muted-foreground">سيتم نقل الطالب مع الحفاظ على بياناته</div>
+                    </div>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2 h-auto py-3 border-destructive/30 hover:bg-destructive/5"
+                    onClick={handleDelete}
+                    disabled={deleteLmd.isPending || deleteScience.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive shrink-0" />
+                    <div className="text-right">
+                      <div className="font-medium text-destructive">حذف نهائياً</div>
+                      <div className="text-xs text-muted-foreground">سيتم حذف الطالب بشكل دائم ولا يمكن التراجع</div>
+                    </div>
+                  </Button>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              حذف نهائياً
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
