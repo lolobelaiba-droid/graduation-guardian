@@ -924,16 +924,14 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       const stageStatusMap: Record<string, string> = { pending: "في الانتظار", under_review: "قيد الخبرة", authorized: "مرخص", defended: "انتهت المناقشة" };
       const rows = data.defenseStageStudents.map((s: any, i: number) => {
         const councilDate = s.scientific_council_date;
-        let durationText = "-";
+        let durationCell: PdfTableCell = "-";
         if (councilDate) {
           const council = new Date(councilDate);
           const now = new Date();
           if (!isNaN(council.getTime())) {
             const diffMs = now.getTime() - council.getTime();
             const totalDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-            const months = Math.floor(totalDays / 30);
-            const days = totalDays % 30;
-            durationText = `${toWesternNumerals(months)} شهر ${toWesternNumerals(days)} يوم`;
+            durationCell = buildDurationCell(totalDays);
           }
         }
         return [
@@ -942,7 +940,7 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
           getThesisLangLabel(s.thesis_language),
           stageStatusMap[s.stage_status] || s.stage_status || "-",
           councilDate ? toWesternNumerals(formatDateDDMMYYYY(councilDate)) : "-",
-          durationText,
+          durationCell,
         ];
       });
       drawTable(["#", "الاسم واللقب", "الكلية", "الشعبة", "التخصص", "نوع الدكتوراه", "لغة الأطروحة", "الحالة", "تاريخ المجلس العلمي", "المدة منذ المصادقة"], rows, cols);
