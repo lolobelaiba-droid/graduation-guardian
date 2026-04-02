@@ -96,6 +96,7 @@ export default function PhdStudents() {
 
   const { visibleColumns, isVisible, toggleColumn, setAllVisible, resetToDefaults, visibleCount } = useColumnVisibility("phd-students-columns", phdColumns);
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<PhdStudentType>("phd_lmd");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<{ id: string; type: PhdStudentType } | null>(null);
