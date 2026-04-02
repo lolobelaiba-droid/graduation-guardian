@@ -76,14 +76,14 @@ export default function Reports() {
     [...allRegistered, ...allDefended, ...allDefenseStage].forEach(s => { if (s.faculty_ar) set.add(s.faculty_ar); });
     return [...set].sort();
   }, [allRegistered, allDefended, allDefenseStage]);
-    const set = new Set<string>();
-    [...allRegistered, ...allDefended].forEach(s => { if (s.faculty_ar) set.add(s.faculty_ar); });
-    return [...set].sort();
-  }, [allRegistered, allDefended]);
 
   const filteredRegistered = useMemo(() =>
     selectedFaculty === "all" ? allRegistered : allRegistered.filter(s => s.faculty_ar === selectedFaculty),
   [allRegistered, selectedFaculty]);
+
+  const filteredDefenseStage = useMemo(() =>
+    selectedFaculty === "all" ? allDefenseStage : allDefenseStage.filter(s => s.faculty_ar === selectedFaculty),
+  [allDefenseStage, selectedFaculty]);
 
   const filteredDefended = useMemo(() =>
     selectedFaculty === "all" ? allDefended : allDefended.filter(s => s.faculty_ar === selectedFaculty),
