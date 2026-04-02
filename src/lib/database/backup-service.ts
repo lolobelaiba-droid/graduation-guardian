@@ -245,13 +245,13 @@ export class BackupService {
 
       const shouldRestore = (t: string) => allTables.includes(t);
 
-      // Delete existing data - only for selected tables
+      // Delete existing data - always delete dependent tables when their parent is being restored
       onProgress?.("حذف البيانات القديمة (الجداول المرتبطة)...", ++currentStep, totalSteps);
       await Promise.all([
-        shouldRestore("custom_field_values") && deleteTable("custom_field_values"),
-        shouldRestore("custom_field_options") && deleteTable("custom_field_options"),
-        shouldRestore("certificate_template_fields") && deleteTable("certificate_template_fields"),
-        shouldRestore("print_history") && deleteTable("print_history"),
+        (shouldRestore("custom_field_values") || shouldRestore("custom_fields")) && deleteTable("custom_field_values"),
+        (shouldRestore("custom_field_options") || shouldRestore("custom_fields")) && deleteTable("custom_field_options"),
+        (shouldRestore("certificate_template_fields") || shouldRestore("certificate_templates")) && deleteTable("certificate_template_fields"),
+        (shouldRestore("print_history") || shouldRestore("certificate_templates")) && deleteTable("print_history"),
       ].filter(Boolean));
 
       onProgress?.("حذف البيانات القديمة (الجداول الرئيسية)...", ++currentStep, totalSteps);
