@@ -1130,15 +1130,15 @@ export default function ExportReportPdfDialog({ currentData, faculties, buildExp
       checkPage(15);
       sectionTitle("رابعا: الإجراءات الإدارية");
       const tableW = PW - M * 2;
-      const cols = [7, 32, 28, 16, 16, 22, 22, 22].map(p => (p / 165) * tableW);
+      const cols = [6, 28, 22, 24, 16, 16, 22, 22, 22].map(p => (p / 178) * tableW);
       const rows = data.adminActions.map((s, i) => [
-        toWesternNumerals(i + 1), s.name, s.supervisor, s.type,
+        toWesternNumerals(i + 1), s.name, s.faculty || "-", s.supervisor, s.type,
         s.status === "regular" ? "منتظم" : s.status === "delayed" ? "متأخر" : "-",
         s.councilDate ? toWesternNumerals(formatDateDDMMYYYY(s.councilDate)) : "-",
         s.defenseDate ? toWesternNumerals(formatDateDDMMYYYY(s.defenseDate)) : "-",
         s.processingTime ? buildDurationCell(s.processingTime.totalDays) : "-",
       ]);
-      drawTable(["#", "الاسم واللقب", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
+      drawTable(["#", "الاسم واللقب", "الكلية", "المشرف", "النوع", "الحالة", "تاريخ المصادقة", "تاريخ المناقشة", "مدة المعالجة"], rows, cols);
 
       // Average processing time
       if (data.adminActions.length > 0) {
