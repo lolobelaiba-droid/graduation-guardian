@@ -146,10 +146,23 @@ export default function DefenseStage() {
     if (!deleteTarget) return;
     try {
       if (deleteTarget.type === "phd_lmd") {
-        await deleteLmd.mutateAsync(deleteTarget.id);
+        await deleteLmd.mutateAsync(deleteTarget.student.id);
       } else {
-        await deleteScience.mutateAsync(deleteTarget.id);
+        await deleteScience.mutateAsync(deleteTarget.student.id);
       }
+    } catch (e) {
+      // handled by hook
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleRestoreToPhd = async () => {
+    if (!deleteTarget) return;
+    try {
+      await restoreToPhd.mutateAsync({
+        student: deleteTarget.student,
+        defenseType: deleteTarget.type as DefenseStageType,
+      });
     } catch (e) {
       // handled by hook
     }
