@@ -745,7 +745,7 @@ export default function Reports() {
                     const avgDays = avgTotalDays % 30;
                     return (
                       <TableRow className="bg-primary/10 border-t-2 border-primary/30">
-                        <TableCell colSpan={7} className="text-right text-sm font-bold py-3 text-primary">
+                        <TableCell colSpan={8} className="text-right text-sm font-bold py-3 text-primary">
                           متوسط مدة المعالجة الإدارية
                         </TableCell>
                         <TableCell className="text-center text-sm font-bold py-3 text-primary">
