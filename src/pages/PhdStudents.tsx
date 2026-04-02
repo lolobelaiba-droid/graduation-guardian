@@ -58,6 +58,7 @@ import { AddPhdStudentDialog } from "@/components/phd-students/AddPhdStudentDial
 import { ViewPhdStudentDialog } from "@/components/phd-students/ViewPhdStudentDialog";
 import { EditPhdStudentDialog } from "@/components/phd-students/EditPhdStudentDialog";
 import { ImportPhdExcelDialog } from "@/components/phd-students/import";
+import { StartDefenseProcedureDialog } from "@/components/defense-stage/StartDefenseProcedureDialog";
 import { getPhdStudentFields } from "@/components/phd-students/import/types";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { toast } from "sonner";
@@ -125,6 +126,8 @@ export default function PhdStudents() {
   // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
+  // Start defense procedure dialog state
+  const [startDefenseDialogOpen, setStartDefenseDialogOpen] = useState(false);
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -378,38 +381,49 @@ export default function PhdStudents() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start">
-                                  <DropdownMenuItem 
-                                    className="gap-2"
-                                    onClick={() => handleViewDetails(student)}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                    عرض التفاصيل
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    className="gap-2"
-                                    onClick={() => handleEditStudent(student)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                    تعديل
-                                  </DropdownMenuItem>
-                                  {canDelete && (
-                                  <DropdownMenuItem
-                                    className="gap-2 text-destructive"
-                                    onClick={() => handleDeleteClick(student.id, selectedType)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    حذف
-                                  </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                  title="بدء إجراءات المناقشة"
+                                  onClick={() => setStartDefenseDialogOpen(true)}
+                                >
+                                  <GraduationCap className="h-4 w-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start">
+                                    <DropdownMenuItem 
+                                      className="gap-2"
+                                      onClick={() => handleViewDetails(student)}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      عرض التفاصيل
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      className="gap-2"
+                                      onClick={() => handleEditStudent(student)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                      تعديل
+                                    </DropdownMenuItem>
+                                    {canDelete && (
+                                    <DropdownMenuItem
+                                      className="gap-2 text-destructive"
+                                      onClick={() => handleDeleteClick(student.id, selectedType)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      حذف
+                                    </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -524,6 +538,9 @@ export default function PhdStudents() {
         onOpenChange={setImportDialogOpen}
         studentType={selectedType}
       />
+
+      {/* Start Defense Procedure Dialog */}
+      <StartDefenseProcedureDialog open={startDefenseDialogOpen} onOpenChange={setStartDefenseDialogOpen} />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
