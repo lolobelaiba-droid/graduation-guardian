@@ -770,8 +770,8 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* سادسا: الأساتذة المساعدين */}
-      <SectionHeader title="سادسا: الأساتذة المساعدين المناقشين" icon={<Award className="h-5 w-5" />} />
+      {/* سابعا: الأساتذة المساعدين */}
+      <SectionHeader title="سابعا: الأساتذة المساعدين المناقشين" icon={<Award className="h-5 w-5" />} />
       <Card className="shadow-sm">
         <CardContent className="p-0">
           {assistantProfessors.length > 0 ? (
