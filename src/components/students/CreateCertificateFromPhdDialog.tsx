@@ -166,6 +166,7 @@ export function CreateCertificateFromPhdDialog({
   const deleteStageLmd = useDeleteDefenseStageLmd();
   const deleteStageScience = useDeleteDefenseStageScience();
   
+  const { guardWrite } = useNetworkReadOnly();
   const { data: stageLmdStudents = [], isLoading: loadingLmd } = useDefenseStageLmd();
   const { data: stageScienceStudents = [], isLoading: loadingScience } = useDefenseStageScience();
   
