@@ -357,7 +357,7 @@ export default function Reports() {
       diversityPercent: Math.round(divDiversity * 10) / 10,
       recurringPatterns: Object.values(divJuryMap).filter(p => p.students.length > 1).sort((a, b) => b.students.length - a.students.length).map(p => ({ juryNames: p.juryNames, students: p.students })),
     };
-    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP, insights: insightsData, juryDiversity: juryDiversityData };
+    return { facultyName: faculty, kpi: kpiData, registeredCount: reg.length, defendedCount: def.length, registeredLmd: rLmd.length, registeredScience: rSci.length, defendedLmd: dLmd.length, defendedScience: dSci.length, avgRegAll: calcAvg(reg), avgRegLmd: calcAvg(rLmd), avgRegScience: calcAvg(rSci), avgDefAll: calcAvg(def), avgDefLmd: calcAvg(dLmd), avgDefScience: calcAvg(dSci), registeredStudents: reg, defendedStudents: def, defenseStageStudents: ds, defenseStageCount: ds.length, defenseStageLmd: ds.filter(s => s._type === 'phd_lmd').length, defenseStageScience: ds.filter(s => s._type === 'phd_science').length, adminActions: adminActs, juryStats: juryStatsD, englishTheses: engT, labStats: labS, assistantProfessors: assistP, insights: insightsData, juryDiversity: juryDiversityData };
   };
 
   return (
