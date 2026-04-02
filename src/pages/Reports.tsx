@@ -557,6 +557,7 @@ export default function Reports() {
                       <TableCell className="text-xs py-2.5">{(s as any).branch_ar || '-'}</TableCell>
                       <TableCell className="text-xs py-2.5">{s.specialty_ar}</TableCell>
                       <TableCell className="text-center text-xs py-2.5">{s._type === 'phd_lmd' ? 'د.ل.م.د' : 'د.علوم'}</TableCell>
+                      <TableCell className="text-center text-xs py-2.5">{thesisLangLabel((s as any).thesis_language)}</TableCell>
                       <TableCell className="text-center py-2.5">
                         <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
                           {statusInfo.ar}
