@@ -546,7 +546,15 @@ export default function PhdStudents() {
       />
 
       {/* Start Defense Procedure Dialog */}
-      <StartDefenseProcedureDialog open={startDefenseDialogOpen} onOpenChange={setStartDefenseDialogOpen} />
+      <StartDefenseProcedureDialog
+        open={startDefenseDialogOpen}
+        onOpenChange={(open) => {
+          setStartDefenseDialogOpen(open);
+          if (!open) setDefenseStudent(null);
+        }}
+        preSelectedStudent={defenseStudent}
+        preSelectedType={selectedType}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
