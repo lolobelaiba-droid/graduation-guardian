@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
+import graduateIcon from "@/assets/graduate-icon.png";
 import * as XLSX from "xlsx";
 import {
   Search,
