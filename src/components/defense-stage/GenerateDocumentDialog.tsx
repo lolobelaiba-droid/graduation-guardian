@@ -405,7 +405,10 @@ export function GenerateDocumentDialog({
     if (isElectronEnv) {
       const electronAPI = (window as unknown as { electronAPI: { printDocHtml: (html: string, action: string, fileName: string, opts: unknown) => Promise<{ success: boolean; error?: string }> } }).electronAPI;
       const htmlContent = buildStandaloneHtml();
-      electronAPI.printDocHtml(htmlContent, 'print', '', {}).then((result) => {
+      const studentName = student?.full_name_ar || "وثيقة";
+      const docTitlePdf = documentType === "jury_decision" ? "مقرر_تعيين_اللجنة" : documentType === "defense_minutes" ? "محضر_مداولات_المناقشة" : "ترخيص_المناقشة";
+      const fileName = `${docTitlePdf}_${studentName}`;
+      electronAPI.printDocHtml(htmlContent, 'print', fileName, {}).then((result) => {
         if (!result.success && result.error !== 'Print cancelled or failed') {
           toast.error(result.error || "فشلت الطباعة");
         }
