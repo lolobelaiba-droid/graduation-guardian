@@ -174,16 +174,6 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
         value = mentionMap[String(value || "").toLowerCase().trim()] || null;
       }
 
-      // Handle thesis_language field
-      if (dbKey === "thesis_language") {
-        const langMap: Record<string, string> = {
-          "عربية": "arabic", "arabic": "arabic", "arabe": "arabic",
-          "فرنسية": "french", "french": "french", "français": "french", "francais": "french",
-          "إنجليزية": "english", "english": "english", "anglais": "english",
-        };
-        value = langMap[String(value || "").toLowerCase().trim()] || value;
-      }
-
       transformed[dbKey] = value;
     });
 
@@ -211,11 +201,11 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
       const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       const ws = workbook.addWorksheet('قالب');
-      const fields = getCertificateFields(certificateType);
+      const fields = getCertificateFields(certificateType).filter(f => f.required);
 
       // Fetch dropdown options
-      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'field_fr': 'field_fr', 'supervisor_university': 'university', 'co_supervisor_university': 'university', 'research_lab_ar': 'research_lab', 'employment_status': 'employment_status', 'registration_type': 'registration_type' };
-      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'], 'thesis_language': ['عربية', 'فرنسية', 'إنجليزية'] };
+      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'supervisor_university': 'university', 'co_supervisor_university': 'university' };
+      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'] };
       const dynamicOptions: Record<string, string[]> = {};
       const fetchedOptionTypes = new Set<string>();
       for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
