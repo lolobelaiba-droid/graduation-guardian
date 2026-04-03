@@ -70,61 +70,57 @@ async function loadFontIntoBrowser(font: FontConfig): Promise<boolean> {
   if (loadedFonts.has(fontKey)) return true;
   
   try {
-    let urlToFetch = font.url;
+    let buffer: ArrayBuffer | null = null;
     
-    // في Electron: رفض الروابط الخارجية نهائياً — فقط ملفات محلية
-    if (isElectron() && isRemoteUrl(font.url)) {
-      logger.error(`[FontLoader] Blocked remote URL in desktop mode: ${font.url}`);
-      return false;
-    }
-    
-    // في Electron: إعادة بناء مسار الخط ليكون صحيحاً للجهاز الحالي (مزامنة الشبكة)
-    if (isElectron() && isFileUrl(font.url) && (window.electronAPI?.db as any)?.resolveFontPath) {
+    // في Electron: استخدام IPC لقراءة ملف الخط مباشرة (أكثر موثوقية من fetch لـ file://)
+    if (isElectron() && (window.electronAPI?.db as any)?.readFontFile) {
       try {
-        const resolved = await (window.electronAPI.db as any).resolveFontPath(font.url);
-        if (resolved?.success && resolved.data) {
-          urlToFetch = resolved.data;
+        const result = await (window.electronAPI.db as any).readFontFile(font.url);
+        if (result?.success && result.data?.buffer) {
+          buffer = result.data.buffer;
+          logger.log(`[FontLoader] Read font via IPC: ${font.family}`);
         }
-      } catch { /* use original URL */ }
-    } else if (isFileUrl(font.url)) {
-      urlToFetch = font.url;
-    } else {
-      urlToFetch = resolveElectronFontUrl(font.url);
-    }
-    
-    // Try primary and fallback fetching
-    let response = await tryFetchFont(urlToFetch);
-    
-    // For local bundled fonts, try alternative paths
-    if (!response) {
-      const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
-      if (isFileProtocol && font.url.startsWith('/fonts/')) {
-        const fileName = font.url.replace('/fonts/', '');
-        const altPaths = [`./fonts/${fileName}`, `../fonts/${fileName}`, `../../fonts/${fileName}`];
-        for (const alt of altPaths) {
-          try {
-            const altResponse = await fetch(alt);
-            if (altResponse.ok) {
-              response = altResponse;
-              break;
-            }
-          } catch { /* try next */ }
-        }
+      } catch (e) {
+        logger.error(`[FontLoader] IPC readFontFile failed for ${font.family}:`, e);
       }
     }
     
-    if (!response) {
-      throw new Error(`Failed to fetch font: ${urlToFetch}`);
+    // Fallback: fetch (للويب أو إذا فشل IPC)
+    if (!buffer) {
+      // في Electron: رفض الروابط الخارجية نهائياً
+      if (isElectron() && isRemoteUrl(font.url)) {
+        logger.error(`[FontLoader] Blocked remote URL in desktop mode: ${font.url}`);
+        return false;
+      }
+      
+      let urlToFetch = font.url;
+      
+      // في Electron: إعادة بناء مسار الخط
+      if (isElectron() && isFileUrl(font.url) && (window.electronAPI?.db as any)?.resolveFontPath) {
+        try {
+          const resolved = await (window.electronAPI.db as any).resolveFontPath(font.url);
+          if (resolved?.success && resolved.data) {
+            urlToFetch = resolved.data;
+          }
+        } catch { /* use original URL */ }
+      } else if (!isFileUrl(font.url)) {
+        urlToFetch = resolveElectronFontUrl(font.url);
+      }
+      
+      const response = await tryFetchFont(urlToFetch);
+      
+      if (!response) {
+        throw new Error(`Failed to fetch font: ${urlToFetch}`);
+      }
+      
+      buffer = await response.arrayBuffer();
     }
     
-    const buffer = await response.arrayBuffer();
-    
-    // Validate font data before loading (check magic bytes)
+    // Validate font data (check magic bytes)
     const header = new Uint8Array(buffer, 0, 4);
     const magic = String.fromCharCode(...header);
-    // Valid font signatures: \x00\x01\x00\x00 (TrueType), OTTO (OpenType), wOFF (WOFF), wOF2 (WOFF2)
     const validSignatures = ['\x00\x01\x00\x00', 'OTTO', 'wOFF', 'wOF2', 'true', 'typ1'];
-    const isValidFont = validSignatures.some(sig => magic.startsWith(sig)) || header[0] === 0 ;
+    const isValidFont = validSignatures.some(sig => magic.startsWith(sig)) || header[0] === 0;
     if (!isValidFont) {
       logger.error(`[FontLoader] Invalid font file for ${font.family}: magic="${magic}" (hex: ${Array.from(header).map(b => b.toString(16)).join(' ')})`);
       throw new Error(`Invalid font data for ${font.family} - file may be corrupted. Please re-upload the font.`);
