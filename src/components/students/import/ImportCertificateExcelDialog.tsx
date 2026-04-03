@@ -174,6 +174,14 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
         value = mentionMap[String(value || "").toLowerCase().trim()] || null;
       }
 
+      if (dbKey === "thesis_language") {
+        const langMap: Record<string, string> = {
+          "العربية": "arabic", "الفرنسية": "french", "الانجليزية": "english",
+          "arabic": "arabic", "french": "french", "english": "english",
+        };
+        value = langMap[String(value || "").trim()] || value;
+      }
+
       transformed[dbKey] = value;
     });
 
@@ -209,7 +217,7 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
 
       // Fetch dropdown options
       const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'supervisor_university': 'university', 'co_supervisor_university': 'university' };
-      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'], 'thesis_language': ['arabic', 'french', 'english'] };
+      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'], 'thesis_language': ['العربية', 'الفرنسية', 'الانجليزية'] };
       const dynamicOptions: Record<string, string[]> = {};
       const fetchedOptionTypes = new Set<string>();
       for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
