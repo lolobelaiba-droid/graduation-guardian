@@ -504,6 +504,7 @@ export default function Students() {
                         {isVisible("student_number") && <TableHead className="text-right font-semibold">الرقم</TableHead>}
                         {isVisible("full_name_ar") && <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>}
                         {isVisible("full_name_fr") && <TableHead className="text-right font-semibold">الاسم بالفرنسية</TableHead>}
+                        {isVisible("faculty_ar") && <TableHead className="text-right font-semibold">الكلية</TableHead>}
                         {isVisible("specialty_ar") && <TableHead className="text-right font-semibold">التخصص</TableHead>}
                         {isVisible("first_registration_year") && <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>}
                         {isVisible("registration_count") && <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>}
