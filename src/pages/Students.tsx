@@ -99,6 +99,7 @@ export default function Students() {
     { key: "student_number", label: "الرقم" },
     { key: "full_name_ar", label: "الاسم بالعربية" },
     { key: "full_name_fr", label: "الاسم بالفرنسية" },
+    { key: "faculty_ar", label: "الكلية" },
     { key: "specialty_ar", label: "التخصص" },
     { key: "first_registration_year", label: "سنة أول تسجيل" },
     { key: "registration_count", label: "عدد التسجيلات" },
