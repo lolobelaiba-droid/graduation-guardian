@@ -1237,14 +1237,12 @@ function saveLocalFile(fileBuffer, fileName, subFolder) {
 function resolveFontPath(fontUrl) {
   if (!fontUrl || typeof fontUrl !== 'string') return fontUrl;
   
-  // إذا كان المسار يحتوي على cache/fonts/ نستخرج اسم الملف ونبني مسار محلي جديد
-  var fontsDir = path.join(getDataDir(), 'cache', 'fonts');
-  
   // استخراج اسم الملف من أي شكل من المسارات
   var fileName = null;
   
   // file:///C:/Users/.../cache/fonts/MyFont.ttf → MyFont.ttf
-  var match = fontUrl.match(/[/\\]cache[/\\]fonts[/\\]([^/\\?]+)$/);
+  // file:///C:/Users/.../fonts/MyFont.ttf → MyFont.ttf
+  var match = fontUrl.match(/[/\\](?:cache[/\\])?fonts[/\\]([^/\\?]+)$/);
   if (match) {
     fileName = match[1];
   } else {
@@ -1254,15 +1252,48 @@ function resolveFontPath(fontUrl) {
   
   if (!fileName) return fontUrl;
   
-  var localPath = path.join(fontsDir, fileName);
+  // البحث في عدة مسارات محتملة
+  var userDataPath = app.getPath('userData');
+  var possibleDirs = [
+    path.join(getDataDir(), 'cache', 'fonts'),  // data/cache/fonts/
+    path.join(userDataPath, 'fonts'),            // fonts/ (مباشرة تحت userData)
+    path.join(getDataDir(), 'fonts'),            // data/fonts/
+  ];
   
-  // التحقق من وجود الملف
-  if (fs.existsSync(localPath)) {
-    return require('url').pathToFileURL(localPath).toString();
+  for (var i = 0; i < possibleDirs.length; i++) {
+    var localPath = path.join(possibleDirs[i], fileName);
+    if (fs.existsSync(localPath)) {
+      return require('url').pathToFileURL(localPath).toString();
+    }
   }
   
   // الملف غير موجود - إرجاع المسار الأصلي
   return fontUrl;
+}
+
+/**
+ * قراءة ملف خط كـ ArrayBuffer للتحميل في المتصفح
+ */
+function readFontFile(fontUrl) {
+  if (!fontUrl || typeof fontUrl !== 'string') return null;
+  
+  // حل المسار أولاً
+  var resolvedUrl = resolveFontPath(fontUrl);
+  
+  // تحويل file:// URL إلى مسار نظامي
+  var filePath = null;
+  if (resolvedUrl.startsWith('file:///')) {
+    filePath = require('url').fileURLToPath(resolvedUrl);
+  } else if (resolvedUrl.startsWith('file://')) {
+    filePath = require('url').fileURLToPath(resolvedUrl);
+  } else if (!resolvedUrl.startsWith('http')) {
+    filePath = resolvedUrl;
+  }
+  
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  
+  var buffer = fs.readFileSync(filePath);
+  return { buffer: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength), resolvedUrl: resolvedUrl };
 }
 
 // ============================================
