@@ -84,14 +84,12 @@ export const phdLmdStudentFields: FieldDefinition[] = [
 ];
 
 export const phdScienceStudentFields: FieldDefinition[] = [
-  { key: 'registration_number', name_ar: 'رقم التسجيل', name_fr: 'Numéro d\'inscription', required: true },
   { key: 'full_name_ar', name_ar: 'الاسم بالعربية', name_fr: 'Nom en arabe', required: true },
   { key: 'full_name_fr', name_ar: 'الاسم بالفرنسية', name_fr: 'Nom en français', required: false },
   { key: 'gender', name_ar: 'الجنس', name_fr: 'Sexe', required: true },
   { key: 'date_of_birth', name_ar: 'تاريخ الميلاد', name_fr: 'Date de naissance', required: true },
   { key: 'birthplace_ar', name_ar: 'مكان الميلاد بالعربية', name_fr: 'Lieu de naissance (ar)', required: true },
   { key: 'birthplace_fr', name_ar: 'مكان الميلاد بالفرنسية', name_fr: 'Lieu de naissance (fr)', required: false },
-  { key: 'university_ar', name_ar: 'الجامعة بالعربية', name_fr: 'Université (ar)', required: false },
   { key: 'faculty_ar', name_ar: 'الكلية', name_fr: 'Faculté', required: true },
   { key: 'branch_ar', name_ar: 'الشعبة بالعربية', name_fr: 'Filière (ar)', required: true },
   { key: 'branch_fr', name_ar: 'الشعبة بالفرنسية', name_fr: 'Filière (fr)', required: false },
