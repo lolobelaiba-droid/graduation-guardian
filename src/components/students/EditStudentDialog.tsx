@@ -625,7 +625,12 @@ export default function EditStudentDialog({
                     <FormItem className="md:col-span-2">
                       <FormLabel>الكلية *</FormLabel>
                       <FormControl>
-                        <Input {...field} value={(field.value as string) || ""} />
+                        <DropdownWithAdd
+                          value={(field.value as string) || ''}
+                          onChange={field.onChange}
+                          optionType="faculty"
+                          placeholder="اختر أو أدخل الكلية"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -660,7 +665,16 @@ export default function EditStudentDialog({
                         <FormItem>
                           <FormLabel>الميدان بالعربية *</FormLabel>
                           <FormControl>
-                            <Input {...field} value={(field.value as string) || ""} />
+                            <DropdownWithAdd
+                              value={(field.value as string) || ''}
+                              onChange={(v) => {
+                                field.onChange(v);
+                                const fr = getFrFromAr(v);
+                                if (fr) form.setValue('field_fr' as keyof FormValues, fr);
+                              }}
+                              optionType="field_ar"
+                              placeholder="اختر أو أدخل الميدان"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -673,7 +687,17 @@ export default function EditStudentDialog({
                         <FormItem>
                           <FormLabel>الميدان بالفرنسية</FormLabel>
                           <FormControl>
-                            <Input {...field} value={(field.value as string) || ""} className="text-left" dir="ltr" />
+                            <DropdownWithAdd
+                              value={(field.value as string) || ''}
+                              onChange={(v) => {
+                                field.onChange(v);
+                                const ar = getArFromFr(v);
+                                if (ar) form.setValue('field_ar' as keyof FormValues, ar);
+                              }}
+                              optionType="field_fr"
+                              placeholder="Choisir ou saisir le domaine"
+                              dir="ltr"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
