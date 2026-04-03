@@ -219,19 +219,16 @@ export function ImportExcelDialog({
       }
 
       // Handle date fields
-      if (["date_of_birth", "defense_date", "certificate_date"].includes(dbKey)) {
+      if (["date_of_birth", "defense_date", "certificate_date", "scientific_council_date"].includes(dbKey)) {
         if (typeof value === "number") {
-          // Excel serial date
           const date = XLSX.SSF.parse_date_code(value);
           if (date) {
             value = `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
           }
+        } else if (value instanceof Date) {
+          value = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
         } else if (typeof value === "string") {
-          // Try to parse date string
-          const parsed = new Date(value);
-          if (!isNaN(parsed.getTime())) {
-            value = parsed.toISOString().split("T")[0];
-          }
+          value = parseFlexibleDate(value);
         }
       }
 
