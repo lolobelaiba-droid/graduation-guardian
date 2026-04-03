@@ -401,7 +401,7 @@ export function ImportPhdExcelDialog({
 
       // Fetch dropdown options from DB
       const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'supervisor_university': 'university', 'co_supervisor_university': 'university', 'research_lab_ar': 'research_lab' };
-      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'status': ['نشط', 'متخرج', 'مؤجل', 'منسحب'], 'thesis_language': ['عربية', 'فرنسية', 'إنجليزية'] };
+      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'thesis_language': ['عربية', 'فرنسية', 'إنجليزية'] };
       const dynamicOptions: Record<string, string[]> = {};
 
       const fetchedOptionTypes = new Set<string>();

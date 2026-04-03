@@ -52,7 +52,6 @@ export const COLUMN_ALIASES: Record<string, string> = {
   'الشعبة': 'branch_ar',
   'التخصص': 'specialty_ar',
   'الجامعة': 'university_ar',
-  'الكلية بالفرنسية': 'faculty_fr',
 };
 
 // PhD student fields definition
