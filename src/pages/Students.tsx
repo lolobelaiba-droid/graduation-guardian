@@ -73,6 +73,7 @@ function isIncompleteRecord(student: Certificate, certType: CertificateType): bo
   if (isEmpty(student.specialty_ar)) return true;
   if (isEmpty(student.defense_date)) return true;
   if (isEmpty(student.student_number)) return true;
+  if (isEmpty(student.mention)) return true;
 
   const s = student as any;
 
