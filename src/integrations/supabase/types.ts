@@ -802,7 +802,7 @@ export type Database = {
           full_name_fr: string | null
           gender: string | null
           id: string
-          mention: Database["public"]["Enums"]["mention_type"]
+          mention: Database["public"]["Enums"]["mention_type"] | null
           phone_number: string | null
           professional_email: string | null
           province: string | null
@@ -833,7 +833,7 @@ export type Database = {
           full_name_fr?: string | null
           gender?: string | null
           id?: string
-          mention?: Database["public"]["Enums"]["mention_type"]
+          mention?: Database["public"]["Enums"]["mention_type"] | null
           phone_number?: string | null
           professional_email?: string | null
           province?: string | null
@@ -864,7 +864,7 @@ export type Database = {
           full_name_fr?: string | null
           gender?: string | null
           id?: string
-          mention?: Database["public"]["Enums"]["mention_type"]
+          mention?: Database["public"]["Enums"]["mention_type"] | null
           phone_number?: string | null
           professional_email?: string | null
           province?: string | null
@@ -942,7 +942,7 @@ export type Database = {
           jury_members_fr: string | null
           jury_president_ar: string
           jury_president_fr: string | null
-          mention: Database["public"]["Enums"]["mention_type"]
+          mention: Database["public"]["Enums"]["mention_type"] | null
           notes: string | null
           phone_number: string | null
           professional_email: string | null
@@ -992,7 +992,7 @@ export type Database = {
           jury_members_fr?: string | null
           jury_president_ar: string
           jury_president_fr?: string | null
-          mention?: Database["public"]["Enums"]["mention_type"]
+          mention?: Database["public"]["Enums"]["mention_type"] | null
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
@@ -1042,7 +1042,7 @@ export type Database = {
           jury_members_fr?: string | null
           jury_president_ar?: string
           jury_president_fr?: string | null
-          mention?: Database["public"]["Enums"]["mention_type"]
+          mention?: Database["public"]["Enums"]["mention_type"] | null
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
@@ -1218,7 +1218,7 @@ export type Database = {
           jury_members_fr: string | null
           jury_president_ar: string
           jury_president_fr: string | null
-          mention: Database["public"]["Enums"]["mention_type"]
+          mention: Database["public"]["Enums"]["mention_type"] | null
           notes: string | null
           phone_number: string | null
           professional_email: string | null
@@ -1268,7 +1268,7 @@ export type Database = {
           jury_members_fr?: string | null
           jury_president_ar: string
           jury_president_fr?: string | null
-          mention?: Database["public"]["Enums"]["mention_type"]
+          mention?: Database["public"]["Enums"]["mention_type"] | null
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
@@ -1318,7 +1318,7 @@ export type Database = {
           jury_members_fr?: string | null
           jury_president_ar?: string
           jury_president_fr?: string | null
-          mention?: Database["public"]["Enums"]["mention_type"]
+          mention?: Database["public"]["Enums"]["mention_type"] | null
           notes?: string | null
           phone_number?: string | null
           professional_email?: string | null
