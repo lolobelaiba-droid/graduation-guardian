@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
+import { parseFlexibleDate } from "@/lib/dateParser";
 import { FileSpreadsheet } from "lucide-react";
 import {
   Dialog,
