@@ -174,6 +174,14 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
         value = mentionMap[String(value || "").toLowerCase().trim()] || null;
       }
 
+      if (dbKey === "thesis_language") {
+        const langMap: Record<string, string> = {
+          "العربية": "arabic", "الفرنسية": "french", "الانجليزية": "english",
+          "arabic": "arabic", "french": "french", "english": "english",
+        };
+        value = langMap[String(value || "").trim()] || value;
+      }
+
       transformed[dbKey] = value;
     });
 
