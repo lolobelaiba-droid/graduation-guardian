@@ -791,7 +791,7 @@ export type Database = {
           birthplace_fr: string | null
           branch_ar: string
           branch_fr: string | null
-          certificate_date: string
+          certificate_date: string | null
           created_at: string | null
           date_of_birth: string
           defense_date: string
@@ -822,7 +822,7 @@ export type Database = {
           birthplace_fr?: string | null
           branch_ar: string
           branch_fr?: string | null
-          certificate_date?: string
+          certificate_date?: string | null
           created_at?: string | null
           date_of_birth: string
           defense_date: string
@@ -853,7 +853,7 @@ export type Database = {
           birthplace_fr?: string | null
           branch_ar?: string
           branch_fr?: string | null
-          certificate_date?: string
+          certificate_date?: string | null
           created_at?: string | null
           date_of_birth?: string
           defense_date?: string
@@ -920,7 +920,7 @@ export type Database = {
           birthplace_fr: string | null
           branch_ar: string
           branch_fr: string | null
-          certificate_date: string
+          certificate_date: string | null
           co_supervisor_ar: string | null
           co_supervisor_university: string | null
           created_at: string | null
@@ -970,7 +970,7 @@ export type Database = {
           birthplace_fr?: string | null
           branch_ar: string
           branch_fr?: string | null
-          certificate_date?: string
+          certificate_date?: string | null
           co_supervisor_ar?: string | null
           co_supervisor_university?: string | null
           created_at?: string | null
@@ -1020,7 +1020,7 @@ export type Database = {
           birthplace_fr?: string | null
           branch_ar?: string
           branch_fr?: string | null
-          certificate_date?: string
+          certificate_date?: string | null
           co_supervisor_ar?: string | null
           co_supervisor_university?: string | null
           created_at?: string | null
@@ -1196,7 +1196,7 @@ export type Database = {
           birthplace_fr: string | null
           branch_ar: string
           branch_fr: string | null
-          certificate_date: string
+          certificate_date: string | null
           co_supervisor_ar: string | null
           co_supervisor_university: string | null
           created_at: string | null
@@ -1246,7 +1246,7 @@ export type Database = {
           birthplace_fr?: string | null
           branch_ar: string
           branch_fr?: string | null
-          certificate_date?: string
+          certificate_date?: string | null
           co_supervisor_ar?: string | null
           co_supervisor_university?: string | null
           created_at?: string | null
@@ -1296,7 +1296,7 @@ export type Database = {
           birthplace_fr?: string | null
           branch_ar?: string
           branch_fr?: string | null
-          certificate_date?: string
+          certificate_date?: string | null
           co_supervisor_ar?: string | null
           co_supervisor_university?: string | null
           created_at?: string | null

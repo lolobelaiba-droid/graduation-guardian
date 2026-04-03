@@ -201,11 +201,15 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
       const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       const ws = workbook.addWorksheet('قالب');
-      const fields = getCertificateFields(certificateType).filter(f => f.required);
+      const fields = [
+        ...getCertificateFields(certificateType).filter(f => f.required),
+        // Always include mention and thesis_language in template
+        ...getCertificateFields(certificateType).filter(f => !f.required && ['mention', 'thesis_language'].includes(f.key)),
+      ];
 
       // Fetch dropdown options
       const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'supervisor_university': 'university', 'co_supervisor_university': 'university' };
-      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'] };
+      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'], 'thesis_language': ['arabic', 'french', 'english'] };
       const dynamicOptions: Record<string, string[]> = {};
       const fetchedOptionTypes = new Set<string>();
       for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {

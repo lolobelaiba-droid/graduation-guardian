@@ -99,6 +99,7 @@ export default function Students() {
     { key: "student_number", label: "الرقم" },
     { key: "full_name_ar", label: "الاسم بالعربية" },
     { key: "full_name_fr", label: "الاسم بالفرنسية" },
+    { key: "faculty_ar", label: "الكلية" },
     { key: "specialty_ar", label: "التخصص" },
     { key: "first_registration_year", label: "سنة أول تسجيل" },
     { key: "registration_count", label: "عدد التسجيلات" },
@@ -503,6 +504,7 @@ export default function Students() {
                         {isVisible("student_number") && <TableHead className="text-right font-semibold">الرقم</TableHead>}
                         {isVisible("full_name_ar") && <TableHead className="text-right font-semibold">الاسم بالعربية</TableHead>}
                         {isVisible("full_name_fr") && <TableHead className="text-right font-semibold">الاسم بالفرنسية</TableHead>}
+                        {isVisible("faculty_ar") && <TableHead className="text-right font-semibold">الكلية</TableHead>}
                         {isVisible("specialty_ar") && <TableHead className="text-right font-semibold">التخصص</TableHead>}
                         {isVisible("first_registration_year") && <TableHead className="text-right font-semibold">سنة أول تسجيل</TableHead>}
                         {isVisible("registration_count") && <TableHead className="text-right font-semibold">عدد التسجيلات</TableHead>}
@@ -525,6 +527,7 @@ export default function Students() {
                           {isVisible("student_number") && <TableCell className="font-mono text-sm">{student.student_number}</TableCell>}
                           {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
                           {isVisible("full_name_fr") && <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>}
+                          {isVisible("faculty_ar") && <TableCell>{student.faculty_ar || "-"}</TableCell>}
                           {isVisible("specialty_ar") && <TableCell>{student.specialty_ar}</TableCell>}
                           {isVisible("first_registration_year") && <TableCell>{(student as any).first_registration_year || "-"}</TableCell>}
                           {isVisible("registration_count") && <TableCell>
