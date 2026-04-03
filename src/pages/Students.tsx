@@ -61,6 +61,36 @@ import { toast } from "sonner";
 import { toWesternNumerals, formatCertificateDate } from "@/lib/numerals";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
+// Check if a certificate record has missing required fields
+function isIncompleteRecord(student: Certificate, certType: CertificateType): boolean {
+  const isEmpty = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+
+  // Common required fields for all types
+  if (isEmpty(student.full_name_ar)) return true;
+  if (isEmpty(student.birthplace_ar)) return true;
+  if (isEmpty(student.date_of_birth)) return true;
+  if (isEmpty(student.branch_ar)) return true;
+  if (isEmpty(student.specialty_ar)) return true;
+  if (isEmpty(student.defense_date)) return true;
+  if (isEmpty(student.student_number)) return true;
+
+  const s = student as any;
+
+  if (certType === 'master') {
+    // Master-specific
+    return false; // common fields are enough
+  }
+
+  // PhD-specific required fields
+  if (isEmpty(s.thesis_title_ar)) return true;
+  if (isEmpty(s.supervisor_ar)) return true;
+  if (isEmpty(s.jury_president_ar)) return true;
+  if (isEmpty(s.jury_members_ar)) return true;
+  if (isEmpty(s.field_ar)) return true;
+
+  return false;
+}
+
 export default function Students() {
   const { canDelete } = usePermissions();
   const { guardWrite } = useNetworkReadOnly();
@@ -482,11 +512,14 @@ export default function Students() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedStudents.map((student, index) => (
+                      {paginatedStudents.map((student, index) => {
+                        const incomplete = isIncompleteRecord(student, selectedCertType);
+                        return (
                         <TableRow
                           key={student.id}
-                          className="hover:bg-muted/30 transition-colors animate-fade-in"
+                          className={`hover:bg-muted/30 transition-colors animate-fade-in ${incomplete ? 'bg-red-50 dark:bg-red-950/30 hover:bg-red-100/70 dark:hover:bg-red-950/50' : ''}`}
                           style={{ animationDelay: `${index * 50}ms` }}
+                          title={incomplete ? 'بيانات غير مكتملة - يرجى تعديل البيانات لإكمال المعلومات الناقصة' : undefined}
                         >
                           {isVisible("student_number") && <TableCell className="font-mono text-sm">{student.student_number}</TableCell>}
                           {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
@@ -593,7 +626,8 @@ export default function Students() {
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
