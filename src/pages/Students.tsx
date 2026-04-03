@@ -73,6 +73,7 @@ function isIncompleteRecord(student: Certificate, certType: CertificateType): bo
   if (isEmpty(student.specialty_ar)) return true;
   if (isEmpty(student.defense_date)) return true;
   if (isEmpty(student.student_number)) return true;
+  if (isEmpty(student.mention)) return true;
 
   const s = student as any;
 
@@ -577,9 +578,15 @@ export default function Students() {
                             })()}
                           </TableCell>}
                           {isVisible("mention") && <TableCell>
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                              {mentionLabels[student.mention as MentionType]?.ar || student.mention}
-                            </Badge>
+                            {student.mention ? (
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                {mentionLabels[student.mention as MentionType]?.ar || student.mention}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                                غير محدد
+                              </Badge>
+                            )}
                           </TableCell>}
                           {isVisible("defense_date") && <TableCell>{formatCertificateDate(student.defense_date)}</TableCell>}
                           <TableCell>

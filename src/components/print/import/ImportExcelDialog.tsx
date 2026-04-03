@@ -244,7 +244,7 @@ export function ImportExcelDialog({
           "honorable": "honorable",
         };
         const normalizedValue = String(value || "").toLowerCase().trim();
-        value = mentionMap[normalizedValue] || "honorable";
+        value = mentionMap[normalizedValue] || null;
       }
 
       transformed[dbKey] = value;

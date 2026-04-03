@@ -52,6 +52,7 @@ import { useRecordLock } from "@/hooks/useRecordLock";
 import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 import { extractStartYear } from "@/lib/registration-calculation";
+import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 // PhD LMD schema
 const phdLmdSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
@@ -71,7 +72,7 @@ const phdLmdSchema = z.object({
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
   specialty_fr: z.string().optional().nullable(),
-  mention: z.enum(["honorable", "very_honorable"]),
+  mention: z.enum(["honorable", "very_honorable"]).nullable().optional(),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
   field_ar: z.string().min(1, "الميدان مطلوب"),
@@ -122,7 +123,7 @@ const phdScienceSchema = z.object({
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
   specialty_fr: z.string().optional().nullable(),
-  mention: z.enum(["honorable", "very_honorable"]),
+  mention: z.enum(["honorable", "very_honorable"]).nullable().optional(),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
   field_ar: z.string().min(1, "الميدان مطلوب"),
@@ -171,7 +172,7 @@ const masterSchema = z.object({
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
   specialty_fr: z.string().optional().nullable(),
-  mention: z.enum(["honorable", "very_honorable"]),
+  mention: z.enum(["honorable", "very_honorable"]).nullable().optional(),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
   province: z.string().optional().nullable(),
@@ -227,8 +228,8 @@ export default function EditStudentDialog({
 
   const { professorNames, ensureProfessor, findProfessor } = useProfessors();
   const { universityNames } = useUniversityOptions();
+  const { getFrFromAr, getArFromFr } = useFieldDomainSync();
 
-  // Fetch bilingual options for French value lookup
   const { data: employmentOptions = [] } = useBilingualDropdownOptions("employment_status");
   const { data: registrationOptions = [] } = useBilingualDropdownOptions("registration_type");
   const { data: inscriptionOptions = [] } = useBilingualDropdownOptions("inscription_status");
@@ -624,7 +625,12 @@ export default function EditStudentDialog({
                     <FormItem className="md:col-span-2">
                       <FormLabel>الكلية *</FormLabel>
                       <FormControl>
-                        <Input {...field} value={(field.value as string) || ""} />
+                        <DropdownWithAdd
+                          value={(field.value as string) || ''}
+                          onChange={field.onChange}
+                          optionType="faculty"
+                          placeholder="اختر أو أدخل الكلية"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -659,7 +665,16 @@ export default function EditStudentDialog({
                         <FormItem>
                           <FormLabel>الميدان بالعربية *</FormLabel>
                           <FormControl>
-                            <Input {...field} value={(field.value as string) || ""} />
+                            <DropdownWithAdd
+                              value={(field.value as string) || ''}
+                              onChange={(v) => {
+                                field.onChange(v);
+                                const fr = getFrFromAr(v);
+                                if (fr) form.setValue('field_fr' as keyof FormValues, fr);
+                              }}
+                              optionType="field_ar"
+                              placeholder="اختر أو أدخل الميدان"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -672,7 +687,17 @@ export default function EditStudentDialog({
                         <FormItem>
                           <FormLabel>الميدان بالفرنسية</FormLabel>
                           <FormControl>
-                            <Input {...field} value={(field.value as string) || ""} className="text-left" dir="ltr" />
+                            <DropdownWithAdd
+                              value={(field.value as string) || ''}
+                              onChange={(v) => {
+                                field.onChange(v);
+                                const ar = getArFromFr(v);
+                                if (ar) form.setValue('field_ar' as keyof FormValues, ar);
+                              }}
+                              optionType="field_fr"
+                              placeholder="Choisir ou saisir le domaine"
+                              dir="ltr"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

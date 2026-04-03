@@ -171,7 +171,7 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
           "honorable": "honorable", "very_honorable": "very_honorable",
           "très honorable": "very_honorable", "tres honorable": "very_honorable",
         };
-        value = mentionMap[String(value || "").toLowerCase().trim()] || "honorable";
+        value = mentionMap[String(value || "").toLowerCase().trim()] || null;
       }
 
       transformed[dbKey] = value;
