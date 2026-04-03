@@ -52,6 +52,7 @@ import { useRecordLock } from "@/hooks/useRecordLock";
 import { RecordLockBanner } from "@/components/ui/record-lock-banner";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 import { extractStartYear } from "@/lib/registration-calculation";
+import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 // PhD LMD schema
 const phdLmdSchema = z.object({
   student_number: z.string().min(1, "رقم الشهادة مطلوب"),
