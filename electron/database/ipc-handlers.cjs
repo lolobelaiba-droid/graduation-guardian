@@ -350,6 +350,18 @@ function registerDatabaseHandlers() {
     }
   });
 
+  // قراءة ملف خط كـ ArrayBuffer
+  ipcMain.handle('db:readFontFile', async (_, fontUrl) => {
+    try {
+      const result = db.readFontFile(fontUrl);
+      if (result) {
+        return { success: true, data: result };
+      }
+      return { success: false, error: 'Font file not found' };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 
   ipcMain.handle('db:saveNetworkConfig', async (_, sharedPath) => {
     try {
