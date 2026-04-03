@@ -527,6 +527,7 @@ export default function Students() {
                           {isVisible("student_number") && <TableCell className="font-mono text-sm">{student.student_number}</TableCell>}
                           {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
                           {isVisible("full_name_fr") && <TableCell className="text-muted-foreground">{student.full_name_fr || "-"}</TableCell>}
+                          {isVisible("faculty_ar") && <TableCell>{student.faculty_ar || "-"}</TableCell>}
                           {isVisible("specialty_ar") && <TableCell>{student.specialty_ar}</TableCell>}
                           {isVisible("first_registration_year") && <TableCell>{(student as any).first_registration_year || "-"}</TableCell>}
                           {isVisible("registration_count") && <TableCell>
