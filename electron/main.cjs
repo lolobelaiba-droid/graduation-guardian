@@ -526,8 +526,8 @@ ${html}
           result = { success: true, filePath: saveResult.filePath };
         }
       } else {
-        // Generate PDF to temp file then open with system viewer for printing
-        // This avoids Electron's webContents.print() rasterization with virtual printers
+        // Generate high-quality PDF then open in an in-app preview window
+        // Uses Chromium's built-in PDF viewer for a browser-like print experience
         try {
           const pdfData = await printWin.webContents.printToPDF({
             printBackground: true,
@@ -537,8 +537,31 @@ ${html}
           });
           const tmpPdfPath = path.join(os.tmpdir(), `defense_print_${Date.now()}.pdf`);
           fs.writeFileSync(tmpPdfPath, pdfData);
-          const { shell } = require('electron');
-          await shell.openPath(tmpPdfPath);
+
+          // Open a visible preview window with the PDF embedded
+          const previewWin = new BrowserWindow({
+            width: 900,
+            height: 1000,
+            title: defaultFileName || 'معاينة الطباعة',
+            parent: mainWindow || undefined,
+            modal: false,
+            show: true,
+            webPreferences: {
+              nodeIntegration: false,
+              contextIsolation: true,
+              plugins: true, // Enable PDF plugin
+            },
+          });
+
+          // Load the PDF file directly — Chromium's PDF viewer handles it
+          const { pathToFileURL } = require('url');
+          previewWin.loadURL(pathToFileURL(tmpPdfPath).href);
+
+          // Clean up temp file when preview window is closed
+          previewWin.on('closed', () => {
+            try { fs.unlinkSync(tmpPdfPath); } catch {}
+          });
+
           result = { success: true };
         } catch (printErr) {
           console.error('Defense doc print-to-pdf failed:', printErr);
