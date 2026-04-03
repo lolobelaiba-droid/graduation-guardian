@@ -2262,6 +2262,7 @@ module.exports = {
   getCacheDir: getCacheDir,
   saveLocalFile: saveLocalFile,
   resolveFontPath: resolveFontPath,
+  readFontFile: readFontFile,
   
   // قفل السجلات
   acquireRecordLock: acquireRecordLock,

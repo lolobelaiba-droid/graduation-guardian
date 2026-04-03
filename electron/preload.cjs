@@ -116,6 +116,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:saveLocalFile', fileBuffer, fileName, subFolder),
     resolveFontPath: (fontUrl) =>
       ipcRenderer.invoke('db:resolveFontPath', fontUrl),
+    readFontFile: (fontUrl) =>
+      ipcRenderer.invoke('db:readFontFile', fontUrl),
     
     // إدارة الشبكة والأجهزة
     saveNetworkConfig: (sharedPath) =>
