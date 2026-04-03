@@ -172,7 +172,7 @@ const masterSchema = z.object({
   branch_fr: z.string().optional().nullable(),
   specialty_ar: z.string().min(1, "التخصص مطلوب"),
   specialty_fr: z.string().optional().nullable(),
-  mention: z.enum(["honorable", "very_honorable"]),
+  mention: z.enum(["honorable", "very_honorable"]).nullable().optional(),
   defense_date: z.string().min(1, "تاريخ المناقشة مطلوب"),
   certificate_date: z.string().min(1, "تاريخ الشهادة مطلوب"),
   province: z.string().optional().nullable(),
