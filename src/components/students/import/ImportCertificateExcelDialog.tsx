@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import * as XLSX from "xlsx";
+import { parseFlexibleDate } from "@/lib/dateParser";
 import { FileSpreadsheet, Upload, ArrowLeft, ArrowRight, Check, X, AlertTriangle, Loader2, Download } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
@@ -152,9 +153,10 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
         if (typeof value === "number") {
           const date = XLSX.SSF.parse_date_code(value);
           if (date) value = `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+        } else if (value instanceof Date) {
+          value = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
         } else if (typeof value === "string") {
-          const parsed = new Date(value);
-          if (!isNaN(parsed.getTime())) value = parsed.toISOString().split("T")[0];
+          value = parseFlexibleDate(value);
         }
       }
 
