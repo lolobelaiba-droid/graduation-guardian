@@ -512,11 +512,14 @@ export default function Students() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedStudents.map((student, index) => (
+                      {paginatedStudents.map((student, index) => {
+                        const incomplete = isIncompleteRecord(student, selectedCertType);
+                        return (
                         <TableRow
                           key={student.id}
-                          className="hover:bg-muted/30 transition-colors animate-fade-in"
+                          className={`hover:bg-muted/30 transition-colors animate-fade-in ${incomplete ? 'bg-red-50 dark:bg-red-950/30 hover:bg-red-100/70 dark:hover:bg-red-950/50' : ''}`}
                           style={{ animationDelay: `${index * 50}ms` }}
+                          title={incomplete ? 'بيانات غير مكتملة - يرجى تعديل البيانات لإكمال المعلومات الناقصة' : undefined}
                         >
                           {isVisible("student_number") && <TableCell className="font-mono text-sm">{student.student_number}</TableCell>}
                           {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
