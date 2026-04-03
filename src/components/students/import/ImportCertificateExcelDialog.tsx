@@ -201,11 +201,11 @@ export function ImportCertificateExcelDialog({ open, onOpenChange, certificateTy
       const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       const ws = workbook.addWorksheet('قالب');
-      const fields = getCertificateFields(certificateType).filter(f => f.required);
+      const fields = getCertificateFields(certificateType);
 
       // Fetch dropdown options
-      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'supervisor_university': 'university', 'co_supervisor_university': 'university' };
-      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'] };
+      const dropdownFieldMap: Record<string, string> = { 'faculty_ar': 'faculty', 'field_ar': 'field_ar', 'field_fr': 'field_fr', 'supervisor_university': 'university', 'co_supervisor_university': 'university', 'research_lab_ar': 'research_lab', 'employment_status': 'employment_status', 'registration_type': 'registration_type' };
+      const staticOptions: Record<string, string[]> = { 'gender': ['ذكر', 'أنثى'], 'mention': ['مشرف', 'مشرف جدا'], 'thesis_language': ['عربية', 'فرنسية', 'إنجليزية'] };
       const dynamicOptions: Record<string, string[]> = {};
       const fetchedOptionTypes = new Set<string>();
       for (const [fieldKey, optionType] of Object.entries(dropdownFieldMap)) {
