@@ -626,7 +626,8 @@ export default function Students() {
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
