@@ -40,7 +40,6 @@ export function UploadStep({ onFileSelect, error, certificateType }: UploadStepP
     const headers: string[] = [];
     
     for (const f of fields) {
-      if (!f.required) continue;
       const dbKey = getDbFieldKey(f.key);
       if (!seen.has(dbKey)) {
         seen.add(dbKey);
