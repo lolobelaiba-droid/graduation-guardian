@@ -560,8 +560,8 @@ export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStu
                 presidentValue={form.watch('jury_president_ar')}
                 membersValue={form.watch('jury_members_ar')}
                 onChange={(president, members) => {
-                  form.setValue('jury_president_ar', president);
-                  form.setValue('jury_members_ar', members);
+                  form.setValue('jury_president_ar', president, { shouldValidate: true });
+                  form.setValue('jury_members_ar', members, { shouldValidate: true });
                 }}
                 supervisorAr={selectedStudent?.supervisor_ar || ''}
                 supervisorUniversity={selectedStudent?.supervisor_university || ''}
@@ -574,6 +574,12 @@ export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStu
                   if (name) ensureProfessor(name, rankLabel || undefined, rankAbbreviation || undefined, university || undefined);
                 }}
               />
+              {form.formState.errors.jury_president_ar && (
+                <p className="text-sm font-medium text-destructive">{form.formState.errors.jury_president_ar.message}</p>
+              )}
+              {form.formState.errors.jury_members_ar && (
+                <p className="text-sm font-medium text-destructive">{form.formState.errors.jury_members_ar.message}</p>
+              )}
 
               <SectionHeader title="القرارات الوزارية" />
 
