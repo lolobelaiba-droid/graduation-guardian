@@ -158,3 +158,34 @@ export function useUpdateDropdownOption() {
     },
   });
 }
+
+export function useReorderDropdownOptions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ optionType, reorderedIds }: { optionType: OptionType; reorderedIds: { id: string; display_order: number }[] }) => {
+      if (isElectron()) {
+        const db = getDbClient()!;
+        for (const item of reorderedIds) {
+          await db.update('dropdown_options', item.id, { display_order: item.display_order });
+        }
+        return { optionType };
+      }
+
+      for (const item of reorderedIds) {
+        const { error } = await supabase
+          .from('dropdown_options')
+          .update({ display_order: item.display_order })
+          .eq('id', item.id);
+        if (error) throw error;
+      }
+      return { optionType };
+    },
+    onSuccess: (variables) => {
+      queryClient.invalidateQueries({ queryKey: ['dropdown_options', variables.optionType] });
+    },
+    onError: () => {
+      toast.error('حدث خطأ أثناء إعادة ترتيب القرارات');
+    },
+  });
+}
