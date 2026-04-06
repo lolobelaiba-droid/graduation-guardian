@@ -92,6 +92,7 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [manageOpen, setManageOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
 
   const handleAdd = () => {
     if (!newValue.trim()) return;
@@ -109,6 +110,15 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
     setEditingId(null);
     setEditValue('');
   };
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none');
+  };
+
+  const sortedOptions = sortOrder === 'none' ? options : [...options].sort((a, b) => {
+    const cmp = a.option_value.localeCompare(b.option_value, 'ar');
+    return sortOrder === 'asc' ? cmp : -cmp;
+  });
 
   return (
     <FormField
@@ -139,10 +149,18 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="text-xs text-muted-foreground">عدد القرارات: {options.length}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">عدد القرارات: {options.length}</div>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={toggleSort}>
+                      {sortOrder === 'none' && <ArrowUpDown className="h-3 w-3" />}
+                      {sortOrder === 'asc' && <ArrowUp className="h-3 w-3" />}
+                      {sortOrder === 'desc' && <ArrowDown className="h-3 w-3" />}
+                      {sortOrder === 'none' ? 'ترتيب' : sortOrder === 'asc' ? 'تصاعدي' : 'تنازلي'}
+                    </Button>
+                  </div>
                   <ScrollArea className="max-h-[350px]">
                     <div className="space-y-1.5">
-                      {options.map((opt, index) => (
+                      {sortedOptions.map((opt, index) => (
                         <div key={opt.id} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                           {editingId === opt.id ? (
                             <>
