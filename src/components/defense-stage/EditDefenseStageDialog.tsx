@@ -66,7 +66,7 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
   name: string;
   label: string;
   optionType: OptionType;
-  options: { id: string; option_value: string }[];
+  options: { id: string; option_value: string; display_order: number | null }[];
   addOption: any;
   deleteOption: any;
   updateOption: any;
@@ -75,7 +75,7 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [manageOpen, setManageOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
+  const reorderOptions = useReorderDropdownOptions();
 
   const handleAdd = () => {
     if (!newValue.trim()) return;
@@ -94,14 +94,14 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
     setEditValue('');
   };
 
-  const toggleSort = () => {
-    setSortOrder(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none');
+  const handleMove = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= options.length) return;
+    const reordered = [...options];
+    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
+    const updates = reordered.map((opt, i) => ({ id: opt.id, display_order: i }));
+    reorderOptions.mutate({ optionType, reorderedIds: updates });
   };
-
-  const sortedOptions = sortOrder === 'none' ? options : [...options].sort((a, b) => {
-    const cmp = a.option_value.localeCompare(b.option_value, 'ar');
-    return sortOrder === 'asc' ? cmp : -cmp;
-  });
 
   return (
     <FormField
@@ -132,19 +132,11 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">عدد القرارات: {options.length}</div>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={toggleSort}>
-                      {sortOrder === 'none' && <ArrowUpDown className="h-3 w-3" />}
-                      {sortOrder === 'asc' && <ArrowUp className="h-3 w-3" />}
-                      {sortOrder === 'desc' && <ArrowDown className="h-3 w-3" />}
-                      {sortOrder === 'none' ? 'ترتيب' : sortOrder === 'asc' ? 'تصاعدي' : 'تنازلي'}
-                    </Button>
-                  </div>
+                  <div className="text-xs text-muted-foreground">عدد القرارات: {options.length}</div>
                   <ScrollArea className="max-h-[350px]">
                     <div className="space-y-1.5">
-                      {sortedOptions.map((opt, index) => (
-                        <div key={opt.id} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                      {options.map((opt, index) => (
+                        <div key={opt.id} className="flex items-center gap-1.5 p-2 rounded border bg-muted/30">
                           {editingId === opt.id ? (
                             <>
                               <Input
@@ -158,6 +150,14 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                             </>
                           ) : (
                             <>
+                              <div className="flex flex-col shrink-0">
+                                <Button type="button" size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={index === 0} onClick={() => handleMove(index, 'up')}>
+                                  <ChevronUp className="h-3 w-3" />
+                                </Button>
+                                <Button type="button" size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={index === options.length - 1} onClick={() => handleMove(index, 'down')}>
+                                  <ChevronDown className="h-3 w-3" />
+                                </Button>
+                              </div>
                               <span className="text-[11px] text-muted-foreground shrink-0">{index + 1}.</span>
                               <span className="text-xs flex-1 leading-relaxed line-clamp-2" title={opt.option_value}>{opt.option_value}</span>
                               <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0" onClick={() => { setEditingId(opt.id); setEditValue(opt.option_value); }}>
