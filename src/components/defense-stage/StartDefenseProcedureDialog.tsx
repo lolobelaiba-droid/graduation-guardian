@@ -3,7 +3,7 @@ import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Search, Scale, Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, Search, Scale, Plus, Trash2, Pencil, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
