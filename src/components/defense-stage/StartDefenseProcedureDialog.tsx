@@ -125,7 +125,7 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                   إدارة القرارات
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[500px] p-3" align="start">
+              <PopoverContent className="w-[500px] p-3" align="start" side="bottom">
                 <div className="space-y-3">
                   <h4 className="font-semibold text-sm">إدارة قائمة القرارات</h4>
                   <div className="flex gap-2">
@@ -139,10 +139,11 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <ScrollArea className="max-h-[200px]">
-                    <div className="space-y-2">
-                      {options.map((opt) => (
-                        <div key={opt.id} className="flex items-start gap-2 p-2 rounded border bg-muted/30">
+                  <div className="text-xs text-muted-foreground">عدد القرارات: {options.length}</div>
+                  <ScrollArea className="max-h-[350px]">
+                    <div className="space-y-1.5">
+                      {options.map((opt, index) => (
+                        <div key={opt.id} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                           {editingId === opt.id ? (
                             <>
                               <Input
@@ -151,16 +152,17 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                                 className="text-xs flex-1"
                                 autoFocus
                               />
-                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => handleUpdate(opt.id)}>حفظ</Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setEditingId(null)}>إلغاء</Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => handleUpdate(opt.id)}>حفظ</Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => setEditingId(null)}>إلغاء</Button>
                             </>
                           ) : (
                             <>
-                              <span className="text-xs flex-1 leading-relaxed">{opt.option_value}</span>
-                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { setEditingId(opt.id); setEditValue(opt.option_value); }}>
+                              <span className="text-[11px] text-muted-foreground shrink-0">{index + 1}.</span>
+                              <span className="text-xs flex-1 leading-relaxed line-clamp-2" title={opt.option_value}>{opt.option_value}</span>
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0" onClick={() => { setEditingId(opt.id); setEditValue(opt.option_value); }}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDelete(opt.id)}>
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive shrink-0" onClick={() => handleDelete(opt.id)}>
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </>
