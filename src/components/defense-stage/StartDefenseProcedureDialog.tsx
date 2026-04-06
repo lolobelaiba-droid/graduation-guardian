@@ -50,7 +50,7 @@ import {
 } from "@/hooks/useDefenseStage";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
-import { useDropdownOptions, useAddDropdownOption, useDeleteDropdownOption, useUpdateDropdownOption } from "@/hooks/useDropdownOptions";
+import { useDropdownOptions, useAddDropdownOption, useDeleteDropdownOption, useUpdateDropdownOption, useReorderDropdownOptions } from "@/hooks/useDropdownOptions";
 import type { OptionType } from "@/hooks/useDropdownOptions";
 import type { PhdStudent, PhdLmdStudent } from "@/types/phd-students";
 import type { DefenseStageType } from "@/types/defense-stage";
