@@ -4,7 +4,7 @@ import { useFieldDomainSync } from "@/hooks/useFieldDomainSync";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +75,7 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [manageOpen, setManageOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
 
   const handleAdd = () => {
     if (!newValue.trim()) return;
@@ -92,6 +93,15 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
     setEditingId(null);
     setEditValue('');
   };
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none');
+  };
+
+  const sortedOptions = sortOrder === 'none' ? options : [...options].sort((a, b) => {
+    const cmp = a.option_value.localeCompare(b.option_value, 'ar');
+    return sortOrder === 'asc' ? cmp : -cmp;
+  });
 
   return (
     <FormField
@@ -122,10 +132,19 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <ScrollArea className="max-h-[200px]">
-                    <div className="space-y-2">
-                      {options.map((opt) => (
-                        <div key={opt.id} className="flex items-start gap-2 p-2 rounded border bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">عدد القرارات: {options.length}</div>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={toggleSort}>
+                      {sortOrder === 'none' && <ArrowUpDown className="h-3 w-3" />}
+                      {sortOrder === 'asc' && <ArrowUp className="h-3 w-3" />}
+                      {sortOrder === 'desc' && <ArrowDown className="h-3 w-3" />}
+                      {sortOrder === 'none' ? 'ترتيب' : sortOrder === 'asc' ? 'تصاعدي' : 'تنازلي'}
+                    </Button>
+                  </div>
+                  <ScrollArea className="max-h-[350px]">
+                    <div className="space-y-1.5">
+                      {sortedOptions.map((opt, index) => (
+                        <div key={opt.id} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
                           {editingId === opt.id ? (
                             <>
                               <Input
@@ -134,16 +153,17 @@ function DecreeDropdownField({ form, name, label, optionType, options, addOption
                                 className="text-xs flex-1"
                                 autoFocus
                               />
-                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => handleUpdate(opt.id)}>حفظ</Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setEditingId(null)}>إلغاء</Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => handleUpdate(opt.id)}>حفظ</Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => setEditingId(null)}>إلغاء</Button>
                             </>
                           ) : (
                             <>
-                              <span className="text-xs flex-1 leading-relaxed">{opt.option_value}</span>
-                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { setEditingId(opt.id); setEditValue(opt.option_value); }}>
+                              <span className="text-[11px] text-muted-foreground shrink-0">{index + 1}.</span>
+                              <span className="text-xs flex-1 leading-relaxed line-clamp-2" title={opt.option_value}>{opt.option_value}</span>
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0" onClick={() => { setEditingId(opt.id); setEditValue(opt.option_value); }}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDelete(opt.id)}>
+                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive shrink-0" onClick={() => handleDelete(opt.id)}>
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </>
