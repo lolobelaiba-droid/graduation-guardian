@@ -3,7 +3,7 @@ import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Search, Scale, Plus, Trash2, Pencil, ChevronUp, ChevronDown } from "lucide-react";
+import { Loader2, Search, Scale } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,6 @@ import { DateInput } from "@/components/ui/date-input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   usePhdLmdStudents,
   usePhdScienceStudents,
@@ -50,8 +49,8 @@ import {
 } from "@/hooks/useDefenseStage";
 import { useProfessors } from "@/hooks/useProfessors";
 import { useUniversityOptions } from "@/hooks/useUniversityOptions";
-import { useDropdownOptions, useAddDropdownOption, useDeleteDropdownOption, useUpdateDropdownOption, useReorderDropdownOptions } from "@/hooks/useDropdownOptions";
-import type { OptionType } from "@/hooks/useDropdownOptions";
+import { useDropdownOptions, useAddDropdownOption, useDeleteDropdownOption, useUpdateDropdownOption } from "@/hooks/useDropdownOptions";
+import { DecreeDropdownField } from "@/components/defense-stage/DecreeDropdownField";
 import type { PhdStudent, PhdLmdStudent } from "@/types/phd-students";
 import type { DefenseStageType } from "@/types/defense-stage";
 import { getDefaultSignatureTitle } from "@/types/certificates";
@@ -77,146 +76,6 @@ function SectionHeader({ title }: { title: string }) {
     </div>
   );
 }
-// Decree Dropdown with add/edit/delete management
-function DecreeDropdownField({ form, name, label, optionType, options, addOption, deleteOption, updateOption }: {
-  form: any;
-  name: string;
-  label: string;
-  optionType: OptionType;
-  options: { id: string; option_value: string; display_order: number | null }[];
-  addOption: any;
-  deleteOption: any;
-  updateOption: any;
-}) {
-  const [newValue, setNewValue] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [manageOpen, setManageOpen] = useState(false);
-  const reorderOptions = useReorderDropdownOptions();
-
-  const handleAdd = () => {
-    if (!newValue.trim()) return;
-    addOption.mutate({ optionType, optionValue: newValue.trim() });
-    setNewValue('');
-  };
-
-  const handleDelete = (id: string) => {
-    deleteOption.mutate({ id, optionType });
-  };
-
-  const handleUpdate = (id: string) => {
-    if (!editValue.trim()) return;
-    updateOption.mutate({ id, optionType, optionValue: editValue.trim() });
-    setEditingId(null);
-    setEditValue('');
-  };
-
-  const handleMove = (index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= options.length) return;
-    const reordered = [...options];
-    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
-    const updates = reordered.map((opt, i) => ({ id: opt.id, display_order: i }));
-    reorderOptions.mutate({ optionType, reorderedIds: updates });
-  };
-
-  return (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <div className="flex items-center justify-between">
-            <FormLabel>{label}</FormLabel>
-            <Popover open={manageOpen} onOpenChange={setManageOpen}>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                  <Pencil className="h-3 w-3" />
-                  إدارة القرارات
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[500px] p-3" align="start" side="bottom">
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-sm">إدارة قائمة القرارات</h4>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newValue}
-                      onChange={(e) => setNewValue(e.target.value)}
-                      placeholder="أضف قراراً جديداً..."
-                      className="text-sm"
-                    />
-                    <Button type="button" size="sm" onClick={handleAdd} disabled={!newValue.trim()}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="text-xs text-muted-foreground">عدد القرارات: {options.length}</div>
-                  <ScrollArea className="max-h-[350px]">
-                    <div className="space-y-1.5">
-                      {options.map((opt, index) => (
-                        <div key={opt.id} className="flex items-center gap-1.5 p-2 rounded border bg-muted/30">
-                          {editingId === opt.id ? (
-                            <>
-                              <Input
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                className="text-xs flex-1"
-                                autoFocus
-                              />
-                              <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => handleUpdate(opt.id)}>حفظ</Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => setEditingId(null)}>إلغاء</Button>
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex flex-col shrink-0">
-                                <Button type="button" size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={index === 0} onClick={() => handleMove(index, 'up')}>
-                                  <ChevronUp className="h-3 w-3" />
-                                </Button>
-                                <Button type="button" size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={index === options.length - 1} onClick={() => handleMove(index, 'down')}>
-                                  <ChevronDown className="h-3 w-3" />
-                                </Button>
-                              </div>
-                              <span className="text-[11px] text-muted-foreground shrink-0">{index + 1}.</span>
-                              <span className="text-xs flex-1 leading-relaxed line-clamp-2" title={opt.option_value}>{opt.option_value}</span>
-                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0" onClick={() => { setEditingId(opt.id); setEditValue(opt.option_value); }}>
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive shrink-0" onClick={() => handleDelete(opt.id)}>
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                      {options.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-4">لا توجد قرارات مسجلة</p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <FormControl>
-            <Select value={field.value || ''} onValueChange={field.onChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="اختر القرار..." />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((opt) => (
-                  <SelectItem key={opt.id} value={opt.option_value}>
-                    <span className="text-xs leading-relaxed">{opt.option_value}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
-
 interface StartDefenseProcedureDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
