@@ -147,13 +147,19 @@ export default function DefenseStage() {
   const students = activeTab === "phd_lmd" ? lmdStudents : scienceStudents;
 
   const filteredStudents = useMemo(() => {
-    if (!searchQuery) return students;
-    const q = searchQuery.toLowerCase();
+    if (!searchQuery.trim()) return students;
+    const q = searchQuery.trim().toLowerCase();
     return students.filter((s) =>
-      s.full_name_ar.includes(searchQuery) ||
-      s.registration_number.includes(searchQuery) ||
+      s.full_name_ar?.includes(q) ||
+      s.full_name_ar?.includes(searchQuery.trim()) ||
+      s.registration_number?.includes(q) ||
       (s.full_name_fr?.toLowerCase().includes(q) ?? false) ||
-      s.specialty_ar.includes(searchQuery)
+      s.specialty_ar?.includes(q) ||
+      s.specialty_ar?.includes(searchQuery.trim()) ||
+      (s.faculty_ar?.includes(q) ?? false) ||
+      (s.faculty_ar?.includes(searchQuery.trim()) ?? false) ||
+      (s.supervisor_ar?.includes(q) ?? false) ||
+      (s.supervisor_ar?.includes(searchQuery.trim()) ?? false)
     );
   }, [students, searchQuery]);
 
