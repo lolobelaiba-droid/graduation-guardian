@@ -319,6 +319,15 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
         registration_count: student.registration_count ?? null,
       });
 
+      // Set presumed date of birth state
+      const isPresumed = !!(student as any).date_of_birth_presumed;
+      setDateOfBirthPresumed(isPresumed);
+      if (isPresumed && student.date_of_birth) {
+        setPresumedYear(student.date_of_birth.split('-')[0]);
+      } else {
+        setPresumedYear("");
+      }
+
       // Set bilingual dropdown states
       const empStatusAr = student.employment_status || '';
       setEmploymentStatusAr(empStatusAr);
@@ -388,6 +397,8 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
     try {
       const submitData = {
         ...data,
+        date_of_birth: dateOfBirthPresumed ? `${presumedYear}-01-01` : data.date_of_birth,
+        date_of_birth_presumed: dateOfBirthPresumed,
         employment_status: employmentStatusAr || null,
         registration_type: registrationTypeAr || null,
         inscription_status: inscriptionStatusAr || null,
