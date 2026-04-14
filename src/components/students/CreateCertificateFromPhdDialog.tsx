@@ -285,7 +285,6 @@ export function CreateCertificateFromPhdDialog({
       full_name_fr: pendingStudent.full_name_fr || '',
       gender: pendingStudent.gender as 'male' | 'female',
       date_of_birth: pendingStudent.date_of_birth,
-      date_of_birth_presumed: (pendingStudent as any).date_of_birth_presumed || false,
       birthplace_ar: pendingStudent.birthplace_ar,
       birthplace_fr: pendingStudent.birthplace_fr || '',
       university_ar: pendingStudent.university_ar || 'جامعة أم البواقي',
