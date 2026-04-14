@@ -242,6 +242,8 @@ export default function EditStudentDialog({
   const [registrationTypeFr, setRegistrationTypeFr] = useState("");
   const [inscriptionStatusAr, setInscriptionStatusAr] = useState("");
   const [inscriptionStatusFr, setInscriptionStatusFr] = useState("");
+  const [dateOfBirthPresumed, setDateOfBirthPresumed] = useState(false);
+  const [presumedYear, setPresumedYear] = useState("");
 
   const getSchema = () => {
     switch (certificateType) {
@@ -341,6 +343,11 @@ export default function EditStudentDialog({
       setInscriptionStatusAr(inscAr);
       const inscOpt = inscriptionOptions.find(opt => opt.value_ar === inscAr);
       setInscriptionStatusFr(inscOpt?.value_fr || "");
+
+      // Set presumed date of birth
+      const isPresumed = !!(student as any).date_of_birth_presumed;
+      setDateOfBirthPresumed(isPresumed);
+      setPresumedYear(isPresumed && student.date_of_birth ? student.date_of_birth.split('-')[0] : '');
     }
   }, [student, open, certificateType, form, employmentOptions, registrationOptions, inscriptionOptions]);
 
@@ -364,6 +371,8 @@ export default function EditStudentDialog({
     // Override bilingual dropdown values
     const submitData = {
       ...data,
+      date_of_birth: dateOfBirthPresumed ? `${presumedYear}-01-01` : data.date_of_birth,
+      date_of_birth_presumed: dateOfBirthPresumed,
       employment_status: employmentStatusAr || null,
       registration_type: registrationTypeAr || null,
       inscription_status: inscriptionStatusAr || null,
@@ -502,9 +511,43 @@ export default function EditStudentDialog({
                   name="date_of_birth"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>تاريخ الميلاد *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        تاريخ الميلاد *
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <Checkbox
+                            checked={dateOfBirthPresumed}
+                            onCheckedChange={(checked) => {
+                              setDateOfBirthPresumed(!!checked);
+                              if (checked && field.value) {
+                                setPresumedYear(String(field.value).split('-')[0]);
+                              } else if (!checked && presumedYear) {
+                                field.onChange(`${presumedYear}-01-01`);
+                              }
+                            }}
+                            className="h-3.5 w-3.5"
+                          />
+                          <span className="text-xs font-normal text-muted-foreground">مفترض</span>
+                        </label>
+                      </FormLabel>
                       <FormControl>
-                        <DateInput value={(field.value as string) || ""} onChange={field.onChange} />
+                        {dateOfBirthPresumed ? (
+                          <Input
+                            type="number"
+                            min="1900"
+                            max="2030"
+                            placeholder="مثال: 1995"
+                            value={presumedYear}
+                            onChange={(e) => {
+                              const year = e.target.value.slice(0, 4);
+                              setPresumedYear(year);
+                              if (year.length === 4) field.onChange(`${year}-01-01`);
+                            }}
+                            dir="ltr"
+                            className="text-left"
+                          />
+                        ) : (
+                          <DateInput value={(field.value as string) || ""} onChange={field.onChange} />
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
