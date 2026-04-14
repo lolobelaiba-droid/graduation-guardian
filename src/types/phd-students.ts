@@ -9,6 +9,7 @@ export interface BasePhdStudent {
   full_name_fr: string | null;
   gender: string;
   date_of_birth: string;
+  date_of_birth_presumed: boolean;
   birthplace_ar: string;
   birthplace_fr: string | null;
   university_ar: string | null;
