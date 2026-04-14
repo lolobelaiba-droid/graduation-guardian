@@ -242,7 +242,7 @@ export default function PhdStudents() {
       "الاسم بالعربية": student.full_name_ar,
       "الاسم بالفرنسية": student.full_name_fr || "",
       "الجنس": student.gender === "male" ? "ذكر" : "أنثى",
-      "تاريخ الميلاد": student.date_of_birth,
+      "تاريخ الميلاد": (student as any).date_of_birth_presumed ? `مفترض: ${student.date_of_birth?.split('-')[0] || ''}` : student.date_of_birth,
       "مكان الميلاد": student.birthplace_ar,
       "الكلية": student.faculty_ar,
       "الشعبة": student.branch_ar,
