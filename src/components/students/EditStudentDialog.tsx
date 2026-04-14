@@ -376,7 +376,7 @@ export default function EditStudentDialog({
       employment_status: employmentStatusAr || null,
       registration_type: registrationTypeAr || null,
       inscription_status: inscriptionStatusAr || null,
-    } as FormValues;
+    } as any;
 
     const handleSuccess = () => {
       releaseLock();
