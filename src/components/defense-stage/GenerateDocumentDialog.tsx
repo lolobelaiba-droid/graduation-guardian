@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { stripHtml } from "@/lib/utils";
 import { createPortal } from "react-dom";
-import { formatCertificateDate } from "@/lib/numerals";
+import { formatCertificateDate, formatDateOfBirth } from "@/lib/numerals";
 import { normalizeDefenseTemplateHtml } from "@/lib/defenseTemplateHtml";
 
 /**
@@ -298,7 +298,9 @@ export function GenerateDocumentDialog({
       full_name_ar: student.full_name_ar || "",
       full_name_fr: student.full_name_fr || "",
       gender: student.gender || "male",
-      date_of_birth: formatArabicDocumentDate(student.date_of_birth),
+      date_of_birth: !!(student as any).date_of_birth_presumed 
+        ? `مفترض: ${student.date_of_birth?.split('-')[0] || ''}` 
+        : formatArabicDocumentDate(student.date_of_birth),
       birthplace_ar: student.birthplace_ar || "",
       province: student.province || "",
       registration_number: student.registration_number || "",

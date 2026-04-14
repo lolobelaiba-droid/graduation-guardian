@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate, formatDateOfBirth } from "@/lib/numerals";
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { mentionLabels, type CertificateTemplate, type TemplateField, type MentionType } from "@/types/certificates";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
@@ -225,11 +225,13 @@ export function FullPreviewDialog({
     // Handle bilingual date fields - use saved date format settings
     if (fieldKey === 'date_of_birth_ar') {
       const value = student['date_of_birth'];
-      return value ? formatCertificateDate(value as string, true, dateFormatSettings) : '';
+      const isPresumed = !!(student as any)['date_of_birth_presumed'];
+      return value ? formatDateOfBirth(value as string, isPresumed, true, dateFormatSettings) : '';
     }
     if (fieldKey === 'date_of_birth_fr') {
       const value = student['date_of_birth'];
-      return value ? formatCertificateDate(value as string, false, dateFormatSettings) : '';
+      const isPresumed = !!(student as any)['date_of_birth_presumed'];
+      return value ? formatDateOfBirth(value as string, isPresumed, false, dateFormatSettings) : '';
     }
     if (fieldKey === 'defense_date_ar') {
       const value = student['defense_date'];
