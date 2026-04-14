@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { JuryTableInput, SupervisorTableInput } from "@/components/ui/jury-table-input";
 import { DateInput } from "@/components/ui/date-input";
