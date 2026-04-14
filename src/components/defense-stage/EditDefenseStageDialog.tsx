@@ -5,6 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Pencil } from "lucide-react";
+import { DateInput } from "@/components/ui/date-input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +33,6 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
-import { DateInput } from "@/components/ui/date-input";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import {
   useUpdateDefenseStageLmd,
@@ -164,6 +165,8 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
   const [registrationTypeFr, setRegistrationTypeFr] = useState("");
   const [inscriptionStatusAr, setInscriptionStatusAr] = useState("");
   const [inscriptionStatusFr, setInscriptionStatusFr] = useState("");
+  const [dateOfBirthPresumed, setDateOfBirthPresumed] = useState(false);
+  const [presumedYear, setPresumedYear] = useState("");
 
   const form = useForm({
     resolver: zodResolver(editSchema),
@@ -240,6 +243,11 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
       setInscriptionStatusAr(student.inscription_status || '');
       const inscOpt = inscriptionOptions.find(opt => opt.value_ar === (student.inscription_status || ''));
       setInscriptionStatusFr(inscOpt?.value_fr || '');
+
+      // Set presumed date of birth
+      const isPresumed = !!(student as any).date_of_birth_presumed;
+      setDateOfBirthPresumed(isPresumed);
+      setPresumedYear(isPresumed && student.date_of_birth ? student.date_of_birth.split('-')[0] : '');
     }
   }, [student, open, form, employmentOptions, registrationOptions, inscriptionOptions]);
 
@@ -279,6 +287,8 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
       const submitData = {
         id: student.id,
         ...sanitized,
+        date_of_birth: dateOfBirthPresumed ? `${presumedYear}-01-01` : sanitized.date_of_birth,
+        date_of_birth_presumed: dateOfBirthPresumed,
         employment_status: employmentStatusAr || null,
         registration_type: registrationTypeAr || null,
         inscription_status: inscriptionStatusAr || null,
@@ -353,8 +363,44 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
             <div className="grid grid-cols-3 gap-4">
               <FormField control={form.control} name="date_of_birth" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>تاريخ الميلاد *</FormLabel>
-                  <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormLabel className="flex items-center gap-2">
+                    تاريخ الميلاد *
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <Checkbox
+                        checked={dateOfBirthPresumed}
+                        onCheckedChange={(checked) => {
+                          setDateOfBirthPresumed(!!checked);
+                          if (checked && field.value) {
+                            setPresumedYear(field.value.split('-')[0]);
+                          } else if (!checked && presumedYear) {
+                            field.onChange(`${presumedYear}-01-01`);
+                          }
+                        }}
+                        className="h-3.5 w-3.5"
+                      />
+                      <span className="text-xs font-normal text-muted-foreground">مفترض</span>
+                    </label>
+                  </FormLabel>
+                  <FormControl>
+                    {dateOfBirthPresumed ? (
+                      <Input
+                        type="number"
+                        min="1900"
+                        max="2030"
+                        placeholder="مثال: 1995"
+                        value={presumedYear}
+                        onChange={(e) => {
+                          const year = e.target.value.slice(0, 4);
+                          setPresumedYear(year);
+                          if (year.length === 4) field.onChange(`${year}-01-01`);
+                        }}
+                        dir="ltr"
+                        className="text-left"
+                      />
+                    ) : (
+                      <DateInput value={field.value} onChange={field.onChange} />
+                    )}
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
