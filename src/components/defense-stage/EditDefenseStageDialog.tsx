@@ -165,6 +165,8 @@ export function EditDefenseStageDialog({ open, onOpenChange, student, studentTyp
   const [registrationTypeFr, setRegistrationTypeFr] = useState("");
   const [inscriptionStatusAr, setInscriptionStatusAr] = useState("");
   const [inscriptionStatusFr, setInscriptionStatusFr] = useState("");
+  const [dateOfBirthPresumed, setDateOfBirthPresumed] = useState(false);
+  const [presumedYear, setPresumedYear] = useState("");
 
   const form = useForm({
     resolver: zodResolver(editSchema),
