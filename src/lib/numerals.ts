@@ -106,6 +106,26 @@ export function formatCertificateDate(
 }
 
 /**
+ * Format date of birth considering presumed flag
+ * If presumed, returns "مفترض: YYYY" (Arabic) or "présumé: YYYY" (French)
+ */
+export function formatDateOfBirth(
+  date: Date | string,
+  isPresumed: boolean,
+  isArabic: boolean = true,
+  formatSettings?: DateFormatSettings
+): string {
+  if (isPresumed) {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const year = isNaN(dateObj.getTime()) 
+      ? (typeof date === 'string' ? date.split('-')[0] : '') 
+      : dateObj.getFullYear().toString();
+    return isArabic ? `مفترض: ${year}` : `présumé: ${year}`;
+  }
+  return formatCertificateDate(date, isArabic, formatSettings);
+}
+
+/**
  * Format defense date using saved format settings
  * @param date - Date to format
  * @param isArabic - If true, use Arabic month names, otherwise French
