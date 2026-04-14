@@ -264,7 +264,7 @@ export default function DefenseStage() {
           full_name_ar: s.full_name_ar,
           full_name_fr: s.full_name_fr || "",
           registration_number: s.registration_number,
-          date_of_birth: formatDate(s.date_of_birth),
+          date_of_birth: (s as any).date_of_birth_presumed ? `مفترض: ${s.date_of_birth?.split('-')[0] || ''}` : formatDate(s.date_of_birth),
           birthplace_ar: s.birthplace_ar,
           gender: s.gender === "male" ? "ذكر" : s.gender === "female" ? "أنثى" : s.gender || "",
           faculty_ar: s.faculty_ar,
