@@ -29,7 +29,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
+import { DateInput } from "@/components/ui/date-input";
 import {
   useUpdatePhdLmdStudent,
   useUpdatePhdScienceStudent,
@@ -147,6 +149,10 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
   const [registrationTypeFr, setRegistrationTypeFr] = useState("");
   const [inscriptionStatusAr, setInscriptionStatusAr] = useState("");
   const [inscriptionStatusFr, setInscriptionStatusFr] = useState("");
+  
+  // Presumed date of birth
+  const [dateOfBirthPresumed, setDateOfBirthPresumed] = useState(false);
+  const [presumedYear, setPresumedYear] = useState("");
   
   // Calculated registration fields
   const [calculatedCurrentYear, setCalculatedCurrentYear] = useState("");
