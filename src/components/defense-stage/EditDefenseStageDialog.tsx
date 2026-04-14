@@ -33,7 +33,6 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
-import { DateInput } from "@/components/ui/date-input";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import {
   useUpdateDefenseStageLmd,
