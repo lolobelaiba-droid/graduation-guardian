@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BilingualDropdown } from "@/components/ui/bilingual-dropdown";
 import {
   useCreatePhdLmdStudent,
@@ -113,6 +114,8 @@ function SectionHeader({ title }: { title: string }) {
 
 export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialStudentType, currentAcademicYear }: AddPhdStudentDialogProps) {
   const [selectedType, setSelectedType] = useState<PhdStudentType>(initialStudentType);
+  const [dateOfBirthPresumed, setDateOfBirthPresumed] = useState(false);
+  const [presumedYear, setPresumedYear] = useState("");
   
   // Bilingual dropdown states
   const [employmentStatusAr, setEmploymentStatusAr] = useState("");
@@ -297,9 +300,11 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
     if (data.co_supervisor_ar) ensureProfessor(data.co_supervisor_ar);
 
     try {
-      // Add bilingual dropdown values
+      // Add bilingual dropdown values and presumed flag
       const submitData = {
         ...data,
+        date_of_birth: dateOfBirthPresumed ? `${presumedYear}-01-01` : data.date_of_birth,
+        date_of_birth_presumed: dateOfBirthPresumed,
         employment_status: employmentStatusAr || null,
         registration_type: registrationTypeAr || null,
         inscription_status: inscriptionStatusAr || null,
@@ -322,6 +327,8 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
       setInscriptionStatusAr("");
       setInscriptionStatusFr("");
       setBilingualErrors({});
+      setDateOfBirthPresumed(false);
+      setPresumedYear("");
       onOpenChange(false);
     } catch (error) {
       // Error handled by hook
@@ -525,9 +532,52 @@ export function AddPhdStudentDialog({ open, onOpenChange, studentType: initialSt
                 name="date_of_birth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>تاريخ الميلاد *</FormLabel>
+                    <FormLabel className="flex items-center gap-2">
+                      تاريخ الميلاد *
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={dateOfBirthPresumed}
+                          onCheckedChange={(checked) => {
+                            setDateOfBirthPresumed(!!checked);
+                            if (checked) {
+                              // Extract year from current value if exists
+                              if (field.value) {
+                                const year = field.value.split('-')[0];
+                                setPresumedYear(year);
+                              }
+                            } else {
+                              // Reset to full date if unchecking
+                              if (presumedYear) {
+                                field.onChange(`${presumedYear}-01-01`);
+                              }
+                            }
+                          }}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className="text-xs font-normal text-muted-foreground">مفترض</span>
+                      </label>
+                    </FormLabel>
                     <FormControl>
-                      <DateInput value={field.value} onChange={field.onChange} />
+                      {dateOfBirthPresumed ? (
+                        <Input
+                          type="number"
+                          min="1900"
+                          max="2030"
+                          placeholder="مثال: 1995"
+                          value={presumedYear}
+                          onChange={(e) => {
+                            const year = e.target.value.slice(0, 4);
+                            setPresumedYear(year);
+                            if (year.length === 4) {
+                              field.onChange(`${year}-01-01`);
+                            }
+                          }}
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      ) : (
+                        <DateInput value={field.value} onChange={field.onChange} />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -371,6 +371,7 @@ export function CreateCertificateFromPhdDialog({
         jury_president_fr: data.jury_president_fr || '',
         jury_members_fr: data.jury_members_fr || '',
         registration_number: data.registration_number || null,
+        date_of_birth_presumed: selectedStudent ? !!(selectedStudent as any).date_of_birth_presumed : false,
         employment_status: employmentStatusAr || null,
         registration_type: registrationTypeAr || null,
         inscription_status: inscriptionStatusAr || null,

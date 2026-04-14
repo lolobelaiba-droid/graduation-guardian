@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { PhdStudent, PhdStudentType, PhdLmdStudent } from "@/types/phd-students";
 import { phdStudentTypeLabels, studentStatusLabels } from "@/types/phd-students";
-import { formatCertificateDate } from "@/lib/numerals";
+import { formatCertificateDate, formatDateOfBirth } from "@/lib/numerals";
 
 interface ViewPhdStudentDialogProps {
   open: boolean;
@@ -68,7 +68,7 @@ export function ViewPhdStudentDialog({ open, onOpenChange, student, studentType 
           <InfoRow label="الاسم بالعربية" value={student.full_name_ar} />
           <InfoRow label="الاسم بالفرنسية" value={student.full_name_fr} />
           <InfoRow label="الجنس" value={student.gender === 'male' ? 'ذكر' : 'أنثى'} />
-          <InfoRow label="تاريخ الميلاد" value={formatCertificateDate(student.date_of_birth)} />
+          <InfoRow label="تاريخ الميلاد" value={formatDateOfBirth(student.date_of_birth, !!(student as any).date_of_birth_presumed, true)} />
           <InfoRow label="مكان الميلاد" value={student.birthplace_ar} />
           <InfoRow label="مكان الميلاد (فرنسي)" value={student.birthplace_fr} />
 

@@ -196,6 +196,7 @@ export function StartDefenseProcedureDialog({ open, onOpenChange, preSelectedStu
         full_name_fr: selectedStudent.full_name_fr,
         gender: selectedStudent.gender,
         date_of_birth: selectedStudent.date_of_birth,
+        date_of_birth_presumed: (selectedStudent as any).date_of_birth_presumed || false,
         birthplace_ar: selectedStudent.birthplace_ar,
         birthplace_fr: selectedStudent.birthplace_fr,
         university_ar: selectedStudent.university_ar,
