@@ -302,7 +302,13 @@ export function CertificatePreview({
     const value = student[fieldKey];
     
     // Legacy date fields support (default to French format)
-    if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
+    if (fieldKey === 'date_of_birth') {
+      if (value) {
+        const isPresumed = !!(student as any)['date_of_birth_presumed'];
+        return formatDateOfBirth(value as string, isPresumed, false, dateFormatSettings);
+      }
+    }
+    if (fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
       if (value) {
         return formatCertificateDate(value as string, false, dateFormatSettings);
       }
