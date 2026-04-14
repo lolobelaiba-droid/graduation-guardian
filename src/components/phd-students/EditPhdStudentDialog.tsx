@@ -605,9 +605,50 @@ export function EditPhdStudentDialog({ open, onOpenChange, student, studentType,
                 name="date_of_birth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>تاريخ الميلاد *</FormLabel>
+                    <FormLabel className="flex items-center gap-2">
+                      تاريخ الميلاد *
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={dateOfBirthPresumed}
+                          onCheckedChange={(checked) => {
+                            setDateOfBirthPresumed(!!checked);
+                            if (checked) {
+                              if (field.value) {
+                                const year = field.value.split('-')[0];
+                                setPresumedYear(year);
+                              }
+                            } else {
+                              if (presumedYear) {
+                                field.onChange(`${presumedYear}-01-01`);
+                              }
+                            }
+                          }}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className="text-xs font-normal text-muted-foreground">مفترض</span>
+                      </label>
+                    </FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      {dateOfBirthPresumed ? (
+                        <Input
+                          type="number"
+                          min="1900"
+                          max="2030"
+                          placeholder="مثال: 1995"
+                          value={presumedYear}
+                          onChange={(e) => {
+                            const year = e.target.value.slice(0, 4);
+                            setPresumedYear(year);
+                            if (year.length === 4) {
+                              field.onChange(`${year}-01-01`);
+                            }
+                          }}
+                          dir="ltr"
+                          className="text-left"
+                        />
+                      ) : (
+                        <DateInput value={field.value} onChange={field.onChange} />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
