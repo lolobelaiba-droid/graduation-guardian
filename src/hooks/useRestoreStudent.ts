@@ -23,6 +23,7 @@ export function useRestoreStudentToPhd() {
         full_name_fr: student.full_name_fr || null,
         gender: student.gender || "male",
         date_of_birth: student.date_of_birth,
+        date_of_birth_presumed: (student as any).date_of_birth_presumed || false,
         birthplace_ar: student.birthplace_ar,
         birthplace_fr: student.birthplace_fr || null,
         university_ar: student.university_ar || "جامعة أم البواقي",
