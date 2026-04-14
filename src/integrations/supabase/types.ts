@@ -426,6 +426,7 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          date_of_birth_presumed: boolean
           dean_letter_date: string | null
           dean_letter_number: string | null
           decision_date: string | null
@@ -482,6 +483,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          date_of_birth_presumed?: boolean
           dean_letter_date?: string | null
           dean_letter_number?: string | null
           decision_date?: string | null
@@ -538,6 +540,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          date_of_birth_presumed?: boolean
           dean_letter_date?: string | null
           dean_letter_number?: string | null
           decision_date?: string | null
@@ -597,6 +600,7 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          date_of_birth_presumed: boolean
           dean_letter_date: string | null
           dean_letter_number: string | null
           decision_date: string | null
@@ -653,6 +657,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          date_of_birth_presumed?: boolean
           dean_letter_date?: string | null
           dean_letter_number?: string | null
           decision_date?: string | null
@@ -709,6 +714,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          date_of_birth_presumed?: boolean
           dean_letter_date?: string | null
           dean_letter_number?: string | null
           decision_date?: string | null
@@ -794,6 +800,7 @@ export type Database = {
           certificate_date: string | null
           created_at: string | null
           date_of_birth: string
+          date_of_birth_presumed: boolean
           defense_date: string
           faculty_ar: string
           faculty_fr: string | null
@@ -825,6 +832,7 @@ export type Database = {
           certificate_date?: string | null
           created_at?: string | null
           date_of_birth: string
+          date_of_birth_presumed?: boolean
           defense_date: string
           faculty_ar?: string
           faculty_fr?: string | null
@@ -856,6 +864,7 @@ export type Database = {
           certificate_date?: string | null
           created_at?: string | null
           date_of_birth?: string
+          date_of_birth_presumed?: boolean
           defense_date?: string
           faculty_ar?: string
           faculty_fr?: string | null
@@ -926,6 +935,7 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          date_of_birth_presumed: boolean
           defense_date: string
           employment_status: string | null
           faculty_ar: string
@@ -976,6 +986,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          date_of_birth_presumed?: boolean
           defense_date: string
           employment_status?: string | null
           faculty_ar?: string
@@ -1026,6 +1037,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          date_of_birth_presumed?: boolean
           defense_date?: string
           employment_status?: string | null
           faculty_ar?: string
@@ -1078,6 +1090,7 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          date_of_birth_presumed: boolean
           employment_status: string | null
           faculty_ar: string
           faculty_fr: string | null
@@ -1118,6 +1131,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          date_of_birth_presumed?: boolean
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
@@ -1158,6 +1172,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          date_of_birth_presumed?: boolean
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
@@ -1202,6 +1217,7 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          date_of_birth_presumed: boolean
           defense_date: string
           employment_status: string | null
           faculty_ar: string
@@ -1252,6 +1268,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          date_of_birth_presumed?: boolean
           defense_date: string
           employment_status?: string | null
           faculty_ar?: string
@@ -1302,6 +1319,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          date_of_birth_presumed?: boolean
           defense_date?: string
           employment_status?: string | null
           faculty_ar?: string
@@ -1354,6 +1372,7 @@ export type Database = {
           created_at: string | null
           current_year: string | null
           date_of_birth: string
+          date_of_birth_presumed: boolean
           employment_status: string | null
           faculty_ar: string
           faculty_fr: string | null
@@ -1394,6 +1413,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth: string
+          date_of_birth_presumed?: boolean
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
@@ -1434,6 +1454,7 @@ export type Database = {
           created_at?: string | null
           current_year?: string | null
           date_of_birth?: string
+          date_of_birth_presumed?: boolean
           employment_status?: string | null
           faculty_ar?: string
           faculty_fr?: string | null
