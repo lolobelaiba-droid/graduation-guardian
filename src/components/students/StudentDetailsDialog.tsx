@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { CertificateType, MentionType, Certificate } from "@/types/certificates";
 import { certificateTypeLabels, mentionLabels } from "@/types/certificates";
-import { formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
+import { formatCertificateDate, formatDefenseDate, formatCertificateIssueDate, formatDateOfBirth } from "@/lib/numerals";
 import { useDateFormatSettings } from "@/hooks/useDateFormatSettings";
 
 interface StudentDetailsDialogProps {
@@ -95,7 +95,7 @@ export default function StudentDetailsDialog({
             <DetailRow label="الاسم بالعربية" value={student.full_name_ar} />
             <DetailRow label="الاسم بالفرنسية" value={student.full_name_fr} isRtl={false} />
             <DetailRow label="الجنس" value={student.gender === 'male' ? 'ذكر' : student.gender === 'female' ? 'أنثى' : student.gender} />
-            <DetailRow label="تاريخ الميلاد" value={formatBirthDate(student.date_of_birth)} />
+            <DetailRow label="تاريخ الميلاد" value={formatDateOfBirth(student.date_of_birth, !!(student as any).date_of_birth_presumed, true)} />
             <DetailRow label="مكان الميلاد بالعربية" value={student.birthplace_ar} />
             <DetailRow label="مكان الميلاد بالفرنسية" value={student.birthplace_fr} isRtl={false} />
           </div>

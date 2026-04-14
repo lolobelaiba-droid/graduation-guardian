@@ -65,7 +65,7 @@ import { StartDefenseProcedureDialog } from "@/components/defense-stage/StartDef
 import { getPhdStudentFields } from "@/components/phd-students/import/types";
 import { DropdownWithAdd } from "@/components/print/DropdownWithAdd";
 import { toast } from "sonner";
-import { toWesternNumerals } from "@/lib/numerals";
+import { toWesternNumerals, formatDateOfBirth } from "@/lib/numerals";
 import { calculateRegistrationDetails } from "@/lib/registration-calculation";
 
 // Generate academic years from 2000/2001 to current+1
@@ -242,7 +242,7 @@ export default function PhdStudents() {
       "الاسم بالعربية": student.full_name_ar,
       "الاسم بالفرنسية": student.full_name_fr || "",
       "الجنس": student.gender === "male" ? "ذكر" : "أنثى",
-      "تاريخ الميلاد": student.date_of_birth,
+      "تاريخ الميلاد": (student as any).date_of_birth_presumed ? `مفترض: ${student.date_of_birth?.split('-')[0] || ''}` : student.date_of_birth,
       "مكان الميلاد": student.birthplace_ar,
       "الكلية": student.faculty_ar,
       "الشعبة": student.branch_ar,
@@ -406,7 +406,7 @@ export default function PhdStudents() {
                             {isVisible("full_name_ar") && <TableCell className="font-medium">{student.full_name_ar}</TableCell>}
                             {isVisible("full_name_fr") && <TableCell className="text-muted-foreground" dir="ltr">{student.full_name_fr || "-"}</TableCell>}
                             {isVisible("gender") && <TableCell>{student.gender === "male" ? "ذكر" : student.gender === "female" ? "أنثى" : student.gender || "-"}</TableCell>}
-                            {isVisible("date_of_birth") && <TableCell>{student.date_of_birth ? (() => { const d = new Date(student.date_of_birth); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; })() : "-"}</TableCell>}
+                            {isVisible("date_of_birth") && <TableCell>{student.date_of_birth ? formatDateOfBirth(student.date_of_birth, !!(student as any).date_of_birth_presumed, true) : "-"}</TableCell>}
                             {isVisible("birthplace_ar") && <TableCell>{student.birthplace_ar || "-"}</TableCell>}
                             {isVisible("faculty_ar") && <TableCell>{student.faculty_ar || "-"}</TableCell>}
                             {isVisible("field_ar") && <TableCell>{(student as any).field_ar || "-"}</TableCell>}

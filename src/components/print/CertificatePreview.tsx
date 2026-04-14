@@ -3,7 +3,7 @@ import { Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Plus, Eye, Eye
 import type { TemplateField, CertificateTemplate, CertificateType, MentionType } from "@/types/certificates";
 import { mentionLabels } from "@/types/certificates";
 import { cn } from "@/lib/utils";
-import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate } from "@/lib/numerals";
+import { toWesternNumerals, formatCertificateDate, formatDefenseDate, formatCertificateIssueDate, formatDateOfBirth } from "@/lib/numerals";
 import { getTextDirectionFromConfig } from "@/lib/dateFormats";
 import { useFontLoader, getFontFamilyCSS } from "@/hooks/useFontLoader";
 import { getFontByName } from "@/lib/arabicFonts";
@@ -236,7 +236,8 @@ export function CertificatePreview({
     if (fieldKey === 'date_of_birth_ar') {
       const value = student['date_of_birth'];
       if (value) {
-        return formatCertificateDate(value as string, true, dateFormatSettings);
+        const isPresumed = !!(student as any)['date_of_birth_presumed'];
+        return formatDateOfBirth(value as string, isPresumed, true, dateFormatSettings);
       }
       return '';
     }
@@ -244,7 +245,8 @@ export function CertificatePreview({
     if (fieldKey === 'date_of_birth_fr') {
       const value = student['date_of_birth'];
       if (value) {
-        return formatCertificateDate(value as string, false, dateFormatSettings);
+        const isPresumed = !!(student as any)['date_of_birth_presumed'];
+        return formatDateOfBirth(value as string, isPresumed, false, dateFormatSettings);
       }
       return '';
     }
@@ -300,7 +302,13 @@ export function CertificatePreview({
     const value = student[fieldKey];
     
     // Legacy date fields support (default to French format)
-    if (fieldKey === 'date_of_birth' || fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
+    if (fieldKey === 'date_of_birth') {
+      if (value) {
+        const isPresumed = !!(student as any)['date_of_birth_presumed'];
+        return formatDateOfBirth(value as string, isPresumed, false, dateFormatSettings);
+      }
+    }
+    if (fieldKey === 'defense_date' || fieldKey === 'certificate_date') {
       if (value) {
         return formatCertificateDate(value as string, false, dateFormatSettings);
       }
