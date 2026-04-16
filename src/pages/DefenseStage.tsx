@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNetworkReadOnly } from "@/contexts/NetworkReadOnlyContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useColumnVisibility, type ColumnDef } from "@/hooks/useColumnVisibility";
@@ -123,6 +123,13 @@ export default function DefenseStage() {
   ], []);
 
   const { visibleColumns, isVisible, toggleColumn, setAllVisible, resetToDefaults, visibleCount } = useColumnVisibility("defense-stage-columns", defenseColumns);
+
+  // Force re-render every hour to update duration calculations
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [activeTab, setActiveTab] = useState("phd_lmd");
   const [searchQuery, setSearchQuery] = useState("");
