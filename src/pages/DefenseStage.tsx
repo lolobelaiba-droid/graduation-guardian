@@ -470,7 +470,7 @@ export default function DefenseStage() {
                           {(() => {
                             const duration = getDurationSinceCouncil(student.scientific_council_date, student.stage_status);
                             if (!duration) return "-";
-                            return <span className={`font-medium ${duration.color}`}>{duration.text}</span>;
+                            return <span dir="rtl" className={`font-medium ${duration.color} whitespace-nowrap`}>{duration.text}</span>;
                           })()}
                         </TableCell>}
                         {isVisible("stage_status") && <TableCell>
