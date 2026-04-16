@@ -68,7 +68,7 @@ import { useRestoreDefenseToPhd } from "@/hooks/useRestoreDefenseToPhd";
 const ITEMS_PER_PAGE = 15;
 
 function getDurationSinceCouncil(councilDate: string | null, stageStatus: string) {
-  if (!councilDate || stageStatus === 'defended') return null;
+  if (!councilDate) return null;
   const council = new Date(councilDate);
   if (isNaN(council.getTime())) return null;
   const now = new Date();
