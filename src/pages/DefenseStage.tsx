@@ -83,13 +83,13 @@ function getDurationSinceCouncil(councilDate: string | null, stageStatus: string
   if (months === 0) {
     text = `${totalDays} يوم`;
   } else if (months === 1) {
-    text = days > 0 ? `شهر و ${days} يوم` : 'شهر';
+    text = days > 0 ? `شهر و\u200F ${days} يوم` : 'شهر';
   } else if (months === 2) {
-    text = days > 0 ? `شهرين و ${days} يوم` : 'شهرين';
+    text = days > 0 ? `شهرين و\u200F ${days} يوم` : 'شهرين';
   } else if (months >= 3 && months <= 10) {
-    text = days > 0 ? `${months} أشهر و ${days} يوم` : `${months} أشهر`;
+    text = days > 0 ? `${months} أشهر و\u200F ${days} يوم` : `${months} أشهر`;
   } else {
-    text = days > 0 ? `${months} شهر و ${days} يوم` : `${months} شهر`;
+    text = days > 0 ? `${months} شهر و\u200F ${days} يوم` : `${months} شهر`;
   }
 
   let color: string;
